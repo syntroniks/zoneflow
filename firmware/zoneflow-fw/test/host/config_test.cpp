@@ -299,3 +299,27 @@ TEST(RuntimePersist, RoundTrip)
     EXPECT_EQ(back.fired[1].key, 29'000'123);
     EXPECT_FALSE(persistFromJson("garbage", back));
 }
+
+// cJSON recurses once per nesting level (64 bytes of stack per level on the
+// ESP32-S3, measured with -fstack-usage) and allows 1000 levels. A short
+// hostile document must be rejected before it reaches cJSON.
+TEST(Config, DeeplyNestedJsonIsRejected)
+{
+    std::string json = R"({"schema":1,"x":)";
+    json += std::string(200, '[');
+    json += std::string(200, ']');
+    json += "}";
+    Config out;
+    const ConfigParseResult r = configFromJson(json, out);
+    EXPECT_FALSE(r.ok());
+
+    SchedulerPersist p;
+    EXPECT_FALSE(persistFromJson(R"({"fired":)" + std::string(200, '[') + std::string(200, ']') + "}", p));
+
+    // Brackets inside strings do not count, and real documents still parse.
+    Config c = Config::defaults();
+    c.deviceName.assign("[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[");
+    Config back;
+    EXPECT_TRUE(configFromJson(configToJson(c), back).ok());
+    EXPECT_EQ(back.deviceName.view(), c.deviceName.view());
+}
