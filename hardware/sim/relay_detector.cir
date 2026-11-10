@@ -1,0 +1,373 @@
+* Relay keep-alive detector (channel B), rev A netlist, design section 7.3
+*
+* KA -> R89 (1k) -> C51 (4.7 uF) -> D22 (BAT54S) -> RLY_G2, the gate of Q2.
+* C50 (10 uF) is the reservoir. R14 and R90 (100k each, in parallel) bleed it.
+* There is no comparator, no logic gate and no supply rail in the path: the
+* gate has only an AC path from the pin. K1's coil current flows through Q1
+* (expander bit, which needs DRV_EN from channel A) and Q2 (this detector).
+*
+* Run:  ngspice -b relay_detector.cir
+*
+* What the run reports, per case:
+*   vmin   lowest gate voltage in the last 200 ms of toggling
+*   t_on   time from the first edge until the gate passes VHI
+*   t_hold time from the last edge until the gate falls below VHI
+*   t_off  time from the last edge until the gate falls below VLO
+* VHI is the highest AO3400A gate threshold, VLO the lowest. The data sheet
+* gives 0.65 to 1.45 V at 25 C. The -3 mV/K applied here for other
+* temperatures is an assumption, not a data sheet figure:
+*   -20 C: 0.79 to 1.59 V    27 C: 0.65 to 1.45 V    70 C: 0.51 to 1.31 V
+* Above VHI every part is on. Below VLO every part is off. K1 holds on a
+* few milliamps, so it can release anywhere between t_hold and t_off.
+*
+* The Schottky model is the one used in keepalive_faults.cir: generic, with
+* a leakage of about 0.2 uA at 27 C that rises to about 4 uA at 70 C. The
+* Nexperia sheet gives 2 uA maximum at 25 V and 25 C and no hot limit, so
+* the hot figures here are an estimate.
+*
+* The last block adds a level-1 FET with a 1.05 V threshold and the coil of
+* K1 (125 ohm, 0.2 H assumed, the sheet gives no inductance) as a check on
+* the reading above. It is not a model of the AO3400A.
+
+.param fka=100 ton=1.5 vstuck=0 vdd=3.3
+.param rb1=100k rb2=100k r89v=1k c51v=4.7u c50v=10u
+.param rc51sh=1G rc50sh=1G rd22ash=1G rd22bsh=1G rd22aser=1m rd22bser=1m
+.param per={1/fka}
+VKA   ka_src 0  PULSE(0 {vdd} 50m 1u 1u {per/2} {per})
+VEN   en     0  PWL(0 1 {ton} 1 {ton+1u} 0)
+BKA   ka_drv 0  V = V(ka_src)*V(en) + (1-V(en))*{vstuck}
+RGPIO ka_drv ka 30
+R33   ka 0 10k
+R89   ka  m0 {r89v}
+C51   m0  m1 {c51v}
+RC51S m0  m1 {rc51sh}
+RD22A 0   m1a {rd22aser}
+D22A  m1a m1 SCH
+RD22AS 0  m1 {rd22ash}
+RD22B m1  m1b {rd22bser}
+D22B  m1b rly_g2 SCH
+RD22BS m1 rly_g2 {rd22bsh}
+C50   rly_g2 0 {c50v}
+RC50S rly_g2 0 {rc50sh}
+R14   rly_g2 0 {rb1}
+R90   rly_g2 0 {rb2}
+* check stage: coil of K1 through an ideal Q1 and a level-1 Q2
+VBUCK vbuck 0 5.28
+LK1   vbuck k1a 0.2
+RK1   k1a rly_a 125
+D5    rly_a vbuck DSW
+VIC   rly_a rly_b 0
+MQ2   rly_b rly_g2 0 0 NFET
+R93   vbuck rly_b 10k
+.model NFET NMOS(LEVEL=1 VTO=1.05 KP=25)
+.model DSW D(IS=2.5n N=1.8 RS=0.6 BV=100)
+.model SCH D(IS=2.2e-7 N=1.05 RS=2.5 CJO=10p BV=30 IBV=2u EG=0.69 XTI=2)
+.options method=gear reltol=1e-4
+.tran 100u 6 uic
+
+.control
+set noaskquit
+
+* --- 1. nominal parts, the firmware's 100 Hz, three temperatures ---
+foreach t -20 27 70
+  if $t = -20
+    let vhi = 1.59
+    let vlo = 0.79
+  end
+  if $t = 27
+    let vhi = 1.45
+    let vlo = 0.65
+  end
+  if $t = 70
+    let vhi = 1.31
+    let vlo = 0.51
+  end
+  reset
+  set temp = $t
+  run
+  meas tran vmin min v(rly_g2) from=1.3 to=1.5
+  meas tran t_on when v(rly_g2)=vhi rise=1
+  meas tran t_hold when v(rly_g2)=vhi fall=last
+  meas tran t_off when v(rly_g2)=vlo fall=last
+  let d_on = (t_on - 0.05)*1e3
+  let d_hold = t_hold - 1.5
+  let d_off = t_off - 1.5
+  echo "RESULT nominal $t C: vmin {$&vmin} V, t_on {$&d_on} ms, t_hold {$&d_hold} s, t_off {$&d_off} s"
+end
+
+* --- 2. earliest release: small capacitors, low rail, slowest allowed rate ---
+alterparam c50v = 7.0u
+alterparam c51v = 3.3u
+alterparam rb1 = 99k
+alterparam rb2 = 99k
+alterparam vdd = 3.2
+alterparam fka = 25
+foreach t -20 27 70
+  if $t = -20
+    let vhi = 1.59
+  end
+  if $t = 27
+    let vhi = 1.45
+  end
+  if $t = 70
+    let vhi = 1.31
+  end
+  reset
+  set temp = $t
+  run
+  meas tran vmin min v(rly_g2) from=1.3 to=1.5
+  meas tran t_on when v(rly_g2)=vhi rise=1
+  meas tran t_hold when v(rly_g2)=vhi fall=last
+  let d_on = (t_on - 0.05)*1e3
+  let d_hold = t_hold - 1.5
+  let marg = vmin - vhi
+  echo "RESULT early corner $t C, 25 Hz, 3.2 V, C50 7.0 uF, C51 3.3 uF: vmin {$&vmin} V, margin over VHI {$&marg} V, t_on {$&d_on} ms, t_hold {$&d_hold} s"
+end
+alterparam fka = 100
+foreach t -20 70
+  if $t = -20
+    let vhi = 1.59
+  end
+  if $t = 70
+    let vhi = 1.31
+  end
+  reset
+  set temp = $t
+  run
+  meas tran vmin min v(rly_g2) from=1.3 to=1.5
+  meas tran t_hold when v(rly_g2)=vhi fall=last
+  let d_hold = t_hold - 1.5
+  let marg = vmin - vhi
+  echo "RESULT early corner $t C, 100 Hz, 3.2 V, C50 7.0 uF, C51 3.3 uF: vmin {$&vmin} V, margin over VHI {$&marg} V, t_hold {$&d_hold} s"
+end
+
+* --- 3. latest release: large capacitors, high rail ---
+alterparam c50v = 11u
+alterparam c51v = 5.2u
+alterparam rb1 = 101k
+alterparam rb2 = 101k
+alterparam vdd = 3.4
+alterparam fka = 100
+foreach t -20 27 70
+  if $t = -20
+    let vlo = 0.79
+  end
+  if $t = 27
+    let vlo = 0.65
+  end
+  if $t = 70
+    let vlo = 0.51
+  end
+  alterparam vstuck = 0
+  reset
+  set temp = $t
+  run
+  meas tran t_off when v(rly_g2)=vlo fall=last
+  let d_low = t_off - 1.5
+  echo "RESULT late corner $t C, 3.4 V, C50 11 uF, C51 5.2 uF, pin stops low: t_off {$&d_low} s"
+  alterparam vstuck = 3.4
+  reset
+  set temp = $t
+  run
+  meas tran t_off when v(rly_g2)=vlo fall=last
+  let d_high = t_off - 1.5
+  echo "RESULT late corner $t C, 3.4 V, C50 11 uF, C51 5.2 uF, pin stops high: t_off {$&d_high} s"
+end
+* The bound that does not rest on the leakage model: diodes at 27 C, where
+* the model leaks 0.2 uA against a bleed current of 10 uA or more, read at
+* the 70 C threshold. No real part is in this state; it is the upper limit.
+alterparam vstuck = 0
+reset
+set temp = 27
+run
+meas tran t_off when v(rly_g2)=0.51 fall=last
+let d_low = t_off - 1.5
+echo "RESULT late bound, 27 C diodes read at the 70 C threshold of 0.51 V, pin stops low: t_off {$&d_low} s"
+alterparam vstuck = 3.4
+reset
+set temp = 27
+run
+meas tran t_off when v(rly_g2)=0.51 fall=last
+let d_high = t_off - 1.5
+echo "RESULT late bound, 27 C diodes read at the 70 C threshold of 0.51 V, pin stops high: t_off {$&d_high} s"
+
+* --- 4. single faults, nominal parts, 27 C ---
+alterparam c50v = 10u
+alterparam c51v = 4.7u
+alterparam rb1 = 100k
+alterparam rb2 = 100k
+alterparam vdd = 3.3
+alterparam vstuck = 0
+
+alterparam rb1 = 1e12
+reset
+set temp = 27
+run
+meas tran t_off when v(rly_g2)=0.65 fall=last
+let d_off = t_off - 1.5
+echo "FAULT R14 or R90 open: t_off {$&d_off} s, pin low"
+alterparam c50v = 11u
+alterparam c51v = 5.2u
+alterparam vdd = 3.4
+alterparam rb2 = 101k
+alterparam vstuck = 0
+reset
+set temp = 27
+run
+meas tran t_off when v(rly_g2)=0.51 fall=last
+let d_off = t_off - 1.5
+echo "FAULT R14 or R90 open, late bound as above, pin stops low: t_off {$&d_off} s"
+alterparam vstuck = 3.4
+reset
+set temp = 27
+run
+meas tran t_off when v(rly_g2)=0.51 fall=last
+let d_off = t_off - 1.5
+echo "FAULT R14 or R90 open, late bound as above, pin stops high: t_off {$&d_off} s"
+alterparam c50v = 10u
+alterparam c51v = 4.7u
+alterparam vdd = 3.3
+alterparam rb1 = 100k
+alterparam rb2 = 100k
+alterparam vstuck = 0
+
+alterparam rc51sh = 1m
+reset
+set temp = 27
+run
+meas tran vmax max v(rly_g2)
+meas tran vend find v(rly_g2) at=5.9
+echo "FAULT C51 short, pin stops low: gate peak {$&vmax} V, {$&vend} V 4.4 s after the last edge"
+alterparam vstuck = 3.3
+reset
+set temp = 27
+run
+meas tran vend find v(rly_g2) at=5.9
+echo "FAULT C51 short, pin stops high: gate {$&vend} V 4.4 s after the last edge. Q2 stays on; channel A must act"
+alterparam vstuck = 0
+alterparam rc51sh = 1G
+
+alterparam rd22aser = 1e12
+reset
+set temp = 27
+run
+meas tran vmax max v(rly_g2) from=1.0 to=1.5
+echo "FAULT D22 ground diode open: gate at most {$&vmax} V between 1.0 and 1.5 s"
+alterparam rd22aser = 1m
+alterparam rd22ash = 1m
+reset
+set temp = 27
+run
+meas tran vmax max v(rly_g2)
+echo "FAULT D22 ground diode short: gate peak {$&vmax} V"
+alterparam rd22ash = 1G
+alterparam rd22bser = 1e12
+reset
+set temp = 27
+run
+meas tran vmax max v(rly_g2)
+echo "FAULT D22 output diode open: gate peak {$&vmax} V"
+alterparam rd22bser = 1m
+alterparam rd22bsh = 1m
+reset
+set temp = 27
+run
+meas tran vmax max v(rly_g2)
+meas tran vend find v(rly_g2) at=1.6
+echo "FAULT D22 output diode short, pin stops low: gate swings up to {$&vmax} V while toggling, below the 1.45 V that every part needs. {$&vend} V 0.1 s after the last edge"
+alterparam vstuck = 3.3
+reset
+set temp = 27
+run
+meas tran t_off when v(rly_g2)=0.65 fall=last
+let d_off = t_off - 1.5
+echo "FAULT D22 output diode short, pin stops high: below 0.65 V {$&d_off} s after the last edge"
+alterparam vstuck = 0
+alterparam rd22bsh = 1G
+
+alterparam r89v = 1e12
+reset
+set temp = 27
+run
+meas tran vmax max v(rly_g2)
+echo "FAULT R89 open: gate peak {$&vmax} V"
+alterparam r89v = 1m
+reset
+set temp = 27
+run
+meas tran vmin min v(rly_g2) from=1.3 to=1.5
+meas tran t_off when v(rly_g2)=0.65 fall=last
+let d_off = t_off - 1.5
+echo "FAULT R89 short: vmin {$&vmin} V, t_off {$&d_off} s"
+alterparam r89v = 1k
+
+alterparam c50v = 1.5n
+reset
+set temp = 27
+run
+meas tran icmin min i(vic) from=1.0 to=1.5
+meas tran icmax max i(vic) from=1.0 to=1.5
+meas tran vend find v(rly_g2) at=1.51
+let ia = icmin*1e3
+let im = icmax*1e3
+echo "FAULT C50 open (gate capacitance only), pin stops low: coil current swings from {$&ia} to {$&im} mA at 100 Hz, K1 may chatter. Gate {$&vend} V 10 ms after the last edge"
+alterparam vstuck = 3.3
+reset
+set temp = 27
+run
+meas tran t_off when v(rly_g2)=0.65 fall=last
+let d_off = t_off - 1.5
+echo "FAULT C50 open, pin stops high: below 0.65 V {$&d_off} s after the last edge"
+alterparam vstuck = 0
+alterparam c50v = 10u
+alterparam rc50sh = 1m
+reset
+set temp = 27
+run
+meas tran vmax max v(rly_g2)
+echo "FAULT C50 short: gate peak {$&vmax} V"
+alterparam rc50sh = 1G
+
+* --- 5. one rising edge, then the pin stays high: the pin-high self-test ---
+* The gate must be below the lowest threshold again when firmware reads the
+* drain, 1.0 s after the edge. Largest C51 against smallest C50 gives the
+* highest gate voltage; largest of both gives the slowest decay.
+alterparam ton = 0.052
+alterparam vdd = 3.4
+alterparam vstuck = 3.4
+alterparam rb1 = 101k
+alterparam rb2 = 101k
+foreach cc 7.0u 11u
+  alterparam c50v = $cc
+  alterparam c51v = 5.2u
+  reset
+  set temp = 27
+  run
+  meas tran vmax max v(rly_g2)
+  meas tran t_off when v(rly_g2)=0.51 fall=last
+  let d_off = t_off - 0.05
+  echo "RESULT one edge then high, C50 $cc, C51 5.2 uF, 27 C diodes: gate peaks at {$&vmax} V, below 0.51 V {$&d_off} s after the edge"
+end
+alterparam ton = 1.5
+alterparam vdd = 3.3
+alterparam vstuck = 0
+alterparam rb1 = 100k
+alterparam rb2 = 100k
+alterparam c50v = 10u
+alterparam c51v = 4.7u
+
+* --- 6. check with a FET and the coil, 27 C, nominal ---
+reset
+set temp = 27
+run
+meas tran ion find i(vic) at=1.49
+meas tran t_i2 when i(vic)=2m fall=last
+meas tran t_i8 when i(vic)=8m fall=last
+meas tran vg_i2 find v(rly_g2) when i(vic)=2m fall=last
+let d_i8 = t_i8 - 1.5
+let d_i2 = t_i2 - 1.5
+let ionm = ion*1e3
+echo "CHECK 1.05 V FET and coil, 27 C: coil current {$&ionm} mA while toggling, below 8 mA {$&d_i8} s and below 2 mA {$&d_i2} s after the last edge, gate {$&vg_i2} V at 2 mA"
+quit
+.endc
+.end

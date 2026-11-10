@@ -1,7 +1,7 @@
 * ZoneFlow half-wave input stage: ripple on VIN_DC
 * (docs/design/hardware-design.md section 4)
 *
-* Transformer (sine source + series resistance RT) -> D1 (M7) -> R1 (3.3 ohm)
+* Transformer (sine source + series resistance RT) -> D1 (M7) -> R1 (3.0 ohm)
 * -> C1 (470 uF bulk) -> constant-power load (the LM5164 buck input).
 *
 * Run:  ngspice -b supply.cir
@@ -14,7 +14,7 @@
 VAC  ac_l 0 SIN(0 {vrms*1.41421356} {freq})
 RT   ac_l ac_x {rt}
 D1   ac_x n1 M7
-R1   n1 n2 3.3
+R1   n1 n2 3.0
 VID  n2 vin DC 0
 C1   vin 0 {cbulk} IC={vrms*1.2}
 * constant-power load, clamped so the solver cannot divide by zero
@@ -43,7 +43,7 @@ foreach case 24:50:1.75 24:60:1.75 21.6:50:1.75 21.6:50:5.0 18:50:5.0 16:50:1.75
   meas tran idrms rms i(VID) from=0.3 to=0.5
   meas tran iload avg i(VIL) from=0.3 to=0.5
   let icap = sqrt(idrms*idrms - iload*iload)
-  let pr1 = idrms*idrms*3.3
+  let pr1 = idrms*idrms*3.0
   echo "RESULT $v VAC $f Hz, $p W: VIN_DC {$&vmin}..{$&vmax} V, diode peak {$&idpk} A, diode rms {$&idrms} A, capacitor ripple {$&icap} A rms, R1 loss {$&pr1} W"
 end
 quit

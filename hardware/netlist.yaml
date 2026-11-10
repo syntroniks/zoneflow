@@ -3,10 +3,12 @@
 # One entry per component: reference, part (value, package, LCSC number),
 # block, build variant and the net on every pin. Pin keys carry the pin number
 # where the datasheet was read for it, otherwise the pin name. This file and
-# the tables in docs/design/hardware-design.md describe the same circuit; if
-# they disagree, this file is right and the document has a defect.
+# the tables in docs/design/hardware-design.md describe the same circuit. This
+# file is the source: tools/designsync writes the tables from it and checks
+# the BOM and the pin map against it. Run "make -C hardware design-check".
 #
-# variant: all = fitted on both builds, 8 = fitted on the 8-zone build only.
+# variant: all = fitted on both builds, 8 = fitted on the 8-zone build only,
+# dnf = footprint on the board, no part fitted on either build.
 # NC = leave unconnected.
 
 schema_version: 1
@@ -21,7 +23,7 @@ components:
     variant: "all"
     note: "24 VAC input"
     pins:
-      "1": "AC_L"
+      "1": "AC_L_IN"
       "2": "AC_N"
   - ref: F1
     value: "Fuse 3 A time-lag in SMD holder"
@@ -29,10 +31,20 @@ components:
     lcsc: C206913
     block: "A power"
     variant: "all"
-    note: "Fuse in the ground leg"
+    note: "Fuse in the leg that becomes circuit ground"
     pins:
       "1": "AC_N"
       "2": "GND"
+  - ref: F4
+    value: "Fuse 3 A time-lag in SMD holder"
+    package: "SMD 9.7x5 mm"
+    lcsc: C206913
+    block: "A power"
+    variant: "all"
+    note: "Fuse in the other leg"
+    pins:
+      "1": "AC_L_IN"
+      "2": "AC_L"
   - ref: D1
     value: "TVS 48 V bidirectional 1500 W"
     package: "SMC"
@@ -54,12 +66,12 @@ components:
       "A": "AC_L"
       "K": "VRECT"
   - ref: R1
-    value: "3.3R 1% 1 W"
+    value: "3R 5% 1 W, surge series"
     package: "2512"
-    lcsc: C39347
+    lcsc: C2936639
     block: "A power"
     variant: "all"
-    note: "Limits charging and surge current"
+    note: "Limits charging and surge current. Pulse rating in section 4.4"
     pins:
       "1": "VRECT"
       "2": "VIN_DC"
@@ -279,7 +291,7 @@ components:
     block: "B valve common relay"
     variant: "all"
     pins:
-      "coil+": "V5"
+      "coil+": "V_BUCK"
       "coil-": "RLY_A"
       "contact 1": "AC_L"
       "contact 2": "COM"
@@ -292,14 +304,14 @@ components:
     note: "Coil flyback"
     pins:
       "A": "RLY_A"
-      "K": "V5"
+      "K": "V_BUCK"
   - ref: Q1
     value: "AO3400A N-MOSFET 30 V"
     package: "SOT-23"
     lcsc: C20917
     block: "B valve common relay"
     variant: "all"
-    note: "On when the expander bit COM_RELAY is high"
+    note: "On when the expander bit RLY_ON is high. Off within 0.1 ms when DRV_EN resets the expander"
     pins:
       "G": "RLY_G1"
       "S": "RLY_B"
@@ -328,48 +340,111 @@ components:
     lcsc: C20917
     block: "B valve common relay"
     variant: "all"
-    note: "On when DRV_EN is high"
+    note: "On while the relay detector sees keep-alive edges"
     pins:
       "G": "RLY_G2"
       "S": "GND"
       "D": "RLY_B"
-  - ref: D21
-    value: "1N4148W"
-    package: "SOD-123"
-    lcsc: C81598
-    block: "B valve common relay"
-    variant: "all"
-    note: "Lets DRV_EN charge C50 but not discharge it"
-    pins:
-      "A": "DRV_EN"
-      "K": "RLY_D"
-  - ref: R13
+  - ref: R89
     value: "1k 1%"
     package: "0603"
     lcsc: C21190
     block: "B valve common relay"
     variant: "all"
+    note: "Series resistor of the relay detector pump"
     pins:
-      "1": "RLY_D"
-      "2": "RLY_G2"
-  - ref: R14
-    value: "47k 1%"
-    package: "0603"
-    lcsc: C25819
+      "1": "KA"
+      "2": "KB_N0"
+  - ref: C51
+    value: "4.7 uF 25 V X5R"
+    package: "0805"
+    lcsc: C1779
     block: "B valve common relay"
     variant: "all"
-    note: "With C50, holds Q2 on for 30 to 50 ms after DRV_EN falls. Q1 does not wait, see section 7.2"
+    note: "Pump capacitor. The gate of Q2 has no other path from the pin"
+    pins:
+      "1": "KB_N0"
+      "2": "KB_N1"
+  - ref: D22
+    value: "BAT54S dual Schottky, series"
+    package: "SOT-23"
+    lcsc: C47546
+    block: "B valve common relay"
+    variant: "all"
+    note: "Its own package, not shared with D7"
+    pins:
+      "1 A": "GND"
+      "2 K": "RLY_G2"
+      "3 common": "KB_N1"
+  - ref: R14
+    value: "100k 1%"
+    package: "0603"
+    lcsc: C25803
+    block: "B valve common relay"
+    variant: "all"
+    note: "Bleed, with R90. Sets the relay hold-up"
+    pins:
+      "1": "RLY_G2"
+      "2": "GND"
+  - ref: R90
+    value: "100k 1%"
+    package: "0603"
+    lcsc: C25803
+    block: "B valve common relay"
+    variant: "all"
+    note: "Second bleed: one open resistor doubles the hold-up and no more"
     pins:
       "1": "RLY_G2"
       "2": "GND"
   - ref: C50
-    value: "1 uF 50 V X5R"
-    package: "0603"
-    lcsc: C15849
+    value: "10 uF 25 V X5R"
+    package: "0805"
+    lcsc: C15850
     block: "B valve common relay"
     variant: "all"
+    note: "Reservoir"
     pins:
       "1": "RLY_G2"
+      "2": "GND"
+  - ref: R93
+    value: "10k 1%"
+    package: "0603"
+    lcsc: C25804
+    block: "B valve common relay"
+    variant: "all"
+    note: "Pulls the node between Q1 and Q2 up, so that firmware can see Q2 off"
+    pins:
+      "1": "V_BUCK"
+      "2": "RLY_B"
+  - ref: R94
+    value: "100k 1%"
+    package: "0603"
+    lcsc: C25803
+    block: "B valve common relay"
+    variant: "all"
+    note: "Read-back divider to GPIO7"
+    pins:
+      "1": "RLY_B"
+      "2": "RLY_B_RB"
+  - ref: R95
+    value: "150k 1%"
+    package: "0603"
+    lcsc: C22807
+    block: "B valve common relay"
+    variant: "all"
+    note: "3.05 V at the pin when Q2 is off"
+    pins:
+      "1": "RLY_B_RB"
+      "2": "GND"
+  - ref: D23
+    value: "TVS 48 V bidirectional 600 W"
+    package: "SMB"
+    lcsc: C151264
+    block: "B valve common relay"
+    variant: "all"
+    note: "Clamps the valve common while K1 is open and when it opens under load"
+    pins:
+      "1": "COM"
       "2": "GND"
   - ref: JP1
     value: "Solder jumper, open"
@@ -455,6 +530,46 @@ components:
       "4 I/O2": "USB_DP"
       "5 VBUS": "VBUS"
       "6 I/O1": "USB_DM"
+  - ref: R97
+    value: "0R"
+    package: "0603"
+    lcsc: C21189
+    block: "C USB and 3V3"
+    variant: "all"
+    note: "Series footprint"
+    pins:
+      "1": "USB_DP"
+      "2": "USB_DP_MCU"
+  - ref: R98
+    value: "0R"
+    package: "0603"
+    lcsc: C21189
+    block: "C USB and 3V3"
+    variant: "all"
+    note: "Series footprint"
+    pins:
+      "1": "USB_DM"
+      "2": "USB_DM_MCU"
+  - ref: C52
+    value: "Not fitted"
+    package: "0603"
+    lcsc: null
+    block: "C USB and 3V3"
+    variant: "dnf"
+    note: "Footprint only"
+    pins:
+      "1": "USB_DP_MCU"
+      "2": "GND"
+  - ref: C53
+    value: "Not fitted"
+    package: "0603"
+    lcsc: null
+    block: "C USB and 3V3"
+    variant: "dnf"
+    note: "Footprint only"
+    pins:
+      "1": "USB_DM_MCU"
+      "2": "GND"
   - ref: C13
     value: "100 nF 50 V X7R"
     package: "0603"
@@ -534,14 +649,14 @@ components:
       "4 IO4": "SENS_RAIN"
       "5 IO5": "SENS_FLOW"
       "6 IO6": "SENS_AUX"
-      "7 IO7": "SENS_PWR_EN"
+      "7 IO7": "RLY_B_RB"
       "8 IO15": "ENC_A"
       "9 IO16": "ENC_B"
       "10 IO17": "ENC_SW"
       "11 IO18": "BTN_BACK"
       "12 IO8": "I2C0_SDA"
-      "13 IO19": "USB_DM"
-      "14 IO20": "USB_DP"
+      "13 IO19": "USB_DM_MCU"
+      "14 IO20": "USB_DP_MCU"
       "15 IO3": "VIN_MON"
       "16 IO46": "STATUS_LED"
       "17 IO9": "I2C0_SCL"
@@ -553,7 +668,7 @@ components:
       "23 IO21": "TFT_BL"
       "24 IO47": "QW_SDA"
       "25 IO48": "QW_SCL"
-      "26 IO45": "IO45"
+      "26 IO45": "SENS_PWR_EN"
       "27 IO0": "BOOT"
       "28 IO35": "NC"
       "29 IO36": "NC"
@@ -562,9 +677,9 @@ components:
       "32 IO39": "BTN_HOME"
       "33 IO40": "OC_FAULT_N"
       "34 IO41": "AC_ZC"
-      "35 IO42": "IO42"
+      "35 IO42": "DRV_EN_RB"
       "36 RXD0": "U0RXD"
-      "37 TXD0": "U0TXD"
+      "37 TXD0": "U0TXD_MCU"
       "38 IO2": "ADC_HI"
       "39 IO1": "ADC_LO"
       "40 GND": "GND"
@@ -606,6 +721,27 @@ components:
     variant: "all"
     pins:
       "1": "EN"
+      "2": "GND"
+  - ref: U12
+    value: "TLV803EA30DBZR supervisor 3.0 V, open drain, 200 ms"
+    package: "SOT-23"
+    lcsc: C5218924
+    block: "D MCU"
+    variant: "all"
+    note: "Holds EN low while 3V3 is below 3.0 V and for 200 ms after"
+    pins:
+      "1 GND": "GND"
+      "2 RESET": "EN"
+      "3 VDD": "3V3"
+  - ref: C54
+    value: "100 nF 50 V X7R"
+    package: "0603"
+    lcsc: C14663
+    block: "D MCU"
+    variant: "all"
+    note: "At U12"
+    pins:
+      "1": "3V3"
       "2": "GND"
   - ref: SW1
     value: "Tactile switch 5.1x5.1 mm, 1.5 mm high"
@@ -749,6 +885,16 @@ components:
       "4": "U0RXD"
       "5": "EN"
       "6": "BOOT"
+  - ref: R99
+    value: "0R"
+    package: "0603"
+    lcsc: C21189
+    block: "D MCU"
+    variant: "all"
+    note: "Series footprint"
+    pins:
+      "1": "U0TXD_MCU"
+      "2": "U0TXD"
   - ref: U5
     value: "TCA9539PWR 16-bit I2C expander with reset"
     package: "TSSOP-24"
@@ -791,6 +937,64 @@ components:
     pins:
       "1": "3V3"
       "2": "GND"
+  - ref: RN1
+    value: "100k x4 5% resistor array"
+    package: "0603x4"
+    lcsc: C1996
+    block: "E expander and drive enable"
+    variant: "all"
+    note: "Holds the valve pins at the LED supply while the expander is in reset"
+    pins:
+      "1": "ZD_Z1_N"
+      "8": "V_DRV"
+      "2": "ZD_Z2_N"
+      "7": "V_DRV"
+      "3": "ZD_Z3_N"
+      "6": "V_DRV"
+      "4": "ZD_Z4_N"
+      "5": "V_DRV"
+  - ref: RN2
+    value: "100k x4 5% resistor array"
+    package: "0603x4"
+    lcsc: C1996
+    block: "E expander and drive enable"
+    variant: "all"
+    note: "As RN1. Fitted on both builds, so that P10 to P13 never float"
+    pins:
+      "1": "ZD_Z5_N"
+      "8": "V_DRV"
+      "2": "ZD_Z6_N"
+      "7": "V_DRV"
+      "3": "ZD_Z7_N"
+      "6": "V_DRV"
+      "4": "ZD_Z8_N"
+      "5": "V_DRV"
+  - ref: RN3
+    value: "100k x4 5% resistor array"
+    package: "0603x4"
+    lcsc: C1996
+    block: "E expander and drive enable"
+    variant: "all"
+    note: "Spare pins held low"
+    pins:
+      "1": "P06"
+      "8": "GND"
+      "2": "P07"
+      "7": "GND"
+      "3": "P16"
+      "6": "GND"
+      "4": "P17"
+      "5": "GND"
+  - ref: R96
+    value: "100k 1%"
+    package: "0603"
+    lcsc: C25803
+    block: "E expander and drive enable"
+    variant: "all"
+    note: "As RN1, for the master valve pin"
+    pins:
+      "1": "ZD_MV_N"
+      "2": "V_DRV"
   - ref: R27
     value: "10k 1%"
     package: "0603"
@@ -842,9 +1046,9 @@ components:
       "1": "V5"
       "2": "GND"
   - ref: U7
-    value: "74HC00D quad NAND"
+    value: "74HC132D quad NAND, Schmitt-trigger inputs"
     package: "SOIC-14"
-    lcsc: C5586
+    lcsc: C5601
     block: "E expander and drive enable"
     variant: "all"
     pins:
@@ -912,6 +1116,16 @@ components:
     pins:
       "1": "V_DRV"
       "2": "GND"
+  - ref: R92
+    value: "10k 1%"
+    package: "0603"
+    lcsc: C25804
+    block: "E expander and drive enable"
+    variant: "all"
+    note: "Read-back of DRV_EN to GPIO42"
+    pins:
+      "1": "DRV_EN"
+      "2": "DRV_EN_RB"
   - ref: R33
     value: "10k 1%"
     package: "0603"
@@ -962,12 +1176,22 @@ components:
       "1": "KA_N2"
       "2": "GND"
   - ref: R30
-    value: "56k 1%"
+    value: "110k 1%"
     package: "0603"
-    lcsc: C23206
+    lcsc: C25805
     block: "F keep-alive detector"
     variant: "all"
-    note: "Sets the hold-up time"
+    note: "Bleed, with R91. Sets the hold-up time"
+    pins:
+      "1": "KA_N2"
+      "2": "GND"
+  - ref: R91
+    value: "110k 1%"
+    package: "0603"
+    lcsc: C25805
+    block: "F keep-alive detector"
+    variant: "all"
+    note: "Second bleed: one open resistor doubles the hold-up and no more"
     pins:
       "1": "KA_N2"
       "2": "GND"
@@ -1488,9 +1712,9 @@ components:
     lcsc: C5329582
     block: "J display"
     variant: "all"
-    note: "Not a schematic symbol; listed for the BOM"
+    note: "Not a schematic symbol; listed for the BOM. Its tail plugs into J7"
     pins:
-      "FPC": "J7"
+      "FPC": "NC"
   - ref: R60
     value: "33R 1% 0.25 W"
     package: "1206"
@@ -1954,6 +2178,16 @@ components:
     pins:
       "1": "SP_OUT"
       "2": "GND"
+  - ref: D24
+    value: "SS34 Schottky 3 A 40 V"
+    package: "SMA"
+    lcsc: C8678
+    block: "L sensor inputs and sensor supply"
+    variant: "all"
+    note: "Keeps the switch output above -0.3 V on a negative miswire"
+    pins:
+      "A": "GND"
+      "K": "SP_OUT"
   - ref: R83
     value: "200k 1%"
     package: "0603"
@@ -1979,6 +2213,7 @@ components:
     lcsc: C25803
     block: "L sensor inputs and sensor supply"
     variant: "all"
+    note: "Keeps the switch off, and GPIO45 low, at reset"
     pins:
       "1": "SENS_PWR_EN"
       "2": "GND"
@@ -2040,9 +2275,9 @@ components:
       "1": "SENS_5V"
       "2": "GND"
   - ref: F101
-    value: "PTC 1.1 A hold, 60 V"
+    value: "PTC 1.1 A hold, 60 V, 40 A maximum"
     package: "2920"
-    lcsc: C315903
+    lcsc: C3020148
     block: "Z output channels"
     variant: "all"
     note: "Fault limiter"
@@ -2060,9 +2295,9 @@ components:
       "1": "OUT_Z1"
       "2": "ISNS"
   - ref: Q101
-    value: "T410-600B-TR triac 4 A 600 V, 3-quadrant"
+    value: "T810-600B-TR triac 8 A 600 V, 3-quadrant"
     package: "DPAK"
-    lcsc: C2970064
+    lcsc: C155588
     block: "Z output channels"
     variant: "all"
     pins:
@@ -2085,10 +2320,10 @@ components:
     lcsc: C18741
     block: "Z output channels"
     variant: "all"
-    note: "Snubber"
+    note: "Snubber, returned to the shunt so that a shorted capacitor shows as current"
     pins:
       "1": "SNB_Z1"
-      "2": "GND"
+      "2": "ISNS"
   - ref: U101
     value: "MOC3023SR2M random-phase opto-triac"
     package: "SMD-6"
@@ -2153,9 +2388,9 @@ components:
       "A": "LEDA_Z1"
       "K": "ZD_Z1_N"
   - ref: F201
-    value: "PTC 1.1 A hold, 60 V"
+    value: "PTC 1.1 A hold, 60 V, 40 A maximum"
     package: "2920"
-    lcsc: C315903
+    lcsc: C3020148
     block: "Z output channels"
     variant: "all"
     note: "Fault limiter"
@@ -2173,9 +2408,9 @@ components:
       "1": "OUT_Z2"
       "2": "ISNS"
   - ref: Q201
-    value: "T410-600B-TR triac 4 A 600 V, 3-quadrant"
+    value: "T810-600B-TR triac 8 A 600 V, 3-quadrant"
     package: "DPAK"
-    lcsc: C2970064
+    lcsc: C155588
     block: "Z output channels"
     variant: "all"
     pins:
@@ -2198,10 +2433,10 @@ components:
     lcsc: C18741
     block: "Z output channels"
     variant: "all"
-    note: "Snubber"
+    note: "Snubber, returned to the shunt so that a shorted capacitor shows as current"
     pins:
       "1": "SNB_Z2"
-      "2": "GND"
+      "2": "ISNS"
   - ref: U201
     value: "MOC3023SR2M random-phase opto-triac"
     package: "SMD-6"
@@ -2266,9 +2501,9 @@ components:
       "A": "LEDA_Z2"
       "K": "ZD_Z2_N"
   - ref: F301
-    value: "PTC 1.1 A hold, 60 V"
+    value: "PTC 1.1 A hold, 60 V, 40 A maximum"
     package: "2920"
-    lcsc: C315903
+    lcsc: C3020148
     block: "Z output channels"
     variant: "all"
     note: "Fault limiter"
@@ -2286,9 +2521,9 @@ components:
       "1": "OUT_Z3"
       "2": "ISNS"
   - ref: Q301
-    value: "T410-600B-TR triac 4 A 600 V, 3-quadrant"
+    value: "T810-600B-TR triac 8 A 600 V, 3-quadrant"
     package: "DPAK"
-    lcsc: C2970064
+    lcsc: C155588
     block: "Z output channels"
     variant: "all"
     pins:
@@ -2311,10 +2546,10 @@ components:
     lcsc: C18741
     block: "Z output channels"
     variant: "all"
-    note: "Snubber"
+    note: "Snubber, returned to the shunt so that a shorted capacitor shows as current"
     pins:
       "1": "SNB_Z3"
-      "2": "GND"
+      "2": "ISNS"
   - ref: U301
     value: "MOC3023SR2M random-phase opto-triac"
     package: "SMD-6"
@@ -2379,9 +2614,9 @@ components:
       "A": "LEDA_Z3"
       "K": "ZD_Z3_N"
   - ref: F401
-    value: "PTC 1.1 A hold, 60 V"
+    value: "PTC 1.1 A hold, 60 V, 40 A maximum"
     package: "2920"
-    lcsc: C315903
+    lcsc: C3020148
     block: "Z output channels"
     variant: "all"
     note: "Fault limiter"
@@ -2399,9 +2634,9 @@ components:
       "1": "OUT_Z4"
       "2": "ISNS"
   - ref: Q401
-    value: "T410-600B-TR triac 4 A 600 V, 3-quadrant"
+    value: "T810-600B-TR triac 8 A 600 V, 3-quadrant"
     package: "DPAK"
-    lcsc: C2970064
+    lcsc: C155588
     block: "Z output channels"
     variant: "all"
     pins:
@@ -2424,10 +2659,10 @@ components:
     lcsc: C18741
     block: "Z output channels"
     variant: "all"
-    note: "Snubber"
+    note: "Snubber, returned to the shunt so that a shorted capacitor shows as current"
     pins:
       "1": "SNB_Z4"
-      "2": "GND"
+      "2": "ISNS"
   - ref: U401
     value: "MOC3023SR2M random-phase opto-triac"
     package: "SMD-6"
@@ -2492,9 +2727,9 @@ components:
       "A": "LEDA_Z4"
       "K": "ZD_Z4_N"
   - ref: F501
-    value: "PTC 1.1 A hold, 60 V"
+    value: "PTC 1.1 A hold, 60 V, 40 A maximum"
     package: "2920"
-    lcsc: C315903
+    lcsc: C3020148
     block: "Z output channels"
     variant: "8"
     note: "Fault limiter"
@@ -2512,9 +2747,9 @@ components:
       "1": "OUT_Z5"
       "2": "ISNS"
   - ref: Q501
-    value: "T410-600B-TR triac 4 A 600 V, 3-quadrant"
+    value: "T810-600B-TR triac 8 A 600 V, 3-quadrant"
     package: "DPAK"
-    lcsc: C2970064
+    lcsc: C155588
     block: "Z output channels"
     variant: "8"
     pins:
@@ -2537,10 +2772,10 @@ components:
     lcsc: C18741
     block: "Z output channels"
     variant: "8"
-    note: "Snubber"
+    note: "Snubber, returned to the shunt so that a shorted capacitor shows as current"
     pins:
       "1": "SNB_Z5"
-      "2": "GND"
+      "2": "ISNS"
   - ref: U501
     value: "MOC3023SR2M random-phase opto-triac"
     package: "SMD-6"
@@ -2605,9 +2840,9 @@ components:
       "A": "LEDA_Z5"
       "K": "ZD_Z5_N"
   - ref: F601
-    value: "PTC 1.1 A hold, 60 V"
+    value: "PTC 1.1 A hold, 60 V, 40 A maximum"
     package: "2920"
-    lcsc: C315903
+    lcsc: C3020148
     block: "Z output channels"
     variant: "8"
     note: "Fault limiter"
@@ -2625,9 +2860,9 @@ components:
       "1": "OUT_Z6"
       "2": "ISNS"
   - ref: Q601
-    value: "T410-600B-TR triac 4 A 600 V, 3-quadrant"
+    value: "T810-600B-TR triac 8 A 600 V, 3-quadrant"
     package: "DPAK"
-    lcsc: C2970064
+    lcsc: C155588
     block: "Z output channels"
     variant: "8"
     pins:
@@ -2650,10 +2885,10 @@ components:
     lcsc: C18741
     block: "Z output channels"
     variant: "8"
-    note: "Snubber"
+    note: "Snubber, returned to the shunt so that a shorted capacitor shows as current"
     pins:
       "1": "SNB_Z6"
-      "2": "GND"
+      "2": "ISNS"
   - ref: U601
     value: "MOC3023SR2M random-phase opto-triac"
     package: "SMD-6"
@@ -2718,9 +2953,9 @@ components:
       "A": "LEDA_Z6"
       "K": "ZD_Z6_N"
   - ref: F701
-    value: "PTC 1.1 A hold, 60 V"
+    value: "PTC 1.1 A hold, 60 V, 40 A maximum"
     package: "2920"
-    lcsc: C315903
+    lcsc: C3020148
     block: "Z output channels"
     variant: "8"
     note: "Fault limiter"
@@ -2738,9 +2973,9 @@ components:
       "1": "OUT_Z7"
       "2": "ISNS"
   - ref: Q701
-    value: "T410-600B-TR triac 4 A 600 V, 3-quadrant"
+    value: "T810-600B-TR triac 8 A 600 V, 3-quadrant"
     package: "DPAK"
-    lcsc: C2970064
+    lcsc: C155588
     block: "Z output channels"
     variant: "8"
     pins:
@@ -2763,10 +2998,10 @@ components:
     lcsc: C18741
     block: "Z output channels"
     variant: "8"
-    note: "Snubber"
+    note: "Snubber, returned to the shunt so that a shorted capacitor shows as current"
     pins:
       "1": "SNB_Z7"
-      "2": "GND"
+      "2": "ISNS"
   - ref: U701
     value: "MOC3023SR2M random-phase opto-triac"
     package: "SMD-6"
@@ -2831,9 +3066,9 @@ components:
       "A": "LEDA_Z7"
       "K": "ZD_Z7_N"
   - ref: F801
-    value: "PTC 1.1 A hold, 60 V"
+    value: "PTC 1.1 A hold, 60 V, 40 A maximum"
     package: "2920"
-    lcsc: C315903
+    lcsc: C3020148
     block: "Z output channels"
     variant: "8"
     note: "Fault limiter"
@@ -2851,9 +3086,9 @@ components:
       "1": "OUT_Z8"
       "2": "ISNS"
   - ref: Q801
-    value: "T410-600B-TR triac 4 A 600 V, 3-quadrant"
+    value: "T810-600B-TR triac 8 A 600 V, 3-quadrant"
     package: "DPAK"
-    lcsc: C2970064
+    lcsc: C155588
     block: "Z output channels"
     variant: "8"
     pins:
@@ -2876,10 +3111,10 @@ components:
     lcsc: C18741
     block: "Z output channels"
     variant: "8"
-    note: "Snubber"
+    note: "Snubber, returned to the shunt so that a shorted capacitor shows as current"
     pins:
       "1": "SNB_Z8"
-      "2": "GND"
+      "2": "ISNS"
   - ref: U801
     value: "MOC3023SR2M random-phase opto-triac"
     package: "SMD-6"
@@ -2944,9 +3179,9 @@ components:
       "A": "LEDA_Z8"
       "K": "ZD_Z8_N"
   - ref: F901
-    value: "PTC 1.1 A hold, 60 V"
+    value: "PTC 1.1 A hold, 60 V, 40 A maximum"
     package: "2920"
-    lcsc: C315903
+    lcsc: C3020148
     block: "Z output channels"
     variant: "all"
     note: "Fault limiter"
@@ -2964,9 +3199,9 @@ components:
       "1": "OUT_MV"
       "2": "ISNS"
   - ref: Q901
-    value: "T410-600B-TR triac 4 A 600 V, 3-quadrant"
+    value: "T810-600B-TR triac 8 A 600 V, 3-quadrant"
     package: "DPAK"
-    lcsc: C2970064
+    lcsc: C155588
     block: "Z output channels"
     variant: "all"
     pins:
@@ -2989,10 +3224,10 @@ components:
     lcsc: C18741
     block: "Z output channels"
     variant: "all"
-    note: "Snubber"
+    note: "Snubber, returned to the shunt so that a shorted capacitor shows as current"
     pins:
       "1": "SNB_MV"
-      "2": "GND"
+      "2": "ISNS"
   - ref: U901
     value: "MOC3023SR2M random-phase opto-triac"
     package: "SMD-6"
@@ -3247,7 +3482,7 @@ components:
     block: "T test pads"
     variant: "all"
     pins:
-      "1": "IO42"
+      "1": "RLY_B"
   - ref: TP25
     value: "Test pad"
     package: "PCB"
@@ -3255,7 +3490,7 @@ components:
     block: "T test pads"
     variant: "all"
     pins:
-      "1": "IO45"
+      "1": "SENS_PWR_EN"
   - ref: TP26
     value: "Test pad"
     package: "PCB"
