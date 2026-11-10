@@ -3,6 +3,9 @@
 For whoever writes the browser UI of the standalone firmware. It states what
 the firmware provides and expects. Nothing here has run on hardware yet.
 
+The UI that implements it is in `firmware/zoneflow-fw/web/` (developer guide
+in its `README.md`); `npm run build` there writes `www/`.
+
 ## Where the files go
 
 | Item | Contract |
