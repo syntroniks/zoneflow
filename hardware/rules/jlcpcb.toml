@@ -1,0 +1,42 @@
+# JLCPCB fabrication limits used as DRC minimums.
+#
+# Source: https://jlcpcb.com/capabilities/Capabilities
+# Read on 2026-11-10 (the page carries no revision date). Values are for
+# 1 oz outer copper on standard FR-4. Check the page again before an order;
+# JLCPCB changes it without notice.
+#
+# Where the 2-layer and multilayer (4+) values differ, the stricter one is
+# used so one rule set covers both stackups. The comment gives the page text.
+
+[source]
+url = "https://jlcpcb.com/capabilities/Capabilities"
+read = "2026-11-10"
+
+[board]
+# "0.10 / 0.10 mm (4 / 4 mil)" for 1 oz, 1-2 layer; "Multilayer: 0.09 / 0.09 mm".
+min_track_width = 0.10
+min_clearance = 0.10
+# "Preferred Min. Via hole size: 0.2mm". Holes of 0.1 or 0.15 mm, and 0.2 or
+# 0.25 mm holes with a via diameter under 0.45 mm, "will cost more"; the
+# absolute minimum is 0.15 mm hole / 0.25 mm diameter. These two values keep
+# the board in the no-surcharge range.
+min_through_hole_diameter = 0.20
+min_via_diameter = 0.45
+# (0.45 - 0.20) / 2, the ring of the smallest no-surcharge via.
+min_via_annular_width = 0.125
+# "Via Hole-to-Hole Spacing 0.2mm". Pad holes need 0.45 mm; see jlcpcb.kicad_dru.
+min_hole_to_hole = 0.20
+# "Via hole to Track 0.2mm", "NPTH to Track 0.2mm". PTH pads need 0.28 mm; see jlcpcb.kicad_dru.
+min_hole_clearance = 0.20
+# "Copper clearance from routed board edges: >=0.2 mm" (V-cut edges need 0.4 mm).
+min_copper_edge_clearance = 0.20
+# "Minimum text height 40 mil (1.0mm)", "Minimum Line Width >=0.15mm".
+min_text_height = 1.00
+min_text_thickness = 0.15
+# Silkscreen to silkscreen: no JLCPCB figure; 0 keeps KiCad's default. The
+# "Pad To Silkscreen 0.15mm" limit is a rule in jlcpcb.kicad_dru.
+min_silk_clearance = 0.0
+
+[mask]
+# "Min. pad spacing: 0.10 mm (green, red, yellow, blue, purple)"; 0.13 mm for black or white.
+solder_mask_min_width = 0.10
