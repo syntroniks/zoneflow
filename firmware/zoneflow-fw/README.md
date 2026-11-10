@@ -80,7 +80,7 @@ CI checks formatting with the same clang-format version.
 
 - Host tests: `test/host/run.sh`, all suites pass under ASan and UBSan.
 - `idf.py build` with ESP-IDF v5.5.6 for esp32s3 completes with no warnings
-  in ZoneFlow code. Image size 1 476 571 bytes (46.9 % of an OTA slot).
+  in ZoneFlow code. Image size 1 501 983 bytes (35.8 % of a 4 MB OTA slot).
 - Nothing has run on an ESP32-S3. Pin assignments, the output-enable
   timing, the current-sense scaling and the PCF8563 driver are untested
   against hardware. So are WiFi, provisioning with a phone, mDNS, the HTTP

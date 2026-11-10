@@ -312,8 +312,27 @@ Phase 2 exception: network status lives in `zf_net`'s own `NetStatusStore`
 sequence counter) instead of `SystemState`, because `zf_core` was being
 hardened on another branch at the same time. Readers use `net::status()` and
 `net::statusSequence()`; the event stream merges it into its `state`
-message. Moving it into `SystemState` is a small follow-up once both branches
-are merged.
+message.
+
+Reviewed again after the core hardening merged: moving it into `SystemState`
+is **not** a clean, additive change, so it stays in `zf_net`:
+
+- Only the control task writes `SystemState`, and it builds each snapshot
+  from its own members. The network status comes from the `zf_net` task. It
+  would have to reach the controller either as a command (a `Command` is a
+  small struct in a 16-entry queue; the status is about 200 bytes of SSID,
+  addresses and counters) or as a new `ControllerDeps` source read under a
+  lock on every publish. The second changes `ControllerDeps`, so every place
+  that constructs a `Controller` (`app_main`, the host tests, other
+  branches) changes too.
+- Readers that want to wake on a network change would need a new
+  `EventType`. Appending one breaks every exhaustive `switch` on another
+  branch again (`-Werror=switch`), right after the hardening did the same.
+- Every reader copies `SystemState`, the display at its frame rate. Most do
+  not need the network block.
+
+A reader that needs both takes `state.snapshot()` and `net::status()` and
+compares `state.sequence()` and `net::statusSequence()`.
 
 ## 5. Scheduler
 
@@ -712,6 +731,26 @@ every 30 s. See section 4 for why it is not in `SystemState` yet.
 - **Stop one zone.** The core has no "remove this queue entry" command, so
   `POST /zones/{n}/stop` skips the head entry when that zone is running and
   answers 409 otherwise.
+- **Run commands and `CommandRejected`.** `RunZone` and `RunProgram` are the
+  commands the controller can refuse. The API first answers what the snapshot
+  already shows (locked-out zone, resting zone with `Retry-After`, locked-out
+  master, maintenance, no 24 VAC). Otherwise it arms a `CommandWatch` (an
+  `EventBus` subscriber that only stores atomics on the control task), posts
+  the command and waits at most 250 ms: a matching `CommandRejected` becomes
+  an error with the controller's `RunError` as `code`; a snapshot published
+  after the post plus one more control period without a rejection becomes
+  202 `"confirmed": true`; a timeout becomes 202 `"confirmed": false`. Commands
+  carry no request id, so matching is by command type, zone and program, and
+  the API runs one such wait at a time. Tested end to end with the real
+  `Controller` (`ApiWithController.*`). Details and the error codes:
+  [API reference, run commands](../firmware/api.md#run-commands).
+- **Hardening state in the API.** Zones show `resting` and
+  `rest_remaining_s`; the master shows `locked_out` and `fault_count`;
+  `inhibit.master_lockout`; sensors show `current_sense_available` and
+  `over_current_tripped`; the queue shows `pause_timeout_min`. New events
+  `command_rejected`, `run_dropped` and `pause_expired` go to the stream with
+  their data. A restore or `PUT /config` of a newer schema answers 400
+  `unsupported_schema` with the core's path (`schema`) and message.
 - **Event stream: SSE**, not WebSocket (reasons in the
   [API reference](../firmware/api.md#live-event-stream)). The bus handler is
   `platform::EventQueueSubscriber` (copy into a 32-entry queue, never waits).
@@ -764,37 +803,46 @@ every 30 s. See section 4 for why it is not in `SystemState` yet.
 
 ## 15. Memory and flash budget
 
-Measured by `idf.py size` (ESP-IDF v5.5.6, esp32s3, `-Os`):
+Measured by `idf.py size` (ESP-IDF v5.5.6, esp32s3, `-Os`, WROOM-1-N16R8
+configuration from `sdkconfig.defaults`):
 
-| | Phase 1 (`a5081cf`) | Phase 2 (this branch) |
+| | `main` after the core hardening (`d6685a3`) | This branch |
 |---|---|---|
-| Application image | 420 919 B | 1 476 571 B (46.9 % of the 3 MB OTA slot) |
-| Flash code (`.text`) | 270 848 B | 1 033 364 B |
-| Flash data (`.rodata`) | 80 880 B | 312 932 B |
-| Internal RAM used statically (DIRAM `.text` + `.data` + `.bss`) | 78 455 B | 155 907 B |
-| Internal RAM left for heap and stacks (DIRAM remaining) | 263 305 B | 185 853 B |
+| Application image | 442 615 B | 1 501 983 B (35.8 % of a 4 MB OTA slot) |
+| Flash code (`.text`) | 280 816 B | 1 046 276 B |
+| Flash data (`.rodata`) | 84 136 B | 316 916 B |
+| Internal RAM used statically (DIRAM `.text` + `.data` + `.bss`) | 93 663 B | 171 623 B |
+| Internal RAM left for heap and stacks (DIRAM remaining) | 248 097 B | 170 137 B |
 
 Most of the growth is the WiFi and BLE stacks, mbedTLS (TLS server and
 client, X.509 writing), the provisioning manager, the HTTP servers, mDNS and
-LittleFS. The image leaves 1.6 MB of headroom in each OTA slot.
+LittleFS. The image leaves about 2.6 MB of headroom in each OTA slot.
+
+The module has 8 MB of octal PSRAM, and `main` enables it for `malloc`
+(`CONFIG_SPIRAM_USE_MALLOC`). Blocks of 16 KB or more go to PSRAM
+(`CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=16384`), and 32 KB of internal RAM is
+kept for DMA and drivers (`CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL=32768`).
+WiFi and lwIP buffers stay internal (`CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP`
+is off).
 
 Heap at run time has not been measured; no board exists. Estimates, with
 their sources:
 
 | Consumer | Estimate | Basis |
 |---|---|---|
-| Free internal heap after static allocation | about 181 KB | DIRAM remaining in the table above, before any task or driver allocates |
-| WiFi driver (station) | 40 to 60 KB, rough | 10 static RX buffers of about 1.6 KB (`CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=10`) are allocated at start; up to 32 dynamic RX and 32 dynamic TX buffers come and go with traffic; plus driver state. The range is a guess to be replaced by a measurement |
+| Free internal heap after static allocation | about 166 KB | DIRAM remaining in the table above, before any task or driver allocates |
+| WiFi driver (station) | 40 to 60 KB internal, rough | 10 static RX buffers of about 1.6 KB (`CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=10`) are allocated at start; up to 32 dynamic RX and 32 dynamic TX buffers come and go with traffic; plus driver state. The range is a guess to be replaced by a measurement |
 | NimBLE + BLE controller, provisioning only | about 60 to 100 KB | Released after provisioning; the prior-art survey cites about 110 KB for BLE provisioning |
-| Task stacks added in phase 2 | 35 KB | httpd 12 + SSE 6 + net 6 + DNS 3 (setup only) + OTA pull 8 (while pulling) |
-| One TLS session (HTTPS on, or OTA pull) | 20 to 40 KB | mbedTLS with `CONFIG_MBEDTLS_DYNAMIC_BUFFER`; worst case is a 16 KB record each way |
-| Config copies during a request | up to about 20 KB | JSON text (up to 16 KB body) plus a cJSON tree and one `Config` struct (about 2 KB) |
+| Task stacks added in phase 2 | 35 KB internal | httpd 12 + SSE 6 + net 6 + DNS 3 (setup only) + OTA pull 8 (while pulling) |
+| One TLS session (HTTPS on, or OTA pull) | 20 to 40 KB | mbedTLS with `CONFIG_MBEDTLS_DYNAMIC_BUFFER`; worst case is a 16 KB record each way, which lands in PSRAM |
+| Config copies during a request | up to about 20 KB | JSON text (up to 16 KB body, in PSRAM at that size) plus a cJSON tree of small blocks and one `Config` struct (about 2 KB) |
 
-The tightest case is a provisioning session (BLE stack and WiFi together)
-followed by an HTTPS session; it should fit in the internal heap but must be
-measured on the first board (`GET /api/v1/info` reports `heap.free`,
-`heap.min_free` and `http_stack_free_min`). The module has PSRAM (spec 3.1);
-enabling it for WiFi/TLS buffers is a lever if the measurement says so.
+The tightest case for internal RAM is a BLE provisioning session (BT stack
+and WiFi together). With large blocks now in PSRAM it should fit, but it
+must be measured on the first board: `GET /api/v1/info` reports `heap.free` and
+`heap.min_free` (all 8-bit heap, PSRAM included), `heap.internal_free` and
+`heap.internal_min_free` (internal RAM only) and `http_stack_free_min`. If internal RAM is short, turning on
+`CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP` is the next lever.
 
 ## 16. Decisions made in phase 2
 
@@ -809,7 +857,11 @@ enabling it for WiFi/TLS buffers is a lever if the measurement says so.
   cookie, Host-header check. See [firmware security](firmware-security.md).
 - **Configuration edits as JSON patches** of the stored document, so the API
   adds no second validator.
-- **Network status outside `SystemState`** for now (section 4).
+- **Network status outside `SystemState`**, also after the core hardening
+  (section 4 gives the reasons).
+- **Run commands wait up to 250 ms for a verdict** rather than always
+  answering 202, so a caller learns about a locked-out or resting zone from
+  the answer; the stream still carries every rejection.
 - **Requests run on the HTTP task with a 12 KB stack** rather than a separate
   worker task: one place to size, measured at run time.
 - **Managed components** `espressif/mdns` 1.14.1 and `joltwallet/littlefs`
