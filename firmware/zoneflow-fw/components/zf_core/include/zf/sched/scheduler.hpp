@@ -175,6 +175,8 @@ public:
     void tick();
 
     QueueState queueState() const { return state_; }
+    // Time since the first pause while the queue is paused, else 0.
+    MonoMs pausedForMs() const { return state_ == QueueState::Paused ? clock_.monoMs() - pausedAtMs_ : 0; }
     std::size_t queueSize() const { return count_; }
     const RunEntry *entry(std::size_t i) const { return i < count_ ? &queue_[i] : nullptr; }
     bool programQueued(uint16_t programId) const;

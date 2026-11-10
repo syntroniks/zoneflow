@@ -142,6 +142,18 @@ private:
     bool tripSeen_ = false;
     MonoMs nextTripClearMs_ = 0;
 
+    // The run each zone has open, for RunEnded (history).
+    struct OpenRun {
+        bool open = false;
+        MonoMs openedMs = 0;
+        uint16_t plannedSec = 0;
+        RunSource source = RunSource::ManualZone;
+        uint16_t programId = 0;
+        uint64_t startPulses = 0;
+    };
+    std::array<OpenRun, kMaxZones> runs_{};
+    void trackRun(ZoneIndex zone, ValveState state, StopReason reason);
+
     PersistMailbox persist_;
     bool persistDirty_ = false;
     MonoMs lastPersistMs_ = 0;

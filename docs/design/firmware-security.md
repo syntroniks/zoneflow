@@ -328,6 +328,8 @@ login.
 | No secrets in backup or network status | `Api::configBackup`, `Api::networkGet` | `web_api_test.cpp` |
 | MQTT password and CA write-only, outside the configuration | `Api::mqttGet`, `Api::mqttPut`, `zf_mqtt/src/mqtt.cpp` | `web_mqtt_api_test.cpp`, `mqtt_config_test.cpp` |
 | MQTT command validation, retained and empty messages, rate limit | `zf_mqtt/src/mqtt_logic.cpp` | `mqtt_logic_test.cpp`; broker test `test/broker/run.sh` |
+| History: Read access (follows `protect_reads`), query parameters range-checked, no secrets recorded (events only: no passwords, tokens, setup code or MQTT secrets); erased by a factory reset (NVS) | `Api::historyGet`, `historyFromEvent` | `web_api_test.cpp` (History*), `history_test.cpp` |
+| First-run flag: Admin route, 64-byte body cap, one boolean, stored with the web settings (not in a backup) | `Api::setupPut` | `web_api_test.cpp` (SetupCompleteIsStoredAndNeedsASession), `web_openapi_test.cpp` |
 | Setup-AP detection, core dump erase, task affinity, TLS key timing | `web.cpp`, `net.cpp`, `sdkconfig.defaults` | none; compiled with `idf.py build` |
 
 ## 7. Residual risks and known gaps

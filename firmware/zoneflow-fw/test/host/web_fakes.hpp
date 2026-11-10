@@ -105,6 +105,8 @@ public:
     bool mqttStoreFails = false;
     int mqttSecretWrites = 0;
     mqtt::MqttStatus mqttStatus() const override { return mqtt; }
+    const HistoryLog *historyLog = nullptr;
+    const HistoryLog *history() const override { return historyLog; }
     web::MqttSecretsInfo mqttSecrets() const override { return {!mqttPassword.empty(), !mqttCa.empty()}; }
     bool setMqttSecrets(std::optional<std::string_view> password, std::optional<std::string_view> caPem) override
     {

@@ -93,6 +93,13 @@ public:
     // Volume since the last markSession() call (e.g. per zone run).
     float sessionLitres() const;
     void markSession() { sessionStart_ = total_; }
+    // Volume counted since the counter stood at startPulses (totalPulses()).
+    float litresSince(uint64_t startPulses) const
+    {
+        return cfg_.pulsesPerLitre > 0.0f && total_ >= startPulses
+                   ? static_cast<float>(total_ - startPulses) / cfg_.pulsesPerLitre
+                   : 0.0f;
+    }
 
 private:
     static constexpr std::size_t kWindow = 6; // samples, one per second

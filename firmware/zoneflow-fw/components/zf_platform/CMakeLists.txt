@@ -1,6 +1,7 @@
 # ESP-IDF implementations of the zf_core interfaces.
 idf_component_register(
     SRCS src/event_log.cpp
+         src/history_recorder.cpp
          src/outputs.cpp
          src/persist_writer.cpp
          src/safety.cpp
