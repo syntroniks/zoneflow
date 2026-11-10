@@ -1,0 +1,363 @@
+(footprint "RotaryEncoder_Alps_EC11J15"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "ALPS EC11J15 series reflow encoder with switch (EC11J1525402). A, C, B at +y. S1 and S2 are the switch terminals D and E")
+	(tags "rotary encoder switch EC11J SMD")
+	(property "Reference" "REF**"
+		(at 0 -10.8 0)
+		(layer "F.SilkS")
+		(uuid "f30b0e70-ab1d-57cd-bf90-1833dab81c3d")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Value" "RotaryEncoder_Alps_EC11J15"
+		(at 0 10.9 0)
+		(layer "F.Fab")
+		(uuid "0fafbdf4-9e59-591c-bb06-8d852f130f5e")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "df859f9e-22eb-5e46-94a2-59a20315f4ff")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "821cbe60-d62e-5f8c-a556-115d77ef3d5c")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(attr smd)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_line
+		(start -5.97 -6.1)
+		(end -5.97 -2.4)
+		(stroke
+			(width 0.12)
+			(type default)
+		)
+		(layer "F.SilkS")
+		(uuid "8a116d17-39c3-5a7f-a97c-f8b2d134cb77")
+	)
+	(fp_line
+		(start -5.97 2.4)
+		(end -5.97 6.1)
+		(stroke
+			(width 0.12)
+			(type default)
+		)
+		(layer "F.SilkS")
+		(uuid "3aec72cb-eae3-5449-8c54-ce9fc1e0c016")
+	)
+	(fp_line
+		(start 5.97 -6.1)
+		(end 5.97 -2.4)
+		(stroke
+			(width 0.12)
+			(type default)
+		)
+		(layer "F.SilkS")
+		(uuid "a68bcb2c-daa7-5a6e-8e82-41d490db3d3f")
+	)
+	(fp_line
+		(start 5.97 2.4)
+		(end 5.97 6.1)
+		(stroke
+			(width 0.12)
+			(type default)
+		)
+		(layer "F.SilkS")
+		(uuid "db7f1257-e4c0-556c-9af5-b160609d293a")
+	)
+	(fp_rect
+		(start -8.5 -9.75)
+		(end 8.5 9.75)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "d5eda4db-269c-5ea9-b8b6-6b2a685c57b5")
+	)
+	(fp_rect
+		(start -5.85 -6)
+		(end 5.85 6)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "3c39fdf0-3b96-5a1c-b440-41cd27c209b7")
+	)
+	(fp_circle
+		(center 0 0)
+		(end 3 0)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "89fd9cbf-8ec3-53f3-8b58-22c72f4a69e0")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 -2.5 0)
+		(layer "F.Fab")
+		(uuid "68c21550-ac35-50d5-8543-842d3468d5cc")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "" smd rect
+		(at -6.375 0)
+		(size 3.75 4)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(thermal_bridge_angle 45)
+		(uuid "f5582675-10fc-595d-aefb-66a8914f854a")
+	)
+	(pad "" smd rect
+		(at -5 -7.9)
+		(size 2.5 3.2)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(thermal_bridge_angle 45)
+		(uuid "2dfd4f90-f7f5-5cc5-9e79-5025620f2e3c")
+	)
+	(pad "" smd rect
+		(at -5 7.9)
+		(size 2.5 3.2)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(thermal_bridge_angle 45)
+		(uuid "a9f16b66-f245-5273-9d8b-fff0ab74994a")
+	)
+	(pad "" np_thru_hole circle
+		(at 0 0)
+		(size 2.1 2.1)
+		(drill 2.1)
+		(layers "*.Cu" "*.Mask")
+		(uuid "ed53651a-9784-5dfc-914c-c08aa7180fa0")
+	)
+	(pad "" np_thru_hole circle
+		(at 0 4.5)
+		(size 1.6 1.6)
+		(drill 1.6)
+		(layers "*.Cu" "*.Mask")
+		(uuid "08b988c9-b18e-56ab-9731-147670f498ad")
+	)
+	(pad "" smd rect
+		(at 5 -7.9)
+		(size 2.5 3.2)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(thermal_bridge_angle 45)
+		(uuid "8ac74e84-a2de-50dd-ab0e-6ddbf49e88b9")
+	)
+	(pad "" smd rect
+		(at 5 7.9)
+		(size 2.5 3.2)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(thermal_bridge_angle 45)
+		(uuid "ba05e52e-443a-5e0d-9d8b-a7b98e4bd798")
+	)
+	(pad "" smd rect
+		(at 6.375 0)
+		(size 3.75 4)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(thermal_bridge_angle 45)
+		(uuid "8d15ee08-c392-59b0-8a5b-96707248ff1e")
+	)
+	(pad "A" smd rect
+		(at -2.5 7.3)
+		(size 1.3 2.4)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(thermal_bridge_angle 45)
+		(uuid "3cfe3c56-d539-5747-a2b7-9296833c85ee")
+	)
+	(pad "B" smd rect
+		(at 2.5 7.3)
+		(size 1.3 2.4)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(thermal_bridge_angle 45)
+		(uuid "3f7675ce-6179-5876-8710-ed9a9650ef62")
+	)
+	(pad "C" smd rect
+		(at 0 7.3)
+		(size 1.3 2.4)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(thermal_bridge_angle 45)
+		(uuid "66ce7e42-1caa-5a37-aaf8-ef6168b2a12e")
+	)
+	(pad "S1" smd rect
+		(at -2.5 -6.999999)
+		(size 1.3 2.4)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(thermal_bridge_angle 45)
+		(uuid "5dc30428-b222-5d5c-af62-93529e30a676")
+	)
+	(pad "S2" smd rect
+		(at 2.5 -6.999999)
+		(size 1.3 2.4)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(thermal_bridge_angle 45)
+		(uuid "76097461-7f2f-5d9f-990b-548a3dea86f9")
+	)
+	(zone
+		(layer "F.Cu")
+		(uuid "78e31c77-f90f-5973-8ec6-ea91e2ec3f4b")
+		(name "EC11J no wiring")
+		(hatch edge 0.5)
+		(connect_pads
+			(clearance 0)
+		)
+		(min_thickness 0.25)
+		(keepout
+			(tracks not_allowed)
+			(vias not_allowed)
+			(pads allowed)
+			(copperpour not_allowed)
+			(footprints allowed)
+		)
+		(placement
+			(enabled no)
+			(sheetname "")
+		)
+		(fill
+			(thermal_gap 0.5)
+			(thermal_bridge_width 0.5)
+			(island_removal_mode 0)
+		)
+		(polygon
+			(pts
+				(xy -6.25 -5) (xy -3.75 -5) (xy -3.75 -2.75) (xy -6.25 -2.75)
+			)
+		)
+	)
+	(zone
+		(layer "F.Cu")
+		(uuid "3790148e-67b1-5bbd-b581-805b1baa1de8")
+		(name "EC11J no wiring")
+		(hatch edge 0.5)
+		(connect_pads
+			(clearance 0)
+		)
+		(min_thickness 0.25)
+		(keepout
+			(tracks not_allowed)
+			(vias not_allowed)
+			(pads allowed)
+			(copperpour not_allowed)
+			(footprints allowed)
+		)
+		(placement
+			(enabled no)
+			(sheetname "")
+		)
+		(fill
+			(thermal_gap 0.5)
+			(thermal_bridge_width 0.5)
+			(island_removal_mode 0)
+		)
+		(polygon
+			(pts
+				(xy -6.25 2.75) (xy -3.75 2.75) (xy -3.75 5) (xy -6.25 5)
+			)
+		)
+	)
+	(zone
+		(layer "F.Cu")
+		(uuid "594dc918-2fa5-5eeb-8cd4-e9d8e5d20d5b")
+		(name "EC11J no wiring")
+		(hatch edge 0.5)
+		(connect_pads
+			(clearance 0)
+		)
+		(min_thickness 0.25)
+		(keepout
+			(tracks not_allowed)
+			(vias not_allowed)
+			(pads allowed)
+			(copperpour not_allowed)
+			(footprints allowed)
+		)
+		(placement
+			(enabled no)
+			(sheetname "")
+		)
+		(fill
+			(thermal_gap 0.5)
+			(thermal_bridge_width 0.5)
+			(island_removal_mode 0)
+		)
+		(polygon
+			(pts
+				(xy 3.75 -5) (xy 6.25 -5) (xy 6.25 -2.75) (xy 3.75 -2.75)
+			)
+		)
+	)
+	(zone
+		(layer "F.Cu")
+		(uuid "bdd6a323-4e25-5403-8a85-0cfa7d837c6f")
+		(name "EC11J no wiring")
+		(hatch edge 0.5)
+		(connect_pads
+			(clearance 0)
+		)
+		(min_thickness 0.25)
+		(keepout
+			(tracks not_allowed)
+			(vias not_allowed)
+			(pads allowed)
+			(copperpour not_allowed)
+			(footprints allowed)
+		)
+		(placement
+			(enabled no)
+			(sheetname "")
+		)
+		(fill
+			(thermal_gap 0.5)
+			(thermal_bridge_width 0.5)
+			(island_removal_mode 0)
+		)
+		(polygon
+			(pts
+				(xy 3.75 2.75) (xy 6.25 2.75) (xy 6.25 5) (xy 3.75 5)
+			)
+		)
+	)
+	(embedded_fonts no)
+	(model "${KICAD10_3DMODEL_DIR}/Rotary_Encoder.3dshapes/RotaryEncoder_Alps_EC11E-Switch_Vertical_H20mm.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)

@@ -1,0 +1,104 @@
+(footprint "MountingHole_3.4mm_M3_Keepout9mm"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "3.4 mm unplated hole for M3, component keep-out 9 mm on top and 10 mm on the bottom (mechanical contract)")
+	(tags "mounting hole M3")
+	(property "Reference" "REF**"
+		(at 0 -5.5 0)
+		(layer "F.SilkS")
+		(uuid "37341939-6c61-5a40-aaf2-03281d736285")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Value" "MountingHole_3.4mm_M3_Keepout9mm"
+		(at 0 5.5 0)
+		(layer "F.Fab")
+		(uuid "88b7f9c8-4708-5615-8e65-2ff3a6d6c903")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "a5babf41-3733-555a-ac5f-ad2042fd04b0")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "b30b88a3-b265-5207-8523-0033e9799420")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(attr exclude_from_pos_files exclude_from_bom)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_circle
+		(center 0 0)
+		(end 1.7 0)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(fill no)
+		(layer "Cmts.User")
+		(uuid "d7dc1d8f-a21c-50ff-8d43-b98b3b07352a")
+	)
+	(fp_circle
+		(center 0 0)
+		(end 5 0)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill no)
+		(layer "B.CrtYd")
+		(uuid "e1f28d61-d635-595d-819b-9d8482be33d4")
+	)
+	(fp_circle
+		(center 0 0)
+		(end 4.5 0)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "cfcda1ab-632d-5737-ae97-949bdea4176f")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(uuid "8e1f234e-634e-5907-ac99-f9a4a6a81923")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "" np_thru_hole circle
+		(at 0 0)
+		(size 3.4 3.4)
+		(drill 3.4)
+		(layers "*.Cu" "*.Mask")
+		(uuid "0c6ef7f5-d7c4-5352-a459-16f307e4ecb2")
+	)
+	(embedded_fonts no)
+)

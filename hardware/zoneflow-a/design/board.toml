@@ -1,0 +1,9 @@
+# Board description for ZoneFlow rev A. Lengths in millimetres.
+# Phase 1 (schematic capture) uses only the net classes. Placement, pours and
+# pre-routed tracks are added with the layout.
+
+[netclass.Default]
+track_width = 0.2
+clearance = 0.2
+via_diameter = 0.6
+via_drill = 0.3

@@ -1,0 +1,131 @@
+{
+    "$schema": "https://schemas.kicad.org/erc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-11-10T00:00:00",
+    "ignored_checks": [
+        {
+            "description": "Global label only appears once in the schematic",
+            "key": "single_global_label"
+        },
+        {
+            "description": "Four connection points are joined together",
+            "key": "four_way_junction"
+        },
+        {
+            "description": "SPICE model issue",
+            "key": "simulation_model_issue"
+        },
+        {
+            "description": "Assigned footprint doesn't match footprint filters",
+            "key": "footprint_filter"
+        }
+    ],
+    "included_severities": [
+        "error",
+        "warning"
+    ],
+    "kicad_version": "10.0.8",
+    "sheets": [
+        {
+            "path": "/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145",
+            "violations": []
+        },
+        {
+            "path": "/Connectors/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/8f1c54c9-a608-52f4-9648-26e163f430ac",
+            "violations": []
+        },
+        {
+            "path": "/Power/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/db0e6bb5-2183-538a-b470-f66df3f7e7e5",
+            "violations": []
+        },
+        {
+            "path": "/USB/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9",
+            "violations": []
+        },
+        {
+            "path": "/Sensors/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/4a039337-ac83-5437-9019-7d0d8320494e",
+            "violations": []
+        },
+        {
+            "path": "/RTC/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/724c4b20-5e3d-5a18-9c23-ccb2f110f2a3",
+            "violations": []
+        },
+        {
+            "path": "/Display/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/42df870c-d54a-5c9d-aece-f4332c2a05ee",
+            "violations": []
+        },
+        {
+            "path": "/MCU/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/82440552-92e4-5b15-939f-0f8fa513d1fa",
+            "violations": []
+        },
+        {
+            "path": "/Failsafe/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e",
+            "violations": []
+        },
+        {
+            "path": "/CurrentSense/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/cfd7788f-1501-5daa-93df-24bc28772453",
+            "violations": []
+        },
+        {
+            "path": "/Expander/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/4663751d-1735-5bcf-a918-0f1c006af393",
+            "violations": []
+        },
+        {
+            "path": "/Z1/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/cd1deeb9-7b0b-5a76-adb4-1dc73d4281fe",
+            "violations": []
+        },
+        {
+            "path": "/Z2/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/60b6b345-68de-5a2d-a076-f92f89b5ab6d",
+            "violations": []
+        },
+        {
+            "path": "/Z3/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/3c4967a8-7ba3-5655-9a10-87bffba32b4b",
+            "violations": []
+        },
+        {
+            "path": "/Z4/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/d4184f76-261e-5023-ab48-739a1f8c8709",
+            "violations": []
+        },
+        {
+            "path": "/Z5/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/caf23304-b0aa-5e80-9abc-56ae20a7f594",
+            "violations": []
+        },
+        {
+            "path": "/Z6/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/90158e38-2f44-556f-8b15-3f968e034772",
+            "violations": []
+        },
+        {
+            "path": "/Z7/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/4c5e8d42-5dff-5bdb-b568-9a71d7c2e6b2",
+            "violations": []
+        },
+        {
+            "path": "/Z8/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/504735f7-c409-5ee2-8317-4cec6565f5b8",
+            "violations": []
+        },
+        {
+            "path": "/MV/",
+            "uuid_path": "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/25d4abc2-0338-57cc-9473-7983abdcc1e6",
+            "violations": []
+        }
+    ],
+    "source": "zoneflow-a.kicad_sch"
+}
