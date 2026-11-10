@@ -516,9 +516,16 @@ void onEvent(void *, esp_event_base_t base, int32_t id, void *data)
             break;
         }
     } else if (base == PROTOCOMM_TRANSPORT_BLE_EVENT) {
-        send(id == PROTOCOMM_TRANSPORT_BLE_CONNECTED ? Msg::SessionOpen : Msg::SessionClosed);
+        // A BLE connection alone proves nothing: anyone in radio range can
+        // open one, so it must not hold the window (security review F3).
+        if (id == PROTOCOMM_TRANSPORT_BLE_DISCONNECTED) {
+            send(Msg::SessionClosed);
+        }
     } else if (base == PROTOCOMM_SECURITY_SESSION_EVENT) {
-        if (id == PROTOCOMM_SECURITY_SESSION_CREDENTIALS_MISMATCH) {
+        if (id == PROTOCOMM_SECURITY_SESSION_SETUP_OK) {
+            // Security 2 handshake done: the phone knows the setup code.
+            send(Msg::SessionOpen);
+        } else if (id == PROTOCOMM_SECURITY_SESSION_CREDENTIALS_MISMATCH) {
             ESP_LOGW(kTag, "provisioning: wrong setup code from the phone");
         }
     }
