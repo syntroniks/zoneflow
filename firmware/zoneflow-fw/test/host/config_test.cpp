@@ -334,7 +334,8 @@ TEST(ConfigStore, NewerSchemaThroughApiIsRejected)
     ConfigStore store(mem);
     store.load();
     const uint32_t rev = store.revision();
-    const ValidationResult v = store.updateFromJson(R"({"schema":2,"device_name":"shed","new_feature":true})");
+    const ValidationResult v = store.updateFromJson("{\"schema\":" + std::to_string(kConfigSchemaVersion + 1) +
+                                                    ",\"device_name\":\"shed\",\"new_feature\":true}");
     EXPECT_FALSE(v.ok);
     EXPECT_EQ(v.path, "schema");
     EXPECT_NE(v.message.find("newer"), std::string::npos) << v.message;

@@ -12,6 +12,9 @@ constexpr uint32_t kSmall = 512;
 constexpr uint32_t kProgram = 2048;
 constexpr uint32_t kConfig = 16384;
 constexpr uint32_t kEmpty = 64;
+// MQTT settings: about 400 bytes of fields plus an optional PEM CA
+// certificate (a 4096-bit RSA CA is about 2 KB; chains up to 6 KB accepted).
+constexpr uint32_t kMqtt = 8192;
 // Slot sizes from partitions.csv (ota_0/ota_1 0x400000, www 0x7c0000). The
 // HTTP glue also checks the real partition size.
 constexpr uint32_t kAppSlot = 0x400000;
@@ -73,6 +76,8 @@ constexpr std::array kRoutes = {
     Route{"POST", "/firmware/upload", FirmwareUpload, A, Body::Binary, kAppSlot},
     Route{"POST", "/firmware/pull", FirmwarePull, A, Body::Json, kSmall},
     Route{"POST", "/firmware/assets", FirmwareAssets, A, Body::Binary, kAssets},
+    Route{"GET", "/mqtt", MqttGet, R, Body::None, 0},
+    Route{"PUT", "/mqtt", MqttPut, A, Body::Json, kMqtt},
 };
 
 // Matches one pattern; fills params.

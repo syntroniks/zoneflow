@@ -98,6 +98,29 @@ public:
     }
     std::string tlsFingerprint() const override { return ""; }
 
+    // MQTT module stand-in.
+    mqtt::MqttStatus mqtt;
+    std::string mqttPassword;
+    std::string mqttCa;
+    bool mqttStoreFails = false;
+    int mqttSecretWrites = 0;
+    mqtt::MqttStatus mqttStatus() const override { return mqtt; }
+    web::MqttSecretsInfo mqttSecrets() const override { return {!mqttPassword.empty(), !mqttCa.empty()}; }
+    bool setMqttSecrets(std::optional<std::string_view> password, std::optional<std::string_view> caPem) override
+    {
+        if (mqttStoreFails) {
+            return false;
+        }
+        ++mqttSecretWrites;
+        if (password) {
+            mqttPassword = std::string(*password);
+        }
+        if (caPem) {
+            mqttCa = std::string(*caPem);
+        }
+        return true;
+    }
+
     // sleepMs() advances this clock and then runs onSleep, which plays the
     // control task (publish a snapshot, a CommandRejected event, ...).
     FakeClock *clock = nullptr;
