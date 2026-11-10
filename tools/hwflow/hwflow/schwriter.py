@@ -72,6 +72,7 @@ class _SheetWriter:
         self.lib_ids: list[str] = []
         self.segments: list[tuple[tuple[float, float], tuple[float, float], Net]] = []
         self.pin_points: dict[tuple[float, float], PinRef] = {}
+        self.power_points: set[tuple[float, float]] = set()  # where a power symbol's pin sits
         self.pwr_counter = pwr_counter
         self.n = 0
 
@@ -140,7 +141,8 @@ class _SheetWriter:
         node.append(_prop("Description", sym.props.get("Description", ""), part.at[0], part.at[1], hide=True))
         for k, v in part.fields.items():
             node.append(_prop(k, v, part.at[0], part.at[1], hide=True))
-        for pin in sym.pins_of(part.unit):
+        # KiCad lists every pin of the symbol under each placed unit. Left out, it adds them with random UUIDs.
+        for pin in sym.pins:
             node.append([S("pin"), pin.number,
                          [S("uuid"), stable_uuid(self.d.name, self.s.name, "pin", *pin_key, pin.number)]])
         paths = []
@@ -158,6 +160,8 @@ class _SheetWriter:
         sym = self.use(net.symbol)
         if not sym.is_power or len(sym.pins) != 1:
             raise DesignError(f"{net.symbol} is not a single-pin power symbol")
+        # KiCad joins a pin to a wire only at a wire end, so a wire is cut where a power symbol sits on it.
+        self.power_points.add((round(at[0], 4), round(at[1], 4)))
         x0, y0, x1, y1 = sym.bbox
         natural = "down" if (y0 + y1) / 2 < 0 else "up"
         rot = _POWER_ROT[natural][direction]
@@ -184,10 +188,10 @@ class _SheetWriter:
         if a != b:
             self.segments.append((a, b, net))
 
-    def label(self, net: Net, at, direction) -> None:
+    def label(self, net: Net, at, direction, plain: bool = False) -> None:
         angle = _LABEL_ANGLE[direction]
         just = ("left",) if angle in (0, 90) else ("right",)
-        if net.kind == "local":
+        if net.kind == "local" or (plain and net.kind == "hier"):
             self.items.append([S("label"), net.name, [S("at"), fmt(at[0]), fmt(at[1]), S(str(angle))],
                                _effects(just + ("bottom",)), [S("uuid"), self.uid("label")]])
         elif net.kind == "hier":
@@ -250,7 +254,7 @@ class _SheetWriter:
         while changed:
             changed = False
             for i, (a, b, net) in enumerate(segs):
-                for p in sorted(points | set(self.pin_points)):
+                for p in sorted(points | set(self.pin_points) | self.power_points):
                     if p != a and p != b and _on_segment(p, a, b):
                         segs[i] = (a, p, net)
                         segs.append((p, b, net))
@@ -262,7 +266,7 @@ class _SheetWriter:
         for a, b, _net in segs:
             for p in (a, b):
                 count[p] = count.get(p, 0) + 1
-        for p in self.pin_points:
+        for p in set(self.pin_points) | self.power_points:
             if p in count:
                 count[p] += 1
         seen = set()
@@ -286,7 +290,7 @@ class _SheetWriter:
         s = self.s
         for part in s.parts.values():
             refs = [(path, offset_ref(part.ref, offset)) for path, offset, _ in self.contexts]
-            self.symbol(part, refs)
+            self.symbol(part, refs, value_visible=part.show_value)
             for p in part.all_pins():
                 other = self.pin_points.get(p.pos)
                 if other is not None and other.part is not part:
@@ -303,8 +307,8 @@ class _SheetWriter:
         for w in s.wires:
             for a, b in zip(w.points, w.points[1:]):
                 self.seg(a, b, w.net)
-        for net, at, direction in s.labels:
-            self.label(net, at, direction)
+        for net, at, direction, plain in s.labels:
+            self.label(net, at, direction, plain)
         nc_done = set()
         for p in s.no_connects:
             if p.pos in nc_done:

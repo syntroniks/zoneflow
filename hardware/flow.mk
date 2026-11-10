@@ -17,6 +17,11 @@ GERBER_LAYERS ?= F.Cu,B.Cu,F.Paste,B.Paste,F.Silkscreen,B.Silkscreen,F.Mask,B.Ma
 VARIANTS  ?=
 # Set to 1 to fail the build when text or symbols collide on a schematic page.
 SCH_LINT  ?=
+# Set to 1 to replace the time of export in PDFs, SVGs and reports by the date
+# of the title block, so that a rebuild with no change leaves no diff.
+STABLE    ?=
+# The design netlist a board is drawn from, if it has one (netlist-driven capture).
+DESIGN_NETLIST ?=
 
 # Generation runs in the locked uv environment. The board steps need KiCad's
 # pcbnew module, which only the system interpreter has.
@@ -31,12 +36,13 @@ export PYTHONPATH := $(abspath $(HWFLOW))
 export PYTHONDONTWRITEBYTECODE := 1
 
 SCH := $(NAME).kicad_sch
+STABILISE = $(if $(STABLE),$(KICAD_PY) -m hwflow.stable $(SCH) $(OUT),@true)
 PCB := $(NAME).kicad_pcb
 # kicad-cli prints wxWidgets debug lines on stderr. They go to a log file so
 # that the exit code of kicad-cli still decides whether the step passed.
 LOG := 2>> build/kicad-cli.stderr
 
-.PHONY: all schematic sch lint erc sch-outputs board route reroute finish drc outputs check
+.PHONY: all schematic footprints sch lint erc sch-outputs board route reroute finish drc outputs check committed
 .NOTPARALLEL:
 
 all: outputs
@@ -49,9 +55,15 @@ schematic: sch-outputs
 build:
 	@mkdir -p build/kicad-config $(OUT)/reports $(OUT)/gerbers
 
+# Project-local footprints, if the board has any: design/footprints.py writes
+# lib/<Library>.pretty through KiCad's pcbnew module.
+FOOTPRINT_LIB ?= lib/ZoneFlow.pretty
+footprints: | build
+	@if [ -f $(DESIGN)/footprints.py ]; then $(KICAD_PY) $(DESIGN)/footprints.py $(FOOTPRINT_LIB); fi
+
 # Circuit description -> schematic sheets, project file, library tables, DRC
 # rules. Fails if the netlist KiCad extracts differs from the description.
-sch: | build
+sch: footprints | build
 	$(UV_PY) -m hwflow sch $(DESIGN) . --fab-rules $(FAB_RULES)
 
 # Plot every page and fail on text or symbols that collide. ERC does not look for that.
@@ -64,6 +76,7 @@ erc: sch $(if $(SCH_LINT),lint)
 		-o $(OUT)/reports/erc.rpt $(SCH) $(LOG)
 	$(KICAD_CLI) sch erc --severity-error --severity-warning --exit-code-violations --format json \
 		-o $(OUT)/reports/erc.json $(SCH) $(LOG)
+	$(STABILISE)
 
 # Netlist + board.toml -> placed, pre-routed board and a Specctra DSN.
 board: erc
@@ -102,6 +115,12 @@ sch-outputs: erc
 	$(KICAD_PY) -m hwflow.fab bom build/$(NAME)-bom.csv $(OUT)/$(NAME)-bom-jlcpcb.csv
 	$(foreach v,$(VARIANTS),$(BOM_EXPORT) --variant $(v) -o build/$(NAME)-bom-$(v).csv $(SCH) $(LOG) && \
 		$(KICAD_PY) -m hwflow.fab bom build/$(NAME)-bom-$(v).csv $(OUT)/$(NAME)-bom-jlcpcb-$(v).csv &&) true
+	$(STABILISE)
+
+# The committed netlist and BOMs against the design netlist. Needs Python only,
+# no KiCad, and builds nothing: CI runs it on every pull request.
+committed:
+	$(UV_PY) -m hwflow committed . --netlist $(DESIGN_NETLIST)
 
 outputs: drc sch-outputs
 	# Gerbers, drill and placement all use the drill/place origin, which the

@@ -148,21 +148,24 @@ def box(name: str, ref: str, value: str, left=(), right=(), top=(), bottom=(), f
     for i, p in enumerate(right):
         if p:
             pins.append(pin(p[2], p[0], p[1], half_w + P, y_top - i * P, 180))
-    for side, y, angle in ((top, y0 + P, 270), (bottom, y1 - P, 90)):
+    for side, edge, sign, angle in ((top, y0, 1, 270), (bottom, y1, -1, 90)):
         x_first = -((len(side) - 1) // 2) * P
+        # A pin number is printed along its pin. Three characters need a longer pin than 2.54 mm.
+        length = 2 * P if any(p and len(p[0]) > 2 for p in side) else P
         for i, p in enumerate(side):
             if p:
-                pins.append(pin(p[2], p[0], p[1], x_first + i * P, y, angle))
+                pins.append(pin(p[2], p[0], p[1], x_first + i * P, edge + sign * length, angle, length=length))
+    # Reference and value sit above the top-left corner, clear of any pins on the bottom edge.
     return symbol(name, ref, value, {(0, 1): graphics, (1, 1): pins}, footprint, datasheet, description,
-                  ref_at=(-half_w, y0 + 1.27), value_at=(-half_w, y1 - 1.27))
+                  ref_at=(-half_w, y0 + 3.81), value_at=(-half_w, y0 + 1.27))
 
 
 def derive(lib_id: str, name: str, value: str | None = None, footprint: str | None = None,
            datasheet: str | None = None, description: str | None = None, unit_map: dict[int, int] | None = None,
            renumber: dict[str, str] | None = None, pin_types: dict[str, str] | None = None,
-           pin_names: dict[str, str] | None = None) -> list:
+           pin_names: dict[str, str] | None = None, pin_shapes: dict[str, str] | None = None) -> list:
     """A stock symbol under a new name. ``unit_map`` renumbers units (old -> new);
-    ``renumber``, ``pin_types`` and ``pin_names`` are keyed by the stock pin number."""
+    ``renumber``, ``pin_types``, ``pin_names`` and ``pin_shapes`` are keyed by the stock pin number."""
     node = copy.deepcopy(symlib.load(lib_id).node)
     old = lib_id.split(":", 1)[1]
     node[1] = name
@@ -185,6 +188,8 @@ def derive(lib_id: str, name: str, value: str | None = None, footprint: str | No
                 stock = num[1]
                 if pin_types and stock in pin_types:
                     item[1] = S(pin_types[stock])
+                if pin_shapes and stock in pin_shapes:
+                    item[2] = S(pin_shapes[stock])
                 if pin_names and stock in pin_names:
                     find(item, "name")[1] = pin_names[stock]
                 if renumber and stock in renumber:

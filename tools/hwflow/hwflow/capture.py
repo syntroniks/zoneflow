@@ -54,8 +54,10 @@ class Capture:
         self.sides: dict[tuple[str, str], str] = {}  # (sheet, design net) -> "left" | "right"
         self.capsheets: dict[str, CapSheet] = {}
         self.extra_refs: set[str] = set()  # parts that are not in the design netlist (mounting holes)
+        self.base_fitted: set[str] = {"all", "8"}  # netlist variants the design fits with no KiCad variant
         self._scopes: dict[str, set[tuple[str, str | None]]] | None = None
         self._placed: set[tuple[str, int]] = set()
+        self._flags = 0
 
     # ---- parts ------------------------------------------------------------
     def spec(self, ref: str) -> parity.PartSpec:
@@ -216,9 +218,9 @@ class CapSheet:
         self.pin_net: dict[tuple[int, str], str] = {}  # (id(part), pin number) -> design net
         self.drawn: set[tuple[int, tuple[float, float]]] = set()  # (id(part), pin position)
         self.port_net: dict[str, str] = {}  # port name -> design net (of the first instance)
+        self.port_labelled: set[str] = set()  # ports that have a hierarchical label on the sheet
         self.parts: dict[tuple[str, int], Part] = {}
         self.pin_at: dict[tuple[float, float], PinRef] = {}  # where each placed pin ends
-        self._flags = 0
         self.default_stub = 2.54
 
     # ---- nets -------------------------------------------------------------
@@ -252,7 +254,7 @@ class CapSheet:
 
     # ---- parts ------------------------------------------------------------
     def place(self, ref: str, at, rot: int = 0, mirror: str | None = None, unit: int = 1,
-              ref_at=None, value_at=None) -> Part:
+              ref_at=None, value_at=None, show_value: bool = True) -> Part:
         cap = self.cap
         c = cap.comps.get(ref)
         if c is None:
@@ -273,7 +275,8 @@ class CapSheet:
         part = self.s.part(local, spec.symbol, at=at, rot=rot, mirror=mirror, value=spec.value,
                            footprint=spec.footprint, lcsc=c["lcsc"] or "", fields=fields,
                            dnp=c["variant"] == "dnf", ref_at=ref_at, value_at=value_at,
-                           on_board=spec.on_board, in_bom=spec.in_bom and c["variant"] != "dnf", unit=unit)
+                           on_board=spec.on_board, in_bom=spec.in_bom and c["variant"] != "dnf", unit=unit,
+                           show_value=show_value)
         nc_at = set()
         for p in part.all_pins():
             net = cap.exp.pin_net.get((ref, p.pin.number))
@@ -309,7 +312,7 @@ class CapSheet:
         return part
 
     def place_pin(self, ref: str, pin, at, rot: int = 0, mirror: str | None = None, unit: int = 1,
-                  ref_at=None, value_at=None) -> Part:
+                  ref_at=None, value_at=None, show_value: bool = True) -> Part:
         """Place a part so that its pin ``pin`` (number or name) lands on the point or pin ``at``."""
         sym = self.cap.symbol(ref)
         found = sym.pins_named(str(pin), unit)
@@ -317,7 +320,8 @@ class CapSheet:
             raise DesignError(f"{ref} has no single pin {pin!r} in unit {unit}")
         dx, dy = transform(found[0].x, found[0].y, rot, mirror)
         x, y = at.pos if isinstance(at, PinRef) else at
-        return self.place(ref, (round(x - dx, 4), round(y - dy, 4)), rot, mirror, unit, ref_at, value_at)
+        return self.place(ref, (round(x - dx, 4), round(y - dy, 4)), rot, mirror, unit, ref_at, value_at,
+                          show_value)
 
     def attach(self, ref: str, pin, at, towards, mirror: str | None = None, ref_at=None, value_at=None) -> Part:
         """Place a two-terminal part with ``pin`` on ``at``, its body extending in direction ``towards``.
@@ -384,7 +388,8 @@ class CapSheet:
                 (x0, y0), (x1, y1) = pts[0], pts[1]
                 n = max(abs(x1 - x0), abs(y1 - y0)) or 1.0
                 label = (round(x0 + (x1 - x0) / n * label, 4), round(y0 + (y1 - y0) / n * label, 4))
-            self.s.label(self.net(name), label, RIGHT)
+            # A label on a wire names the wire. The port's own (hierarchical) label is placed with label().
+            self.s.label(self.net(name), label, RIGHT, plain=True)
 
     def path(self, *points, net: str | None = None) -> None:
         """A wire through several pins or points, each leg straight."""
@@ -426,20 +431,29 @@ class CapSheet:
             net = self.net_of(p)
             if net == parity.NC:
                 raise DesignError(f"sheet {self.name}: {p} must stay unconnected")
-            self.s.connect(self.net(net), p, stub=self.default_stub if length is None else length)
+            n = self.net(net)
+            self.s.connect(n, p, stub=self.default_stub if length is None else length)
+            if n.kind == "hier":
+                self.port_labelled.add(n.name)
             self._mark(p)
 
-    def label(self, at, direction=RIGHT, net: str | None = None) -> None:
-        """The label, port or power symbol of the net that the wire at ``at`` belongs to."""
+    def label(self, at, direction=RIGHT, net: str | None = None, plain: bool = False) -> None:
+        """The label, port or power symbol of the net that the wire at ``at`` belongs to.
+
+        ``plain`` gives a net that leaves the sheet an ordinary label here instead of a port symbol.
+        """
         name = net or self._net_at(at)
         if name is None:
             raise DesignError(f"sheet {self.name}: no wire passes through {at}; give net=")
-        self.s.label(self.net(name), at, direction)
+        n = self.net(name)
+        if n.kind == "hier" and not plain:
+            self.port_labelled.add(n.name)
+        self.s.label(n, at, direction, plain)
 
     def flag(self, at, rot: int = 0) -> None:
         """A PWR_FLAG with its pin on the wire at ``at``: this net is fed through a passive part."""
-        self._flags += 1
-        self.s.part(f"#FLG{self._flags}", "power:PWR_FLAG", at=at, rot=rot)
+        self.cap._flags += 1  # numbered across the design: references must be unique
+        self.s.part(f"#FLG{self.cap._flags}", "power:PWR_FLAG", at=at, rot=rot, show_value=False)
 
     def finish(self) -> None:
         """Give every pin that was not wired a stub and its label, then check the sheet is complete."""
@@ -459,6 +473,9 @@ class CapSheet:
                     self._mark(p)
                     continue
                 self.stub(p)
+        unlabelled = sorted(p.name for p in self.s.ports() if p.name not in self.port_labelled)
+        if unlabelled:
+            raise DesignError(f"sheet {self.name}: ports without a hierarchical label: " + ", ".join(unlabelled))
         here = (self.name, self.instance)
         want = {k for k, v in self.cap.where.items() if v == here}
         missing = sorted(want - set(self.parts))

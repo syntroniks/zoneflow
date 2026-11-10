@@ -11,7 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import netlist, parity, project, schlint, schwriter
+from . import committed, netlist, parity, project, schlint, schwriter
 from .design import Design, DesignError
 
 
@@ -106,7 +106,7 @@ def check_parity(design: Design, out: Path, build: Path, root: Path, nl, net_fil
     cap = design.capture
     problems = parity.compare(cap.exp, nl, cap.extra_refs)
     fields = "Reference,Value,Footprint,LCSC,Spec"
-    builds = {"": {"all", "8"}}  # the base design is the full build
+    builds = {"": set(cap.base_fitted)}  # the base design: no KiCad variant
     builds.update({name: set(v["fitted"]) for name, v in design.variants.items() if "fitted" in v})
     for name, fitted in builds.items():
         dest = build / f"bom-check-{name or 'base'}.csv"
@@ -155,9 +155,29 @@ def cmd_lint(args) -> int:
     return 0
 
 
+def cmd_committed(args) -> int:
+    """The committed netlist and BOMs of a board against the design netlist. Needs no KiCad."""
+    import yaml
+
+    comps = yaml.safe_load(Path(args.netlist).read_text(encoding="utf-8"))["components"]
+    problems, summary = committed.check(Path(args.project_dir), comps)
+    for p in problems[:80]:
+        sys.stderr.write(f"  {p}\n")
+    if problems:
+        sys.stderr.write(f"committed outputs differ from the design netlist: {len(problems)} difference(s). "
+                         f"Run make in {args.project_dir} and commit the result.\n")
+        return 1
+    print(summary)
+    return 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="hwflow")
     sub = ap.add_subparsers(dest="cmd", required=True)
+    s = sub.add_parser("committed", help="check a board's committed netlist and BOMs against the design netlist")
+    s.add_argument("project_dir")
+    s.add_argument("--netlist", required=True, help="the design netlist (YAML)")
+    s.set_defaults(fn=cmd_committed)
     s = sub.add_parser("lint", help="plot the schematic and fail on overlapping text or symbols")
     s.add_argument("design_dir")
     s.add_argument("project_dir")

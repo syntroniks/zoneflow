@@ -109,8 +109,9 @@ class PinRef:
 
 class Part:
     def __init__(self, sheet, ref, lib_id, at, rot, mirror, value, footprint, fields, dnp,
-                 ref_at, value_at, on_board, in_bom, unit=1):
+                 ref_at, value_at, on_board, in_bom, unit=1, show_value=True):
         self.sheet = sheet
+        self.show_value = show_value
         self.ref = ref
         self.lib_id = lib_id
         self.sym = symlib.load(lib_id, sheet.design.symbol_dirs)
@@ -219,7 +220,7 @@ class Sheet:
         self.nets: dict[tuple[str, str], Net] = {}
         self.attachments: list[Attachment] = []
         self.wires: list[Wire] = []
-        self.labels: list[tuple[Net, tuple[float, float], tuple[int, int]]] = []
+        self.labels: list[tuple] = []  # (net, point, direction, plain)
         self.no_connects: list[PinRef] = []
         self.instances: list[SheetInstance] = []
         self.texts: list[tuple] = []  # (text, at, size, justify, bold)
@@ -262,7 +263,7 @@ class Sheet:
     def part(self, ref: str, lib_id: str, at, rot: int = 0, mirror: str | None = None,
              value: str | None = None, footprint: str | None = None, lcsc: str | None = None,
              fields: dict | None = None, dnp: bool = False, ref_at=None, value_at=None,
-             on_board: bool = True, in_bom: bool = True, unit: int = 1) -> Part:
+             on_board: bool = True, in_bom: bool = True, unit: int = 1, show_value: bool = True) -> Part:
         """Place a symbol. A multi-unit part is placed once per unit, with the same ``ref``."""
         if (ref, unit) in self.parts:
             raise DesignError(f"sheet {self.name}: duplicate reference {ref}"
@@ -271,7 +272,7 @@ class Sheet:
         if lcsc is not None:
             f["LCSC"] = lcsc
         p = Part(self, ref, lib_id, at, rot, mirror, value, footprint, f, dnp, ref_at, value_at,
-                 on_board, in_bom, unit)
+                 on_board, in_bom, unit, show_value)
         self.parts[(ref, unit)] = p
         return p
 
@@ -311,14 +312,18 @@ class Sheet:
         self.wires.append(Wire(pts, net, [x for x in (a, b) if isinstance(x, PinRef)]))
         return net
 
-    def label(self, net: Net, at, direction=RIGHT) -> None:
+    def label(self, net: Net, at, direction=RIGHT, plain: bool = False) -> None:
         """Put the label (or power symbol) of ``net`` at a point on a wire of that net.
 
         ``direction`` is where the text or power symbol extends from the point.
+        ``plain`` writes an ordinary net label for a net that is a sheet port:
+        KiCad joins it to the hierarchical label of the same name on the sheet.
+        Use it to name a second piece of the net; the port itself still needs
+        its hierarchical label somewhere.
         """
         if net.kind == "anon":
             raise DesignError("an unnamed wire cannot carry a label; pass net= to wire()")
-        self.labels.append((net, _point(at), direction))
+        self.labels.append((net, _point(at), direction, plain))
 
     def nc(self, *pins) -> None:
         """Mark pins as deliberately unconnected."""
