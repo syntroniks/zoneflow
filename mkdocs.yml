@@ -106,3 +106,4 @@ nav:
       - Firmware architecture: design/firmware-architecture.md
       - Hardware toolchain: design/hardware-toolchain.md
       - Hardware design: design/hardware-design.md
+      - Mechanical design: design/mechanical.md
