@@ -51,6 +51,16 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      # The web UI goes into www/, which idf.py packs into build/www.bin.
+      # Without it the firmware still builds and serves its built-in page.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: firmware/zoneflow-fw/web/package-lock.json
+      - name: Build the web UI into www/
+        working-directory: firmware/zoneflow-fw/web
+        run: npm ci && npm run build
       - name: idf.py build
         uses: espressif/esp-idf-ci-action@v1
         with:
@@ -70,4 +80,5 @@ jobs:
             firmware/zoneflow-fw/build/ota_data_initial.bin
             firmware/zoneflow-fw/build/flasher_args.json
             firmware/zoneflow-fw/build/flash_args
+            firmware/zoneflow-fw/build/www.bin
           if-no-files-found: error
