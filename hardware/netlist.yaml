@@ -560,7 +560,7 @@ components:
       "30 IO37": "NC"
       "31 IO38": "KA"
       "32 IO39": "BTN_HOME"
-      "33 IO40": "FAULT_N"
+      "33 IO40": "OC_FAULT_N"
       "34 IO41": "AC_ZC"
       "35 IO42": "IO42"
       "36 RXD0": "U0RXD"
@@ -1304,6 +1304,16 @@ components:
     pins:
       "A": "LED_FLT"
       "K": "GND"
+  - ref: R87
+    value: "10k 1%"
+    package: "0603"
+    lcsc: C25804
+    block: "G current sense and over-current latch"
+    variant: "all"
+    note: "Stops GPIO40 from overdriving the latch node"
+    pins:
+      "1": "FAULT_N"
+      "2": "OC_FAULT_N"
   - ref: R55
     value: "100k 1% 200 V 0.25 W"
     package: "1206"

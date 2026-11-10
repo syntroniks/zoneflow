@@ -911,6 +911,14 @@ for longer than the hold-up time. That also resets the expander, so every
 output is off when drive returns. Firmware reads the latch on GPIO40,
 `OC_FAULT_N`, low when set.
 
+GPIO40 reads the latch through R87, 10 kohm. `FAULT_N` is the feedback node
+of the latch: it feeds U7 pins 2 and 10. Review A1 found that with GPIO40
+wired straight to it, a pin left configured as an output and driven high
+could hold the node above the gate threshold against the 74HC00 output. That
+clears or masks the latch, and firmware then reads "no fault". With R87 the
+pin can move the node by at most 3.3 V x 10 kohm against the gate's output
+resistance of under 100 ohm, about 30 mV.
+
 After a trip firmware knows which output it switched on last. It should mark
 that output faulted, wait, restart the keep-alive and continue with the others.
 
@@ -955,6 +963,7 @@ that output faulted, wait, restart the keep-alive and continue with the others.
 | R53 | 10k 1% | 0603 | C25804 | `3V3` to `OC_TRIP_N` | Pull-up |
 | R54 | 1k 1% | 0603 | C21190 | `FAULT` to `LED_FLT` |  |
 | D8 | LED red | 0603 | C2286 | A `LED_FLT`, K `GND` | Lit while the over-current latch is set |
+| R87 | 10k 1% | 0603 | C25804 | `FAULT_N` to `OC_FAULT_N` | Stops GPIO40 from overdriving the latch node |
 
 ### 10.2 Shunt R37
 

@@ -277,12 +277,13 @@ gpio:
     signal: OC_FAULT_N
     direction: in
     active: low
-    pull: none (driven push-pull by U7)
+    pull: none (driven by U7 through 10k, R87)
     reset_state: high impedance
     powerup_glitch: none
     notes: >-
       Low while the hardware over-current latch is set. The latch is set by
-      the comparators and cleared only by stopping KEEPALIVE.
+      the comparators and cleared only by stopping KEEPALIVE. Input only:
+      R87 keeps this pin from changing the latch even if it is driven.
 
   - gpio: 41
     signal: AC_ZC
