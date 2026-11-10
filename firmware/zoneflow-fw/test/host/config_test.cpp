@@ -323,3 +323,22 @@ TEST(Config, DeeplyNestedJsonIsRejected)
     EXPECT_TRUE(configFromJson(configToJson(c), back).ok());
     EXPECT_EQ(back.deviceName.view(), c.deviceName.view());
 }
+
+// ---- phase 2 hardening ---------------------------------------------------------
+
+// A document from newer firmware sent through the API must not be written back
+// as an older schema: the fields this firmware does not know would be lost.
+TEST(ConfigStore, NewerSchemaThroughApiIsRejected)
+{
+    MemoryStorage mem;
+    ConfigStore store(mem);
+    store.load();
+    const uint32_t rev = store.revision();
+    const ValidationResult v = store.updateFromJson(R"({"schema":2,"device_name":"shed","new_feature":true})");
+    EXPECT_FALSE(v.ok);
+    EXPECT_EQ(v.path, "schema");
+    EXPECT_NE(v.message.find("newer"), std::string::npos) << v.message;
+    EXPECT_EQ(mem.writes, 0);
+    EXPECT_EQ(store.revision(), rev);
+    EXPECT_EQ(store.get().deviceName.view(), "zoneflow");
+}

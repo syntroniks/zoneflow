@@ -59,6 +59,8 @@ public:
     // Validates, persists, then replaces the in-memory copy. Nothing changes
     // if validation or the storage write fails.
     ValidationResult update(const Config &cfg);
+    // As update(). Rejects a document with a newer schema than this firmware
+    // (path "schema"): writing it back would drop the fields it does not know.
     ValidationResult updateFromJson(std::string_view json);
 
     // Erases the stored config and returns to defaults.
