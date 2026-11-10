@@ -72,16 +72,17 @@ Standalone, ESP-IDF based. Works with no hub and no cloud.
 For people who already run Home Assistant.
 
 - All outputs, sensors, display and controls mapped
-- Uses the ESPHome `sprinkler` component
-- BLE provisioning
+- Uses the ESPHome `sprinkler` component; zones are Home Assistant valves
+- Scheduler on the device that works with Home Assistant down
+- Rain lockout, flow metering with a leak alarm, current faults
+- Improv provisioning over USB and Bluetooth LE
 
 [ESPHome package](firmware/esphome.md)
 
 </div>
 
-A browser-based [web installer](firmware/web-installer.md) flashes the standalone
-firmware over USB once a release is published. The ESPHome package is not built
-yet. See [Releases and updating](firmware/releases.md).
+A browser-based [web installer](firmware/web-installer.md) flashes either firmware
+over USB once a release is published. See [Releases and updating](firmware/releases.md).
 
 ## Where to start
 

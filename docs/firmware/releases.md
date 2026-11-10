@@ -6,8 +6,9 @@
     those that need a board.
 
 A release is a Git tag `vMAJOR.MINOR.PATCH` (or `vMAJOR.MINOR.PATCH-prerelease`). CI builds the
-standalone firmware from that tag, with the web interface packed in, and attaches the files to
-a [GitHub release](https://github.com/syntroniks/zoneflow/releases). The firmware reports the
+standalone firmware from that tag, with the web interface packed in, and the
+[ESPHome package](esphome.md)'s factory image, and attaches the files to a
+[GitHub release](https://github.com/syntroniks/zoneflow/releases). The firmware reports the
 tag as its version (`GET /api/v1/info`, the display's About screen and the MQTT discovery
 message).
 
@@ -20,6 +21,9 @@ message).
 | `zoneflow-standalone-<v>-www.bin` | The web interface alone (a LittleFS image of the `www` partition). |
 | `...-bootloader.bin`, `...-partition-table.bin`, `...-otadata.bin` | The remaining pieces, for writing by hand at the offsets in `release.json`. |
 | `manifest-standalone.json` | The [ESP Web Tools](https://esphome.github.io/esp-web-tools/) manifest the installer page uses. |
+| `zoneflow-esphome-<v>-factory.bin` | The ESPHome firmware for a blank board, written at offset 0. ESPHome lays out the partitions; the release checks the image headers only. |
+| `zoneflow-esphome-<v>-app.bin` | The ESPHome application alone, for ESPHome's own OTA. Once a controller is adopted, update it from the ESPHome dashboard instead. |
+| `manifest-esphome.json` | The installer manifest for the ESPHome firmware. It keeps the Improv WiFi step. |
 | `release.json` | All of the above with offsets, sizes and SHA-256, plus the partition table and flash settings. The installer page and `zfflash` read it. |
 | `SHA256SUMS` | `sha256sum --check SHA256SUMS` checks every file. |
 

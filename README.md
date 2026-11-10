@@ -31,7 +31,7 @@ Documentation: <https://syntroniks.github.io/zoneflow/>
 | `docs/design/system-spec.md` | System specification, the source of truth |
 | `hardware/` | KiCad project, BOM, fabrication outputs |
 | `firmware/zoneflow-fw/` | Standalone firmware (ESP-IDF) |
-| `firmware/esphome/` | ESPHome configuration |
+| `firmware/esphome/` | ESPHome package and its external components |
 | `enclosure/` | Parametric enclosure source and print files |
 | `tools/` | Build and release scripts |
 

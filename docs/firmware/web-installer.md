@@ -151,10 +151,11 @@ and <code>partitions.csv</code>):</p>
   `tools/ewt/vendor.py update`.
 - It sends nothing anywhere. The flashing happens in your browser and the files come from
   this same site.
-- It does not offer WiFi setup over USB (Improv Serial). The standalone firmware does not
-  implement Improv; it provisions over Bluetooth LE and a setup access point instead, as
-  described above. The ESPHome package, once it is built, will be a second choice in the
-  firmware list.
+- For the standalone firmware it does not offer WiFi setup over USB (Improv Serial). That
+  firmware does not implement Improv; it provisions over Bluetooth LE and a setup access
+  point instead, as described above. The [ESPHome firmware](esphome.md), the second
+  choice in the firmware list, does implement Improv: the installer offers WiFi setup
+  over the cable after the flash.
 - The files on this site are copies of the latest release, made when the site is built.
   The same files, with the same names, are on the GitHub release.
 
