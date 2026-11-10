@@ -89,6 +89,7 @@ private:
     void applyConfig(const Config &cfg);
     void updateInhibit();
     void handleCurrent(const CurrentVerdict &v);
+    void recordMasterFault();
     void raiseFault(FaultCode code, ZoneIndex zone);
     void clearCondition(FaultCode code);
     void clearFaults();
@@ -116,6 +117,12 @@ private:
     MonoMs leakSinceMs_ = 0;
     bool leakTiming_ = false;
     RunError lastRunError_ = RunError::Ok;
+    // Master lockout: consecutive current faults attributed to the master.
+    // A master session (on to off) of at least settle time without such a
+    // fault resets the count.
+    uint8_t masterFaults_ = 0;
+    bool masterFaultInSession_ = false;
+    MonoMs masterOnSinceMs_ = 0;
 
     bool persistDirty_ = false;
     MonoMs lastPersistMs_ = 0;

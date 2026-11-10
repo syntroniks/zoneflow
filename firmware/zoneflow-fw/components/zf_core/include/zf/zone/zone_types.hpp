@@ -33,7 +33,8 @@ enum class StartError : uint8_t {
     TooManyActive,
     AlreadyActive,
     ZeroDuration,
-    Resting, // zone reached its maximum run time and must stay closed for the rest time
+    Resting,         // zone reached its maximum run time and must stay closed for the rest time
+    MasterLockedOut, // master valve locked out by repeated faults
 };
 
 struct StartResult {

@@ -28,6 +28,8 @@ const char *toString(FaultCode f)
         return "time_invalid";
     case FaultCode::StorageError:
         return "storage_error";
+    case FaultCode::MasterLockedOut:
+        return "master_locked_out";
     case FaultCode::Count:
         break;
     }

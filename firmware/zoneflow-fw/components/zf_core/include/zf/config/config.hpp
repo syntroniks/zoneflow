@@ -31,6 +31,10 @@ struct MasterConfig {
     uint32_t preOpenMs = 1000;
     uint32_t postCloseMs = 2000;
     CurrentWindow current{80, 700};
+    // Consecutive short-circuit or over-current faults attributed to the
+    // master output that lock it out (and with it every zone) until
+    // ClearFaults.
+    uint8_t faultLockoutCount = 3;
 };
 
 struct DriverSettings {

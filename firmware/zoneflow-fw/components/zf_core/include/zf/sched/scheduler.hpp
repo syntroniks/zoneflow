@@ -43,6 +43,7 @@ enum class SkipReason : uint8_t {
     AlreadyQueued,
     QueueFull,
     NothingToRun,
+    MasterLockedOut,
 };
 
 enum class RunError : uint8_t {
@@ -56,13 +57,15 @@ enum class RunError : uint8_t {
     NothingToRun,
     LockedOut,   // zone locked out by a latched fault (RunZone)
     ZoneResting, // zone reached its maximum run time and is resting (RunZone)
+    MasterLockedOut,
 };
 
 // Inhibit flags (bitmask).
 enum InhibitFlag : uint8_t {
-    kInhibitSensor = 1u << 0,      // rain/spare sensor active: scheduled runs only
-    kInhibitNoAc = 1u << 1,        // no 24 VAC: everything
-    kInhibitMaintenance = 1u << 2, // OTA or service mode: everything
+    kInhibitSensor = 1u << 0,        // rain/spare sensor active: scheduled runs only
+    kInhibitNoAc = 1u << 1,          // no 24 VAC: everything
+    kInhibitMaintenance = 1u << 2,   // OTA or service mode: everything
+    kInhibitMasterLockout = 1u << 3, // master valve locked out: everything
 };
 
 const char *toString(RunSource s);

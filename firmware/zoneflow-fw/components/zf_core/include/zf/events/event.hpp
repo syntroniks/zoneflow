@@ -24,6 +24,7 @@ enum class FaultCode : uint8_t {
     ConfigInvalid,
     TimeInvalid,
     StorageError,
+    MasterLockedOut, // repeated current faults on the master output; latched
     Count,
 };
 static_assert(static_cast<unsigned>(FaultCode::Count) <= 32, "fault bitmask is 32 bits");

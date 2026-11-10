@@ -94,7 +94,12 @@ public:
     // A locked-out zone refuses to start until cleared (latched fault).
     void setLockout(ZoneIndex zone, bool locked);
     bool lockedOut(ZoneIndex zone) const;
-    void clearLockouts();
+    void clearLockouts(); // zones and master
+
+    // A locked-out master refuses to open, so with the master enabled no zone
+    // starts (StartError::MasterLockedOut).
+    void setMasterLockout(bool locked) { masterLockedOut_ = locked; }
+    bool masterLockedOut() const { return masterLockedOut_; }
 
     bool masterOn() const { return masterOn_; }
     uint8_t activeCount() const;
@@ -155,6 +160,7 @@ private:
     MonoMs lastChangeMs_ = 0;
     uint8_t lastOpenedBit_ = 0xFF;
     bool inhibit_ = false;
+    bool masterLockedOut_ = false;
     std::atomic<bool> emergency_{false};
 };
 

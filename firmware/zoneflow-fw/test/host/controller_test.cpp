@@ -422,3 +422,123 @@ TEST_F(ControllerTest, DroppedRunIsPublished)
     EXPECT_FALSE(ctrl->handle(Command::runZone(0, 60)));
     EXPECT_EQ(ctrl->lastRunError(), RunError::ZoneResting);
 }
+
+// ---- master valve lockout ------------------------------------------------------------
+
+namespace {
+class MasterTest : public ControllerTest {
+protected:
+    void SetUp() override
+    {
+        ControllerTest::SetUp();
+        Config c = config.get();
+        c.master.enabled = true;
+        c.master.preOpenMs = 1000;
+        c.master.postCloseMs = 0;
+        ASSERT_TRUE(config.update(c).ok);
+    }
+    // Starts zone 0; the master opens first and shorts during pre-open.
+    void masterShort()
+    {
+        sensors.sample.valveCurrentMa = -1;
+        ASSERT_TRUE(ctrl->handle(Command::runZone(0, 60)));
+        tick();
+        ASSERT_TRUE(out.master);
+        sensors.sample.valveCurrentMa = 5000;
+        tick();
+        tick();
+        ASSERT_FALSE(out.anyOn());
+        sensors.sample.valveCurrentMa = -1;
+        tick();
+    }
+};
+} // namespace
+
+TEST_F(MasterTest, RepeatedMasterShortsLockTheMasterOut)
+{
+    start();
+    masterShort();
+    masterShort();
+    EXPECT_FALSE(hasFault(FaultCode::MasterLockedOut));
+    EXPECT_EQ(state.snapshot().masterFaultCount, 2);
+    masterShort();
+    EXPECT_TRUE(hasFault(FaultCode::MasterLockedOut));
+    EXPECT_TRUE(ctrl->driver().masterLockedOut());
+    EXPECT_TRUE(state.snapshot().masterLockedOut);
+    // No more retries into the short: manual runs refused, nothing switches.
+    EXPECT_FALSE(ctrl->handle(Command::runZone(1, 60)));
+    EXPECT_EQ(ctrl->lastRunError(), RunError::MasterLockedOut);
+    runMs(2000);
+    EXPECT_FALSE(out.anyOn());
+    // ClearFaults releases it.
+    ctrl->handle(Command::simple(CommandType::ClearFaults));
+    tick();
+    EXPECT_FALSE(ctrl->driver().masterLockedOut());
+    EXPECT_EQ(state.snapshot().masterFaultCount, 0);
+    EXPECT_TRUE(ctrl->handle(Command::runZone(1, 60)));
+    tick();
+    EXPECT_TRUE(out.master);
+}
+
+TEST_F(MasterTest, LockedMasterSkipsScheduledPrograms)
+{
+    Config c = config.get();
+    c.schedule.programs[0] = makeProgram(1, {360}, {{0, 60}});
+    c.schedule.programCount = 1;
+    ASSERT_TRUE(config.update(c).ok);
+    clock.utc = utcOf(2026, 6, 1, 5, 50, 0);
+    start();
+    masterShort();
+    masterShort();
+    masterShort();
+    ASSERT_TRUE(ctrl->driver().masterLockedOut());
+    runMs(11 * 60 * 1000);
+    EXPECT_FALSE(out.anyOn());
+    const auto it =
+        std::find_if(events.begin(), events.end(), [](const Event &e) { return e.type == EventType::ProgramSkipped; });
+    ASSERT_NE(it, events.end());
+    EXPECT_EQ(it->program.skipReason, SkipReason::MasterLockedOut);
+}
+
+TEST_F(MasterTest, CleanMasterRunResetsTheCount)
+{
+    start();
+    masterShort();
+    masterShort();
+    sensors.sample.valveCurrentMa = 300; // master alone, then master + zone: in window
+    ASSERT_TRUE(ctrl->handle(Command::runZone(0, 5)));
+    runMs(7000);
+    ASSERT_FALSE(out.anyOn());
+    EXPECT_EQ(state.snapshot().masterFaultCount, 0);
+    masterShort();
+    masterShort();
+    EXPECT_FALSE(ctrl->driver().masterLockedOut());
+}
+
+TEST(Config, MasterFaultLockoutCount)
+{
+    Config c = Config::defaults();
+    EXPECT_EQ(c.master.faultLockoutCount, 3);
+    c.master.faultLockoutCount = 5;
+    Config back;
+    ASSERT_TRUE(configFromJson(configToJson(c), back).ok());
+    EXPECT_EQ(back.master.faultLockoutCount, 5);
+    c.master.faultLockoutCount = 0;
+    EXPECT_EQ(validate(c).path, "master.fault_lockout_count");
+}
+
+// An over-current found after the settle time also counts: closing the master
+// on that fault is not a clean session.
+TEST_F(MasterTest, MasterOverCurrentAfterSettleCounts)
+{
+    start();
+    for (int i = 0; i < 3; ++i) {
+        sensors.sample.valveCurrentMa = -1;
+        ASSERT_TRUE(ctrl->handle(Command::runZone(0, 60)));
+        tick();
+        sensors.sample.valveCurrentMa = 1000; // master window 80..700 mA
+        runMs(900);
+        ASSERT_FALSE(out.anyOn());
+    }
+    EXPECT_TRUE(ctrl->driver().masterLockedOut());
+}

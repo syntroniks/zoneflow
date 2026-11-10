@@ -399,6 +399,7 @@ void readConfig(Reader &rd, const cJSON *root, Config &c)
         rd.boolean(m, "enabled", c.master.enabled, "master");
         rd.integer(m, "pre_open_ms", c.master.preOpenMs, "master");
         rd.integer(m, "post_close_ms", c.master.postCloseMs, "master");
+        rd.integer(m, "fault_lockout_count", c.master.faultLockoutCount, "master");
         rd.window(m, c.master.current, "master");
     }
 
@@ -555,6 +556,7 @@ std::string configToJson(const Config &c, bool pretty)
         cJSON_AddBoolToObject(m, "enabled", c.master.enabled);
         cJSON_AddNumberToObject(m, "pre_open_ms", c.master.preOpenMs);
         cJSON_AddNumberToObject(m, "post_close_ms", c.master.postCloseMs);
+        cJSON_AddNumberToObject(m, "fault_lockout_count", c.master.faultLockoutCount);
         addWindow(m, c.master.current);
     }
 

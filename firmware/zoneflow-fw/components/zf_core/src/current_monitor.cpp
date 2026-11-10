@@ -42,16 +42,18 @@ void CurrentMonitor::rearm() { reported_ = CurrentFault::None; }
 CurrentVerdict CurrentMonitor::evaluate(int32_t measuredMa, uint16_t outputMask, uint8_t lastOpenedBit,
                                         MonoMs lastChangeMs, MonoMs now)
 {
-    if (!cfg_.enabled || measuredMa < 0) {
-        pending_ = CurrentFault::None;
-        count_ = 0;
-        return {};
-    }
+    // Track output changes even without a reading, so a fault reported for
+    // one switching of an output is reported again for the next one.
     if (outputMask != lastMask_) {
         lastMask_ = outputMask;
         pending_ = CurrentFault::None;
         count_ = 0;
         reported_ = CurrentFault::None;
+    }
+    if (!cfg_.enabled || measuredMa < 0) {
+        pending_ = CurrentFault::None;
+        count_ = 0;
+        return {};
     }
 
     CurrentFault cond = CurrentFault::None;

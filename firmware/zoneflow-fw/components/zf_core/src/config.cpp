@@ -65,6 +65,9 @@ ValidationResult validate(const Config &cfg)
     if (auto r = checkWindow(cfg.master.current, "master.current_min_ma"); !r.ok) {
         return r;
     }
+    if (cfg.master.faultLockoutCount < 1 || cfg.master.faultLockoutCount > 10) {
+        return VR::bad("master.fault_lockout_count", "must be 1..10");
+    }
     if (cfg.driver.maxConcurrent < 1 || cfg.driver.maxConcurrent > kMaxConcurrentZonesLimit) {
         return VR::bad("driver.max_concurrent", "must be 1.." + std::to_string(kMaxConcurrentZonesLimit));
     }

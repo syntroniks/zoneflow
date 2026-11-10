@@ -61,6 +61,8 @@ struct SystemState {
     std::array<ZoneStatus, kMaxZones> zones{};
     bool masterEnabled = false;
     bool masterOn = false;
+    bool masterLockedOut = false;
+    uint8_t masterFaultCount = 0; // consecutive current faults on the master
     QueueStatus queue{};
     SensorStatus sensors{};
     UtcSeconds rainDelayUntil = 0;

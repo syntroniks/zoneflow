@@ -264,6 +264,9 @@ void Controller::updateInhibit()
     if (maintenance_) {
         flags |= kInhibitMaintenance;
     }
+    if (config_.master.enabled && driver_.masterLockedOut()) {
+        flags |= kInhibitMasterLockout;
+    }
     driver_.setInhibit(!acOk || maintenance_);
     if (driver_.activeCount() > 0 || driver_.masterOn()) {
         if (maintenance_) {
@@ -284,6 +287,9 @@ void Controller::handleCurrent(const CurrentVerdict &v)
         return;
     case CurrentFault::ShortCircuit:
     case CurrentFault::OverCurrent: {
+        if (v.outputBit == ZoneDriver::kMasterBit) {
+            masterFaultInSession_ = true; // before stopAll: closing the master must not count as clean
+        }
         // Everything off first; bookkeeping after.
         driver_.stopAll(StopReason::Fault);
         scheduler_.stop();
@@ -294,6 +300,9 @@ void Controller::handleCurrent(const CurrentVerdict &v)
             zoneFault_[zone] = code;
         }
         raiseFault(code, zone);
+        if (v.outputBit == ZoneDriver::kMasterBit) {
+            recordMasterFault();
+        }
         return;
     }
     case CurrentFault::OpenCircuit:
@@ -312,6 +321,22 @@ void Controller::handleCurrent(const CurrentVerdict &v)
         raiseFault(FaultCode::CurrentWhileIdle, kNoZone);
         return;
     }
+}
+
+void Controller::recordMasterFault()
+{
+    masterFaultInSession_ = true;
+    if (masterFaults_ < 0xFF) {
+        ++masterFaults_;
+    }
+    if (masterFaults_ >= config_.master.faultLockoutCount && !driver_.masterLockedOut()) {
+        // Like a zone lockout: no program retries into a shorted master
+        // circuit. Every output is already off.
+        driver_.setMasterLockout(true);
+        raiseFault(FaultCode::MasterLockedOut, kNoZone);
+        updateInhibit();
+    }
+    stateDirty_ = true;
 }
 
 void Controller::raiseFault(FaultCode code, ZoneIndex zone)
@@ -340,6 +365,7 @@ void Controller::clearFaults()
     driver_.clearLockouts();
     current_.rearm(); // a current fault that is still present is raised again
     zoneFault_.fill(FaultCode::None);
+    masterFaults_ = 0;
     const uint32_t latched = activeFaults_ & ~kSelfClearing;
     activeFaults_ &= kSelfClearing;
     for (unsigned c = 1; c < static_cast<unsigned>(FaultCode::Count); ++c) {
@@ -349,6 +375,7 @@ void Controller::clearFaults()
             publish(e);
         }
     }
+    updateInhibit();
     stateDirty_ = true;
 }
 
@@ -389,6 +416,8 @@ void Controller::publishSnapshot(MonoMs now)
     }
     st.masterEnabled = config_.master.enabled;
     st.masterOn = driver_.masterOn();
+    st.masterLockedOut = driver_.masterLockedOut();
+    st.masterFaultCount = masterFaults_;
 
     st.queue.state = scheduler_.queueState();
     st.queue.length = static_cast<uint8_t>(scheduler_.queueSize());
@@ -443,6 +472,13 @@ void Controller::onZoneChanged(ZoneIndex zone, ValveState state, StopReason reas
 
 void Controller::onMasterChanged(bool on)
 {
+    const MonoMs now = deps_.clock.monoMs();
+    if (on) {
+        masterOnSinceMs_ = now;
+        masterFaultInSession_ = false;
+    } else if (!masterFaultInSession_ && now - masterOnSinceMs_ >= config_.diag.settleMs) {
+        masterFaults_ = 0; // ran cleanly
+    }
     Event e = makeEvent(EventType::MasterChanged);
     e.master.on = on;
     publish(e);

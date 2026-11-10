@@ -62,6 +62,8 @@ const char *toString(StartError e)
         return "zero_duration";
     case StartError::Resting:
         return "resting";
+    case StartError::MasterLockedOut:
+        return "master_locked_out";
     }
     return "?";
 }
@@ -124,6 +126,9 @@ StartResult ZoneDriver::start(ZoneIndex zone, uint32_t durationSec)
     }
     if (inhibit_ || emergency_.load(std::memory_order_acquire) || oe_.tripped()) {
         return {StartError::Inhibited, 0};
+    }
+    if (cfg_.masterEnabled && masterLockedOut_) {
+        return {StartError::MasterLockedOut, 0};
     }
     if (z.state != ValveState::Off) {
         return {StartError::AlreadyActive, 0};
@@ -334,6 +339,7 @@ void ZoneDriver::clearLockouts()
     for (auto &z : zones_) {
         z.lockedOut = false;
     }
+    masterLockedOut_ = false;
 }
 
 ValveState ZoneDriver::state(ZoneIndex zone) const { return zone < kMaxZones ? zones_[zone].state : ValveState::Off; }
@@ -364,6 +370,9 @@ StartError ZoneDriver::startBlocker(ZoneIndex zone) const
     }
     if (zones_[zone].lockedOut) {
         return StartError::LockedOut;
+    }
+    if (cfg_.masterEnabled && masterLockedOut_) {
+        return StartError::MasterLockedOut;
     }
     return restLeftMs(zone, clock_.monoMs()) > 0 ? StartError::Resting : StartError::Ok;
 }
