@@ -1,0 +1,61 @@
+* ZoneFlow AC-presence and zero-cross input: level at the LM2901 pin
+* (docs/design/hardware-design.md section 11, review A1 finding on U6D)
+*
+* AC_L -> R55 (100k) -> ZC_CLAMP (BAT54S to GND and 3V3) -> R88 (10k) ->
+* ZC_DIV -> R56 (10k) to GND, C34, comparator U6D against VL = 0.188 V.
+*
+* Run:  ngspice -b zerocross.cir
+*
+* The run compares the circuit with R88 against the first draft, in which
+* the clamp node went straight to the comparator pin (R88 = 0). The LM2901
+* allows -0.3 V at an input (TI SLCS006S, absolute maximum ratings). The
+* Schottky model is fitted to the BAT54S maximum forward voltage at 25 C
+* (Nexperia data sheet: 240 mV at 0.1 mA, 320 mV at 1 mA), so the 25 C
+* result is a worst-case part. Other temperatures scale that model; the
+* data sheet gives no limit away from 25 C.
+
+.param vrms=24 freq=50 rser=10k
+VAC  ac_l 0 SIN(0 {vrms*1.41421356} {freq})
+R55  ac_l zc_clamp 100k
+D9A  0 zc_clamp SCH
+D9B  zc_clamp v3v3 SCH
+V3V3 v3v3 0 DC 3.3
+R88  zc_clamp zc_div {rser}
+R56  zc_div 0 10k
+C34  zc_div 0 10n
+R57  zc_div ac_zc 1Meg
+R58  v3v3 ac_zc 10k
+VL   vl 0 DC 0.1875
+* U6D: open-collector output, low while VL > ZC_DIV
+B1   cmp 0 V = (V(vl) - V(zc_div)) > 0 ? 1 : 0
+S1   ac_zc 0 cmp 0 CMP
+.model CMP SW(VT=0.5 VH=0.1 RON=50 ROFF=1G)
+.model SCH D(IS=9.9e-8 N=1.345 RS=2.5 CJO=10p BV=30 EG=0.69 XTI=2)
+.options method=gear reltol=1e-4
+.tran 5u 60m 20m 5u
+
+.control
+set noaskquit
+foreach r 1m 10k
+  foreach t -20 25 60
+    foreach v 24 32
+      alterparam rser = $r
+      reset
+      alterparam vrms = $v
+      reset
+      set temp = $t
+      run
+      meas tran vmin min v(zc_div)
+      meas tran vmax max v(zc_div)
+      meas tran vcmin min v(zc_clamp)
+      meas tran t_r when v(ac_zc)=1.65 rise=1 td=0.0395
+      meas tran t_f when v(ac_zc)=1.65 fall=1 td=0.0405
+      let dr = (t_r - 0.04)*1e3
+      let df = (0.05 - t_f)*1e3
+      echo "RESULT R88=$r, $t C, $v VAC 50 Hz: comparator pin {$&vmin}..{$&vmax} V, clamp node min {$&vcmin} V; AC_ZC rises {$&dr} ms after the zero crossing, falls {$&df} ms before the next"
+    end
+  end
+end
+quit
+.endc
+.end

@@ -56,7 +56,8 @@ gpio:
     notes: >-
       Total valve current, low gain. AC waveform centred on about 0.79 V.
       Scale 133.3 mV per A (7.50 mA per mV). Linear to +/-5.8 A peak.
-      Hardware over-current trip at +/-4.6 A peak.
+      Hardware over-current trip at +/-4.6 A peak nominal, 4.0 to 5.4 A
+      over tolerances.
 
   - gpio: 2
     signal: ISENSE_HI
@@ -257,12 +258,15 @@ gpio:
     reset_state: high impedance
     powerup_glitch: none
     notes: >-
-      Must be toggled by supervised task code, never by LEDC, RMT, MCPWM or a
-      timer output. Accepted: square wave 10 Hz to 5 kHz (an edge at least
-      every 50 ms). Drive is enabled 8 to 105 ms after toggling starts and
-      removed 0.5 to 0.9 s after it stops low, at most 1.4 s if it stops high.
-      Stopping for longer than that also clears the over-current latch and
-      resets the I/O expander.
+      Every edge must be decided by code that has proof the control loop is
+      running (the firmware's timer interrupt checks a heartbeat). Never an
+      output that LEDC, RMT, MCPWM or a timer generates by itself. Required:
+      an edge at least every 20 ms; firmware uses 5 ms. There is no upper
+      frequency limit and slow toggling down to 2 to 3 Hz can still enable
+      drive, so only a steady level is guaranteed off. Drive is enabled 14
+      to 41 ms after 100 Hz toggling starts and removed 0.45 to 0.9 s after
+      it stops low, at most 1.2 s if it stops high. Stopping for 1.5 s also
+      clears the over-current latch and resets the I/O expander.
 
   - gpio: 39
     signal: BTN_HOME
@@ -277,12 +281,13 @@ gpio:
     signal: OC_FAULT_N
     direction: in
     active: low
-    pull: none (driven push-pull by U7)
+    pull: none (driven by U7 through 10k, R87)
     reset_state: high impedance
     powerup_glitch: none
     notes: >-
       Low while the hardware over-current latch is set. The latch is set by
-      the comparators and cleared only by stopping KEEPALIVE.
+      the comparators and cleared only by stopping KEEPALIVE. Input only:
+      R87 keeps this pin from changing the latch even if it is driven.
 
   - gpio: 41
     signal: AC_ZC
@@ -293,8 +298,10 @@ gpio:
     powerup_glitch: none
     notes: >-
       High during the half-cycle in which the COM leg is positive, low during
-      the other. Square wave at mains frequency. No edges for 50 ms means no
-      24 VAC. The rising edge is about 0.2 ms after the true zero crossing.
+      the other. Square wave at mains frequency, one rising and one falling
+      edge per period. No edge of either polarity for 25 ms means no 24 VAC.
+      At 24 VAC the rising edge is about 0.30 ms after the zero crossing and
+      the falling edge about 0.09 ms before the next one.
 
   - gpio: 42
     signal: SPARE_IO42

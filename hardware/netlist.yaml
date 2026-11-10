@@ -358,7 +358,7 @@ components:
     lcsc: C25819
     block: "B valve common relay"
     variant: "all"
-    note: "With C50, holds K1 for 30 to 50 ms after DRV_EN falls"
+    note: "With C50, holds Q2 on for 30 to 50 ms after DRV_EN falls. Q1 does not wait, see section 7.2"
     pins:
       "1": "RLY_G2"
       "2": "GND"
@@ -560,7 +560,7 @@ components:
       "30 IO37": "NC"
       "31 IO38": "KA"
       "32 IO39": "BTN_HOME"
-      "33 IO40": "FAULT_N"
+      "33 IO40": "OC_FAULT_N"
       "34 IO41": "AC_ZC"
       "35 IO42": "IO42"
       "36 RXD0": "U0RXD"
@@ -1304,6 +1304,16 @@ components:
     pins:
       "A": "LED_FLT"
       "K": "GND"
+  - ref: R87
+    value: "10k 1%"
+    package: "0603"
+    lcsc: C25804
+    block: "G current sense and over-current latch"
+    variant: "all"
+    note: "Stops GPIO40 from overdriving the latch node"
+    pins:
+      "1": "FAULT_N"
+      "2": "OC_FAULT_N"
   - ref: R55
     value: "100k 1% 200 V 0.25 W"
     package: "1206"
@@ -1312,7 +1322,7 @@ components:
     variant: "all"
     pins:
       "1": "AC_L"
-      "2": "ZC_DIV"
+      "2": "ZC_CLAMP"
   - ref: R56
     value: "10k 1%"
     package: "0603"
@@ -1341,7 +1351,17 @@ components:
     pins:
       "1 A": "GND"
       "2 K": "3V3"
-      "3 common": "ZC_DIV"
+      "3 common": "ZC_CLAMP"
+  - ref: R88
+    value: "10k 1%"
+    package: "0603"
+    lcsc: C25804
+    block: "H AC zero-cross"
+    variant: "all"
+    note: "Halves the clamped level at the comparator pin"
+    pins:
+      "1": "ZC_CLAMP"
+      "2": "ZC_DIV"
   - ref: R57
     value: "1M 1%"
     package: "0603"
@@ -1940,7 +1960,7 @@ components:
     lcsc: C25811
     block: "L sensor inputs and sensor supply"
     variant: "all"
-    note: "Current limit about 137 mA"
+    note: "Current limit 135 mA nominal, 116 to 158 mA"
     pins:
       "1": "SP_ILIM"
       "2": "GND"

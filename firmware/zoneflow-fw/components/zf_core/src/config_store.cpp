@@ -88,6 +88,14 @@ ValidationResult ConfigStore::updateFromJson(std::string_view json)
     if (!parsed.ok()) {
         return parsed.validation;
     }
+    if (parsed.origin == ConfigOrigin::Newer) {
+        // Writing it back as this firmware's schema would drop every field
+        // this firmware does not know. A stored newer config is kept intact
+        // for the same reason (see load()).
+        return ValidationResult::bad("schema", "schema " + std::to_string(parsed.storedVersion) +
+                                                   " is newer than this firmware supports (" +
+                                                   std::to_string(kConfigSchemaVersion) + ")");
+    }
     return update(cfg);
 }
 

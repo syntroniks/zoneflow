@@ -1,0 +1,84 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: Apache-2.0
+     Built-in page served when the www partition holds no web UI. Enough to
+     see the status, set or enter the admin password and upload firmware or a
+     web UI image. The real UI replaces it (docs/firmware/web-ui-contract.md). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZoneFlow</title>
+<style>
+body{font:15px/1.4 system-ui,sans-serif;margin:0 auto;max-width:42rem;padding:1rem;color:#1b2b2b;background:#f6f8f8}
+h1{font-size:1.4rem}h2{font-size:1.1rem;margin-top:1.6rem}
+section{background:#fff;border:1px solid #d5dede;border-radius:6px;padding:.8rem 1rem;margin:.8rem 0}
+input,button{font:inherit;padding:.35rem .5rem;margin:.2rem 0}button{cursor:pointer}
+pre{white-space:pre-wrap;word-break:break-word;font-size:12px;background:#eef3f3;padding:.5rem;border-radius:4px}
+.muted{color:#5a6b6b}.err{color:#a01818}
+@media (prefers-color-scheme:dark){body{background:#101616;color:#dde8e8}section{background:#182222;border-color:#2c3a3a}pre{background:#0c1212}.muted{color:#93a5a5}}
+</style>
+</head>
+<body>
+<h1>ZoneFlow</h1>
+<p class="muted">No web UI is installed. This built-in page shows the status and lets you install firmware or a UI image. The full API is under <code>/api/v1</code>.</p>
+<section id="auth"></section>
+<section><h2>Status</h2><pre id="status">loading…</pre></section>
+<section><h2>Update</h2>
+<p><label>Firmware image (zoneflow-fw.bin) <input type="file" id="fw"></label><br>
+<label><input type="checkbox" id="force"> update even while watering</label><br>
+<button id="fwgo">Upload firmware</button></p>
+<p><label>Web UI image (www.bin) <input type="file" id="ui"></label><br><button id="uigo">Upload web UI</button></p>
+<p id="upmsg" class="muted"></p></section>
+<script>
+"use strict";
+let csrf = null;
+const $ = (id) => document.getElementById(id);
+async function api(method, path, body, type) {
+  const h = {};
+  if (csrf) h["X-CSRF-Token"] = csrf;
+  if (body !== undefined) h["Content-Type"] = type || "application/json";
+  const r = await fetch("/api/v1" + path, {method, headers: h, credentials: "same-origin",
+    body: body === undefined ? undefined : (type ? body : JSON.stringify(body))});
+  const text = await r.text();
+  let json = null; try { json = JSON.parse(text); } catch (e) {}
+  if (!r.ok) throw new Error((json && json.error && json.error.message) || r.status);
+  return json;
+}
+function authForm(state) {
+  const box = $("auth");
+  if (state.authenticated) { box.innerHTML = "<p>Signed in.</p>"; return; }
+  if (!state.password_set) {
+    box.innerHTML = '<h2>Set the admin password</h2><p class="muted">Enter the setup code shown on the controller display or serial console.</p>' +
+      '<input id="code" placeholder="setup code" autocomplete="off"> <input id="pw" type="password" placeholder="new password (8+ characters)"> <button id="go">Set</button><p id="msg" class="err"></p>';
+    $("go").onclick = () => api("POST", "/auth/setup", {setup_code: $("code").value.trim().toUpperCase(), password: $("pw").value})
+      .then((s) => { csrf = s.csrf; refresh(); }).catch((e) => { $("msg").textContent = e.message; });
+  } else {
+    box.innerHTML = '<h2>Sign in</h2><input id="pw" type="password" placeholder="admin password"> <button id="go">Sign in</button><p id="msg" class="err"></p>';
+    $("go").onclick = () => api("POST", "/auth/login", {password: $("pw").value})
+      .then((s) => { csrf = s.csrf; refresh(); }).catch((e) => { $("msg").textContent = e.message; });
+  }
+}
+async function refresh() {
+  try {
+    const a = await api("GET", "/auth");
+    if (a.csrf) csrf = a.csrf;
+    authForm(a);
+    $("status").textContent = JSON.stringify(await api("GET", "/status"), null, 1);
+  } catch (e) { $("status").textContent = "error: " + e.message; }
+}
+function upload(input, path) {
+  const f = $(input).files[0];
+  if (!f) return;
+  $("upmsg").textContent = "uploading " + f.name + "…";
+  const q = $("force").checked ? "?force=true" : "";
+  api("POST", path + q, f, "application/octet-stream")
+    .then((r) => { $("upmsg").textContent = r.note || "done"; })
+    .catch((e) => { $("upmsg").textContent = "failed: " + e.message; });
+}
+$("fwgo").onclick = () => upload("fw", "/firmware/upload");
+$("uigo").onclick = () => upload("ui", "/firmware/assets");
+refresh();
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>

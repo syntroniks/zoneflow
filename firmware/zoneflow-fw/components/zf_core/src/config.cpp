@@ -65,11 +65,17 @@ ValidationResult validate(const Config &cfg)
     if (auto r = checkWindow(cfg.master.current, "master.current_min_ma"); !r.ok) {
         return r;
     }
+    if (cfg.master.faultLockoutCount < 1 || cfg.master.faultLockoutCount > 10) {
+        return VR::bad("master.fault_lockout_count", "must be 1..10");
+    }
     if (cfg.driver.maxConcurrent < 1 || cfg.driver.maxConcurrent > kMaxConcurrentZonesLimit) {
         return VR::bad("driver.max_concurrent", "must be 1.." + std::to_string(kMaxConcurrentZonesLimit));
     }
     if (cfg.driver.interZoneDelayMs > 600000) {
         return VR::bad("driver.inter_zone_delay_ms", "must be 0..600000");
+    }
+    if (cfg.driver.minRestSec < 60 || cfg.driver.minRestSec > 86400) {
+        return VR::bad("driver.min_rest_s", "must be 60..86400");
     }
     if (cfg.rain.debounceMs > 600000) {
         return VR::bad("sensors.rain.debounce_ms", "must be 0..600000");
@@ -102,6 +108,9 @@ ValidationResult validate(const Config &cfg)
     }
     if (s.missedStartGraceMin > 720) {
         return VR::bad("schedule.missed_start_grace_min", "must be 0..720");
+    }
+    if (s.pauseTimeoutMin < 1 || s.pauseTimeoutMin > 1440) {
+        return VR::bad("schedule.pause_timeout_min", "must be 1..1440");
     }
     if (s.programCount > kMaxPrograms) {
         return VR::bad("schedule.programs", "at most " + std::to_string(kMaxPrograms) + " programs");

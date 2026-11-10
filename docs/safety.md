@@ -56,9 +56,12 @@ ground to the computer, and a desktop computer's ground is earth. The reasons
 and the fault paths are in
 [hardware design section 5.3](design/hardware-design.md#53-the-ground-question).
 
-- Use a transformer whose 24 V output is not connected to earth. Sprinkler
-  transformers normally are not. If you are not sure, unplug it and check for
-  continuity between each output terminal and the earth pin.
+- Use a transformer whose 24 V output is not connected to earth on either
+  side. Sprinkler transformers normally are not. If you are not sure, unplug
+  it and check for continuity between each output terminal and the earth pin.
+- If either output terminal is connected to earth, do not connect a
+  mains-powered computer by USB while the 24 VAC plug is in. This holds
+  whichever way round the two wires are connected.
 - Do not connect a computer by USB while the controller shares its transformer
   with any other device, unless you have checked that both use the same
   transformer wire as ground.
@@ -68,7 +71,9 @@ and the fault paths are in
   net as one transformer wire. Do not join them to other equipment that has
   its own connection to the transformer.
 - The board has a fuse in its ground wire. It limits the damage in these
-  cases. It does not make them safe for the USB cable or the computer.
+  cases. It does not make them safe for the USB cable or the computer. A
+  second ground connection, through USB or a shared sensor cable, goes
+  around that fuse.
 
 ## Outdoor wiring and surges
 
@@ -104,7 +109,8 @@ hardware.
   flashed. This is meant to be enforced in hardware.
 - A hardware output-enable gates all output drivers. A stuck firmware loses it.
 - Firmware enforces a maximum run time per zone that no schedule or API call
-  can exceed.
+  can exceed. It counts back-to-back runs together; a zone that reaches the
+  limit stays closed for a rest time (30 minutes by default).
 - The board is meant to detect an open valve, a shorted valve and loss of 24 VAC.
 
 ## Radio

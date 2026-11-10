@@ -720,3 +720,130 @@ TEST_F(SchedulerTest, DuplicateStartTimesRunOnceAndAreNotReportedMissed)
     EXPECT_EQ(rec.started.size(), 2u);
     EXPECT_TRUE(rec.missed.empty());
 }
+
+// ---- phase 2 hardening ---------------------------------------------------------
+
+// Keys are local (day, minute) values. Moving the time zone west re-read the
+// last consumed key as a later local time than now, so the next day's start
+// was taken as already run.
+TEST_F(SchedulerTest, TimeZoneChangeWestDoesNotSkipNextStart)
+{
+    tz = *TimeZone::parse("<+10>-10");
+    addProgram(makeProgram(1, {at(6, 0)}, {{0, 60}}));
+    apply();
+    begin(utcOf(2026, 6, 1, 19, 59)); // 06-02 05:59 local
+    runUntil(utcOf(2026, 6, 1, 20, 1));
+    ASSERT_EQ(rec.startedAt, (std::vector<UtcSeconds>{utcOf(2026, 6, 1, 20)}));
+    tz = TimeZone::utc();
+    apply();
+    runUntil(utcOf(2026, 6, 2, 6, 1));
+    EXPECT_EQ(rec.startedAt, (std::vector<UtcSeconds>{utcOf(2026, 6, 1, 20), utcOf(2026, 6, 2, 6)}));
+    EXPECT_TRUE(rec.missed.empty());
+}
+
+// Moving east must not run a start that already ran, or catch up a past one.
+TEST_F(SchedulerTest, TimeZoneChangeEastDoesNotRepeatOrCatchUp)
+{
+    addProgram(makeProgram(1, {at(6, 0)}, {{0, 60}}));
+    apply();
+    begin(utcOf(2026, 6, 1, 5, 59));
+    runUntil(utcOf(2026, 6, 1, 6, 1));
+    ASSERT_EQ(rec.started.size(), 1u);
+    tz = *TimeZone::parse("<+10>-10"); // now 16:01 local
+    apply();
+    runUntil(utcOf(2026, 6, 1, 20, 1)); // 06-02 06:01 local
+    EXPECT_EQ(rec.startedAt, (std::vector<UtcSeconds>{utcOf(2026, 6, 1, 6), utcOf(2026, 6, 1, 20)}));
+    EXPECT_TRUE(rec.missed.empty());
+}
+
+// Reapplying the same zone leaves keys alone, also for a start in a DST gap
+// (02:30 does not exist on that day; converting the key through UTC would
+// turn it into 03:00). With the clock invalid, configure() does not advance
+// keys to now, so the key is compared as is.
+TEST_F(SchedulerTest, SameTimeZoneReappliedKeepsKeys)
+{
+    setBerlin();
+    addProgram(makeProgram(1, {at(2, 30)}, {{0, 60}}));
+    apply();
+    begin(utcOf(2026, 3, 29, 0, 59));
+    runUntil(utcOf(2026, 3, 29, 1, 1));
+    ASSERT_EQ(rec.started.size(), 1u);
+    const SchedulerPersist before = sched->persist();
+    sched->setTimeValid(false);
+    apply();
+    const SchedulerPersist after = sched->persist();
+    ASSERT_EQ(after.count, 1);
+    EXPECT_EQ(after.fired[0].key, before.fired[0].key);
+}
+
+// RunZone on a locked-out zone was accepted (RunError::Ok) and the entry was
+// dropped silently when it reached the head of the queue.
+TEST_F(SchedulerTest, RunZoneOnLockedOutZoneIsRefused)
+{
+    begin(utcOf(2026, 6, 1, 0, 0));
+    drv.setLockout(2, true);
+    EXPECT_EQ(sched->runZone(2, 60), RunError::LockedOut);
+    EXPECT_EQ(sched->queueSize(), 0u);
+    EXPECT_FALSE(out.anyOn());
+    drv.setLockout(2, false);
+    EXPECT_EQ(sched->runZone(2, 60), RunError::Ok);
+}
+
+// Two programs sharing a zone used to keep it open for 2 x max run time. The
+// second run is cut at the zone's maximum, and a further queued run of the
+// resting zone is dropped with an event.
+TEST_F(SchedulerTest, QueuedRunsOfOneZoneStopAtMaximumThenDrop)
+{
+    begin(utcOf(2026, 6, 1, 0, 0));
+    ASSERT_EQ(sched->runZone(0, 3000), RunError::Ok);
+    ASSERT_EQ(sched->runZone(0, 3000), RunError::Ok);
+    ASSERT_EQ(sched->runZone(0, 3000), RunError::Ok);
+    ASSERT_EQ(sched->runZone(1, 60), RunError::Ok);
+    runFor(3000 + 600 + 5);
+    EXPECT_EQ(drv.lastStopReason(0), StopReason::MaxRunTime);
+    ASSERT_EQ(rec.dropped.size(), 1u);
+    EXPECT_EQ(rec.dropped[0].zone, 0);
+    EXPECT_EQ(rec.dropped[0].reason, StartError::Resting);
+    EXPECT_TRUE(out.zone[1]); // the queue moved on
+    EXPECT_EQ(sched->runZone(0, 60), RunError::ZoneResting);
+}
+
+// A paused queue used to stay paused for ever, blocking later starts with no
+// fault. It now stops after the pause timeout (default 2 h).
+TEST_F(SchedulerTest, PausedQueueStopsAfterTimeout)
+{
+    EXPECT_EQ(cfg.schedule.pauseTimeoutMin, 120);
+    addProgram(makeProgram(1, {at(9, 0)}, {{0, 600}}));
+    apply();
+    begin(utcOf(2026, 6, 1, 6, 0));
+    ASSERT_EQ(sched->runZone(0, 600), RunError::Ok);
+    ASSERT_EQ(sched->runZone(1, 600), RunError::Ok);
+    runFor(10);
+    sched->pause();
+    sched->pause(); // a second pause does not restart the timeout
+    runFor(2 * 3600 - 1);
+    EXPECT_EQ(sched->queueState(), QueueState::Paused);
+    EXPECT_EQ(rec.pauseExpired, 0);
+    runFor(1);
+    EXPECT_EQ(sched->queueState(), QueueState::Idle);
+    EXPECT_EQ(sched->queueSize(), 0u);
+    EXPECT_EQ(rec.pauseExpired, 1);
+    EXPECT_FALSE(out.anyOn()); // stopped, not resumed
+    runUntil(utcOf(2026, 6, 1, 9, 0, 2));
+    EXPECT_EQ(rec.started.size(), 1u); // the schedule carries on
+    EXPECT_TRUE(out.zone[0]);
+}
+
+TEST_F(SchedulerTest, ResumeBeforeTimeoutKeepsRunning)
+{
+    cfg.schedule.pauseTimeoutMin = 1;
+    apply();
+    begin(utcOf(2026, 6, 1, 6, 0));
+    ASSERT_EQ(sched->runZone(0, 600), RunError::Ok);
+    sched->pause();
+    runFor(59);
+    sched->resume();
+    runFor(120);
+    EXPECT_EQ(rec.pauseExpired, 0);
+    EXPECT_TRUE(out.zone[0]);
+}

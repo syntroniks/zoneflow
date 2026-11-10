@@ -399,12 +399,15 @@ void readConfig(Reader &rd, const cJSON *root, Config &c)
         rd.boolean(m, "enabled", c.master.enabled, "master");
         rd.integer(m, "pre_open_ms", c.master.preOpenMs, "master");
         rd.integer(m, "post_close_ms", c.master.postCloseMs, "master");
+        rd.integer(m, "fault_lockout_count", c.master.faultLockoutCount, "master");
         rd.window(m, c.master.current, "master");
     }
 
     if (const cJSON *d = rd.object(root, "driver", top)) {
         rd.integer(d, "max_concurrent", c.driver.maxConcurrent, "driver");
         rd.integer(d, "inter_zone_delay_ms", c.driver.interZoneDelayMs, "driver");
+        rd.integer(d, "min_rest_s", c.driver.minRestSec, "driver");
+        rd.boolean(d, "zero_cross_switching", c.driver.zeroCrossSwitching, "driver");
     }
 
     if (const cJSON *s = rd.object(root, "sensors", top)) {
@@ -441,6 +444,7 @@ void readConfig(Reader &rd, const cJSON *root, Config &c)
     if (const cJSON *s = rd.object(root, "schedule", top)) {
         rd.integer(s, "seasonal_percent", c.schedule.seasonalPercent, "schedule");
         rd.integer(s, "missed_start_grace_min", c.schedule.missedStartGraceMin, "schedule");
+        rd.integer(s, "pause_timeout_min", c.schedule.pauseTimeoutMin, "schedule");
         if (const cJSON *programs = rd.array(s, "programs", "schedule", kMaxPrograms)) {
             std::size_t i = 0;
             const cJSON *item = nullptr;
@@ -554,12 +558,15 @@ std::string configToJson(const Config &c, bool pretty)
         cJSON_AddBoolToObject(m, "enabled", c.master.enabled);
         cJSON_AddNumberToObject(m, "pre_open_ms", c.master.preOpenMs);
         cJSON_AddNumberToObject(m, "post_close_ms", c.master.postCloseMs);
+        cJSON_AddNumberToObject(m, "fault_lockout_count", c.master.faultLockoutCount);
         addWindow(m, c.master.current);
     }
 
     if (cJSON *d = cJSON_AddObjectToObject(r, "driver")) {
         cJSON_AddNumberToObject(d, "max_concurrent", c.driver.maxConcurrent);
         cJSON_AddNumberToObject(d, "inter_zone_delay_ms", c.driver.interZoneDelayMs);
+        cJSON_AddNumberToObject(d, "min_rest_s", c.driver.minRestSec);
+        cJSON_AddBoolToObject(d, "zero_cross_switching", c.driver.zeroCrossSwitching);
     }
 
     if (cJSON *s = cJSON_AddObjectToObject(r, "sensors")) {
@@ -590,6 +597,7 @@ std::string configToJson(const Config &c, bool pretty)
     if (cJSON *s = cJSON_AddObjectToObject(r, "schedule")) {
         cJSON_AddNumberToObject(s, "seasonal_percent", c.schedule.seasonalPercent);
         cJSON_AddNumberToObject(s, "missed_start_grace_min", c.schedule.missedStartGraceMin);
+        cJSON_AddNumberToObject(s, "pause_timeout_min", c.schedule.pauseTimeoutMin);
         cJSON *programs = cJSON_AddArrayToObject(s, "programs");
         for (std::size_t i = 0; programs != nullptr && i < c.schedule.programCount; ++i) {
             const Program &p = c.schedule.programs[i];

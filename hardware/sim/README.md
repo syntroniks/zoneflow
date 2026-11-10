@@ -1,7 +1,9 @@
 # Simulations
 
-ngspice netlists for the three parts of the rev A design where a simulation
-tells more than a hand calculation. The design is in
+ngspice netlists for the parts of the rev A design where a simulation
+tells more than a hand calculation. `keepalive.cir`, `isense.cir` and
+`supply.cir` are the author's. The others were added by review A1
+(`docs/design/hardware-review-a1.md`). The design is in
 `docs/design/hardware-design.md`. No board exists. These runs check the
 circuit as drawn against idealised parts. They do not replace a bench test.
 
@@ -87,3 +89,136 @@ What it showed:
 - **Ripple**: at the typical load the valley stays above 24 V down to 21.6 VAC.
 - **Brownout**: the valley stays above the buck's 8.4 V lockout for a sag to 16 VAC at up to 3 W. An 18 VAC sag with every consumer at its limit, 5 W, does not hold.
 - **R1**: 1 W is enough for every case except that last one, which is a transient condition.
+
+## zerocross.cir
+
+Added by review A1. The AC-presence and zero-cross input of section 11: R55,
+the BAT54S clamp D9, R88, R56, C34 and comparator U6D. It compares the circuit
+with R88 against the first draft, where the clamp node went straight to the
+LM2901 pin. The Schottky model is fitted to the BAT54S maximum forward voltage
+at 25 °C, so the 25 °C rows are a worst-case part. The -20 °C and 60 °C rows
+scale that model and are not data sheet limits.
+
+| R88 | Temperature | Supply | Comparator pin | `AC_ZC` rises after the crossing | falls before the next |
+|---|---|---|---|---|---|
+| none | 25 °C | 24 VAC | -0.28 to 3.09 V | 0.28 ms | 0.08 ms |
+| none | 25 °C | 32 VAC | -0.29 to 3.53 V | 0.23 ms | 0.03 ms |
+| none | -20 °C | 32 VAC | -0.36 to 3.60 V | 0.23 ms | 0.03 ms |
+| 10k | 25 °C | 24 VAC | -0.14 to 1.78 V | 0.30 ms | 0.09 ms |
+| 10k | -20 °C | 32 VAC | -0.18 to 1.83 V | 0.25 ms | 0.04 ms |
+| 10k | 60 °C | 24 VAC | -0.12 to 1.76 V | 0.30 ms | 0.09 ms |
+
+What it showed:
+
+- **Rating**: without R88 the pin sits at the LM2901's -0.3 V absolute maximum at 25 °C and goes past it when cold. With R88 it stays above -0.2 V.
+- **Timing**: the rising edge lags the zero crossing by 0.25 to 0.30 ms and the falling edge leads the next one by 0.04 to 0.09 ms. The two are not symmetric, because the C34 delay adds to one and subtracts from the other. Firmware needs a separate offset for each edge.
+
+## keepalive_faults.cir
+
+Added by review A1. The same detector as `keepalive.cir`, run 47 times: every
+single component fault, toggle rates from 1 Hz to 1 MHz, and tolerance and
+temperature corners. Result lines start `RESULT FAULT`, `RESULT RATE` or
+`RESULT CORNER`. ngspice also prints "out of interval" errors for events that
+do not happen, such as `KA_OK` never going low. That is expected.
+
+Faults that leave `KA_OK` high when it should be low:
+
+| Fault | `KA_OK` |
+|---|---|
+| R30 open | High 13 ms after the first edge and never low again. The reservoir rises to 3.26 V. Same at 60 °C. |
+| R31 opens while enabled | Stays at 3.3 V |
+| R34 open | High from power-up with no keep-alive at all |
+| C22 short | Normal while the pin toggles. High with the pin held high and no edges. |
+| U6A output never pulls low | High from power-up |
+
+Faults that leave it low or harmless: R29 open, D7A short, D7B short or open,
+C23 short, C24 short, R35 open and R31 open from power-up never enable. C23
+open makes `KA_OK` follow the keep-alive. R32 open, R33 open and R36 open still
+work; R32 open shortens the hold-up to 0.46 s.
+
+| Toggle rate | `KA_OK` |
+|---|---|
+| 1 Hz | Never high. Reservoir peaks at 1.16 V. |
+| 2 Hz, nominal parts | Never high. 1.42 V. |
+| 2 Hz, C23 30 % low, C22 20 % high, -15 mV offset, `3V3` 3.4 V | High after 0.50 s |
+| 3 Hz, 5 Hz | High after 0.67 s and 0.40 s |
+| 25 Hz | High after 43 ms |
+| 50 kHz, 1 MHz | High after 9 ms and 28 ms |
+| 100 Hz at 2 % and at 98 % duty | High after 0.11 s and 0.09 s |
+
+| Corner | Hold-up after the last edge |
+|---|---|
+| Nominal parts at -20, 27, 60, 85 °C | 0.71, 0.74, 0.67, 0.44 s |
+| Short corner at -20, 60, 85 °C | 0.50, 0.47, 0.30 s |
+| Long corner at -20 °C | 0.80 s |
+| Long corner, pin stops high | 1.19 s |
+
+The slowest enable, at the slow corner and -20 °C, is 41 ms at 100 Hz, 0.16 s
+at 25 Hz and 0.50 s at 10 Hz. With `3V3` ramping over 0.1 s or 1 s, `KA_OK`
+stays low when the pin is low. With the pin tied to the rail it follows the
+rail to 0.95 V and falls again.
+
+What it showed:
+
+- **Single faults**: five faults leave drive enabled with no working keep-alive. This is finding B1 of the review.
+- **Rates**: the detector has no upper frequency limit and does not reliably reject slow toggling above about 2 Hz. It detects edges, not a correct rate.
+- **Temperature**: the hold-up shortens above 60 °C because Schottky leakage adds to the bleed resistor. The leakage figure comes from a generic model.
+
+## relay_drive.cir
+
+Added by review A1. The K1 coil driver of section 7.2: Q1 on expander bit P05,
+Q2 on `DRV_EN` with the hold network D21, R14 and C50. `DRV_EN` falls at
+100 ms and, as on the board, the expander pin goes high impedance at the same
+moment. The coil inductance is not in the Omron data sheet, so the run tries
+three values.
+
+| Coil inductance | Q1 gate under 1.05 V | Q2 gate under 1.05 V | Coil current under 4 mA |
+|---|---|---|---|
+| 50 mH | 0.11 ms | 45.9 ms | 0.7 ms |
+| 100 mH | 0.11 ms | 45.9 ms | 1.3 ms |
+| 300 mH | 0.11 ms | 45.9 ms | 3.8 ms |
+
+What it showed:
+
+- **The hold does not hold**: Q2's gate stays up for 46 ms as designed, but Q1 is in series and turns off in 0.1 ms, because resetting the expander releases its gate. The coil has lost its current within 4 ms. K1 opens within its own release time, 10 ms at most, not 30 to 50 ms later.
+
+## isense_corners.cir
+
+Added by review A1. The amplifier U8A, the threshold chain and the window
+comparators of `isense.cir`, with every tolerance as a parameter. A slow
+current ramp of each polarity finds the trip current. `ISENSE_LO` falls for
+positive shunt current, so U6C and `VL` trip that polarity and U6B and `VH`
+the other. U8B and its small load on `VB` are left out.
+
+| Corner | Positive current | Negative current |
+|---|---|---|
+| Nominal | 4.56 A | 4.67 A |
+| Lowest trip | 4.05 A | 4.03 A |
+| Highest trip | 5.10 A | 5.36 A |
+
+The lowest-trip corner is 1 % resistors and shunt all in the direction of
+more gain and a narrower window, `3V3` at 3.2 V, 4.5 mV of op-amp offset and
+15 mV of comparator offset towards the threshold. The highest-trip corner is
+the opposite.
+
+What it showed:
+
+- **Trip window**: 4.0 to 5.4 A peak, wider than the 4.2 to 5.1 A of the hand calculation, which left out the resistors that set the amplifier's rest level.
+- **Margin**: the lowest trip is 13 % above the largest current the specification allows, 3.54 A peak.
+
+## relay_pump_proposal.cir
+
+Added by review A1. **A proposal, not part of the rev A netlist.** A second
+keep-alive detector that drives only the relay transistor Q2: a diode pump
+from `KA` straight onto Q2's gate, with two bleed resistors in parallel. It is
+the circuit change recommended for finding B1 of the review.
+
+| Case | Gate above 1.45 V after the first edge | Gate below 0.65 V after the last edge |
+|---|---|---|
+| -20 °C | 1.7 ms | 0.73 s |
+| 27 °C | 1.5 ms | 0.71 s |
+| 60 °C | 1.3 ms | 0.36 s |
+| 27 °C, one bleed resistor open | | 1.33 s |
+| 27 °C, pin stops high | | 1.44 s |
+
+1.45 V and 0.65 V are the highest and lowest gate thresholds of the AO3400A.
