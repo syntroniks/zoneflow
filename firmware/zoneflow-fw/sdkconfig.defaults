@@ -1,19 +1,31 @@
 # ZoneFlow defaults. sdkconfig is generated from this file; do not commit it.
 CONFIG_IDF_TARGET="esp32s3"
 
-# Flash and partitions: 8 MB, two OTA slots, web assets, core dump.
-CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+# Module: ESP32-S3-WROOM-1-N16R8 (spec v0.3: PSRAM for the display
+# interface). 16 MB flash: two OTA slots, assets, core dump.
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
 CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH=y
 CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF=y
 
+# 8 MB octal PSRAM. It occupies GPIO35..37 (zf_board asserts they are not
+# used). A board without PSRAM panics at boot with these settings; outputs
+# are off by hardware while it does.
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+
 # Logs and flashing over the native USB port.
 CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
 
-# 1 kHz tick so the 5 ms keep-alive period is exact.
+# 1 kHz tick: the 50 ms control period is exact.
 CONFIG_FREERTOS_HZ=1000
+
+# The OE keep-alive is a GPTimer interrupt that must keep running while the
+# flash cache is off (NVS writes, OTA): handler and driver objects in IRAM.
+CONFIG_GPTIMER_ISR_CACHE_SAFE=y
 
 # Watchdogs: the control task is subscribed to the task watchdog.
 CONFIG_ESP_TASK_WDT_EN=y
@@ -29,3 +41,57 @@ CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
 CONFIG_COMPILER_OPTIMIZATION_SIZE=y
 CONFIG_COMPILER_CXX_EXCEPTIONS=n
 CONFIG_COMPILER_CXX_RTTI=n
+
+# ---- Network, web and OTA (zf_net, zf_web, zf_ota) ----
+# BLE provisioning: NimBLE host, peripheral role only, one connection.
+CONFIG_BT_ENABLED=y
+CONFIG_BT_NIMBLE_ENABLED=y
+CONFIG_BT_NIMBLE_ROLE_CENTRAL=n
+CONFIG_BT_NIMBLE_ROLE_OBSERVER=n
+CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
+# Unified provisioning with Security 2 (SRP6a + AES-GCM) only.
+CONFIG_ESP_PROTOCOMM_SUPPORT_SECURITY_VERSION_0=n
+CONFIG_ESP_PROTOCOMM_SUPPORT_SECURITY_VERSION_1=n
+CONFIG_ESP_PROTOCOMM_SUPPORT_SECURITY_VERSION_2=y
+CONFIG_WIFI_PROV_STA_ALL_CHANNEL_SCAN=y
+# 802.11k/v so mesh systems can steer the station.
+CONFIG_ESP_WIFI_11KV_SUPPORT=y
+# HTTP server: 9 handlers plus SoftAP provisioning endpoints, longer headers
+# (cookies), optional HTTPS. Sockets: 7 HTTP + 4 HTTPS + DNS, mDNS, SNTP.
+CONFIG_HTTPD_MAX_REQ_HDR_LEN=1024
+CONFIG_HTTPD_MAX_URI_LEN=512
+CONFIG_ESP_HTTPS_SERVER_ENABLE=y
+CONFIG_LWIP_MAX_SOCKETS=16
+# TLS buffers allocated per record, not 2 x 16 KB per session.
+CONFIG_MBEDTLS_DYNAMIC_BUFFER=y
+
+# Display (zf_display): LVGL 9.6, its heap on the PSRAM enabled above
+# (src/port/settings.cpp). Keep in step with sim/lv_conf.h; the build fails
+# in zf_view/theme.hpp if a needed option is missing.
+CONFIG_LV_COLOR_FORMAT_RGB565=y
+CONFIG_LV_USE_CUSTOM_MALLOC=y
+CONFIG_LV_USE_CLIB_STRING=y
+CONFIG_LV_USE_CLIB_SPRINTF=y
+CONFIG_LV_FONT_MONTSERRAT_14=n
+CONFIG_LV_FONT_MONTSERRAT_16=y
+CONFIG_LV_FONT_MONTSERRAT_20=y
+CONFIG_LV_FONT_MONTSERRAT_28=y
+CONFIG_LV_FONT_MONTSERRAT_48=y
+CONFIG_LV_FONT_DEFAULT_MONTSERRAT_20=y
+CONFIG_LV_USE_THEME_DEFAULT=n
+CONFIG_LV_USE_THEME_SIMPLE=n
+CONFIG_LV_USE_THEME_MONO=n
+CONFIG_LV_USE_QRCODE=y
+CONFIG_LV_BUILD_EXAMPLES=n
+CONFIG_LV_BUILD_DEMOS=n
+
+# Security review F6: network load must not reach the control task or reboot
+# the controller. Unpinned, lwIP's TCP/IP task (priority 18) runs on core 1
+# whenever core 0 is busy and preempts the control task (priority 10).
+# The HTTP(S) servers run on core 0 at priority 5; a LAN client that keeps
+# them busy (TLS handshakes, pipelined requests) can keep the core 0 idle
+# task from running for 5 s, which the task watchdog turns into a panic and
+# restart. The control task stays subscribed to the watchdog itself, and
+# the core 1 idle task stays watched.
+CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0=y
+CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU0=n

@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <type_traits>
 
+#include "zf/events/command.hpp"
 #include "zf/sched/scheduler.hpp"
 #include "zf/types.hpp"
 #include "zf/zone/zone_types.hpp"
@@ -23,6 +24,9 @@ enum class FaultCode : uint8_t {
     ConfigInvalid,
     TimeInvalid,
     StorageError,
+    MasterLockedOut,         // repeated current faults on the master output; latched
+    CurrentSenseUnavailable, // no valve current readings; zones still run; clears itself
+    OverCurrentTrip,         // hardware over-current comparator tripped; latched
     Count,
 };
 static_assert(static_cast<unsigned>(FaultCode::Count) <= 32, "fault bitmask is 32 bits");
@@ -53,6 +57,9 @@ enum class EventType : uint8_t {
     ConfigApplied,
     TimeStatusChanged,
     MaintenanceChanged,
+    CommandRejected, // Controller::handle() refused a command; data: rejected
+    RunDropped,      // a queued run could not start and was dropped; data: dropped
+    PauseExpired,    // the queue stayed paused for schedule.pause_timeout_min and was stopped
     Count,
 };
 static_assert(static_cast<unsigned>(EventType::Count) <= 32, "event mask is 32 bits");
@@ -95,6 +102,18 @@ struct TimeStatusData {
 struct FlagData {
     bool on;
 };
+struct CommandRejectedData {
+    CommandType command;
+    ZoneIndex zone;     // as in the command (RunZone)
+    uint16_t programId; // as in the command (RunProgram)
+    RunError error;
+};
+struct RunDroppedData {
+    ZoneIndex zone;
+    uint16_t programId; // 0 for a manual zone run
+    RunSource source;
+    StartError reason;
+};
 
 struct Event {
     EventType type;
@@ -109,6 +128,8 @@ struct Event {
         RainDelayData rainDelay;
         TimeStatusData time;
         FlagData flag;
+        CommandRejectedData rejected;
+        RunDroppedData dropped;
     };
 };
 static_assert(std::is_trivially_copyable_v<Event>, "events are copied with memcpy into RTOS queues");

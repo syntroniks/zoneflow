@@ -1,0 +1,60 @@
+* KA bridged to AC_ZC: can the zero-cross square wave run the two detectors?
+* (docs/design/hardware-design.md section 8.5, "The bridged KA net")
+*
+* AC_ZC is the open-collector output of U6D with a 10 kohm pull-up, R58. It
+* toggles at mains frequency with no firmware behind it. This run ties it to
+* KA with the ESP32 pin floating and looks at both reservoirs: KA_N2 of the
+* gate-drive detector (enables at 1.55 V) and RLY_G2 of the relay detector
+* (AO3400A threshold 0.51 V at the lowest, hot, to 1.59 V at the highest,
+* cold). Capacitors are at the values that charge the reservoirs furthest.
+*
+* Run:  ngspice -b ka_bridge.cir
+*
+* Models are generic, as in keepalive_faults.cir. The comparators that
+* follow the reservoirs are left out: the question is only how far the
+* reservoirs charge.
+
+.param fzc=50
+VSW   sw 0 PULSE(0 1 10m 1u 1u {0.5/fzc} {1/fzc})
+V3V3  v33 0 3.4
+R58   v33 ka 10k
+S1    ka 0 sw 0 OC
+R33   ka 0 10k
+* detector A
+R29   ka n0 220
+C22   n0 n1 5.6u
+D7A   0 n1 SCH
+D7B   n1 n2 SCH
+C23   n2 0 7u
+R30   n2 0 55k
+* detector B
+R89   ka m0 1k
+C51   m0 m1 5.2u
+D22A  0 m1 SCH
+D22B  m1 g2 SCH
+C50   g2 0 7u
+R14   g2 0 50k
+.model OC SW(VT=0.5 VH=0.1 RON=50 ROFF=1G)
+.model SCH D(IS=2.2e-7 N=1.05 RS=2.5 CJO=10p BV=30 IBV=2u EG=0.69 XTI=2)
+.options method=gear reltol=1e-4
+.tran 100u 4 uic
+
+.control
+set noaskquit
+foreach f 50 60
+  foreach t -20 27 70
+    alterparam fzc = $f
+    reset
+    set temp = $t
+    run
+    meas tran kamax max v(ka)
+    meas tran n2max max v(n2)
+    meas tran g2max max v(g2)
+    meas tran n2ss max v(n2) from=3 to=4
+    meas tran g2ss max v(g2) from=3 to=4
+    echo "RESULT AC_ZC on KA, $f Hz, $t C: KA peaks at {$&kamax} V. KA_N2 peaks at {$&n2max} V, {$&n2ss} V after 3 s (enables at 1.55 V). RLY_G2 peaks at {$&g2max} V, {$&g2ss} V after 3 s (thresholds 0.51 to 1.59 V)"
+  end
+end
+quit
+.endc
+.end

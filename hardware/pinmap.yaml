@@ -13,6 +13,9 @@
 #                 ESP32-S3 Series Datasheet v2.2, Table 2-1
 #   powerup_glitch from Table 2-2 of the same datasheet ("none" = not listed)
 #   pull          external resistor on the board, not the internal one
+#   net           net name in hardware/netlist.yaml, given only where it
+#                 differs from the signal name. tools/designsync checks
+#                 every entry against the netlist.
 #
 # Rules this map follows
 #   - Analogue inputs are on ADC1 only (GPIO1 to GPIO10). ADC2 shares
@@ -23,8 +26,10 @@
 #   - GPIO19 and GPIO20 are USB only.
 #   - No valve, relay or enable function is on a GPIO. Valve drive is on the
 #     I2C expander, which the keep-alive circuit holds in reset.
-#   - Strapping pins: GPIO0 is the boot button only. GPIO3 and GPIO46 carry
-#     functions that cannot disturb the strap (see notes). GPIO45 is unused.
+#   - Strapping pins: GPIO0 is the boot button only. GPIO3, GPIO45 and
+#     GPIO46 carry functions that cannot disturb the strap (see notes).
+#   - GPIO7 and GPIO42 read back the two keep-alive detectors. They are
+#     inputs and stay inputs: neither can enable anything.
 
 schema_version: 1
 board: zoneflow
@@ -47,6 +52,7 @@ gpio:
 
   - gpio: 1
     signal: ISENSE_LO
+    net: ADC_LO
     direction: analog_in
     active: n/a
     adc_channel: ADC1_CH0
@@ -56,10 +62,12 @@ gpio:
     notes: >-
       Total valve current, low gain. AC waveform centred on about 0.79 V.
       Scale 133.3 mV per A (7.50 mA per mV). Linear to +/-5.8 A peak.
-      Hardware over-current trip at +/-4.6 A peak.
+      Hardware over-current trip at +/-4.6 A peak nominal, 4.0 to 5.4 A
+      over tolerances.
 
   - gpio: 2
     signal: ISENSE_HI
+    net: ADC_HI
     direction: analog_in
     active: n/a
     adc_channel: ADC1_CH1
@@ -115,13 +123,21 @@ gpio:
     notes: Spare sensor input, terminal AUX. Digital, or analogue 0 to 3.3 V through 10k if the pull-up R80 is not fitted.
 
   - gpio: 7
-    signal: SENS_PWR_EN
-    direction: out
+    signal: RLY_B_RB
+    direction: in
     active: high
-    pull: 100k to GND (R86)
+    adc_channel: ADC1_CH6
+    pull: 100k from the node between Q1 and Q2, 150k to GND (R94, R95)
     reset_state: high impedance
     powerup_glitch: low level, 60 us
-    notes: Enables the 5 V sensor supply switch U11. Off in reset.
+    notes: >-
+      Read-back of the relay keep-alive detector. High, about 3.05 V, means
+      Q2 is off, so K1 cannot close. Low means Q2 is on. Must be high before
+      every run and low within 150 ms of starting KEEPALIVE. After
+      KEEPALIVE stops it must go high within 1.0 s. It reads low without
+      24 VAC, because the pull-up R93 is on V_BUCK. Input only, no internal
+      pull. As an ADC input it also shows a gate-to-drain short of Q2 as a
+      level between 0.3 and 1.0 V. Design section 7.4.
 
   - gpio: 8
     signal: I2C0_SDA
@@ -224,21 +240,23 @@ gpio:
 
   - gpio: 19
     signal: USB_DM
+    net: USB_DM_MCU
     direction: bidir
     active: n/a
     pull: none
     reset_state: high impedance
     powerup_glitch: low level, then two high-level pulses, 60 us each
-    notes: Native USB D-. Reserved.
+    notes: Native USB D-. Reserved. Through R98, 0 ohm, a series footprint.
 
   - gpio: 20
     signal: USB_DP
+    net: USB_DP_MCU
     direction: bidir
     active: n/a
     pull: none
     reset_state: USB pull-up
     powerup_glitch: weak pull-down, then two high-level pulses, 60 us each
-    notes: Native USB D+. Reserved.
+    notes: Native USB D+. Reserved. Through R97, 0 ohm, a series footprint.
 
   - gpio: 21
     signal: TFT_BL
@@ -251,18 +269,25 @@ gpio:
 
   - gpio: 38
     signal: KEEPALIVE
+    net: KA
     direction: out
     active: n/a
     pull: 10k to GND (R33)
     reset_state: high impedance
     powerup_glitch: none
     notes: >-
-      Must be toggled by supervised task code, never by LEDC, RMT, MCPWM or a
-      timer output. Accepted: square wave 10 Hz to 5 kHz (an edge at least
-      every 50 ms). Drive is enabled 8 to 105 ms after toggling starts and
-      removed 0.5 to 0.9 s after it stops low, at most 1.4 s if it stops high.
-      Stopping for longer than that also clears the over-current latch and
-      resets the I/O expander.
+      Every edge must be decided by code that has proof the control loop is
+      running (the firmware's timer interrupt checks a heartbeat). Never an
+      output that LEDC, RMT, MCPWM or a timer generates by itself. Required:
+      an edge at least every 20 ms; firmware uses 5 ms. There is no upper
+      frequency limit and slow toggling down to 2 to 3 Hz can still enable
+      drive, so only a steady level is guaranteed off. The pin feeds two
+      independent detectors. Gate drive: enabled 14 to 41 ms after 100 Hz
+      toggling starts, removed 0.45 to 0.9 s after it stops low, at most
+      1.2 s if it stops high. Relay transistor Q2: on 22 to 82 ms after
+      toggling starts, off between 0.12 and 0.95 s after it stops low, at
+      most 1.4 s if it stops high. Stopping for 1.5 s also clears the
+      over-current latch and resets the I/O expander.
 
   - gpio: 39
     signal: BTN_HOME
@@ -277,12 +302,13 @@ gpio:
     signal: OC_FAULT_N
     direction: in
     active: low
-    pull: none (driven push-pull by U7)
+    pull: none (driven by U7 through 10k, R87)
     reset_state: high impedance
     powerup_glitch: none
     notes: >-
       Low while the hardware over-current latch is set. The latch is set by
-      the comparators and cleared only by stopping KEEPALIVE.
+      the comparators and cleared only by stopping KEEPALIVE. Input only:
+      R87 keeps this pin from changing the latch even if it is driven.
 
   - gpio: 41
     signal: AC_ZC
@@ -293,29 +319,38 @@ gpio:
     powerup_glitch: none
     notes: >-
       High during the half-cycle in which the COM leg is positive, low during
-      the other. Square wave at mains frequency. No edges for 50 ms means no
-      24 VAC. The rising edge is about 0.2 ms after the true zero crossing.
+      the other. Square wave at mains frequency, one rising and one falling
+      edge per period. No edge of either polarity for 25 ms means no 24 VAC.
+      At 24 VAC the rising edge is about 0.30 ms after the zero crossing and
+      the falling edge about 0.09 ms before the next one.
 
   - gpio: 42
-    signal: SPARE_IO42
+    signal: DRV_EN_RB
     direction: in
-    active: n/a
-    pull: none
+    active: high
+    pull: none on the board (driven by U7 through 10k, R92); enable the internal pull-down
     reset_state: high impedance
     powerup_glitch: none
-    notes: Unused. Test pad TP24. Keep as input.
+    notes: >-
+      Read-back of DRV_EN, the output of the gate-drive keep-alive detector
+      and the over-current latch. Must be low before every run, high within
+      100 ms of starting KEEPALIVE and low again within 1.0 s of stopping
+      it. Input only. With the internal pull-down an open R92 reads low and
+      fails the test on the safe side. Design section 8.6.
 
   - gpio: 43
     signal: UART0_TXD
+    net: U0TXD_MCU
     direction: out
     active: n/a
     pull: none
     reset_state: weak pull-up, input enabled
     powerup_glitch: none
-    notes: Debug header J8. ROM boot log.
+    notes: Debug header J8, through R99, 0 ohm, a series footprint. ROM boot log.
 
   - gpio: 44
     signal: UART0_RXD
+    net: U0RXD
     direction: in
     active: n/a
     pull: none
@@ -324,13 +359,17 @@ gpio:
     notes: Debug header J8.
 
   - gpio: 45
-    signal: STRAP_VDD_SPI
-    direction: in
-    active: n/a
-    pull: none
+    signal: SENS_PWR_EN
+    direction: out
+    active: high
+    pull: 100k to GND (R86)
     reset_state: weak pull-down, input enabled
     powerup_glitch: none
-    notes: Strapping pin, not connected. Test pad TP25. Never drive high during reset.
+    notes: >-
+      Enables the 5 V sensor supply switch U11. Off in reset. Strapping pin
+      for the flash supply voltage: it must be low at reset, and it is,
+      because the only things on the net are R86 to GND, the enable input
+      of U11 and test pad TP25. Never add a pull-up or a driver to this net.
 
   - gpio: 46
     signal: STATUS_LED
@@ -343,6 +382,7 @@ gpio:
 
   - gpio: 47
     signal: QWIIC_SDA
+    net: QW_SDA
     direction: bidir
     active: n/a
     pull: 4.7k up to 3V3 (R23)
@@ -352,6 +392,7 @@ gpio:
 
   - gpio: 48
     signal: QWIIC_SCL
+    net: QW_SCL
     direction: out
     active: n/a
     pull: 4.7k up to 3V3 (R24)
@@ -376,7 +417,9 @@ i2c:
           A0 = A1 = GND. RESET pin is driven by DRV_EN: the device is held in
           reset, with every pin an input, whenever KEEPALIVE is not running
           or the over-current latch is set. It does not answer on the bus
-          while in reset.
+          while in reset. Resistors hold every pin at a defined level then:
+          the valve pins at the LED supply, the relay bit and the spares
+          low, the two inputs high.
       - name: rtc
         part: PCF8563T
         address: 0x51
@@ -394,22 +437,22 @@ i2c:
 io_expander:
   device: io_expander
   bits:
-    - {port: 0, bit: 0, signal: ZONE1,  direction: out, active: low,  notes: Valve output Z1}
-    - {port: 0, bit: 1, signal: ZONE2,  direction: out, active: low,  notes: Valve output Z2}
-    - {port: 0, bit: 2, signal: ZONE3,  direction: out, active: low,  notes: Valve output Z3}
-    - {port: 0, bit: 3, signal: ZONE4,  direction: out, active: low,  notes: Valve output Z4}
-    - {port: 0, bit: 4, signal: MASTER, direction: out, active: low,  notes: Master valve / pump start output MV}
-    - {port: 0, bit: 5, signal: COM_RELAY, direction: out, active: high, notes: "Closes the valve common relay K1. 100k pull-down. Close 20 ms before the first output, open 40 ms after the last."}
-    - {port: 0, bit: 6, signal: SPARE_P06, direction: in, active: n/a, notes: Test pad TP26}
-    - {port: 0, bit: 7, signal: SPARE_P07, direction: in, active: n/a, notes: Test pad TP27}
-    - {port: 1, bit: 0, signal: ZONE5,  direction: out, active: low,  notes: Valve output Z5. Not fitted on the 4-zone build.}
-    - {port: 1, bit: 1, signal: ZONE6,  direction: out, active: low,  notes: Valve output Z6. Not fitted on the 4-zone build.}
-    - {port: 1, bit: 2, signal: ZONE7,  direction: out, active: low,  notes: Valve output Z7. Not fitted on the 4-zone build.}
-    - {port: 1, bit: 3, signal: ZONE8,  direction: out, active: low,  notes: Valve output Z8. Not fitted on the 4-zone build.}
-    - {port: 1, bit: 4, signal: VARIANT_8ZONE_N, direction: in, active: low, notes: "Low = 8-zone build (R28 fitted). High = 4-zone build. 10k pull-up."}
-    - {port: 1, bit: 5, signal: SENS_PWR_FAULT_N, direction: in, active: low, notes: Sensor supply switch U11 reports over-current or over-temperature. 10k pull-up.}
-    - {port: 1, bit: 6, signal: SPARE_P16, direction: in, active: n/a, notes: Test pad TP28}
-    - {port: 1, bit: 7, signal: SPARE_P17, direction: in, active: n/a, notes: Test pad TP29}
+    - {port: 0, bit: 0, signal: ZONE1,  net: ZD_Z1_N, direction: out, active: low,  notes: Valve output Z1}
+    - {port: 0, bit: 1, signal: ZONE2,  net: ZD_Z2_N, direction: out, active: low,  notes: Valve output Z2}
+    - {port: 0, bit: 2, signal: ZONE3,  net: ZD_Z3_N, direction: out, active: low,  notes: Valve output Z3}
+    - {port: 0, bit: 3, signal: ZONE4,  net: ZD_Z4_N, direction: out, active: low,  notes: Valve output Z4}
+    - {port: 0, bit: 4, signal: MASTER, net: ZD_MV_N, direction: out, active: low,  notes: Master valve / pump start output MV}
+    - {port: 0, bit: 5, signal: COM_RELAY, net: RLY_ON, direction: out, active: high, notes: "Turns on Q1 of the valve common relay K1. K1 also needs Q2, which the relay keep-alive detector drives. 100k pull-down. Close 20 ms before the first output, open 40 ms after the last. Leave low for the weld check, design section 7.4."}
+    - {port: 0, bit: 6, signal: SPARE_P06, net: P06, direction: in, active: n/a, notes: 100k to GND. Test pad TP26}
+    - {port: 0, bit: 7, signal: SPARE_P07, net: P07, direction: in, active: n/a, notes: 100k to GND. Test pad TP27}
+    - {port: 1, bit: 0, signal: ZONE5,  net: ZD_Z5_N, direction: out, active: low,  notes: Valve output Z5. Not fitted on the 4-zone build.}
+    - {port: 1, bit: 1, signal: ZONE6,  net: ZD_Z6_N, direction: out, active: low,  notes: Valve output Z6. Not fitted on the 4-zone build.}
+    - {port: 1, bit: 2, signal: ZONE7,  net: ZD_Z7_N, direction: out, active: low,  notes: Valve output Z7. Not fitted on the 4-zone build.}
+    - {port: 1, bit: 3, signal: ZONE8,  net: ZD_Z8_N, direction: out, active: low,  notes: Valve output Z8. Not fitted on the 4-zone build.}
+    - {port: 1, bit: 4, signal: VARIANT_8ZONE_N, net: VARIANT_N, direction: in, active: low, notes: "Low = 8-zone build (R28 fitted). High = 4-zone build. 10k pull-up."}
+    - {port: 1, bit: 5, signal: SENS_PWR_FAULT_N, net: SENS_FLT_N, direction: in, active: low, notes: "Sensor supply switch U11 reports over-current or over-temperature. 10k pull-up. Readable only while KEEPALIVE runs: design section 19.6 gives the polling procedure."}
+    - {port: 1, bit: 6, signal: SPARE_P16, net: P16, direction: in, active: n/a, notes: 100k to GND. Test pad TP28}
+    - {port: 1, bit: 7, signal: SPARE_P17, net: P17, direction: in, active: n/a, notes: 100k to GND. Test pad TP29}
 
 limits:
   max_outputs_on: 3            # two zones plus master, system spec section 1

@@ -54,11 +54,34 @@ bool nestingWithinLimit(std::string_view json)
     return true;
 }
 
-// Schema migrations, oldest first. Version 1 is the first schema, so the
-// table is empty. Example of a future step:
-//   bool v1ToV2(cJSON *root) { /* rename or reshape fields */ return true; }
-//   {1, &v1ToV2},
-constexpr std::array<ConfigMigration, 0> kMigrations{};
+// Schema 1 -> 2: adds the "mqtt" object (disabled) and zones[].default_run_s
+// (600 s). Both would also take their defaults when absent; the step writes
+// them so a migrated document shows every field of schema 2.
+bool v1ToV2(cJSON *root)
+{
+    if (!cJSON_HasObjectItem(root, "mqtt")) {
+        cJSON *m = cJSON_AddObjectToObject(root, "mqtt");
+        if (m == nullptr || cJSON_AddBoolToObject(m, "enabled", false) == nullptr) {
+            return false;
+        }
+    }
+    cJSON *zones = cJSON_GetObjectItemCaseSensitive(root, "zones");
+    cJSON *z = nullptr;
+    cJSON_ArrayForEach(z, zones)
+    {
+        if (cJSON_IsObject(z) && !cJSON_HasObjectItem(z, "default_run_s") &&
+            cJSON_AddNumberToObject(z, "default_run_s", ZoneConfig{}.defaultRunSec) == nullptr) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Schema migrations, oldest first. A new schema appends {N, &vNToVN1}.
+constexpr std::array<ConfigMigration, 1> kMigrations{{{1, &v1ToV2}}};
+
+const char *zoneEntityName(HaZoneEntity e) { return e == HaZoneEntity::Switch ? "switch" : "valve"; }
+const char *caSourceName(MqttCaSource c) { return c == MqttCaSource::Custom ? "custom" : "bundle"; }
 
 const char *contactName(ContactType c) { return c == ContactType::NormallyOpen ? "no" : "nc"; }
 
@@ -391,6 +414,7 @@ void readConfig(Reader &rd, const cJSON *root, Config &c)
             rd.boolean(item, "enabled", z.enabled, path);
             rd.integer(item, "max_run_s", z.maxRunSec, path);
             rd.window(item, z.current, path);
+            rd.integer(item, "default_run_s", z.defaultRunSec, path);
             ++i;
         }
     }
@@ -399,12 +423,15 @@ void readConfig(Reader &rd, const cJSON *root, Config &c)
         rd.boolean(m, "enabled", c.master.enabled, "master");
         rd.integer(m, "pre_open_ms", c.master.preOpenMs, "master");
         rd.integer(m, "post_close_ms", c.master.postCloseMs, "master");
+        rd.integer(m, "fault_lockout_count", c.master.faultLockoutCount, "master");
         rd.window(m, c.master.current, "master");
     }
 
     if (const cJSON *d = rd.object(root, "driver", top)) {
         rd.integer(d, "max_concurrent", c.driver.maxConcurrent, "driver");
         rd.integer(d, "inter_zone_delay_ms", c.driver.interZoneDelayMs, "driver");
+        rd.integer(d, "min_rest_s", c.driver.minRestSec, "driver");
+        rd.boolean(d, "zero_cross_switching", c.driver.zeroCrossSwitching, "driver");
     }
 
     if (const cJSON *s = rd.object(root, "sensors", top)) {
@@ -438,9 +465,43 @@ void readConfig(Reader &rd, const cJSON *root, Config &c)
         rd.integer(d, "confirm_samples", c.diag.confirmSamples, "diagnostics");
     }
 
+    if (const cJSON *m = rd.object(root, "mqtt", top)) {
+        MqttConfig &q = c.mqtt;
+        rd.boolean(m, "enabled", q.enabled, "mqtt");
+        rd.string(m, "host", q.host, "mqtt");
+        rd.integer(m, "port", q.port, "mqtt");
+        rd.string(m, "username", q.username, "mqtt");
+        rd.boolean(m, "tls", q.tls, "mqtt");
+        if (const char *ca = rd.stringValue(m, "ca", "mqtt")) {
+            const std::string_view v(ca);
+            if (v == "bundle") {
+                q.ca = MqttCaSource::Bundle;
+            } else if (v == "custom") {
+                q.ca = MqttCaSource::Custom;
+            } else {
+                rd.fail("mqtt.ca", "must be \"bundle\" or \"custom\"");
+            }
+        }
+        rd.string(m, "client_id", q.clientId, "mqtt");
+        rd.string(m, "base_topic", q.baseTopic, "mqtt");
+        rd.boolean(m, "discovery", q.discovery, "mqtt");
+        rd.string(m, "discovery_prefix", q.discoveryPrefix, "mqtt");
+        if (const char *e = rd.stringValue(m, "ha_zone_entity", "mqtt")) {
+            const std::string_view v(e);
+            if (v == "valve") {
+                q.zoneEntity = HaZoneEntity::Valve;
+            } else if (v == "switch") {
+                q.zoneEntity = HaZoneEntity::Switch;
+            } else {
+                rd.fail("mqtt.ha_zone_entity", "must be \"valve\" or \"switch\"");
+            }
+        }
+    }
+
     if (const cJSON *s = rd.object(root, "schedule", top)) {
         rd.integer(s, "seasonal_percent", c.schedule.seasonalPercent, "schedule");
         rd.integer(s, "missed_start_grace_min", c.schedule.missedStartGraceMin, "schedule");
+        rd.integer(s, "pause_timeout_min", c.schedule.pauseTimeoutMin, "schedule");
         if (const cJSON *programs = rd.array(s, "programs", "schedule", kMaxPrograms)) {
             std::size_t i = 0;
             const cJSON *item = nullptr;
@@ -546,6 +607,7 @@ std::string configToJson(const Config &c, bool pretty)
             cJSON_AddBoolToObject(o, "enabled", z.enabled);
             cJSON_AddNumberToObject(o, "max_run_s", z.maxRunSec);
             addWindow(o, z.current);
+            cJSON_AddNumberToObject(o, "default_run_s", z.defaultRunSec);
             cJSON_AddItemToArray(zones, o);
         }
     }
@@ -554,12 +616,15 @@ std::string configToJson(const Config &c, bool pretty)
         cJSON_AddBoolToObject(m, "enabled", c.master.enabled);
         cJSON_AddNumberToObject(m, "pre_open_ms", c.master.preOpenMs);
         cJSON_AddNumberToObject(m, "post_close_ms", c.master.postCloseMs);
+        cJSON_AddNumberToObject(m, "fault_lockout_count", c.master.faultLockoutCount);
         addWindow(m, c.master.current);
     }
 
     if (cJSON *d = cJSON_AddObjectToObject(r, "driver")) {
         cJSON_AddNumberToObject(d, "max_concurrent", c.driver.maxConcurrent);
         cJSON_AddNumberToObject(d, "inter_zone_delay_ms", c.driver.interZoneDelayMs);
+        cJSON_AddNumberToObject(d, "min_rest_s", c.driver.minRestSec);
+        cJSON_AddBoolToObject(d, "zero_cross_switching", c.driver.zeroCrossSwitching);
     }
 
     if (cJSON *s = cJSON_AddObjectToObject(r, "sensors")) {
@@ -587,9 +652,25 @@ std::string configToJson(const Config &c, bool pretty)
         cJSON_AddNumberToObject(d, "confirm_samples", c.diag.confirmSamples);
     }
 
+    if (cJSON *m = cJSON_AddObjectToObject(r, "mqtt")) {
+        const MqttConfig &q = c.mqtt;
+        cJSON_AddBoolToObject(m, "enabled", q.enabled);
+        cJSON_AddStringToObject(m, "host", q.host.c_str());
+        cJSON_AddNumberToObject(m, "port", q.port);
+        cJSON_AddStringToObject(m, "username", q.username.c_str());
+        cJSON_AddBoolToObject(m, "tls", q.tls);
+        cJSON_AddStringToObject(m, "ca", caSourceName(q.ca));
+        cJSON_AddStringToObject(m, "client_id", q.clientId.c_str());
+        cJSON_AddStringToObject(m, "base_topic", q.baseTopic.c_str());
+        cJSON_AddBoolToObject(m, "discovery", q.discovery);
+        cJSON_AddStringToObject(m, "discovery_prefix", q.discoveryPrefix.c_str());
+        cJSON_AddStringToObject(m, "ha_zone_entity", zoneEntityName(q.zoneEntity));
+    }
+
     if (cJSON *s = cJSON_AddObjectToObject(r, "schedule")) {
         cJSON_AddNumberToObject(s, "seasonal_percent", c.schedule.seasonalPercent);
         cJSON_AddNumberToObject(s, "missed_start_grace_min", c.schedule.missedStartGraceMin);
+        cJSON_AddNumberToObject(s, "pause_timeout_min", c.schedule.pauseTimeoutMin);
         cJSON *programs = cJSON_AddArrayToObject(s, "programs");
         for (std::size_t i = 0; programs != nullptr && i < c.schedule.programCount; ++i) {
             const Program &p = c.schedule.programs[i];

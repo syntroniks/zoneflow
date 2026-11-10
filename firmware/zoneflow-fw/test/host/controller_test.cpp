@@ -218,6 +218,7 @@ TEST_F(ControllerTest, ScheduledRunPersistsRuntimeState)
     runMs(15'000);
     EXPECT_TRUE(out.zone[0]);
     EXPECT_EQ(count(EventType::ProgramStarted), 1);
+    EXPECT_TRUE(persistWriteOnce(ctrl->persistMailbox(), storage)); // the writer task's job
     ASSERT_EQ(storage.data.count("runtime"), 1u);
     SchedulerPersist p;
     ASSERT_TRUE(persistFromJson(storage.data["runtime"], p));
@@ -365,4 +366,321 @@ TEST_F(ControllerTest, ClearingIdleCurrentFaultWhileItPersistsRaisesItAgain)
     EXPECT_FALSE(hasFault(FaultCode::CurrentWhileIdle));
     runMs(1000);
     EXPECT_TRUE(hasFault(FaultCode::CurrentWhileIdle));
+}
+
+// ---- phase 2 hardening ---------------------------------------------------------
+
+TEST_F(ControllerTest, IdleCurrentRisingToShortRaisesShortCircuit)
+{
+    start();
+    sensors.sample.valveCurrentMa = 300;
+    runMs(1000);
+    ASSERT_TRUE(hasFault(FaultCode::CurrentWhileIdle));
+    sensors.sample.valveCurrentMa = 5000;
+    runMs(200);
+    EXPECT_TRUE(hasFault(FaultCode::ShortCircuit));
+}
+
+// The caller of a rejected command learns why: handle() returns false and a
+// command_rejected event carries the error for the API layer.
+TEST_F(ControllerTest, RunZoneOnLockedOutZoneReturnsError)
+{
+    start();
+    ctrl->handle(Command::runZone(3, 600));
+    tick();
+    sensors.sample.valveCurrentMa = 5000;
+    runMs(200);
+    ASSERT_TRUE(ctrl->driver().lockedOut(3));
+    sensors.sample.valveCurrentMa = -1;
+    events.clear();
+    EXPECT_FALSE(ctrl->handle(Command::runZone(3, 60)));
+    EXPECT_EQ(ctrl->lastRunError(), RunError::LockedOut);
+    ASSERT_EQ(count(EventType::CommandRejected), 1);
+    const auto it =
+        std::find_if(events.begin(), events.end(), [](const Event &e) { return e.type == EventType::CommandRejected; });
+    EXPECT_EQ(it->rejected.command, CommandType::RunZone);
+    EXPECT_EQ(it->rejected.zone, 3);
+    EXPECT_EQ(it->rejected.error, RunError::LockedOut);
+    EXPECT_STREQ(toString(EventType::CommandRejected), "command_rejected");
+}
+
+TEST_F(ControllerTest, DroppedRunIsPublished)
+{
+    Config c = config.get();
+    c.zones[0].maxRunSec = 60;
+    ASSERT_TRUE(config.update(c).ok);
+    start();
+    ASSERT_TRUE(ctrl->handle(Command::runZone(0, 60)));
+    ASSERT_TRUE(ctrl->handle(Command::runZone(0, 60)));
+    runMs(61'000);
+    ASSERT_EQ(count(EventType::RunDropped), 1);
+    const auto it =
+        std::find_if(events.begin(), events.end(), [](const Event &e) { return e.type == EventType::RunDropped; });
+    EXPECT_EQ(it->dropped.zone, 0);
+    EXPECT_EQ(it->dropped.reason, StartError::Resting);
+    EXPECT_GE(state.snapshot().zones[0].restRemainingSec, 1798u);
+    EXPECT_LE(state.snapshot().zones[0].restRemainingSec, 1800u);
+    EXPECT_FALSE(ctrl->handle(Command::runZone(0, 60)));
+    EXPECT_EQ(ctrl->lastRunError(), RunError::ZoneResting);
+}
+
+// ---- master valve lockout ------------------------------------------------------------
+
+namespace {
+class MasterTest : public ControllerTest {
+protected:
+    void SetUp() override
+    {
+        ControllerTest::SetUp();
+        Config c = config.get();
+        c.master.enabled = true;
+        c.master.preOpenMs = 1000;
+        c.master.postCloseMs = 0;
+        ASSERT_TRUE(config.update(c).ok);
+    }
+    // Starts zone 0; the master opens first and shorts during pre-open.
+    void masterShort()
+    {
+        sensors.sample.valveCurrentMa = -1;
+        ASSERT_TRUE(ctrl->handle(Command::runZone(0, 60)));
+        tick();
+        ASSERT_TRUE(out.master);
+        sensors.sample.valveCurrentMa = 5000;
+        tick();
+        tick();
+        ASSERT_FALSE(out.anyOn());
+        sensors.sample.valveCurrentMa = -1;
+        tick();
+    }
+};
+} // namespace
+
+TEST_F(MasterTest, RepeatedMasterShortsLockTheMasterOut)
+{
+    start();
+    masterShort();
+    masterShort();
+    EXPECT_FALSE(hasFault(FaultCode::MasterLockedOut));
+    EXPECT_EQ(state.snapshot().masterFaultCount, 2);
+    masterShort();
+    EXPECT_TRUE(hasFault(FaultCode::MasterLockedOut));
+    EXPECT_TRUE(ctrl->driver().masterLockedOut());
+    EXPECT_TRUE(state.snapshot().masterLockedOut);
+    // No more retries into the short: manual runs refused, nothing switches.
+    EXPECT_FALSE(ctrl->handle(Command::runZone(1, 60)));
+    EXPECT_EQ(ctrl->lastRunError(), RunError::MasterLockedOut);
+    runMs(2000);
+    EXPECT_FALSE(out.anyOn());
+    // ClearFaults releases it.
+    ctrl->handle(Command::simple(CommandType::ClearFaults));
+    tick();
+    EXPECT_FALSE(ctrl->driver().masterLockedOut());
+    EXPECT_EQ(state.snapshot().masterFaultCount, 0);
+    EXPECT_TRUE(ctrl->handle(Command::runZone(1, 60)));
+    tick();
+    EXPECT_TRUE(out.master);
+}
+
+TEST_F(MasterTest, LockedMasterSkipsScheduledPrograms)
+{
+    Config c = config.get();
+    c.schedule.programs[0] = makeProgram(1, {360}, {{0, 60}});
+    c.schedule.programCount = 1;
+    ASSERT_TRUE(config.update(c).ok);
+    clock.utc = utcOf(2026, 6, 1, 5, 50, 0);
+    start();
+    masterShort();
+    masterShort();
+    masterShort();
+    ASSERT_TRUE(ctrl->driver().masterLockedOut());
+    runMs(11 * 60 * 1000);
+    EXPECT_FALSE(out.anyOn());
+    const auto it =
+        std::find_if(events.begin(), events.end(), [](const Event &e) { return e.type == EventType::ProgramSkipped; });
+    ASSERT_NE(it, events.end());
+    EXPECT_EQ(it->program.skipReason, SkipReason::MasterLockedOut);
+}
+
+TEST_F(MasterTest, CleanMasterRunResetsTheCount)
+{
+    start();
+    masterShort();
+    masterShort();
+    sensors.sample.valveCurrentMa = 300; // master alone, then master + zone: in window
+    ASSERT_TRUE(ctrl->handle(Command::runZone(0, 5)));
+    runMs(7000);
+    ASSERT_FALSE(out.anyOn());
+    EXPECT_EQ(state.snapshot().masterFaultCount, 0);
+    masterShort();
+    masterShort();
+    EXPECT_FALSE(ctrl->driver().masterLockedOut());
+}
+
+TEST(Config, MasterFaultLockoutCount)
+{
+    Config c = Config::defaults();
+    EXPECT_EQ(c.master.faultLockoutCount, 3);
+    c.master.faultLockoutCount = 5;
+    Config back;
+    ASSERT_TRUE(configFromJson(configToJson(c), back).ok());
+    EXPECT_EQ(back.master.faultLockoutCount, 5);
+    c.master.faultLockoutCount = 0;
+    EXPECT_EQ(validate(c).path, "master.fault_lockout_count");
+}
+
+// An over-current found after the settle time also counts: closing the master
+// on that fault is not a clean session.
+TEST_F(MasterTest, MasterOverCurrentAfterSettleCounts)
+{
+    start();
+    for (int i = 0; i < 3; ++i) {
+        sensors.sample.valveCurrentMa = -1;
+        ASSERT_TRUE(ctrl->handle(Command::runZone(0, 60)));
+        tick();
+        sensors.sample.valveCurrentMa = 1000; // master window 80..700 mA
+        runMs(900);
+        ASSERT_FALSE(out.anyOn());
+    }
+    EXPECT_TRUE(ctrl->driver().masterLockedOut());
+}
+
+TEST_F(ControllerTest, PauseTimeoutPublishesEvent)
+{
+    Config c = config.get();
+    c.schedule.pauseTimeoutMin = 1;
+    ASSERT_TRUE(config.update(c).ok);
+    start();
+    ASSERT_TRUE(ctrl->handle(Command::runZone(0, 600)));
+    tick();
+    ctrl->handle(Command::simple(CommandType::Pause));
+    runMs(61'000);
+    EXPECT_EQ(count(EventType::PauseExpired), 1);
+    EXPECT_EQ(state.snapshot().queue.state, QueueState::Idle);
+    EXPECT_STREQ(toString(EventType::PauseExpired), "pause_expired");
+}
+
+TEST(Config, PauseTimeout)
+{
+    Config c = Config::defaults();
+    c.schedule.pauseTimeoutMin = 30;
+    Config back;
+    ASSERT_TRUE(configFromJson(configToJson(c), back).ok());
+    EXPECT_EQ(back.schedule.pauseTimeoutMin, 30);
+    c.schedule.pauseTimeoutMin = 0;
+    EXPECT_EQ(validate(c).path, "schedule.pause_timeout_min");
+    c.schedule.pauseTimeoutMin = 1441;
+    EXPECT_EQ(validate(c).path, "schedule.pause_timeout_min");
+}
+
+// ---- current sense unavailable ------------------------------------------------------
+
+// Policy: watering matters more than diagnostics. Zones still run, but the
+// condition is raised, stays visible through ClearFaults, and clears only
+// when readings come back.
+TEST_F(ControllerTest, CurrentSenseUnavailableIsReportedAndZonesStillRun)
+{
+    sensors.sample.currentSenseAvailable = false;
+    start();
+    EXPECT_TRUE(hasFault(FaultCode::CurrentSenseUnavailable));
+    EXPECT_STREQ(toString(FaultCode::CurrentSenseUnavailable), "current_sense_unavailable");
+    ASSERT_TRUE(ctrl->handle(Command::runZone(0, 60)));
+    tick();
+    EXPECT_TRUE(out.zone[0]);
+    ctrl->handle(Command::simple(CommandType::ClearFaults));
+    tick();
+    EXPECT_TRUE(hasFault(FaultCode::CurrentSenseUnavailable));
+    EXPECT_NE(state.snapshot().activeFaults & (1u << static_cast<unsigned>(FaultCode::CurrentSenseUnavailable)), 0u);
+    sensors.sample.currentSenseAvailable = true;
+    tick();
+    EXPECT_FALSE(hasFault(FaultCode::CurrentSenseUnavailable));
+}
+
+TEST_F(ControllerTest, CurrentSenseUnavailableIgnoredWhenDiagnosticsDisabled)
+{
+    Config c = config.get();
+    c.diag.currentEnabled = false;
+    ASSERT_TRUE(config.update(c).ok);
+    sensors.sample.currentSenseAvailable = false;
+    start();
+    EXPECT_FALSE(hasFault(FaultCode::CurrentSenseUnavailable));
+}
+
+// ---- hardware over-current trip -------------------------------------------------------
+
+TEST_F(ControllerTest, TripShutsAllOffLocksZoneAndClearsLatchOnceOff)
+{
+    start();
+    ASSERT_TRUE(ctrl->handle(Command::runZone(2, 600)));
+    ASSERT_TRUE(ctrl->handle(Command::runZone(3, 600)));
+    tick();
+    ASSERT_TRUE(out.zone[2]);
+    sensors.sample.overCurrentTripped = true;
+    tick();
+    EXPECT_FALSE(out.anyOn());
+    EXPECT_TRUE(hasFault(FaultCode::OverCurrentTrip));
+    EXPECT_STREQ(toString(FaultCode::OverCurrentTrip), "over_current_trip");
+    EXPECT_TRUE(ctrl->driver().lockedOut(2));
+    EXPECT_EQ(state.snapshot().zones[2].fault, FaultCode::OverCurrentTrip);
+    EXPECT_EQ(state.snapshot().queue.length, 0); // queue stopped, as for a short
+    EXPECT_EQ(out.tripClears, 0);                // not before the outputs are confirmed off
+    tick();
+    EXPECT_EQ(out.tripClears, 1);
+    EXPECT_FALSE(out.anyOnAtClear);
+    // allOff() is driven again right before the latch is released.
+    ASSERT_GE(out.log.size(), 2u);
+    EXPECT_EQ(out.log[out.log.size() - 2], "off");
+    EXPECT_EQ(out.log.back(), "clear");
+    sensors.sample.overCurrentTripped = false;
+    tick();
+    EXPECT_FALSE(ctrl->handle(Command::runZone(2, 60)));
+    EXPECT_TRUE(ctrl->handle(Command::runZone(3, 60)));
+    tick();
+    EXPECT_TRUE(out.zone[3]);
+    EXPECT_EQ(out.tripClears, 1);
+}
+
+TEST_F(ControllerTest, TripAttributedToOutputsJustSwitchedOn)
+{
+    Config c = config.get();
+    c.master.enabled = true;
+    c.master.preOpenMs = 0;
+    ASSERT_TRUE(config.update(c).ok);
+    start();
+    ASSERT_TRUE(ctrl->handle(Command::runZone(1, 600)));
+    tick();
+    ASSERT_TRUE(out.master);
+    ASSERT_TRUE(out.zone[1]);
+    sensors.sample.overCurrentTripped = true;
+    tick();
+    // Master and zone opened together: both take the fault.
+    EXPECT_TRUE(ctrl->driver().lockedOut(1));
+    tick();
+    EXPECT_EQ(state.snapshot().masterFaultCount, 1);
+}
+
+TEST_F(ControllerTest, TripLongAfterSwitchingBlamesTheLastOpenedOutput)
+{
+    start();
+    ASSERT_TRUE(ctrl->handle(Command::runZone(4, 600)));
+    runMs(10'000);
+    ASSERT_TRUE(out.zone[4]);
+    sensors.sample.overCurrentTripped = true;
+    tick();
+    EXPECT_FALSE(out.anyOn());
+    EXPECT_TRUE(ctrl->driver().lockedOut(4));
+}
+
+TEST_F(ControllerTest, TripWithOutputsOffIsReportedAndClearRetried)
+{
+    start();
+    sensors.sample.overCurrentTripped = true;
+    tick();
+    EXPECT_TRUE(hasFault(FaultCode::OverCurrentTrip));
+    runMs(3000); // the latch keeps coming back: retry about once a second
+    EXPECT_GE(out.tripClears, 3);
+    EXPECT_LE(out.tripClears, 5);
+    const auto trips = std::count_if(events.begin(), events.end(), [](const Event &e) {
+        return e.type == EventType::FaultRaised && e.fault.code == FaultCode::OverCurrentTrip;
+    });
+    EXPECT_EQ(trips, 1); // reported once
 }

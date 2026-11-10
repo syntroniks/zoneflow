@@ -22,7 +22,63 @@ ValidationResult checkWindow(const CurrentWindow &w, const std::string &path)
     return ValidationResult::good();
 }
 
+// Printable ASCII without spaces: host names, client ids.
+bool printableToken(std::string_view s)
+{
+    for (const char c : s) {
+        if (c <= ' ' || c > '~') {
+            return false;
+        }
+    }
+    return true;
+}
+
+ValidationResult validateMqtt(const MqttConfig &m)
+{
+    using VR = ValidationResult;
+    if (!printableToken(m.host.view()) || m.host.view().find("://") != std::string_view::npos ||
+        m.host.view().find('/') != std::string_view::npos) {
+        return VR::bad("mqtt.host", "host name or IP address without scheme, path or spaces");
+    }
+    if (m.enabled && m.host.empty()) {
+        return VR::bad("mqtt.host", "required when MQTT is enabled");
+    }
+    if (m.port == 0) {
+        return VR::bad("mqtt.port", "must be 1..65535");
+    }
+    for (const char c : m.username.view()) {
+        if (static_cast<unsigned char>(c) < 0x20 || c == 0x7f) {
+            return VR::bad("mqtt.username", "no control characters");
+        }
+    }
+    if (!printableToken(m.clientId.view())) {
+        return VR::bad("mqtt.client_id", "printable ASCII without spaces");
+    }
+    if (!m.baseTopic.empty() && !validTopicPrefix(m.baseTopic.view())) {
+        return VR::bad("mqtt.base_topic", "no wildcards, empty levels, leading or trailing '/'");
+    }
+    // Home Assistant only accepts [a-zA-Z0-9_-] in the discovery topic
+    // levels it parses; the prefix itself may have several levels.
+    if (!validTopicPrefix(m.discoveryPrefix.view())) {
+        return VR::bad("mqtt.discovery_prefix", "no wildcards, empty levels, leading or trailing '/'");
+    }
+    return VR::good();
+}
+
 } // namespace
+
+bool validTopicPrefix(std::string_view t)
+{
+    if (t.empty() || t.size() > 63 || t.front() == '/' || t.back() == '/' || t.find("//") != std::string_view::npos) {
+        return false;
+    }
+    for (const char c : t) {
+        if (c == '+' || c == '#' || static_cast<unsigned char>(c) < 0x20 || c == 0x7f) {
+            return false;
+        }
+    }
+    return true;
+}
 
 Config Config::defaults()
 {
@@ -55,6 +111,9 @@ ValidationResult validate(const Config &cfg)
         if (auto r = checkWindow(z.current, idx("zones", i, "current_min_ma")); !r.ok) {
             return r;
         }
+        if (z.defaultRunSec < 1 || z.defaultRunSec > kHardMaxRunSec) {
+            return VR::bad(idx("zones", i, "default_run_s"), "must be 1.." + std::to_string(kHardMaxRunSec));
+        }
     }
     if (cfg.master.preOpenMs > 60000) {
         return VR::bad("master.pre_open_ms", "must be 0..60000");
@@ -65,11 +124,17 @@ ValidationResult validate(const Config &cfg)
     if (auto r = checkWindow(cfg.master.current, "master.current_min_ma"); !r.ok) {
         return r;
     }
+    if (cfg.master.faultLockoutCount < 1 || cfg.master.faultLockoutCount > 10) {
+        return VR::bad("master.fault_lockout_count", "must be 1..10");
+    }
     if (cfg.driver.maxConcurrent < 1 || cfg.driver.maxConcurrent > kMaxConcurrentZonesLimit) {
         return VR::bad("driver.max_concurrent", "must be 1.." + std::to_string(kMaxConcurrentZonesLimit));
     }
     if (cfg.driver.interZoneDelayMs > 600000) {
         return VR::bad("driver.inter_zone_delay_ms", "must be 0..600000");
+    }
+    if (cfg.driver.minRestSec < 60 || cfg.driver.minRestSec > 86400) {
+        return VR::bad("driver.min_rest_s", "must be 60..86400");
     }
     if (cfg.rain.debounceMs > 600000) {
         return VR::bad("sensors.rain.debounce_ms", "must be 0..600000");
@@ -96,12 +161,19 @@ ValidationResult validate(const Config &cfg)
         return VR::bad("diagnostics.confirm_samples", "must be 1..20");
     }
 
+    if (auto r = validateMqtt(cfg.mqtt); !r.ok) {
+        return r;
+    }
+
     const ScheduleConfig &s = cfg.schedule;
     if (s.seasonalPercent > 250) {
         return VR::bad("schedule.seasonal_percent", "must be 0..250");
     }
     if (s.missedStartGraceMin > 720) {
         return VR::bad("schedule.missed_start_grace_min", "must be 0..720");
+    }
+    if (s.pauseTimeoutMin < 1 || s.pauseTimeoutMin > 1440) {
+        return VR::bad("schedule.pause_timeout_min", "must be 1..1440");
     }
     if (s.programCount > kMaxPrograms) {
         return VR::bad("schedule.programs", "at most " + std::to_string(kMaxPrograms) + " programs");

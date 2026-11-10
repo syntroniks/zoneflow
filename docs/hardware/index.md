@@ -16,7 +16,7 @@
 | Output stage | One triac per output, fired through an opto-triac. One 24 VAC leg is circuit ground and all triacs return through one current shunt |
 | Logic supply | Half-wave rectifier, bulk capacitor, 100 V buck converter to a 5 V bus, linear regulator to 3.3 V |
 | USB | USB-C, native ESP32-S3 USB for flashing and logs |
-| Protection | Fuse and surge clamp on the AC input. Snubber, TVS and PTC on every output. TVS on every sensor terminal. A relay in the valve common |
+| Protection | A fuse in each 24 VAC wire and a surge clamp on the AC input. Snubber, TVS and PTC on every output. TVS on every sensor terminal and on the valve common. A relay in the valve common |
 | Current sense | One low-side shunt measures total valve current. A hardware comparator cuts drive on a short |
 | AC presence | A signal that tells firmware 24 VAC is present |
 | RTC | I2C RTC with coin-cell backup |
@@ -50,7 +50,7 @@ GND, AUX, GND. The order and the reasons are in
 
 1. Outputs are off by default. With the MCU in reset, unpowered, crashed or being flashed, every valve output is off. This is enforced in hardware, not only in firmware.
 2. A valve output never shares an ESP32 strapping pin or a pin that glitches at boot.
-3. A hardware output-enable gates all output drivers. Firmware must keep toggling a keep-alive signal or drive is removed.
+3. A hardware output-enable gates all output drivers. Firmware must keep toggling a keep-alive signal or drive is removed. A second, independent detector on the same signal opens the valve common relay, so that a single failed part in either cannot leave a valve on.
 4. Firmware enforces a per-zone maximum run time.
 5. Only Class 2 circuits are on the board. No mains.
 

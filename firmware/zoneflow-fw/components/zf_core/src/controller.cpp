@@ -16,6 +16,8 @@ ZoneDriverConfig driverConfigFrom(const Config &c)
     d.masterPreOpenMs = c.master.preOpenMs;
     d.masterPostCloseMs = c.master.postCloseMs;
     d.interZoneDelayMs = c.driver.interZoneDelayMs;
+    d.minRestSec = c.driver.minRestSec;
+    d.zeroCrossSwitching = c.driver.zeroCrossSwitching;
     for (std::size_t i = 0; i < kMaxZones; ++i) {
         d.zoneEnabled[i] = i < c.zoneCount && c.zones[i].enabled;
         d.maxRunSec[i] = c.zones[i].maxRunSec;
@@ -27,14 +29,16 @@ bool sameDriverConfig(const ZoneDriverConfig &a, const ZoneDriverConfig &b)
 {
     return a.zoneCount == b.zoneCount && a.maxConcurrent == b.maxConcurrent && a.masterEnabled == b.masterEnabled &&
            a.masterPreOpenMs == b.masterPreOpenMs && a.masterPostCloseMs == b.masterPostCloseMs &&
-           a.interZoneDelayMs == b.interZoneDelayMs && a.zoneEnabled == b.zoneEnabled && a.maxRunSec == b.maxRunSec;
+           a.interZoneDelayMs == b.interZoneDelayMs && a.minRestSec == b.minRestSec &&
+           a.zeroCrossSwitching == b.zeroCrossSwitching && a.zoneEnabled == b.zoneEnabled && a.maxRunSec == b.maxRunSec;
 }
 
 constexpr uint32_t faultBit(FaultCode c) { return 1u << static_cast<unsigned>(c); }
 
 // Conditions clear by themselves when the cause goes away; everything else
 // latches until ClearFaults.
-constexpr uint32_t kSelfClearing = faultBit(FaultCode::AcLost) | faultBit(FaultCode::TimeInvalid);
+constexpr uint32_t kSelfClearing =
+    faultBit(FaultCode::AcLost) | faultBit(FaultCode::TimeInvalid) | faultBit(FaultCode::CurrentSenseUnavailable);
 
 } // namespace
 
@@ -130,6 +134,20 @@ void Controller::setTimeStatus(TimeStatus status)
 bool Controller::handle(const Command &cmd)
 {
     stateDirty_ = true;
+    lastRunError_ = RunError::Ok;
+    const bool accepted = apply(cmd);
+    if (!accepted) {
+        // Commands arrive through a queue; this event is how the poster
+        // (REST, MQTT, display) learns the reason.
+        Event e = makeEvent(EventType::CommandRejected);
+        e.rejected = {cmd.type, cmd.zone, cmd.programId, lastRunError_};
+        publish(e);
+    }
+    return accepted;
+}
+
+bool Controller::apply(const Command &cmd)
+{
     switch (cmd.type) {
     case CommandType::RunZone:
         lastRunError_ = scheduler_.runZone(cmd.zone, cmd.durationSec);
@@ -179,6 +197,7 @@ void Controller::tick()
     const MonoMs now = deps_.clock.monoMs();
     const SensorSample s = deps_.sensors.read();
     lastCurrentMa_ = s.valveCurrentMa;
+    handleTrip(s.overCurrentTripped, now);
 
     if (ac_.update(s.acPresent, now)) {
         Event e = makeEvent(EventType::SensorChanged);
@@ -218,6 +237,17 @@ void Controller::tick()
         raiseFault(FaultCode::FlowWithoutZones, kNoZone);
     }
 
+    // No current sense: report it, keep watering (policy in
+    // firmware-architecture.md, sensors and diagnostics). Short-circuit
+    // protection then rests on the hardware trip and the output protection.
+    const bool senseLost = config_.diag.currentEnabled && !s.currentSenseAvailable;
+    const bool senseFault = (activeFaults_ & faultBit(FaultCode::CurrentSenseUnavailable)) != 0;
+    if (senseLost && !senseFault) {
+        raiseFault(FaultCode::CurrentSenseUnavailable, kNoZone);
+    } else if (!senseLost && senseFault) {
+        clearCondition(FaultCode::CurrentSenseUnavailable);
+    }
+
     // Without 24 VAC the current reading means nothing.
     if (ac_.present()) {
         handleCurrent(current_.evaluate(s.valveCurrentMa, driver_.outputMask(), driver_.lastOpenedBit(),
@@ -229,6 +259,9 @@ void Controller::tick()
 
     if (persistDirty_ && now - lastPersistMs_ >= kPersistMinIntervalMs) {
         savePersist(now);
+    }
+    if (persist_.takeFailure() && (activeFaults_ & faultBit(FaultCode::StorageError)) == 0) {
+        raiseFault(FaultCode::StorageError, kNoZone);
     }
     if (stateDirty_ || now - lastSnapshotMs_ >= kSnapshotIntervalMs) {
         publishSnapshot(now);
@@ -248,7 +281,10 @@ void Controller::updateInhibit()
     if (maintenance_) {
         flags |= kInhibitMaintenance;
     }
-    driver_.setInhibit(!acOk || maintenance_);
+    if (config_.master.enabled && driver_.masterLockedOut()) {
+        flags |= kInhibitMasterLockout;
+    }
+    driver_.setInhibit(!acOk || maintenance_ || tripSeen_);
     if (driver_.activeCount() > 0 || driver_.masterOn()) {
         if (maintenance_) {
             driver_.stopAll(StopReason::Maintenance);
@@ -268,6 +304,9 @@ void Controller::handleCurrent(const CurrentVerdict &v)
         return;
     case CurrentFault::ShortCircuit:
     case CurrentFault::OverCurrent: {
+        if (v.outputBit == ZoneDriver::kMasterBit) {
+            masterFaultInSession_ = true; // before stopAll: closing the master must not count as clean
+        }
         // Everything off first; bookkeeping after.
         driver_.stopAll(StopReason::Fault);
         scheduler_.stop();
@@ -278,6 +317,9 @@ void Controller::handleCurrent(const CurrentVerdict &v)
             zoneFault_[zone] = code;
         }
         raiseFault(code, zone);
+        if (v.outputBit == ZoneDriver::kMasterBit) {
+            recordMasterFault();
+        }
         return;
     }
     case CurrentFault::OpenCircuit:
@@ -296,6 +338,81 @@ void Controller::handleCurrent(const CurrentVerdict &v)
         raiseFault(FaultCode::CurrentWhileIdle, kNoZone);
         return;
     }
+}
+
+void Controller::handleTrip(bool tripped, MonoMs now)
+{
+    if (!tripped) {
+        if (tripSeen_) {
+            tripSeen_ = false;
+            updateInhibit();
+        }
+        return;
+    }
+    if (!tripSeen_) {
+        // The comparator has already removed gate drive. Bring the firmware
+        // state in line, then blame the outputs that switched on within the
+        // settle time before the trip (a short usually trips at turn-on); if
+        // none did, the output switched on most recently, as for a current
+        // fault.
+        tripSeen_ = true;
+        const uint16_t mask = driver_.outputMask();
+        uint16_t blamed = 0;
+        for (uint8_t bit = 0; bit <= ZoneDriver::kMasterBit; ++bit) {
+            if ((mask & (1u << bit)) != 0 && now - driver_.openedAtMs(bit) <= config_.diag.settleMs) {
+                blamed |= static_cast<uint16_t>(1u << bit);
+            }
+        }
+        const uint8_t last = driver_.lastOpenedBit();
+        if (blamed == 0 && last <= ZoneDriver::kMasterBit && (mask & (1u << last)) != 0) {
+            blamed = static_cast<uint16_t>(1u << last);
+        }
+        const bool master = (blamed & (1u << ZoneDriver::kMasterBit)) != 0;
+        if (master) {
+            masterFaultInSession_ = true; // closing the master is not a clean session
+        }
+        driver_.stopAll(StopReason::Fault);
+        scheduler_.stop();
+        for (uint8_t z = 0; z < kMaxZones; ++z) {
+            if ((blamed & (1u << z)) != 0) {
+                driver_.setLockout(z, true);
+                zoneFault_[z] = FaultCode::OverCurrentTrip;
+                raiseFault(FaultCode::OverCurrentTrip, z);
+            }
+        }
+        if (master || blamed == 0) {
+            raiseFault(FaultCode::OverCurrentTrip, kNoZone);
+        }
+        if (master) {
+            recordMasterFault();
+        }
+        updateInhibit();
+        nextTripClearMs_ = now + 1; // not in this tick: on a later one, once confirmed off
+        return;
+    }
+    // Release the latch only once every output is confirmed off: the driver
+    // has nothing open or waiting, and the off state is driven again here.
+    if (!driver_.anyOutputOn() && driver_.activeCount() == 0 && now >= nextTripClearMs_) {
+        deps_.outputs.allOff();
+        deps_.outputs.clearOverCurrentTrip();
+        nextTripClearMs_ = now + kTripClearRetryMs;
+    }
+}
+
+void Controller::recordMasterFault()
+{
+    masterFaultInSession_ = true;
+    if (masterFaults_ < 0xFF) {
+        ++masterFaults_;
+    }
+    if (masterFaults_ >= config_.master.faultLockoutCount && !driver_.masterLockedOut()) {
+        // Like a zone lockout: no program retries into a shorted master
+        // circuit. Every output is already off.
+        driver_.setMasterLockout(true);
+        raiseFault(FaultCode::MasterLockedOut, kNoZone);
+        updateInhibit();
+    }
+    stateDirty_ = true;
 }
 
 void Controller::raiseFault(FaultCode code, ZoneIndex zone)
@@ -324,6 +441,7 @@ void Controller::clearFaults()
     driver_.clearLockouts();
     current_.rearm(); // a current fault that is still present is raised again
     zoneFault_.fill(FaultCode::None);
+    masterFaults_ = 0;
     const uint32_t latched = activeFaults_ & ~kSelfClearing;
     activeFaults_ &= kSelfClearing;
     for (unsigned c = 1; c < static_cast<unsigned>(FaultCode::Count); ++c) {
@@ -333,21 +451,17 @@ void Controller::clearFaults()
             publish(e);
         }
     }
+    updateInhibit();
     stateDirty_ = true;
 }
 
 void Controller::savePersist(MonoMs now)
 {
+    // A plain-data copy for the writer task: no JSON, no heap, no flash here.
     lastPersistMs_ = now;
     persistDirty_ = false;
-    if (deps_.runtimeStorage == nullptr) {
-        return;
-    }
-    const std::string json = persistToJson(scheduler_.persist());
-    if (json.empty() || !deps_.runtimeStorage->write(ConfigStore::kRuntimeKey, json)) {
-        if ((activeFaults_ & faultBit(FaultCode::StorageError)) == 0) {
-            raiseFault(FaultCode::StorageError, kNoZone);
-        }
+    if (deps_.runtimeStorage != nullptr) {
+        persist_.post(scheduler_.persist());
     }
 }
 
@@ -369,9 +483,12 @@ void Controller::publishSnapshot(MonoMs now)
         zs.fault = zoneFault_[i];
         zs.enabled = driver_.config().zoneEnabled[i];
         zs.lockedOut = driver_.lockedOut(z);
+        zs.restRemainingSec = (driver_.restRemainingMs(z) + 999u) / 1000u;
     }
     st.masterEnabled = config_.master.enabled;
     st.masterOn = driver_.masterOn();
+    st.masterLockedOut = driver_.masterLockedOut();
+    st.masterFaultCount = masterFaults_;
 
     st.queue.state = scheduler_.queueState();
     st.queue.length = static_cast<uint8_t>(scheduler_.queueSize());
@@ -426,6 +543,13 @@ void Controller::onZoneChanged(ZoneIndex zone, ValveState state, StopReason reas
 
 void Controller::onMasterChanged(bool on)
 {
+    const MonoMs now = deps_.clock.monoMs();
+    if (on) {
+        masterOnSinceMs_ = now;
+        masterFaultInSession_ = false;
+    } else if (!masterFaultInSession_ && now - masterOnSinceMs_ >= config_.diag.settleMs) {
+        masterFaults_ = 0; // ran cleanly
+    }
     Event e = makeEvent(EventType::MasterChanged);
     e.master.on = on;
     publish(e);
@@ -456,6 +580,19 @@ void Controller::onProgramMissed(uint16_t programId, UtcSeconds scheduledAt)
 void Controller::onQueueChanged()
 {
     publish(makeEvent(EventType::QueueChanged));
+    stateDirty_ = true;
+}
+
+void Controller::onRunDropped(const RunEntry &entry, StartError reason)
+{
+    Event e = makeEvent(EventType::RunDropped);
+    e.dropped = {entry.zone, entry.programId, entry.source, reason};
+    publish(e);
+}
+
+void Controller::onPauseExpired()
+{
+    publish(makeEvent(EventType::PauseExpired));
     stateDirty_ = true;
 }
 

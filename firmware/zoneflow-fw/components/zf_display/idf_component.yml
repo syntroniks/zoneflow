@@ -1,0 +1,6 @@
+# zf_display dependencies (ESP-IDF component manager).
+# The desktop simulator pins the same LVGL version: sim/CMakeLists.txt
+# (ZF_LVGL_VERSION). Change both together.
+dependencies:
+  idf: ">=5.5"
+  lvgl/lvgl: "9.6.0"

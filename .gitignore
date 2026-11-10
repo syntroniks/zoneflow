@@ -35,3 +35,7 @@ site/
 
 # ZoneFlow firmware: generated from sdkconfig.defaults
 firmware/zoneflow-fw/sdkconfig
+firmware/zoneflow-fw/build-*/
+
+# ZoneFlow web UI build output, packed into the www partition image
+firmware/zoneflow-fw/www/

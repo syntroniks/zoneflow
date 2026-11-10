@@ -1,0 +1,5 @@
+## Managed components for zf_web (ESP-IDF component manager).
+dependencies:
+  # LittleFS VFS driver and the littlefs_create_partition_image() CMake
+  # function. Pinned; 1.22.3 published 2026-07-21.
+  joltwallet/littlefs: "==1.22.3"

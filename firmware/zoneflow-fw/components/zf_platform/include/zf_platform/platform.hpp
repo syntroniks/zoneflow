@@ -17,6 +17,7 @@
 #include "zf/time/clock.hpp"
 #include "zf/time/time_service.hpp"
 #include "zf/zone/output_enable.hpp"
+#include "zf/zone/zero_cross.hpp"
 
 // IRAM-safe: valve outputs and OE inactive using direct register writes.
 // Safe in panic, brownout and shutdown handlers.
@@ -48,12 +49,31 @@ public:
     void setZone(ZoneIndex zone, bool on) override;
     void setMaster(bool on) override;
     void allOff() override;
+    void clearOverCurrentTrip() override;
+};
+
+// ---- mains zero-cross input --------------------------------------------------------
+
+class ZeroCrossInput final : public IZeroCrossHal {
+public:
+    // ESP_ERR_NOT_SUPPORTED on a board without the signal.
+    esp_err_t init();
+    ZeroCrossSample sample() const override;
+    void delayUs(uint32_t us) override;
+
+private:
+    static void onEdge(void *arg);
+    std::atomic<uint32_t> seq_{0};
+    std::atomic<uint32_t> edges_{0};
+    std::atomic<uint32_t> lastEdgeUs_{0};
+    std::atomic<uint32_t> intervalUs_{0};
 };
 
 // ---- output-enable keep-alive ------------------------------------------------------
 
 OutputEnableMode configuredOutputEnableMode();
-// Starts the high-priority keep-alive task (static allocation).
+// Starts the keep-alive: an IRAM-safe GPTimer interrupt that calls
+// guard.step() every CONFIG_ZF_OE_TOGGLE_PERIOD_MS and drives the OE pin.
 esp_err_t startKeepAlive(OutputEnableGuard &guard);
 
 // ---- sensors -----------------------------------------------------------------------
@@ -85,6 +105,10 @@ private:
     uint32_t handle_ = 0;
     bool open_ = false;
 };
+
+// Starts the low-priority task that drains the controller's PersistMailbox
+// into storage (static allocation, core 0).
+esp_err_t startPersistWriter(PersistMailbox &box, IBlobStorage &storage);
 
 // ---- I2C and RTC ------------------------------------------------------------------------
 
