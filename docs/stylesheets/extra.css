@@ -1,0 +1,35 @@
+.md-banner a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.zf-hero {
+  padding: 1.5rem 0 0.5rem;
+}
+
+.zf-hero img {
+  width: 4.5rem;
+  height: auto;
+}
+
+.zf-hero p.zf-lead {
+  font-size: 1.15rem;
+  max-width: 40rem;
+}
+
+.md-typeset .zf-status {
+  border-width: 0.15rem;
+  font-size: 0.85rem;
+}
+
+.md-typeset .grid.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+
+.md-typeset .grid.cards > div {
+  border: 0.05rem solid var(--md-default-fg-color--lightest);
+  border-radius: 0.2rem;
+  padding: 0.2rem 0.8rem;
+}
