@@ -6,6 +6,7 @@ on:
       - "hardware/**"
       - "docs/design/hardware-design.md"
       - "tools/designsync/**"
+      - "tools/hwflow/**"
       - ".github/workflows/hardware.yml"
   push:
     branches: [main]
@@ -13,6 +14,7 @@ on:
       - "hardware/**"
       - "docs/design/hardware-design.md"
       - "tools/designsync/**"
+      - "tools/hwflow/**"
       - ".github/workflows/hardware.yml"
   workflow_dispatch:
 
@@ -32,6 +34,69 @@ jobs:
 
       - uses: astral-sh/setup-uv@v10.3.3
 
-      # Netlist, design document tables, BOM and pin map must agree.
-      - name: Check the rev A design files against the netlist
+      # Netlist, design document tables, BOM and pin map must agree. So must the
+      # netlist and BOMs that KiCad extracted from the rev A schematic, which are
+      # committed in hardware/zoneflow-a/output: this step needs no KiCad.
+      - name: Check the rev A design files and schematic outputs against the netlist
         run: make -C hardware design-check
+
+  hwflow:
+    name: hwflow lint and tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/hwflow
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.3.3
+
+      - name: Ruff
+        run: uv run --frozen ruff check .
+
+      # Without KiCad the tests that call it are skipped. The schematic job runs them all.
+      - name: Tests that need no KiCad
+        run: uv run --frozen pytest -q
+
+  schematic:
+    name: regenerate the rev A schematic
+    runs-on: ubuntu-latest
+    # The KiCad project's own image, the version the committed files were made with.
+    container:
+      image: kicad/kicad:10.0.8
+      options: --user root
+    steps:
+      - name: Install make and git
+        run: apt-get update && apt-get install -y --no-install-recommends make git ca-certificates curl
+
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.3.3
+
+      - name: hwflow tests with KiCad
+        working-directory: tools/hwflow
+        run: uv run --frozen pytest -q
+
+      # Netlist parity, page lint and ERC. No display is needed for the schematic half.
+      - name: Generate the schematic and check it
+        run: make -C hardware/zoneflow-a schematic
+
+      # The generated files are committed. They must be what the sources give.
+      # The PDF is left out: it is binary and may differ between machines.
+      - name: The committed files are what the sources generate
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git status --short -- hardware/zoneflow-a
+          git diff --exit-code --stat -- hardware/zoneflow-a ':!hardware/zoneflow-a/output/*.pdf'
+          test -z "$(git status --porcelain --untracked-files=all -- hardware/zoneflow-a | grep '^??')"
+
+      - name: Keep the schematic PDF and the reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zoneflow-a-schematic
+          path: |
+            hardware/zoneflow-a/output/zoneflow-a-schematic.pdf
+            hardware/zoneflow-a/output/reports/
+            hardware/zoneflow-a/build/kicad-cli.stderr
+          if-no-files-found: warn
