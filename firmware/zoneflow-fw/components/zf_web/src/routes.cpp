@@ -12,10 +12,10 @@ constexpr uint32_t kSmall = 512;
 constexpr uint32_t kProgram = 2048;
 constexpr uint32_t kConfig = 16384;
 constexpr uint32_t kEmpty = 64;
-// Slot sizes from partitions.csv (ota_0/ota_1 0x300000, www 0x1d0000). The
+// Slot sizes from partitions.csv (ota_0/ota_1 0x400000, www 0x7c0000). The
 // HTTP glue also checks the real partition size.
-constexpr uint32_t kAppSlot = 0x300000;
-constexpr uint32_t kAssets = 0x1d0000;
+constexpr uint32_t kAppSlot = 0x400000;
+constexpr uint32_t kAssets = 0x7c0000;
 
 using enum RouteId;
 constexpr Access P = Access::Public;

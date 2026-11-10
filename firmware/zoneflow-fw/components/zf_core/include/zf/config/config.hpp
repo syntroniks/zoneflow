@@ -31,11 +31,21 @@ struct MasterConfig {
     uint32_t preOpenMs = 1000;
     uint32_t postCloseMs = 2000;
     CurrentWindow current{80, 700};
+    // Consecutive short-circuit or over-current faults attributed to the
+    // master output that lock it out (and with it every zone) until
+    // ClearFaults.
+    uint8_t faultLockoutCount = 3;
 };
 
 struct DriverSettings {
     uint8_t maxConcurrent = kMaxConcurrentZonesLimit;
     uint32_t interZoneDelayMs = 2000;
+    // Closed time a zone needs after reaching its maximum run time, and the
+    // closed time that ends a run of back-to-back runs (spec section 2 rule 4).
+    uint32_t minRestSec = 1800;
+    // Turn outputs on at a mains zero crossing when the board has the
+    // signal; ignored without it.
+    bool zeroCrossSwitching = false;
 };
 
 enum class SpareFunction : uint8_t {

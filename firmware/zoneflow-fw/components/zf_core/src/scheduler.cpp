@@ -65,6 +65,8 @@ const char *toString(SkipReason r)
         return "queue_full";
     case SkipReason::NothingToRun:
         return "nothing_to_run";
+    case SkipReason::MasterLockedOut:
+        return "master_locked_out";
     }
     return "?";
 }
@@ -88,6 +90,12 @@ const char *toString(RunError e)
         return "inhibited";
     case RunError::NothingToRun:
         return "nothing_to_run";
+    case RunError::LockedOut:
+        return "locked_out";
+    case RunError::ZoneResting:
+        return "zone_resting";
+    case RunError::MasterLockedOut:
+        return "master_locked_out";
     }
     return "?";
 }
@@ -97,11 +105,13 @@ Scheduler::Scheduler(const IClock &clock, IZoneActuator &actuator) : clock_(cloc
     keys_.fill(kNoKey);
 }
 
-int64_t Scheduler::keyAt(UtcSeconds t) const
+int64_t Scheduler::keyIn(const TimeZone &tz, UtcSeconds t)
 {
-    const civil::LocalDateTime l = tz_.toLocal(t);
+    const civil::LocalDateTime l = tz.toLocal(t);
     return makeKey(l.daySerial, static_cast<uint16_t>(l.secondOfDay / 60));
 }
+
+int64_t Scheduler::keyAt(UtcSeconds t) const { return keyIn(tz_, t); }
 
 void Scheduler::configure(const SchedulerConfig &cfg, const TimeZone &tz)
 {
@@ -110,6 +120,20 @@ void Scheduler::configure(const SchedulerConfig &cfg, const TimeZone &tz)
     const std::size_t oldCount = configured_ ? cfg_.schedule.programCount : 0;
     for (std::size_t i = 0; i < oldCount; ++i) {
         oldIds[i] = cfg_.schedule.programs[i].id;
+    }
+
+    // Keys are local (day, minute) values. When the time zone changes, move
+    // each key to the same instant in the new zone; read in the new zone
+    // unchanged, a key can name a later local time than the start it stands
+    // for, and the next start would count as already run.
+    if (configured_ && !(tz == tz_)) {
+        for (std::size_t i = 0; i < oldCount; ++i) {
+            if (oldKeys[i] != kNoKey) {
+                const int64_t day = civil::floorDiv(oldKeys[i], 1440);
+                const auto minute = static_cast<int32_t>(oldKeys[i] - day * 1440);
+                oldKeys[i] = keyIn(tz, tz_.fromLocal(day, minute * 60));
+            }
+        }
     }
 
     cfg_ = cfg;
@@ -210,7 +234,7 @@ void Scheduler::setInhibit(uint8_t flags)
 {
     const uint8_t added = flags & static_cast<uint8_t>(~inhibit_);
     inhibit_ = flags;
-    if ((added & (kInhibitNoAc | kInhibitMaintenance)) != 0) {
+    if ((added & (kInhibitNoAc | kInhibitMaintenance | kInhibitMasterLockout)) != 0) {
         stop();
     } else if ((added & kInhibitSensor) != 0) {
         removeIf([this](const RunEntry &e) {
@@ -278,11 +302,22 @@ RunError Scheduler::runZone(ZoneIndex zone, uint32_t durationSec)
     if ((inhibit_ & (kInhibitNoAc | kInhibitMaintenance)) != 0) {
         return RunError::Inhibited;
     }
+    if ((inhibit_ & kInhibitMasterLockout) != 0) {
+        return RunError::MasterLockedOut;
+    }
     if (zone >= cfg_.zoneCount || !cfg_.zoneEnabled[zone]) {
         return RunError::InvalidZone;
     }
     if (durationSec == 0) {
         return RunError::ZeroDuration;
+    }
+    switch (actuator_.startBlocker(zone)) {
+    case StartError::LockedOut:
+        return RunError::LockedOut;
+    case StartError::Resting:
+        return RunError::ZoneResting;
+    default:
+        break;
     }
     // The driver clamps again to the zone's limit; this keeps the
     // millisecond value below from wrapping.
@@ -304,6 +339,9 @@ RunError Scheduler::runProgram(uint16_t programId)
 {
     if ((inhibit_ & (kInhibitNoAc | kInhibitMaintenance)) != 0) {
         return RunError::Inhibited;
+    }
+    if ((inhibit_ & kInhibitMasterLockout) != 0) {
+        return RunError::MasterLockedOut;
     }
     const Program *p = findProgram(programId);
     if (p == nullptr) {
@@ -407,6 +445,10 @@ void Scheduler::stopFront()
 
 void Scheduler::pause()
 {
+    if (state_ == QueueState::Paused) {
+        return; // the timeout runs from the first pause
+    }
+    pausedAtMs_ = clock_.monoMs();
     if (state_ == QueueState::Running && count_ > 0) {
         RunEntry &front = queue_[0];
         front.remainingMs = actuator_.remainingMs(front.zone);
@@ -480,7 +522,11 @@ void Scheduler::processQueue()
         if (r.error == StartError::TooManyActive || r.error == StartError::AlreadyActive) {
             return; // retry on the next tick
         }
-        popFront(); // the zone cannot run (locked out, disabled, inhibited)
+        // The zone cannot run (locked out, resting, disabled, inhibited).
+        if (listener_ != nullptr) {
+            listener_->onRunDropped(front, r.error);
+        }
+        popFront();
         notifyQueue();
     }
 }
@@ -488,6 +534,16 @@ void Scheduler::processQueue()
 void Scheduler::tick()
 {
     const UtcSeconds now = clock_.nowUtc();
+    // Stop, do not resume: a person paused the watering on purpose, and
+    // watering that restarts by itself hours later could surprise them. The
+    // next scheduled start runs as usual.
+    if (state_ == QueueState::Paused &&
+        clock_.monoMs() - pausedAtMs_ >= static_cast<MonoMs>(cfg_.schedule.pauseTimeoutMin) * 60000u) {
+        stop();
+        if (listener_ != nullptr) {
+            listener_->onPauseExpired();
+        }
+    }
     // Retire finished entries first so a program that just ended does not
     // count as still queued when its next start is evaluated.
     processQueue();
@@ -630,6 +686,8 @@ void Scheduler::fireScheduled(const Program &p, bool late)
         skipped(SkipReason::Maintenance);
     } else if ((inhibit_ & kInhibitNoAc) != 0) {
         skipped(SkipReason::NoAc);
+    } else if ((inhibit_ & kInhibitMasterLockout) != 0) {
+        skipped(SkipReason::MasterLockedOut);
     } else if (rainDelayActive()) {
         skipped(SkipReason::RainDelay);
     } else if ((inhibit_ & kInhibitSensor) != 0 && p.obeySensorInhibit) {

@@ -37,21 +37,23 @@ void CurrentMonitor::configure(const CurrentMonitorConfig &cfg)
     cfg_.confirmSamples = std::max<uint8_t>(cfg_.confirmSamples, 1);
 }
 
-void CurrentMonitor::rearm() { reported_ = false; }
+void CurrentMonitor::rearm() { reported_ = CurrentFault::None; }
 
 CurrentVerdict CurrentMonitor::evaluate(int32_t measuredMa, uint16_t outputMask, uint8_t lastOpenedBit,
                                         MonoMs lastChangeMs, MonoMs now)
 {
-    if (!cfg_.enabled || measuredMa < 0) {
-        pending_ = CurrentFault::None;
-        count_ = 0;
-        return {};
-    }
+    // Track output changes even without a reading, so a fault reported for
+    // one switching of an output is reported again for the next one.
     if (outputMask != lastMask_) {
         lastMask_ = outputMask;
         pending_ = CurrentFault::None;
         count_ = 0;
-        reported_ = false;
+        reported_ = CurrentFault::None;
+    }
+    if (!cfg_.enabled || measuredMa < 0) {
+        pending_ = CurrentFault::None;
+        count_ = 0;
+        return {};
     }
 
     CurrentFault cond = CurrentFault::None;
@@ -90,7 +92,11 @@ CurrentVerdict CurrentMonitor::evaluate(int32_t measuredMa, uint16_t outputMask,
         }
         pending_ = cond;
     }
-    if (cond == CurrentFault::None || reported_) {
+    // One report per condition and output mask. A short circuit is still
+    // reported after a milder condition (for example current_while_idle with
+    // every output off, then a current above short_circuit_ma).
+    const bool escalated = cond == CurrentFault::ShortCircuit && reported_ != CurrentFault::ShortCircuit;
+    if (cond == CurrentFault::None || (reported_ != CurrentFault::None && !escalated)) {
         return {};
     }
     if (count_ < 0xFF) {
@@ -101,7 +107,7 @@ CurrentVerdict CurrentMonitor::evaluate(int32_t measuredMa, uint16_t outputMask,
     if (count_ < needed) {
         return {};
     }
-    reported_ = true;
+    reported_ = cond;
     CurrentVerdict v;
     v.fault = cond;
     const bool attributable = lastOpenedBit <= kMasterBit && (outputMask & (1u << lastOpenedBit)) != 0;

@@ -1,19 +1,31 @@
 # ZoneFlow defaults. sdkconfig is generated from this file; do not commit it.
 CONFIG_IDF_TARGET="esp32s3"
 
-# Flash and partitions: 8 MB, two OTA slots, web assets, core dump.
-CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+# Module: ESP32-S3-WROOM-1-N16R8 (spec v0.3: PSRAM for the display
+# interface). 16 MB flash: two OTA slots, assets, core dump.
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
 CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH=y
 CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF=y
 
+# 8 MB octal PSRAM. It occupies GPIO35..37 (zf_board asserts they are not
+# used). A board without PSRAM panics at boot with these settings; outputs
+# are off by hardware while it does.
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+
 # Logs and flashing over the native USB port.
 CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
 
-# 1 kHz tick so the 5 ms keep-alive period is exact.
+# 1 kHz tick: the 50 ms control period is exact.
 CONFIG_FREERTOS_HZ=1000
+
+# The OE keep-alive is a GPTimer interrupt that must keep running while the
+# flash cache is off (NVS writes, OTA): handler and driver objects in IRAM.
+CONFIG_GPTIMER_ISR_CACHE_SAFE=y
 
 # Watchdogs: the control task is subscribed to the task watchdog.
 CONFIG_ESP_TASK_WDT_EN=y

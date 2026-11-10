@@ -36,6 +36,19 @@ esp_err_t SensorInputs::init()
     if (err != ESP_OK) {
         return err;
     }
+    if (board::kHasOverCurrentTrip) {
+        const gpio_config_t trip = {
+            .pin_bit_mask = 1ULL << board::kOverCurrentTripGpio,
+            .mode = GPIO_MODE_INPUT,
+            .pull_up_en = board::kOverCurrentTripActiveLow ? GPIO_PULLUP_ENABLE : GPIO_PULLUP_DISABLE,
+            .pull_down_en = board::kOverCurrentTripActiveLow ? GPIO_PULLDOWN_DISABLE : GPIO_PULLDOWN_ENABLE,
+            .intr_type = GPIO_INTR_DISABLE,
+        };
+        err = gpio_config(&trip);
+        if (err != ESP_OK) {
+            return err;
+        }
+    }
 
     // Flow: count falling edges (contact closing) with hardware accumulation.
     pcnt_unit_config_t unitCfg = {};
@@ -90,14 +103,16 @@ esp_err_t SensorInputs::init()
             if (adc_cali_create_scheme_curve_fitting(&cali, &caliHandle) == ESP_OK) {
                 cali_ = caliHandle;
             } else {
-                ESP_LOGW(kTag, "ADC calibration unavailable; current readings disabled");
+                ESP_LOGE(kTag, "ADC calibration unavailable: current_sense_unavailable, zones still run");
             }
         }
     }
     if (err != ESP_OK) {
         ESP_LOGE(kTag, "valve current ADC init failed: %s", esp_err_to_name(err));
     }
-    return ESP_OK; // a missing sensor is reported as "unavailable", not fatal
+    // A missing current sense is not fatal: read() reports it, and the
+    // controller raises current_sense_unavailable while zones keep running.
+    return ESP_OK;
 }
 
 SensorSample SensorInputs::read()
@@ -107,6 +122,10 @@ SensorSample SensorInputs::read()
     s.spareContactClosed = readContactClosed(board::kSpareSensorGpio);
     const bool acLevel = gpio_get_level(static_cast<gpio_num_t>(board::kAcPresentGpio)) != 0;
     s.acPresent = board::kAcPresentActiveLow ? !acLevel : acLevel;
+    if (board::kHasOverCurrentTrip) {
+        const bool tripLevel = gpio_get_level(static_cast<gpio_num_t>(board::kOverCurrentTripGpio)) != 0;
+        s.overCurrentTripped = board::kOverCurrentTripActiveLow ? !tripLevel : tripLevel;
+    }
 
     if (pcnt_ != nullptr) {
         int count = 0;
@@ -115,6 +134,7 @@ SensorSample SensorInputs::read()
         }
     }
 
+    s.currentSenseAvailable = false;
     if (adc_ != nullptr && cali_ != nullptr) {
         int64_t sumMv = 0;
         int n = 0;
@@ -129,6 +149,7 @@ SensorSample SensorInputs::read()
             }
         }
         if (n > 0) {
+            s.currentSenseAvailable = true;
             const float mv = static_cast<float>(sumMv) / static_cast<float>(n) - board::kValveCurrentOffsetMv;
             s.valveCurrentMa = mv <= 0.0f ? 0 : static_cast<int32_t>(mv * board::kValveCurrentMaPerMv);
         }

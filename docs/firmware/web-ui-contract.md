@@ -10,7 +10,7 @@ the firmware provides and expects. Nothing here has run on hardware yet.
 | Build output | `firmware/zoneflow-fw/www/`. Not committed (`.gitignore`); the UI project writes it. |
 | Entry point | `www/index.html` (or `index.html.gz`). Without it the firmware build skips the image and the device serves its built-in page. |
 | Packing | `idf.py build` runs `littlefs_create_partition_image(www ...)` (component `joltwallet/littlefs` 1.22.3) and writes `build/www.bin`; `idf.py flash` writes it to the `www` partition. |
-| Size | The `www` partition is 0x1D0000 bytes (1 856 KiB) in `partitions.csv`. LittleFS needs some of that for metadata: keep the files well under it. |
+| Size | The `www` partition is 0x7C0000 bytes (7 936 KiB) in `partitions.csv` (WROOM-1-N16R8). It also holds display assets (fonts, images) from the display firmware, so agree on a directory split with that owner; LittleFS needs some space for metadata. |
 | Update in the field | `POST /api/v1/firmware/assets` with `www.bin` as `application/octet-stream` (admin session). Same safety gate as a firmware update; no restart needed. A release should ship `zoneflow-fw.bin` and `www.bin`. |
 | File names | Lower case, no spaces. Paths and names under 64 bytes (LittleFS default name limit; keep margin). |
 

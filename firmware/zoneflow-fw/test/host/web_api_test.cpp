@@ -708,7 +708,7 @@ TEST_F(ApiTest, StreamedRoutesAreAdmittedButNotHandledHere)
     const Admission a = api->admit(req);
     ASSERT_TRUE(a.ok);
     EXPECT_EQ(a.match.route->id, RouteId::FirmwareUpload);
-    req.contentLength = 0x300001;
+    req.contentLength = 0x400001;
     EXPECT_EQ(api->admit(req).error.status, 413);
     req.contentLength = 100;
     req.contentType = "application/json";

@@ -28,6 +28,12 @@ const char *toString(FaultCode f)
         return "time_invalid";
     case FaultCode::StorageError:
         return "storage_error";
+    case FaultCode::MasterLockedOut:
+        return "master_locked_out";
+    case FaultCode::CurrentSenseUnavailable:
+        return "current_sense_unavailable";
+    case FaultCode::OverCurrentTrip:
+        return "over_current_trip";
     case FaultCode::Count:
         break;
     }
@@ -76,6 +82,12 @@ const char *toString(EventType t)
         return "time_status_changed";
     case EventType::MaintenanceChanged:
         return "maintenance_changed";
+    case EventType::CommandRejected:
+        return "command_rejected";
+    case EventType::RunDropped:
+        return "run_dropped";
+    case EventType::PauseExpired:
+        return "pause_expired";
     case EventType::Count:
         break;
     }

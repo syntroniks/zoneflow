@@ -165,7 +165,7 @@ given (`?force=true` for upload, `"force": true` for pull). Before writing,
 the controller enters maintenance: every valve closes, the queue is cleared
 and starts are blocked. After a restart the new image must pass a self-test
 within 60 s or the bootloader returns to the previous one. Details:
-[firmware architecture, section 13](../design/firmware-architecture.md#13-ota-zf_ota).
+[firmware architecture, section 14](../design/firmware-architecture.md#14-ota-zf_ota).
 
 ## Reference
 

@@ -2189,7 +2189,7 @@
         ],
         "requestBody": {
           "required": true,
-          "x-max-body-bytes": 3145728,
+          "x-max-body-bytes": 4194304,
           "description": "The raw application image (`zoneflow-fw.bin` from a release).",
           "content": {
             "application/octet-stream": {
@@ -2312,7 +2312,7 @@
         "description": "Replaces the web UI files. Does not touch the firmware or settings.",
         "requestBody": {
           "required": true,
-          "x-max-body-bytes": 1900544,
+          "x-max-body-bytes": 8126464,
           "description": "A LittleFS image of the `www` partition (`www.bin` from a release).",
           "content": {
             "application/octet-stream": {

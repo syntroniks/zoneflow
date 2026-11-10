@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // zf_net: WiFi station, provisioning (BLE Security 2, SoftAP fallback with a
 // captive setup page), hostname and mDNS, re-provisioning and factory reset.
-// Design: docs/design/firmware-architecture.md, section 11.
+// Design: docs/design/firmware-architecture.md, section 12.
 //
 // The decisions live in net_logic.hpp (host-tested); this header is the
 // device API other modules call. Every function here is safe from any task:

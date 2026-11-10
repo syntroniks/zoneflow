@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // zf_web: local web UI, REST API (/api/v1) and live event stream (spec 4.1).
-// Design: docs/design/firmware-architecture.md, section 12; API reference:
+// Design: docs/design/firmware-architecture.md, section 13; API reference:
 // docs/firmware/api.md and docs/firmware/openapi.json.
 //
 // The request logic is in api.hpp and the helpers next to it (host-tested).

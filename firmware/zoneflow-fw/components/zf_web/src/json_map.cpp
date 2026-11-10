@@ -260,8 +260,29 @@ cJSON *eventToJson(const Event &e)
     case EventType::MaintenanceChanged:
         cJSON_AddBoolToObject(o, "on", e.flag.on);
         break;
+    case EventType::CommandRejected:
+        cJSON_AddStringToObject(o, "command", toString(e.rejected.command));
+        addZoneNumber(o, "zone", e.rejected.zone);
+        if (e.rejected.programId != 0) {
+            cJSON_AddNumberToObject(o, "program_id", e.rejected.programId);
+        } else {
+            cJSON_AddNullToObject(o, "program_id");
+        }
+        cJSON_AddStringToObject(o, "error", toString(e.rejected.error));
+        break;
+    case EventType::RunDropped:
+        addZoneNumber(o, "zone", e.dropped.zone);
+        if (e.dropped.programId != 0) {
+            cJSON_AddNumberToObject(o, "program_id", e.dropped.programId);
+        } else {
+            cJSON_AddNullToObject(o, "program_id");
+        }
+        cJSON_AddStringToObject(o, "source", toString(e.dropped.source));
+        cJSON_AddStringToObject(o, "reason", toString(e.dropped.reason));
+        break;
     case EventType::QueueChanged:
     case EventType::ConfigApplied:
+    case EventType::PauseExpired:
     case EventType::Count:
         break;
     }

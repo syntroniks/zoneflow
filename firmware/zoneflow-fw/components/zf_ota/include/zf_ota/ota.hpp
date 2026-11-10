@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // zf_ota: firmware update with rollback (spec 4.1). Design:
-// docs/design/firmware-architecture.md, section 13.
+// docs/design/firmware-architecture.md, section 14.
 //
 //  - Upload: zf_web streams the request body through upload*().
 //  - Pull: startPull() downloads an https:// URL (GitHub release assets)

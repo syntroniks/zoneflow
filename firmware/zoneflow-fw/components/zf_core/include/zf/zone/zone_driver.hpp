@@ -5,7 +5,10 @@
 // Guarantees:
 //  - All outputs off at init(), on reconfigure() and on every fault path.
 //  - A zone never stays open longer than min(zone max run time,
-//    kHardMaxRunSec), whatever the caller asked for.
+//    kHardMaxRunSec), whatever the caller asked for. The limit is per zone,
+//    not per run: on-time adds up over back-to-back runs until the zone has
+//    been closed for minRestSec. A zone that reached the limit refuses to
+//    start (StartError::Resting) until it has been closed for minRestSec.
 //  - At most maxConcurrent zones are open or waiting (ceiling
 //    kMaxConcurrentZonesLimit). The master output is extra.
 //  - Master valve opens masterPreOpenMs before the first zone and closes
@@ -23,6 +26,7 @@
 #include "zf/hal.hpp"
 #include "zf/time/clock.hpp"
 #include "zf/zone/output_enable.hpp"
+#include "zf/zone/zero_cross.hpp"
 #include "zf/zone/zone_types.hpp"
 
 namespace zf {
@@ -34,6 +38,13 @@ struct ZoneDriverConfig {
     uint32_t masterPreOpenMs = 0;
     uint32_t masterPostCloseMs = 0;
     uint32_t interZoneDelayMs = 0;
+    // A zone that has been open for its maximum run time, counting every run
+    // with less than this much closed time in between, stays closed for this
+    // long (spec section 2 rule 4).
+    uint32_t minRestSec = 1800;
+    // Turn outputs on at the next mains zero crossing when a zero-cross
+    // input is attached and has a usable signal.
+    bool zeroCrossSwitching = false;
     std::array<bool, kMaxZones> zoneEnabled{};
     std::array<uint32_t, kMaxZones> maxRunSec{};
 };
@@ -52,6 +63,12 @@ public:
     ZoneDriver(IOutputHal &hal, OutputEnableGuard &oe, const IClock &clock);
 
     void setListener(IZoneDriverListener *listener) { listener_ = listener; }
+    // Optional. offsetUs: detector lead (+) or lag (-) from the board header.
+    void setZeroCross(IZeroCrossHal *zc, int32_t offsetUs)
+    {
+        zeroCross_ = zc;
+        zeroCrossOffsetUs_ = offsetUs;
+    }
 
     // Forces all outputs off, then applies the configuration.
     void init(const ZoneDriverConfig &cfg);
@@ -62,6 +79,10 @@ public:
     void stop(ZoneIndex zone, StopReason reason) override;
     ValveState state(ZoneIndex zone) const override;
     uint32_t remainingMs(ZoneIndex zone) const override;
+    StartError startBlocker(ZoneIndex zone) const override;
+    // Time left before a zone that reached its maximum run time may open
+    // again; 0 when it is not resting.
+    uint32_t restRemainingMs(ZoneIndex zone) const;
 
     // Turns every output off at once, master included, skipping the master
     // post-close delay.
@@ -83,7 +104,12 @@ public:
     // A locked-out zone refuses to start until cleared (latched fault).
     void setLockout(ZoneIndex zone, bool locked);
     bool lockedOut(ZoneIndex zone) const;
-    void clearLockouts();
+    void clearLockouts(); // zones and master
+
+    // A locked-out master refuses to open, so with the master enabled no zone
+    // starts (StartError::MasterLockedOut).
+    void setMasterLockout(bool locked) { masterLockedOut_ = locked; }
+    bool masterLockedOut() const { return masterLockedOut_; }
 
     bool masterOn() const { return masterOn_; }
     uint8_t activeCount() const;
@@ -97,6 +123,11 @@ public:
     MonoMs lastOutputChangeMs() const { return lastChangeMs_; }
     // Bit index (as in outputMask) of the output most recently switched on.
     uint8_t lastOpenedBit() const { return lastOpenedBit_; }
+    // When the output (bit as in outputMask) last switched on.
+    MonoMs openedAtMs(uint8_t bit) const
+    {
+        return bit == kMasterBit ? masterOnAtMs_ : (bit < kMaxZones ? zones_[bit].openedAtMs : 0);
+    }
 
     static constexpr uint8_t kMasterBit = kMaxZones;
 
@@ -108,7 +139,19 @@ private:
         MonoMs openedAtMs = 0;
         StopReason lastStop = StopReason::None;
         bool lockedOut = false;
+        // On-time since the zone last had minRestSec of closed time.
+        MonoMs burstMs = 0;
+        MonoMs closedAtMs = 0;
     };
+
+    // Smallest run worth starting; a smaller remainder counts as exhausted.
+    static constexpr MonoMs kMinRunMs = 1000;
+
+    MonoMs maxRunMs(ZoneIndex zone) const { return static_cast<MonoMs>(effectiveMaxRunSec(zone)) * 1000u; }
+    // Clears the on-time of a zone that has rested; returns the run time
+    // still allowed now.
+    MonoMs budgetMs(ZoneIndex zone, MonoMs now);
+    MonoMs restLeftMs(ZoneIndex zone, MonoMs now) const;
 
     void applyConfig(const ZoneDriverConfig &cfg);
     void openZone(ZoneIndex z, MonoMs now);
@@ -117,14 +160,18 @@ private:
     void updateMaster(MonoMs now);
     void updateDemand();
     void forceAllOff(StopReason reason, MonoMs now);
+    void waitForZeroCross();
 
     IOutputHal &hal_;
     OutputEnableGuard &oe_;
     const IClock &clock_;
     IZoneDriverListener *listener_ = nullptr;
+    IZeroCrossHal *zeroCross_ = nullptr;
+    int32_t zeroCrossOffsetUs_ = 0;
     ZoneDriverConfig cfg_{};
     std::array<Zone, kMaxZones> zones_{};
     bool masterOn_ = false;
+    MonoMs masterOnAtMs_ = 0;
     bool masterCloseArmed_ = false;
     MonoMs masterCloseAtMs_ = 0;
     bool anyClosed_ = false;
@@ -132,6 +179,7 @@ private:
     MonoMs lastChangeMs_ = 0;
     uint8_t lastOpenedBit_ = 0xFF;
     bool inhibit_ = false;
+    bool masterLockedOut_ = false;
     std::atomic<bool> emergency_{false};
 };
 
