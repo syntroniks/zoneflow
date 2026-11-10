@@ -205,3 +205,20 @@ What it showed:
 
 - **Trip window**: 4.0 to 5.4 A peak, wider than the 4.2 to 5.1 A of the hand calculation, which left out the resistors that set the amplifier's rest level.
 - **Margin**: the lowest trip is 13 % above the largest current the specification allows, 3.54 A peak.
+
+## relay_pump_proposal.cir
+
+Added by review A1. **A proposal, not part of the rev A netlist.** A second
+keep-alive detector that drives only the relay transistor Q2: a diode pump
+from `KA` straight onto Q2's gate, with two bleed resistors in parallel. It is
+the circuit change recommended for finding B1 of the review.
+
+| Case | Gate above 1.45 V after the first edge | Gate below 0.65 V after the last edge |
+|---|---|---|
+| -20 °C | 1.7 ms | 0.73 s |
+| 27 °C | 1.5 ms | 0.71 s |
+| 60 °C | 1.3 ms | 0.36 s |
+| 27 °C, one bleed resistor open | | 1.33 s |
+| 27 °C, pin stops high | | 1.44 s |
+
+1.45 V and 0.65 V are the highest and lowest gate thresholds of the AO3400A.

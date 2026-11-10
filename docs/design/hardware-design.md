@@ -1,7 +1,8 @@
 # ZoneFlow hardware design, revision A
 
-Status: **paper design, 2026-11-10**. No board exists. Nothing in this document
-has been measured. Every number is a datasheet figure, a calculation from
+Status: **paper design, 2026-11-10, with the corrections of
+[hardware review A1](hardware-review-a1.md)**. No board exists. Nothing in
+this document has been measured. Every number is a datasheet figure, a calculation from
 datasheet figures, or a simulation result, and the text says which. Section 20
 lists what only a bench can confirm. Section 22 lists what I could not confirm
 at all.
@@ -987,7 +988,7 @@ the expander reset and the relay all hang on the one `DRV_EN` signal. The
 first draft of this section listed only the U6A and U7 case and relied on a
 test at start-up. A controller that stays powered for a season is not tested
 often enough that way. Review A1 rates this as a blocking finding and proposes
-a second, independent detector for the relay. See hardware review A1 (`hardware-review-a1.md`), finding B1. Until that is
+a second, independent detector for the relay. See [hardware review A1](hardware-review-a1.md), finding B1. Until that is
 decided, the test below is the only cover.
 
 **Self-test before every run.** Firmware stops the keep-alive whenever no
@@ -1964,7 +1965,7 @@ get its numbers.
 | 13 | Half-wave rectifier loads the transformer with DC | 0.06 A average is harmless | Transformer temperature and primary current with and without the board, on a 20 VA unit. |
 | 14 | RF range and emissions | Module approval carries over | Range test in the enclosure with the display fitted. Pre-compliance scan for the buck, SPI and backlight PWM. |
 | 15 | Display fit and supply | Dimensions read from a drawing. 3.4 V is acceptable on a 3.3 V recommended pin. | Measure a sample. Check the FPC contact side. Run at 3.4 V. |
-| 16 | Relay | Must-operate at 75 %. Contacts never break current. | Operate at `V5` = 4.1 V. Open under a 1.5 A inductive load 1000 times. |
+| 16 | Relay | Must-operate at 75 % of rated at 23 °C, which leaves 3 % with a hot coil. Contacts do not break current in normal use, but do after a trip or a stopped keep-alive, section 7.2. | Operate at `V5` = 4.1 V cold and at 4.8 V after an hour energised at 60 °C. Open under a 1.5 A inductive load 1000 times. Open under the short-circuit current of a 40 VA transformer 20 times. |
 | 17 | Fuse and USB ground faults | 8 A fault, 28 AWG ground | Not a test to run on a good computer. Check fuse opening time at 8 A on the bench. |
 | 18 | Sensor miswire heating | 0.11 W in a 1206 | 32 VAC on each sensor terminal for an hour. Part temperatures. |
 | 19 | Bulk capacitor ripple and life | 63 V part has the ripple rating of the 50 V part | Capacitor case temperature at peak load and low line. |

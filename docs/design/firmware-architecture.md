@@ -566,8 +566,8 @@ the REST and backup format. Abbreviated example:
 
 The hardware team answered questions 1 to 14 in
 [hardware design](hardware-design.md) section 19.3, and
-`hardware/pinmap.yaml` now exists. The independent hardware review A1
-(`hardware-review-a1.md`) then compared the answers with this document and
+`hardware/pinmap.yaml` now exists. The independent
+[hardware review A1](hardware-review-a1.md) then compared the answers with this document and
 with the circuit. Question 2 is settled: the agreed contract follows it
 below. Questions 12 and 13 have answers that change code and are noted in
 place. The questions themselves are kept as they were asked.

@@ -1,0 +1,70 @@
+* PROPOSAL, not part of the rev A netlist: a second keep-alive detector
+* that drives only the relay transistor Q2 (review A1, finding B1)
+*
+* KA -> R89 (1k) -> C51 (1 uF) -> BAT54S D22 -> RLY_G2, with C50 (1 uF) as
+* the reservoir and two 1 Mohm bleed resistors R14 and R90 in parallel.
+* Q2 is then on only while KA toggles, with no comparator and no logic gate
+* in the path. It shares nothing with the detector of section 8 except the
+* KA pin. D21 and R13 of the present circuit go.
+*
+* Run:  ngspice -b relay_pump_proposal.cir
+*
+* The run measures how long after the first edge the gate passes the
+* AO3400A's highest threshold (1.45 V) and how long after the last edge it
+* falls below its lowest (0.65 V), where Q2 is certainly off. Models are
+* generic; the Schottky leakage rises with temperature as in
+* keepalive_faults.cir.
+
+.param fka=100 ton=1 vstuck=0 rb1=1Meg rb2=1Meg rc51sh=1G
+.param per={1/fka}
+VKA   ka_src 0  PULSE(0 3.3 50m 1u 1u {per/2} {per})
+VEN   en     0  PWL(0 1 {ton} 1 {ton+1u} 0)
+BKA   ka_drv 0  V = V(ka_src)*V(en) + (1-V(en))*{vstuck}
+RGPIO ka_drv ka 30
+R33   ka 0 10k
+R89   ka  m0 1k
+C51   m0  m1 1u
+RC51S m0  m1 {rc51sh}
+D22A  0   m1 SCH
+D22B  m1  rly_g2 SCH
+C50   rly_g2 0 1u
+R14   rly_g2 0 {rb1}
+R90   rly_g2 0 {rb2}
+.model SCH D(IS=2.2e-7 N=1.05 RS=2.5 CJO=10p BV=30 IBV=2u EG=0.69 XTI=2)
+.options method=gear reltol=1e-4
+.tran 100u 6 uic
+
+.control
+set noaskquit
+foreach t -20 27 60
+  alterparam rb1 = 1Meg
+  alterparam vstuck = 0
+  alterparam rc51sh = 1G
+  reset
+  set temp = $t
+  run
+  meas tran vmax max v(rly_g2)
+  meas tran t_on when v(rly_g2)=1.45 rise=1
+  meas tran t_off when v(rly_g2)=0.65 fall=last
+  let d_on = (t_on - 0.05)*1e3
+  let d_off = t_off - 1
+  echo "RESULT $t C, both bleed resistors: gate peaks at {$&vmax} V, above 1.45 V {$&d_on} ms after the first edge, below 0.65 V {$&d_off} s after the last"
+end
+alterparam rb1 = 1e12
+reset
+set temp = 27
+run
+meas tran t_off when v(rly_g2)=0.65 fall=last
+let d_off = t_off - 1
+echo "RESULT 27 C, one bleed resistor open: below 0.65 V {$&d_off} s after the last edge"
+alterparam rb1 = 1Meg
+alterparam vstuck = 3.3
+reset
+set temp = 27
+run
+meas tran t_off when v(rly_g2)=0.65 fall=last
+let d_off = t_off - 1
+echo "RESULT 27 C, KA stops high: below 0.65 V {$&d_off} s after the last edge"
+quit
+.endc
+.end
