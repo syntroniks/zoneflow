@@ -36,3 +36,4 @@ firmware/zoneflow-fw/build-*/
 
 # ZoneFlow web UI build output, packed into the www partition image
 firmware/zoneflow-fw/www/
+firmware/zoneflow-fw/version.txt
