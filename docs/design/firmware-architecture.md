@@ -598,7 +598,10 @@ place. The questions themselves are kept as they were asked.
    and `CONFIG_ZF_OE_HEARTBEAT_TIMEOUT_MS` has to be raised.
 
    **Agreed with hardware in review A1.** The same contract is in hardware
-   design section 19.4.
+   design section 19.4. The decisions taken on that review added a second
+   keep-alive detector for the valve-common relay and two read-back pins.
+   The points below marked "changed" follow from that. None of them changes
+   what the keep-alive interrupt itself has to do.
 
    - **The timer interrupt is accepted.** The hardware document said the
      keep-alive must never come from a timer. What that rule forbids is a
@@ -613,13 +616,16 @@ place. The questions themselves are kept as they were asked.
      limit, and anything from about 3 Hz to at least 1 MHz enables drive.
      Only a steady level is certain to disable it. A keep-alive that runs
      at the wrong rate is not caught in hardware.
-   - **Enable delay.** Drive is on 14 to 41 ms after the first edge. Wait
-     for the output expander to acknowledge, 110 ms at most, before writing
-     it.
-   - **Hold-up.** Drive is gone 0.45 to 0.9 s after the last edge when the
-     pin stops low, and within 1.2 s if a fault leaves it high. From a dead
-     control loop to no drive is therefore at most 500 ms + 5 ms + 0.9 s =
-     1.4 s.
+   - **Enable delay, changed.** Gate drive is on 14 to 41 ms after the
+     first edge and the relay transistor after 22 to 82 ms. Wait until
+     GPIO42 reads high, GPIO7 reads low and the output expander
+     acknowledges, 150 ms at most, before writing the expander.
+   - **Hold-up, changed.** Gate drive is gone 0.45 to 0.9 s after the last
+     edge when the pin stops low, and within 1.2 s if a fault leaves it
+     high. The relay transistor lets go between 0.12 and 0.95 s after the
+     last edge, 1.4 s if the pin is high. From a dead control loop to no
+     gate drive is therefore at most 500 ms + 5 ms + 0.9 s = 1.4 s, and to
+     an open relay 1.5 s.
    - **Flash.** Espressif does not fix the module's flash part. A
      representative 16 MB part, the Winbond W25Q128JV, erases a 4 kB sector
      in 45 ms typically and 400 ms at most. 400 ms plus one 50 ms control
@@ -630,16 +636,26 @@ place. The questions themselves are kept as they were asked.
    - **What stopping does.** Holding the keep-alive low for 1.5 s resets
      the output expander, opens the valve-common relay and clears the
      over-current latch. Every start must set the expander up again.
-   - **Self-test.** Before every run, with the keep-alive low, the expander
-     at 0x74 must not answer. After a run it must stop answering within
-     1.5 s. At start-up, holding the pin high for 1.5 s must not make it
-     answer either. A failure means the fail-safe circuit is broken:
-     write every expander pin back to input, raise a fault, refuse to run
-     valves. Hardware design section 8.5 has the reason.
-   - **Still open.** The review's finding B1 proposes a second detector
-     and a read-back of the drive-enable signal on GPIO42. The longest
-     control-loop stall during a flash erase should be measured on real
-     modules.
+   - **Self-test, changed.** Hardware design section 19.7 has the exact
+     sequence and limits. In short: before every run, with the keep-alive
+     low, GPIO42 must read low, GPIO7 must read high and the expander at
+     0x74 must not answer. At start-up and at least once a day, holding
+     the pin high for 1.0 s must not change either read-back. After
+     starting, both read-backs must flip and the expander must answer
+     within 150 ms. Before the relay is closed, the output about to run
+     is switched on for one 100 ms window and must draw no current, which
+     finds a welded relay contact. After every run, both read-backs must
+     return within 1.0 s of the last edge. A failure means one of the two
+     detectors is broken: write every expander pin back to input, raise a
+     fault, refuse to run valves. Hardware design section 8.5 has the
+     reason.
+   - **New pins.** GPIO42 reads the drive-enable signal and GPIO7 the
+     relay transistor. Both are inputs for the life of the firmware. The
+     sensor supply enable moved from GPIO7 to GPIO45, a strapping pin
+     that firmware must leave alone until the application runs.
+   - **Still open.** None of this is in the firmware yet: hardware design
+     section 19.5. The longest control-loop stall during a flash erase
+     should be measured on real modules.
 3. **Pull-downs.** Firmware assumes external pull-downs on every output and
    on OE so outputs stay off in reset and while unpowered. Confirm.
 4. **Current-sense front end.** Spec v0.2: low-side shunt in the shared

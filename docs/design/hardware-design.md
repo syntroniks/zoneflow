@@ -1321,7 +1321,7 @@ arrives is the thing to avoid, so every row that says "stuck on" has a test.
 | `KA` floating: chip in reset, EN low, or unprogrammed | R33 pulls it low. | Off |
 | `KA` toggling at the wrong rate | Anything from about 3 Hz up enables A, whatever the duty cycle. B needs about the same. | Neither detector catches this. Section 8.4. |
 | USB flashing | The ROM loader runs. GPIO38 stays an input. No edges. | Off |
-| Boot | GPIO38 has no power-up glitch in datasheet table 2-2. One edge enables neither detector: A's reservoir reaches 1.0 V against 1.55 V, and B's gate about 1.0 V for under 0.5 s with Q1 off. | Off |
+| Boot | GPIO38 has no power-up glitch in datasheet table 2-2. One edge enables neither detector: A's reservoir reaches 1.0 V against 1.55 V, and B's gate 1.0 to 1.3 V for at most 0.6 s, with Q1 off. | Off |
 | Brownout of `3V3` | The supervisor U12 holds the ESP32 in reset and toggling stops. The expander keeps its bits down to about 1 V. | Off within 0.95 s. Until then the outputs that were on stay on. |
 | Firmware hangs with outputs on | Toggling stops. | Off within 1.4 s of the last edge |
 | I2C bus stuck by a fault | Firmware cannot write the expander. It must stop toggling. | Off within 0.95 s of that decision |
