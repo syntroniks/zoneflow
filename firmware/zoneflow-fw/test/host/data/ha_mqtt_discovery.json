@@ -1,0 +1,377 @@
+{
+ "_source": "Home Assistant 2026.11.1 MQTT documentation, home-assistant.io branch 'current' at commit 6f38b5b48d737b455deeeeed2e82be53b0cee294 (2026-11-10): source/_integrations/{valve,number,button,switch,binary_sensor,sensor,update}.mqtt.markdown (configuration blocks), mqtt.markdown (device discovery, device and origin options), and sensor/number/binary_sensor/valve/update.markdown (device classes). Keys were extracted from the documented configuration blocks; 'unique_id' is required for every entity component of a device discovery payload (mqtt.markdown, 'Device discovery payload').",
+ "platforms": {
+  "valve": {
+   "options": [
+    "availability",
+    "availability_mode",
+    "availability_template",
+    "availability_topic",
+    "command_template",
+    "command_topic",
+    "default_entity_id",
+    "device",
+    "device_class",
+    "enabled_by_default",
+    "encoding",
+    "entity_category",
+    "entity_picture",
+    "group",
+    "icon",
+    "json_attributes_template",
+    "json_attributes_topic",
+    "message_expiry_interval",
+    "name",
+    "optimistic",
+    "payload_available",
+    "payload_close",
+    "payload_not_available",
+    "payload_open",
+    "payload_stop",
+    "platform",
+    "position_closed",
+    "position_open",
+    "qos",
+    "reports_position",
+    "retain",
+    "state_closed",
+    "state_closing",
+    "state_open",
+    "state_opening",
+    "state_topic",
+    "unique_id",
+    "value_template",
+    "visible_by_default"
+   ],
+   "required": [
+    "platform",
+    "unique_id"
+   ]
+  },
+  "number": {
+   "options": [
+    "availability",
+    "availability_mode",
+    "availability_topic",
+    "command_template",
+    "command_topic",
+    "default_entity_id",
+    "device",
+    "device_class",
+    "enabled_by_default",
+    "encoding",
+    "entity_category",
+    "entity_picture",
+    "icon",
+    "json_attributes_template",
+    "json_attributes_topic",
+    "max",
+    "message_expiry_interval",
+    "min",
+    "mode",
+    "name",
+    "optimistic",
+    "payload_reset",
+    "platform",
+    "qos",
+    "retain",
+    "state_topic",
+    "step",
+    "unique_id",
+    "unit_of_measurement",
+    "value_template",
+    "visible_by_default"
+   ],
+   "required": [
+    "command_topic",
+    "platform",
+    "unique_id"
+   ]
+  },
+  "button": {
+   "options": [
+    "availability",
+    "availability_mode",
+    "availability_template",
+    "availability_topic",
+    "command_template",
+    "command_topic",
+    "default_entity_id",
+    "device",
+    "device_class",
+    "enabled_by_default",
+    "encoding",
+    "entity_category",
+    "entity_picture",
+    "icon",
+    "json_attributes_template",
+    "json_attributes_topic",
+    "message_expiry_interval",
+    "name",
+    "payload_available",
+    "payload_not_available",
+    "payload_press",
+    "platform",
+    "qos",
+    "retain",
+    "unique_id",
+    "visible_by_default"
+   ],
+   "required": [
+    "command_topic",
+    "platform",
+    "unique_id"
+   ]
+  },
+  "switch": {
+   "options": [
+    "availability",
+    "availability_mode",
+    "availability_template",
+    "availability_topic",
+    "command_template",
+    "command_topic",
+    "default_entity_id",
+    "device",
+    "device_class",
+    "enabled_by_default",
+    "encoding",
+    "entity_category",
+    "entity_picture",
+    "group",
+    "icon",
+    "json_attributes_template",
+    "json_attributes_topic",
+    "message_expiry_interval",
+    "name",
+    "optimistic",
+    "payload_available",
+    "payload_not_available",
+    "payload_off",
+    "payload_on",
+    "platform",
+    "qos",
+    "retain",
+    "state_off",
+    "state_on",
+    "state_topic",
+    "unique_id",
+    "value_template",
+    "visible_by_default"
+   ],
+   "required": [
+    "command_topic",
+    "platform",
+    "unique_id"
+   ]
+  },
+  "binary_sensor": {
+   "options": [
+    "availability",
+    "availability_mode",
+    "availability_template",
+    "availability_topic",
+    "default_entity_id",
+    "device",
+    "device_class",
+    "enabled_by_default",
+    "encoding",
+    "entity_category",
+    "entity_picture",
+    "expire_after",
+    "force_update",
+    "group",
+    "icon",
+    "json_attributes_template",
+    "json_attributes_topic",
+    "name",
+    "off_delay",
+    "payload_available",
+    "payload_not_available",
+    "payload_off",
+    "payload_on",
+    "platform",
+    "qos",
+    "state_topic",
+    "unique_id",
+    "value_template",
+    "visible_by_default"
+   ],
+   "required": [
+    "platform",
+    "state_topic",
+    "unique_id"
+   ]
+  },
+  "sensor": {
+   "options": [
+    "availability",
+    "availability_mode",
+    "availability_template",
+    "availability_topic",
+    "default_entity_id",
+    "device",
+    "device_class",
+    "enabled_by_default",
+    "encoding",
+    "entity_category",
+    "entity_picture",
+    "expire_after",
+    "force_update",
+    "group",
+    "icon",
+    "json_attributes_template",
+    "json_attributes_topic",
+    "last_reset_value_template",
+    "name",
+    "options",
+    "payload_available",
+    "payload_not_available",
+    "platform",
+    "qos",
+    "state_class",
+    "state_topic",
+    "suggested_display_precision",
+    "unique_id",
+    "unit_of_measurement",
+    "value_template",
+    "visible_by_default"
+   ],
+   "required": [
+    "platform",
+    "state_topic",
+    "unique_id"
+   ]
+  },
+  "update": {
+   "options": [
+    "availability",
+    "availability_mode",
+    "availability_template",
+    "availability_topic",
+    "command_topic",
+    "default_entity_id",
+    "device",
+    "device_class",
+    "display_precision",
+    "enabled_by_default",
+    "encoding",
+    "entity_category",
+    "entity_picture",
+    "icon",
+    "json_attributes_template",
+    "json_attributes_topic",
+    "latest_version_template",
+    "latest_version_topic",
+    "message_expiry_interval",
+    "name",
+    "payload_install",
+    "platform",
+    "qos",
+    "release_summary",
+    "release_url",
+    "retain",
+    "state_topic",
+    "title",
+    "unique_id",
+    "value_template",
+    "visible_by_default"
+   ],
+   "required": [
+    "platform",
+    "unique_id"
+   ]
+  }
+ },
+ "device_options": [
+  "configuration_url",
+  "connections",
+  "hw_version",
+  "identifiers",
+  "manufacturer",
+  "model",
+  "model_id",
+  "name",
+  "serial_number",
+  "suggested_area",
+  "sw_version",
+  "via_device"
+ ],
+ "origin_options": [
+  "name",
+  "sw_version",
+  "support_url"
+ ],
+ "root_required": [
+  "device",
+  "origin"
+ ],
+ "shared_options": [
+  "availability",
+  "availability_mode",
+  "availability_template",
+  "availability_topic",
+  "command_topic",
+  "encoding",
+  "payload_available",
+  "payload_not_available",
+  "state_topic",
+  "qos"
+ ],
+ "device_classes": {
+  "valve": {
+   "water": []
+  },
+  "update": {
+   "firmware": []
+  },
+  "binary_sensor": {
+   "moisture": [],
+   "power": [],
+   "problem": []
+  },
+  "sensor": {
+   "current": [
+    "A",
+    "mA",
+    "μA"
+   ],
+   "signal_strength": [
+    "dB",
+    "dBm"
+   ],
+   "volume_flow_rate": [
+    "m³/h",
+    "m³/min",
+    "m³/s",
+    "ft³/min",
+    "L/h",
+    "L/min",
+    "L/s",
+    "gal/d",
+    "gal/h",
+    "gal/min",
+    "mL/s"
+   ],
+   "water": [
+    "L",
+    "gal",
+    "m³",
+    "ft³",
+    "CCF",
+    "MCF"
+   ],
+   "enum": []
+  },
+  "number": {
+   "duration": [
+    "d",
+    "h",
+    "min",
+    "s",
+    "ms",
+    "μs"
+   ]
+  }
+ }
+}

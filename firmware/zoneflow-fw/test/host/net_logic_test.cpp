@@ -93,9 +93,37 @@ TEST(Provisioning, OpenSessionHoldsTheTransport)
     ProvisioningFsm f;
     f.begin(ProvTransport::Ble, false, 0);
     f.onSessionStarted();
-    EXPECT_EQ(f.tick(60 * 60 * 1000), ProvAction::None);
+    EXPECT_EQ(f.tick(20 * 60 * 1000), ProvAction::None);
     f.onSessionEnded();
-    EXPECT_EQ(f.tick(60 * 60 * 1000), ProvAction::SwitchToSoftAp);
+    EXPECT_EQ(f.tick(20 * 60 * 1000), ProvAction::SwitchToSoftAp);
+}
+
+// Security review F3. A session held the window open without limit, and the
+// glue counted any BLE connection as a session, before Security 2. Someone
+// in radio range without the setup code could keep a re-provisioning device
+// off its network (and an unprovisioned one stuck on BLE, with the only BLE
+// connection taken) for as long as they stayed connected. The glue now
+// counts a session only after the Security 2 handshake; and even a real
+// session holds the window for at most heldWindowMaxMs.
+TEST(Provisioning, AnOpenSessionHoldsTheWindowOnlyUpToTheLimit)
+{
+    const MonoMs limit = ProvisioningTimeouts{}.heldWindowMaxMs;
+    EXPECT_EQ(limit, 30ull * 60ull * 1000ull);
+    ProvisioningFsm re;
+    re.begin(ProvTransport::Ble, true, 1000);
+    re.onSessionStarted();
+    EXPECT_EQ(re.tick(1000 + limit - 1), ProvAction::None);
+    EXPECT_EQ(re.tick(1000 + limit), ProvAction::AbandonToStation);
+
+    ProvisioningFsm fresh;
+    fresh.begin(ProvTransport::Ble, false, 0);
+    fresh.onSessionStarted();
+    EXPECT_EQ(fresh.tick(limit - 1), ProvAction::None);
+    EXPECT_EQ(fresh.tick(limit), ProvAction::SwitchToSoftAp);
+    // The SoftAP of an unprovisioned device still stays up.
+    fresh.onSessionStarted();
+    EXPECT_EQ(fresh.tick(10 * limit), ProvAction::None);
+    EXPECT_TRUE(fresh.active());
 }
 
 TEST(Provisioning, ReprovisionGivesUpAndKeepsOldNetwork)

@@ -22,7 +22,63 @@ ValidationResult checkWindow(const CurrentWindow &w, const std::string &path)
     return ValidationResult::good();
 }
 
+// Printable ASCII without spaces: host names, client ids.
+bool printableToken(std::string_view s)
+{
+    for (const char c : s) {
+        if (c <= ' ' || c > '~') {
+            return false;
+        }
+    }
+    return true;
+}
+
+ValidationResult validateMqtt(const MqttConfig &m)
+{
+    using VR = ValidationResult;
+    if (!printableToken(m.host.view()) || m.host.view().find("://") != std::string_view::npos ||
+        m.host.view().find('/') != std::string_view::npos) {
+        return VR::bad("mqtt.host", "host name or IP address without scheme, path or spaces");
+    }
+    if (m.enabled && m.host.empty()) {
+        return VR::bad("mqtt.host", "required when MQTT is enabled");
+    }
+    if (m.port == 0) {
+        return VR::bad("mqtt.port", "must be 1..65535");
+    }
+    for (const char c : m.username.view()) {
+        if (static_cast<unsigned char>(c) < 0x20 || c == 0x7f) {
+            return VR::bad("mqtt.username", "no control characters");
+        }
+    }
+    if (!printableToken(m.clientId.view())) {
+        return VR::bad("mqtt.client_id", "printable ASCII without spaces");
+    }
+    if (!m.baseTopic.empty() && !validTopicPrefix(m.baseTopic.view())) {
+        return VR::bad("mqtt.base_topic", "no wildcards, empty levels, leading or trailing '/'");
+    }
+    // Home Assistant only accepts [a-zA-Z0-9_-] in the discovery topic
+    // levels it parses; the prefix itself may have several levels.
+    if (!validTopicPrefix(m.discoveryPrefix.view())) {
+        return VR::bad("mqtt.discovery_prefix", "no wildcards, empty levels, leading or trailing '/'");
+    }
+    return VR::good();
+}
+
 } // namespace
+
+bool validTopicPrefix(std::string_view t)
+{
+    if (t.empty() || t.size() > 63 || t.front() == '/' || t.back() == '/' || t.find("//") != std::string_view::npos) {
+        return false;
+    }
+    for (const char c : t) {
+        if (c == '+' || c == '#' || static_cast<unsigned char>(c) < 0x20 || c == 0x7f) {
+            return false;
+        }
+    }
+    return true;
+}
 
 Config Config::defaults()
 {
@@ -54,6 +110,9 @@ ValidationResult validate(const Config &cfg)
         }
         if (auto r = checkWindow(z.current, idx("zones", i, "current_min_ma")); !r.ok) {
             return r;
+        }
+        if (z.defaultRunSec < 1 || z.defaultRunSec > kHardMaxRunSec) {
+            return VR::bad(idx("zones", i, "default_run_s"), "must be 1.." + std::to_string(kHardMaxRunSec));
         }
     }
     if (cfg.master.preOpenMs > 60000) {
@@ -100,6 +159,10 @@ ValidationResult validate(const Config &cfg)
     }
     if (cfg.diag.confirmSamples < 1 || cfg.diag.confirmSamples > 20) {
         return VR::bad("diagnostics.confirm_samples", "must be 1..20");
+    }
+
+    if (auto r = validateMqtt(cfg.mqtt); !r.ok) {
+        return r;
     }
 
     const ScheduleConfig &s = cfg.schedule;

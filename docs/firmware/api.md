@@ -49,7 +49,7 @@ document, or their security, body type or body limit differ.
 |---|---|
 | 400 | Invalid body or parameter |
 | 401 | No valid session (`unauthorized`), or no admin password yet (`password_not_set`) |
-| 403 | Host header not this device (`bad_host`), cross-origin write (`bad_origin`), missing CSRF header (`csrf`) |
+| 403 | Host header not this device (`bad_host`), cross-origin write (`bad_origin`), missing CSRF header (`csrf`), provisioning route from outside the setup access point (`setup_ap_only`) |
 | 404 | No such route, zone or program |
 | 405 | Method not allowed; see the `Allow` header |
 | 409 | Refused in the current state: zone disabled, locked out or resting, master locked out, no 24 VAC, update running, program already queued, too many programs |
@@ -130,7 +130,10 @@ Every request that changes something needs a session. Reads are open unless
 
 Sessions live in RAM: a restart, including the one after a firmware update,
 signs everyone out. Five wrong passwords from one address lock that address
-out for 1 s, doubling with each further failure up to 15 minutes.
+out for 1 s, doubling with each further failure up to 15 minutes. Thirty
+wrong passwords within 5 minutes, from any addresses, lock every address out
+for 60 s, except the last 8 addresses that logged in successfully since the
+controller started.
 
 ## Live event stream
 
@@ -178,6 +181,11 @@ Controller event types and their extra fields:
 | `run_dropped` | `zone`, `program_id` (null for a manual zone run), `source`, `reason` (`resting`, `locked_out`, `disabled`, `inhibited`, `master_locked_out`, ...): a queued run reached the head of the queue and could not start, so it was dropped |
 | `pause_expired` | (the queue stayed paused for `schedule.pause_timeout_min` and was stopped) |
 
+With "protect reads" on, a stream ends when the session that opened it
+ends (logout, password change, expiry), checked about once a second; turning
+"protect reads" on ends streams opened without a session. The stream does
+not keep the session's idle timer running.
+
 The stream is fed from the controller's event bus through a queue of 32
 events; the bus handler never waits. If a slow client lets the queue fill,
 events are dropped and the next `state` message carries the full picture.
@@ -187,6 +195,15 @@ const es = new EventSource("/api/v1/events");
 es.addEventListener("state", (m) => render(JSON.parse(m.data)));
 es.addEventListener("event", (m) => console.log(JSON.parse(m.data)));
 ```
+
+## MQTT settings
+
+`GET /api/v1/mqtt` returns the MQTT settings (the `mqtt` object of the
+configuration), `password_set`, `ca_cert_set` and the client's connection
+state. `PUT /api/v1/mqtt` changes them; `password` and `ca_cert` are
+write-only and are stored outside the configuration, so a backup never
+contains them. Topics and Home Assistant discovery:
+[MQTT and Home Assistant](mqtt.md).
 
 ## Firmware updates
 

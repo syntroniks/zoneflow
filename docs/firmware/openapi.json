@@ -58,6 +58,9 @@
     },
     {
       "name": "Firmware"
+    },
+    {
+      "name": "MQTT"
     }
   ],
   "paths": {
@@ -1994,7 +1997,7 @@
           "Provisioning"
         ],
         "security": [],
-        "description": "Only while SoftAP provisioning runs (409 `not_provisioning` otherwise). The setup code is the WPA2 passphrase of that access point, so a client on it has already proven it knows the code.",
+        "description": "Only while SoftAP provisioning runs (409 `not_provisioning` otherwise), and only from a client joined to the setup access point (403 `setup_ap_only` from the home network, which the station joins before provisioning ends). The setup code is the WPA2 passphrase of that access point, so a client on it has already proven it knows the code.",
         "responses": {
           "200": {
             "description": "OK",
@@ -2008,6 +2011,9 @@
                 }
               }
             }
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
@@ -2023,7 +2029,7 @@
           "Provisioning"
         ],
         "security": [],
-        "description": "Only while SoftAP provisioning runs. Optionally sets the first admin password.",
+        "description": "Only while SoftAP provisioning runs, and only from a client joined to the setup access point (403 `setup_ap_only` otherwise). Optionally sets the first admin password.",
         "requestBody": {
           "required": true,
           "x-max-body-bytes": 512,
@@ -2386,6 +2392,104 @@
           }
         }
       }
+    },
+    "/mqtt": {
+      "get": {
+        "operationId": "getMqtt",
+        "summary": "MQTT settings and connection state",
+        "tags": [
+          "MQTT"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "The `mqtt` object of the configuration, whether a password and a custom CA certificate are stored (never their values), and the client's connection state. Topic tree and Home Assistant discovery: [MQTT guide](https://syntroniks.github.io/zoneflow/firmware/mqtt/).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mqtt"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "putMqtt",
+        "summary": "Change MQTT settings",
+        "tags": [
+          "MQTT"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Partial update. Connection fields are validated by the core configuration (errors carry the field as `path`) and stored in the configuration; `password` and `ca_cert` are write-only and stored in NVS, outside the configuration and its backup. The client reconnects with the new settings within a second.",
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 8192,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MqttUpdate"
+              },
+              "example": {
+                "enabled": true,
+                "host": "192.168.1.10",
+                "port": 1883,
+                "username": "zoneflow",
+                "password": "secret"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Mqtt"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2702,6 +2806,13 @@
             "type": "integer",
             "minimum": 0,
             "description": "Seconds of rest left; 0 when not resting."
+          },
+          "default_run_s": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 14400,
+            "default": 600,
+            "description": "Duration of a run started without one (Home Assistant valve open, MQTT run with an empty payload). Clamped like any run."
           }
         }
       },
@@ -2726,6 +2837,13 @@
           },
           "current_max_ma": {
             "type": "integer"
+          },
+          "default_run_s": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 14400,
+            "default": 600,
+            "description": "Duration of a run started without one (Home Assistant valve open, MQTT run with an empty payload). Clamped like any run."
           }
         }
       },
@@ -3241,7 +3359,8 @@
         "properties": {
           "schema": {
             "type": "integer",
-            "const": 1
+            "const": 2,
+            "description": "Documents with schema 1 are accepted and migrated (adds `mqtt` and `zones[].default_run_s`)."
           },
           "device_name": {
             "type": "string",
@@ -3326,6 +3445,9 @@
                 "description": "A paused queue is stopped after this long."
               }
             }
+          },
+          "mqtt": {
+            "$ref": "#/components/schemas/MqttSettings"
           }
         }
       },
@@ -3701,6 +3823,249 @@
           "zone_resting",
           "master_locked_out"
         ]
+      },
+      "MqttSettings": {
+        "type": "object",
+        "description": "The `mqtt` object of the configuration document (schema 2).",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "host": {
+            "type": "string",
+            "maxLength": 63,
+            "description": "Broker host name or IP address, without scheme or port. Required when enabled."
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535,
+            "default": 1883
+          },
+          "username": {
+            "type": "string",
+            "maxLength": 63
+          },
+          "tls": {
+            "type": "boolean",
+            "default": false,
+            "description": "Connect with TLS (mqtts). Usually port 8883."
+          },
+          "ca": {
+            "type": "string",
+            "enum": [
+              "bundle",
+              "custom"
+            ],
+            "default": "bundle",
+            "description": "With TLS: verify the broker against the ESP-IDF certificate bundle (public CAs) or against the CA certificate stored with `ca_cert`."
+          },
+          "client_id": {
+            "type": "string",
+            "maxLength": 63,
+            "description": "Empty: `zoneflow-<device id>` (station MAC, 12 hex digits)."
+          },
+          "base_topic": {
+            "type": "string",
+            "maxLength": 63,
+            "description": "Root of every topic. Empty: `zoneflow/<device id>`. No wildcards, no leading or trailing `/`."
+          },
+          "discovery": {
+            "type": "boolean",
+            "default": true,
+            "description": "Home Assistant MQTT discovery."
+          },
+          "discovery_prefix": {
+            "type": "string",
+            "maxLength": 31,
+            "default": "homeassistant"
+          },
+          "ha_zone_entity": {
+            "type": "string",
+            "enum": [
+              "valve",
+              "switch"
+            ],
+            "default": "valve",
+            "description": "Home Assistant entity type for zones."
+          }
+        }
+      },
+      "MqttStatus": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "disabled",
+              "waiting_network",
+              "connecting",
+              "connected",
+              "waiting_retry"
+            ]
+          },
+          "broker": {
+            "type": "string",
+            "examples": [
+              "mqtt://192.168.1.10:1883"
+            ]
+          },
+          "root_topic": {
+            "type": "string",
+            "examples": [
+              "zoneflow/a1b2c3d4e5f6"
+            ]
+          },
+          "connected_for_s": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "connects": {
+            "type": "integer",
+            "description": "Successful connections since boot."
+          },
+          "reconnect_attempt": {
+            "type": "integer",
+            "description": "Attempts since the last successful connection."
+          },
+          "retry_in_ms": {
+            "type": "integer"
+          },
+          "last_error": {
+            "type": "string"
+          },
+          "published": {
+            "type": "integer"
+          },
+          "publish_failed": {
+            "type": "integer"
+          },
+          "commands_received": {
+            "type": "integer"
+          },
+          "commands_rejected": {
+            "type": "integer",
+            "description": "Invalid, retained, rate-limited or refused by the controller."
+          },
+          "events_dropped": {
+            "type": "integer"
+          },
+          "discovery_published": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Mqtt": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/MqttSettings"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "password_set": {
+                "type": "boolean",
+                "description": "A password is stored. The password itself is never returned."
+              },
+              "ca_cert_set": {
+                "type": "boolean",
+                "description": "A custom CA certificate is stored."
+              },
+              "status": {
+                "$ref": "#/components/schemas/MqttStatus"
+              }
+            }
+          }
+        ]
+      },
+      "MqttUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "host": {
+            "type": "string",
+            "maxLength": 63,
+            "description": "Broker host name or IP address, without scheme or port. Required when enabled."
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535,
+            "default": 1883
+          },
+          "username": {
+            "type": "string",
+            "maxLength": 63
+          },
+          "tls": {
+            "type": "boolean",
+            "default": false,
+            "description": "Connect with TLS (mqtts). Usually port 8883."
+          },
+          "ca": {
+            "type": "string",
+            "enum": [
+              "bundle",
+              "custom"
+            ],
+            "default": "bundle",
+            "description": "With TLS: verify the broker against the ESP-IDF certificate bundle (public CAs) or against the CA certificate stored with `ca_cert`."
+          },
+          "client_id": {
+            "type": "string",
+            "maxLength": 63,
+            "description": "Empty: `zoneflow-<device id>` (station MAC, 12 hex digits)."
+          },
+          "base_topic": {
+            "type": "string",
+            "maxLength": 63,
+            "description": "Root of every topic. Empty: `zoneflow/<device id>`. No wildcards, no leading or trailing `/`."
+          },
+          "discovery": {
+            "type": "boolean",
+            "default": true,
+            "description": "Home Assistant MQTT discovery."
+          },
+          "discovery_prefix": {
+            "type": "string",
+            "maxLength": 31,
+            "default": "homeassistant"
+          },
+          "ha_zone_entity": {
+            "type": "string",
+            "enum": [
+              "valve",
+              "switch"
+            ],
+            "default": "valve",
+            "description": "Home Assistant entity type for zones."
+          },
+          "password": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 128,
+            "writeOnly": true,
+            "description": "Write-only. An empty string or null removes it."
+          },
+          "ca_cert": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 6144,
+            "writeOnly": true,
+            "description": "PEM CA certificate for `ca: custom`. Write-only. An empty string or null removes it."
+          }
+        }
       }
     },
     "responses": {
@@ -3725,7 +4090,7 @@
         }
       },
       "Forbidden": {
-        "description": "Host not this device (`bad_host`), cross-origin write (`bad_origin`) or missing CSRF header (`csrf`)",
+        "description": "Host not this device (`bad_host`), cross-origin write (`bad_origin`), missing CSRF header (`csrf`), or a provisioning route from outside the setup access point (`setup_ap_only`)",
         "content": {
           "application/json": {
             "schema": {

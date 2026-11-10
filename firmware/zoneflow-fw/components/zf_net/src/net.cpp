@@ -16,6 +16,7 @@
 #include <mutex>
 
 #include "esp_app_desc.h"
+#include "esp_core_dump.h"
 #include "esp_event.h"
 #include "esp_log.h"
 #include "esp_mac.h"
@@ -460,13 +461,20 @@ void doFactoryReset()
     // The restart below forces outputs off in any case (shutdown handler).
     const Identity keep = m.identity;
     nvs_flash_erase();
+#if CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH
+    // A stored core dump holds the task stacks of the last crash, which can
+    // hold secrets that were in use (for example the password-keyed HMAC
+    // state during a login, or WiFi credentials during provisioning). It
+    // belongs to the previous owner (security review F4).
+    esp_core_dump_image_erase();
+#endif
     nvs_flash_init();
     NvsNamespace fresh("zf_net");
     if (fresh.open() == ESP_OK) {
         m.store = fresh;
         storeIdentity(keep);
     }
-    ESP_LOGW(kTag, "factory reset: NVS erased (setup code kept); restarting");
+    ESP_LOGW(kTag, "factory reset: NVS and core dump erased (setup code kept); restarting");
     vTaskDelay(pdMS_TO_TICKS(200));
     esp_restart();
 }
@@ -516,9 +524,16 @@ void onEvent(void *, esp_event_base_t base, int32_t id, void *data)
             break;
         }
     } else if (base == PROTOCOMM_TRANSPORT_BLE_EVENT) {
-        send(id == PROTOCOMM_TRANSPORT_BLE_CONNECTED ? Msg::SessionOpen : Msg::SessionClosed);
+        // A BLE connection alone proves nothing: anyone in radio range can
+        // open one, so it must not hold the window (security review F3).
+        if (id == PROTOCOMM_TRANSPORT_BLE_DISCONNECTED) {
+            send(Msg::SessionClosed);
+        }
     } else if (base == PROTOCOMM_SECURITY_SESSION_EVENT) {
-        if (id == PROTOCOMM_SECURITY_SESSION_CREDENTIALS_MISMATCH) {
+        if (id == PROTOCOMM_SECURITY_SESSION_SETUP_OK) {
+            // Security 2 handshake done: the phone knows the setup code.
+            send(Msg::SessionOpen);
+        } else if (id == PROTOCOMM_SECURITY_SESSION_CREDENTIALS_MISMATCH) {
             ESP_LOGW(kTag, "provisioning: wrong setup code from the phone");
         }
     }
@@ -738,6 +753,16 @@ bool factoryReset()
 }
 
 void setHttpServer(void *httpdHandle) { m.httpd.store(httpdHandle); }
+
+bool isSetupApAddress(uint32_t ipv4)
+{
+    esp_netif_ip_info_t ap{};
+    if (ipv4 == 0 || m.ap == nullptr || esp_netif_get_ip_info(m.ap, &ap) != ESP_OK || ap.ip.addr != ipv4) {
+        return false;
+    }
+    esp_netif_ip_info_t sta{};
+    return m.sta == nullptr || esp_netif_get_ip_info(m.sta, &sta) != ESP_OK || sta.ip.addr != ipv4;
+}
 
 bool provisionWifi(std::string_view ssid, std::string_view password)
 {
