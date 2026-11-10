@@ -26,7 +26,7 @@ run showed.
 | Output switch | T410-600B-TR 4 A three-quadrant triac in DPAK, fired by a MOC3023 opto-triac from its own T2 | The triacs JLCPCB stocks with real surge ratings are three-quadrant parts. Positive-only gate drive from logic cannot fire them on the negative half-cycle. Section 6 has the analysis. |
 | Output control | TCA9539 I2C expander sinks the opto LEDs | The TFT took six GPIOs. Nine valve pins no longer fit. The expander is held in reset by the fail-safe circuit, so no valve bit survives a crash. |
 | Fail-safe | Diode pump on the keep-alive pin, comparator with hysteresis, switched LED supply, expander reset | Gate drive needs an edge at least every 20 ms. It is gone 0.45 to 0.9 s after the edges stop. |
-| Over-current | Window comparator on the shunt amplifier, NAND latch, same switch as the fail-safe | Removes drive about 70 us after a short begins. The triac then stops at the next current zero. |
+| Over-current | Window comparator on the shunt amplifier, NAND latch, same switch as the fail-safe | Removes drive about 70 us after a short begins. The triac stops at the next current zero if the fault current is inside its commutation rating. K1 opens within 10 ms either way. |
 | Valve common | Relay in the COM feed, driven only while drive is enabled | A shorted triac or TVS otherwise leaves a valve on with no way to stop it. This is an addition to the specification. |
 | Current measurement | 0.1 ohm shunt, two difference amplifiers biased at 0.8 V, sampled by ADC1 | True RMS in firmware. No precision rectifier, which would add millivolts of error to a 5 mV signal. |
 | Display | HS20HS072RX 2.0 inch 240x320 IPS panel on a 12-way FPC connector, plugged in at final assembly | The only bare ST7789 panels with stock and a drawing that I found at LCSC. |
@@ -572,7 +572,8 @@ about C x V² x 2f = 1.4 mW. C101 is rated 100 V.
 **Dead short on a valve wire.** The comparator of section 9 removes drive about
 70 us after the current passes 4.6 A. The triac then conducts until the next
 current zero, at most one half-cycle. The triac must survive that half-cycle at
-the transformer's short-circuit current.
+the transformer's short-circuit current. Whether it then stops is a separate
+question, taken after the table.
 
 | Triac | I²t, 10 ms | Peak for one half-cycle | Minimum loop impedance at 27.5 VAC open circuit |
 |---|---|---|---|
@@ -584,9 +585,40 @@ The board contributes at least 0.31 ohm: 0.12 ohm of PTC, 0.1 ohm of shunt and
 0.09 to 0.12 ohm of triac. So the transformer and wiring must supply 0.87 ohm
 for the T410. A transformer with 12 % regulation has an output impedance of
 about 69 / VA ohm by my estimate, which is 0.92 ohm at 75 VA and 1.7 ohm at
-40 VA. **By calculation the T410 survives a dead short on transformers up to
-about 75 VA. Larger ones need a bench test.** The PTC's own fault rating is
-20 A rms.
+40 VA. **By calculation the T410 survives one half-cycle of a dead short on
+transformers up to about 75 VA. Larger ones need a bench test.** The PTC's own
+fault rating is 20 A rms.
+
+**The triac is not certain to stop at that first current zero.** Review A1
+added this check. A triac turns off only if the current falls through zero
+slowly enough. The T410 guarantees (dI/dt)c of 2.7 A/ms at 125 °C with
+0.1 V/us re-applied, table 4 of the data sheet. A sine of peak Ip falls
+through zero at 2 pi f Ip. So the guaranteed limit is 8.6 A peak at 50 Hz and
+7.2 A peak at 60 Hz, which is 6.1 and 5.1 A rms.
+
+| Source | Short-circuit current | Fall at the zero, 50 and 60 Hz | Guaranteed at 125 °C |
+|---|---|---|---|
+| 40 VA transformer, short at the terminals | 13.5 A rms, 19.1 A peak | 6.0 and 7.2 A/ms | 2.7 A/ms |
+| 40 VA transformer, short behind 30 m of 18 AWG pair, 1.26 ohm | 8.3 A rms, 11.8 A peak | 3.7 and 4.4 A/ms | 2.7 A/ms |
+| 75 VA transformer, short at the terminals | 22.4 A rms, 31.6 A peak | 9.9 and 11.9 A/ms | 2.7 A/ms |
+
+The currents are 27.5 V over the transformer impedance above plus the board's
+0.31 ohm. Figure 10 of the data sheet shows the limit rising as the junction
+cools, typically 1.5 times at 100 °C and 2.2 times at 75 °C, so a cool triac
+on a long cable run will usually stop. A triac that was already carrying
+0.5 A in a warm enclosure, shorted at the terminals, may not. It then conducts
+a second half-cycle and more with no gate drive.
+
+What ends the fault in that case is K1. It opens within 10 ms of the trip
+(section 7.2), so the fault lasts about one mains cycle, two at most. Figure 6
+of the data sheet gives the surge the T410 survives over more than one cycle:
+30 A peak for one cycle, 25 A for two, 22.5 A for three. On a 40 VA
+transformer, 19.1 A peak, the triac survives whether it commutates or not. On
+75 VA, 31.6 A peak, it survives only if it stops at the first zero. K1 breaks
+the fault current in the cases where the triac does not stop, and that
+current is above the 5 A its contact is rated to switch. **Both the triac's
+turn-off and K1's breaking capacity under a dead short are bench items, and
+"a shorted wire does not destroy the output" is not shown by calculation.**
 
 **The series element.** The specification allows a PTC, a fuse or a resistor.
 
@@ -992,8 +1024,11 @@ clears it. The red LED D8 shows it.
 `hardware/sim/isense.cir` adds a 10 A rms short to a 1 A load at a rising point
 of the cycle. `OC_TRIP_N` falls 66 us after the short begins and `DRV_EN_N`
 rises within a microsecond of that. The opto LED goes dark. The triac conducts
-to the end of its half-cycle, at most 10 ms at 50 Hz, and does not fire again.
-That meets "within about one mains cycle".
+to the end of its half-cycle, at most 10 ms at 50 Hz, and is not fired again.
+At fault currents above about 6 A rms its data sheet does not guarantee that
+it blocks at that zero (section 6.6). K1 loses its coil current at the same
+moment and opens within 10 ms, so the total still meets "within about one
+mains cycle", with K1 as the device that guarantees it.
 
 ### 9.3 Clearing the latch
 
@@ -1802,7 +1837,7 @@ get its numbers.
 | 1 | Triac junction temperature in the closed enclosure | 60 °C air inside at 50 °C outside, 55 K/W with 2 cm² of copper | Two zones and master at 0.5 A for 2 h in the enclosure in a 50 °C chamber. Thermocouples on the tabs. Junction under 110 °C. |
 | 2 | Module above its 65 °C ambient limit | Same 60 °C air | Same run, thermocouple on the module can. If over 65 °C, PSRAM ECC must be on or the layout must change. |
 | 3 | LDO temperature | 0.27 W typical, 120 K/W | Same run. Also with a 125 mA load on Qwiic. |
-| 4 | Triac survives a dead short | Transformer impedance of 69 / VA ohm, one half-cycle of let-through | Short an output 20 times on 40 VA and 75 VA transformers. Record `ISNS`. Triac must still block and switch. |
+| 4 | Triac survives a dead short, and stops at the first current zero | Transformer impedance of 69 / VA ohm. One half-cycle of let-through if the triac commutates, up to two cycles and K1 breaking the current if it does not | Short an output 20 times on 40 VA and 75 VA transformers, cold and after an hour at 0.5 A. Record `ISNS` and the K1 contact voltage. Count the half-cycles. Triac must still block and switch. K1 must still open and close. |
 | 5 | Over-current latch trips on noise | 47 us filter is enough | Switch inductive loads and apply fast transients. Count false trips. |
 | 6 | Surge immunity of outputs, input and sensors | None. The TVS ratings are the only basis. | Combination-wave surge on valve, power and sensor lines at increasing levels until a part fails. Record the level. |
 | 7 | Firing and holding with small loads | T410 latching figures | Drive a 50 mA relay coil and a 150 mA valve at -20 °C and 50 °C. Check for chatter and dropout. |
