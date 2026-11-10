@@ -1,0 +1,68 @@
+# ZoneFlow firmware (ESP-IDF)
+
+Standalone firmware for the ZoneFlow irrigation controller, system spec
+section 4.1. Target: ESP32-S3-WROOM-1, 8 MB flash, ESP-IDF v5.5.6.
+
+> **Status: phase 1, never run on hardware.** No board exists yet. What has
+> been checked is listed under "What is verified" below. Everything else,
+> including every pin number, is provisional.
+
+Design and interfaces: [`docs/design/firmware-architecture.md`](../../docs/design/firmware-architecture.md).
+
+## Build the firmware
+
+Install ESP-IDF v5.5.6 ([Espressif guide](https://docs.espressif.com/projects/esp-idf/en/v5.5.6/esp32s3/get-started/)), then:
+
+```sh
+. ~/esp/esp-idf-v5.5.6/export.sh   # wherever you installed it
+cd firmware/zoneflow-fw
+idf.py set-target esp32s3          # first time only
+idf.py build
+idf.py -p /dev/ttyACM0 flash monitor
+```
+
+`sdkconfig` is generated from `sdkconfig.defaults` and is not committed.
+Board options (output-enable type, keep-alive period, control period) are in
+`idf.py menuconfig` under "ZoneFlow board".
+
+## Run the host tests
+
+No ESP-IDF needed. Needs CMake 3.24 or newer, a C++20 compiler and network
+access on the first run (GoogleTest 1.17.0 and cJSON 1.7.19 are fetched; a
+system GoogleTest is used if found).
+
+```sh
+firmware/zoneflow-fw/test/host/run.sh
+```
+
+The script builds with AddressSanitizer and UndefinedBehaviorSanitizer and
+runs every test through CTest. Extra arguments go to `ctest`.
+
+## Format
+
+```sh
+cd firmware/zoneflow-fw
+git ls-files '*.cpp' '*.hpp' | xargs uvx --from clang-format==23.1.4 clang-format -i
+```
+
+CI checks formatting with the same clang-format version.
+
+## Layout
+
+| Path | Contents |
+|---|---|
+| `components/zf_core/` | Pure C++ logic, no ESP-IDF headers: zone driver, scheduler, time zones, config, events, diagnostics, controller. Builds for the device and for host tests. |
+| `components/zf_board/` | Board header. The only place GPIO numbers and board constants appear. |
+| `components/zf_platform/` | ESP-IDF code behind the core interfaces: GPIO outputs, OE keep-alive task, sensors (GPIO, PCNT, ADC), NVS, I2C, PCF8563 RTC, SNTP, panic/brownout/restart hooks, event logger. |
+| `components/zf_net`, `zf_web`, `zf_mqtt`, `zf_ota`, `zf_display` | Phase 1 stubs with the planned work written in each header. `zf_ota` already confirms a new image after boot. |
+| `main/app_main.cpp` | Wires everything together and starts the tasks. |
+| `test/host/` | GoogleTest suites and fakes for the core. |
+| `partitions.csv` | 8 MB layout: NVS, two 3 MB OTA slots, 1.8 MB LittleFS `www` for web assets, 64 KB core dump. |
+
+## What is verified
+
+- Host tests: `test/host/run.sh`, all suites pass under ASan and UBSan.
+- `idf.py build` with ESP-IDF v5.5.6 for esp32s3 completes with no warnings.
+- Nothing has run on an ESP32-S3. Pin assignments, the output-enable
+  timing, the current-sense scaling and the PCF8563 driver are untested
+  against hardware.

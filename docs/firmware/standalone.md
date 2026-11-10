@@ -1,7 +1,7 @@
 # Standalone firmware
 
-!!! note "Not written yet"
-    This page is not written yet. The firmware is tracked in [issue #6](https://github.com/syntroniks/zoneflow/issues/6). No firmware has been written or run on hardware.
+!!! note "Phase 1 only, never run on hardware"
+    The firmware foundation exists in `firmware/zoneflow-fw/`: zone driver, scheduler, configuration, diagnostics logic, host tests and CI. Networking, web UI, MQTT, OTA and the OLED UI are not written yet. Nothing has run on a board. Work is tracked in [issue #6](https://github.com/syntroniks/zoneflow/issues/6); the design is in [firmware architecture](../design/firmware-architecture.md).
 
 Planned scope, from the [specification](../design/system-spec.md):
 

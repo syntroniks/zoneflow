@@ -29,3 +29,6 @@ site/
 .DS_Store
 .vscode/
 .idea/
+
+# ZoneFlow firmware: generated from sdkconfig.defaults
+firmware/zoneflow-fw/sdkconfig
