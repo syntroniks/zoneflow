@@ -1,7 +1,8 @@
 # ZoneFlow firmware (ESP-IDF)
 
 Standalone firmware for the ZoneFlow irrigation controller, system spec
-section 4.1. Target: ESP32-S3-WROOM-1, 8 MB flash, ESP-IDF v5.5.6.
+section 4.1. Target: ESP32-S3-WROOM-1-N16R8 (16 MB flash, 8 MB octal PSRAM),
+ESP-IDF v5.5.6.
 
 > **Status: phase 1, never run on hardware.** No board exists yet. What has
 > been checked is listed under "What is verified" below. Everything else,
@@ -53,11 +54,11 @@ CI checks formatting with the same clang-format version.
 |---|---|
 | `components/zf_core/` | Pure C++ logic, no ESP-IDF headers: zone driver, scheduler, time zones, config, events, diagnostics, controller. Builds for the device and for host tests. |
 | `components/zf_board/` | Board header. The only place GPIO numbers and board constants appear. |
-| `components/zf_platform/` | ESP-IDF code behind the core interfaces: GPIO outputs, OE keep-alive task, sensors (GPIO, PCNT, ADC), NVS, I2C, PCF8563 RTC, SNTP, panic/brownout/restart hooks, event logger. |
+| `components/zf_platform/` | ESP-IDF code behind the core interfaces: GPIO outputs, OE keep-alive timer interrupt, persist writer task, zero-cross input, sensors (GPIO, PCNT, ADC), NVS, I2C, PCF8563 RTC, SNTP, panic/brownout/restart hooks, event logger. |
 | `components/zf_net`, `zf_web`, `zf_mqtt`, `zf_ota`, `zf_display` | Phase 1 stubs with the planned work written in each header. `zf_ota` already confirms a new image after boot. |
 | `main/app_main.cpp` | Wires everything together and starts the tasks. |
 | `test/host/` | GoogleTest suites and fakes for the core. |
-| `partitions.csv` | 8 MB layout: NVS, two 3 MB OTA slots, 1.8 MB LittleFS `www` for web assets, 64 KB core dump. |
+| `partitions.csv` | 16 MB layout: NVS, two 4 MB OTA slots, 7.75 MB LittleFS `www` for web and display assets, 128 KB core dump. |
 
 ## What is verified
 

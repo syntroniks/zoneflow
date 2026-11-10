@@ -256,3 +256,76 @@ TEST_F(ZoneDriverTest, ListenerSeesEveryTransition)
     EXPECT_EQ(std::get<1>(listener.zones[1]), ValveState::Off);
     EXPECT_EQ(std::get<2>(listener.zones[1]), StopReason::Completed);
 }
+
+// ---- phase 2 hardening: per-zone continuous-on limit -----------------------------
+// cfg(): max run 600 s per zone; default rest 1800 s.
+
+TEST_F(ZoneDriverTest, BackToBackRunsShareTheMaximumRunTime)
+{
+    ASSERT_EQ(cfg().minRestSec, 1800u);
+    ASSERT_TRUE(drv.start(0, 400).ok());
+    run(400'000, 1000);
+    ASSERT_FALSE(out.zone[0]);
+    const StartResult second = drv.start(0, 400);
+    ASSERT_TRUE(second.ok());
+    EXPECT_EQ(second.acceptedSec, 200u);
+    run(200'000, 1000);
+    EXPECT_FALSE(out.zone[0]);
+    EXPECT_EQ(drv.lastStopReason(0), StopReason::MaxRunTime);
+    // Rest: refused until the zone has been closed for min_rest_s.
+    EXPECT_EQ(drv.start(0, 60).error, StartError::Resting);
+    EXPECT_EQ(drv.startBlocker(0), StartError::Resting);
+    EXPECT_GT(drv.restRemainingMs(0), 1'790'000u);
+    run(1'799'000, 1000);
+    EXPECT_EQ(drv.start(0, 60).error, StartError::Resting);
+    run(1000, 1000);
+    EXPECT_EQ(drv.startBlocker(0), StartError::Ok);
+    EXPECT_EQ(drv.restRemainingMs(0), 0u);
+    EXPECT_EQ(drv.start(0, 9999).acceptedSec, 600u); // full budget again
+}
+
+TEST_F(ZoneDriverTest, ShortOffTimeDoesNotResetTheBudget)
+{
+    ASSERT_TRUE(drv.start(0, 300).ok());
+    run(300'000, 1000);
+    run(60'000, 1000); // closed for less than the rest time
+    EXPECT_EQ(drv.start(0, 600).acceptedSec, 300u);
+}
+
+TEST_F(ZoneDriverTest, RestResetsTheBudget)
+{
+    ASSERT_TRUE(drv.start(0, 300).ok());
+    run(300'000, 1000);
+    run(1'800'000, 1000);
+    EXPECT_EQ(drv.start(0, 600).acceptedSec, 600u);
+}
+
+TEST_F(ZoneDriverTest, StopAndRestartCannotExtendARun)
+{
+    ASSERT_TRUE(drv.start(0, 600).ok());
+    for (int i = 0; i < 20; ++i) {
+        run(100'000, 1000);
+        drv.stop(0, StopReason::Requested);
+        drv.start(0, 600);
+    }
+    EXPECT_FALSE(out.zone[0]);
+    EXPECT_EQ(drv.startBlocker(0), StartError::Resting);
+}
+
+TEST_F(ZoneDriverTest, ReconfigureKeepsTheBudget)
+{
+    ASSERT_TRUE(drv.start(0, 500).ok());
+    run(500'000, 1000);
+    auto c = cfg();
+    c.interZoneDelayMs = 1; // any change
+    drv.reconfigure(c);
+    EXPECT_EQ(drv.start(0, 600).acceptedSec, 100u);
+}
+
+TEST_F(ZoneDriverTest, BudgetIsPerZone)
+{
+    ASSERT_TRUE(drv.start(0, 600).ok());
+    run(600'000, 1000);
+    EXPECT_EQ(drv.startBlocker(0), StartError::Resting);
+    EXPECT_EQ(drv.start(1, 600).acceptedSec, 600u);
+}

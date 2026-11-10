@@ -43,6 +43,7 @@ enum class SkipReason : uint8_t {
     AlreadyQueued,
     QueueFull,
     NothingToRun,
+    MasterLockedOut,
 };
 
 enum class RunError : uint8_t {
@@ -54,13 +55,17 @@ enum class RunError : uint8_t {
     AlreadyQueued,
     Inhibited,
     NothingToRun,
+    LockedOut,   // zone locked out by a latched fault (RunZone)
+    ZoneResting, // zone reached its maximum run time and is resting (RunZone)
+    MasterLockedOut,
 };
 
 // Inhibit flags (bitmask).
 enum InhibitFlag : uint8_t {
-    kInhibitSensor = 1u << 0,      // rain/spare sensor active: scheduled runs only
-    kInhibitNoAc = 1u << 1,        // no 24 VAC: everything
-    kInhibitMaintenance = 1u << 2, // OTA or service mode: everything
+    kInhibitSensor = 1u << 0,        // rain/spare sensor active: scheduled runs only
+    kInhibitNoAc = 1u << 1,          // no 24 VAC: everything
+    kInhibitMaintenance = 1u << 2,   // OTA or service mode: everything
+    kInhibitMasterLockout = 1u << 3, // master valve locked out: everything
 };
 
 const char *toString(RunSource s);
@@ -104,6 +109,15 @@ public:
     virtual void onRainDelayChanged(UtcSeconds until) = 0;
     // SchedulerPersist changed and should be saved.
     virtual void onPersistDirty() = 0;
+    // A queued entry reached the head of the queue and its zone refused to
+    // start (locked out, resting, disabled, inhibited); the entry is dropped.
+    virtual void onRunDropped(const RunEntry &entry, StartError reason)
+    {
+        (void)entry;
+        (void)reason;
+    }
+    // The queue stayed paused for the pause timeout and was stopped.
+    virtual void onPauseExpired() {}
 };
 
 class Scheduler {
@@ -127,7 +141,9 @@ public:
 
     // Applies configuration. Queued entries are kept unless their zone or
     // program no longer exists. After the first call, every program's key is
-    // advanced to now so an edit never triggers a past start.
+    // advanced to now so an edit never triggers a past start. A new time zone
+    // moves each key to the same instant in the new zone, so a change of
+    // zone neither skips nor repeats a start.
     void configure(const SchedulerConfig &cfg, const TimeZone &tz);
     void restore(const SchedulerPersist &state);
     SchedulerPersist persist() const;
@@ -148,6 +164,8 @@ public:
     RunError runZone(ZoneIndex zone, uint32_t durationSec);
     RunError runProgram(uint16_t programId);
 
+    // A paused queue is stopped (not resumed) after
+    // schedule.pauseTimeoutMin; see firmware-architecture.md, run queue.
     void pause();
     void resume();
     void stop();
@@ -176,6 +194,7 @@ private:
     void processQueue();
     void stopFront();
     int64_t keyAt(UtcSeconds t) const;
+    static int64_t keyIn(const TimeZone &tz, UtcSeconds t);
     void notifyQueue();
 
     const IClock &clock_;
@@ -201,6 +220,7 @@ private:
     std::size_t count_ = 0;
     uint32_t nextId_ = 1;
     QueueState state_ = QueueState::Idle;
+    MonoMs pausedAtMs_ = 0;
 };
 
 } // namespace zf

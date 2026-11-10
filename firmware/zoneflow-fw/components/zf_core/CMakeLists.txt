@@ -7,6 +7,7 @@ set(ZF_CORE_SOURCES
     src/controller.cpp
     src/current_monitor.cpp
     src/event_bus.cpp
+    src/persist.cpp
     src/scheduler.cpp
     src/sensors.cpp
     src/strings.cpp
