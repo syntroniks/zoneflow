@@ -32,3 +32,6 @@ site/
 
 # ZoneFlow firmware: generated from sdkconfig.defaults
 firmware/zoneflow-fw/sdkconfig
+
+# Enclosure
+enclosure/.cache/
