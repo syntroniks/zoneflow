@@ -163,3 +163,21 @@ What it showed:
 - **Single faults**: five faults leave drive enabled with no working keep-alive. This is finding B1 of the review.
 - **Rates**: the detector has no upper frequency limit and does not reliably reject slow toggling above about 2 Hz. It detects edges, not a correct rate.
 - **Temperature**: the hold-up shortens above 60 °C because Schottky leakage adds to the bleed resistor. The leakage figure comes from a generic model.
+
+## relay_drive.cir
+
+Added by review A1. The K1 coil driver of section 7.2: Q1 on expander bit P05,
+Q2 on `DRV_EN` with the hold network D21, R14 and C50. `DRV_EN` falls at
+100 ms and, as on the board, the expander pin goes high impedance at the same
+moment. The coil inductance is not in the Omron data sheet, so the run tries
+three values.
+
+| Coil inductance | Q1 gate under 1.05 V | Q2 gate under 1.05 V | Coil current under 4 mA |
+|---|---|---|---|
+| 50 mH | 0.11 ms | 45.9 ms | 0.7 ms |
+| 100 mH | 0.11 ms | 45.9 ms | 1.3 ms |
+| 300 mH | 0.11 ms | 45.9 ms | 3.8 ms |
+
+What it showed:
+
+- **The hold does not hold**: Q2's gate stays up for 46 ms as designed, but Q1 is in series and turns off in 0.1 ms, because resetting the expander releases its gate. The coil has lost its current within 4 ms. K1 opens within its own release time, 10 ms at most, not 30 to 50 ms later.

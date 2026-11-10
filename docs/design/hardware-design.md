@@ -682,7 +682,7 @@ has power, whatever the output devices are doing.
 | Q2 | AO3400A N-MOSFET 30 V | SOT-23 | C20917 | G `RLY_G2`, S `GND`, D `RLY_B` | On when DRV_EN is high |
 | D21 | 1N4148W | SOD-123 | C81598 | A `DRV_EN`, K `RLY_D` | Lets DRV_EN charge C50 but not discharge it |
 | R13 | 1k 1% | 0603 | C21190 | `RLY_D` to `RLY_G2` |  |
-| R14 | 47k 1% | 0603 | C25819 | `RLY_G2` to `GND` | With C50, holds K1 for 30 to 50 ms after DRV_EN falls |
+| R14 | 47k 1% | 0603 | C25819 | `RLY_G2` to `GND` | With C50, holds Q2 on for 30 to 50 ms after DRV_EN falls. Q1 does not wait, see section 7.2 |
 | C50 | 1 uF 50 V X5R | 0603 | C15849 | `RLY_G2` to `GND` |  |
 | JP1 | Solder jumper, open | PCB | none | `AC_L` to `COM` | Bridge only if K1 is not fitted |
 | J2 | Header 7-way 3.81 mm pluggable, right angle | THT | C441187 | 1 `COM`, 2 `COM`, 3 `OUT_MV`, 4 `OUT_Z1`, 5 `OUT_Z2`, 6 `OUT_Z3`, 7 `OUT_Z4` | Valves A |
@@ -697,14 +697,42 @@ falls, because `DRV_EN` resets the expander.
 D21, R14 and C50 hold Q2 on after `DRV_EN` falls. D21 lets `DRV_EN` charge
 C50 to about 2.7 V and stops it discharging C50. R14 then discharges it with a
 47 ms time constant, and Q2 turns off between its 1.45 V maximum and 1.0 V
-typical threshold, 30 to 50 ms later. When the over-current latch trips, the
-triacs stop at the next current zero, within 10 ms, and K1 opens after that
-with no current in its contacts.
+typical threshold, 30 to 50 ms later. The intent was that after an
+over-current trip the triacs stop first and K1 opens afterwards with no
+current in its contacts.
 
-K1 is an Omron G5NB-1A-E with a 5 V coil of 125 ohm, 40 mA. The contact is
-rated 5 A at 250 VAC and 5 A at 30 VDC, resistive. The coil sees `V5` less
-4 mV of MOSFET drop. I could not read the must-operate voltage from the
-datasheet text. I assume the usual 75 % of rated voltage, 3.75 V.
+**The circuit as drawn does not do that.** Review A1 found that Q1 lets go
+first. `DRV_EN` low resets the expander, P05 becomes an input, and R12
+discharges Q1's gate in 0.1 ms. `hardware/sim/relay_drive.cir` shows the coil
+current under 10 % of its rated value 0.7 to 3.8 ms after `DRV_EN` falls, for
+a coil inductance of 50 to 300 mH, while Q2's gate is still held for 46 ms. So
+on every loss of `DRV_EN`, from an over-current trip or a stopped keep-alive,
+K1 starts to open at once and its contacts part within the 10 ms release time
+of the data sheet. That can be before the triac's current zero. K1 then
+breaks the current: at most 1.5 A of valve current after a stopped
+keep-alive, and up to the transformer's short-circuit current after a trip.
+The contact is rated to switch 5 A.
+
+D21, C50 and the hold function of R14 therefore do nothing useful as drawn.
+There are two ways to settle it, and the choice is open:
+
+- **Make the hold real.** Give Q1 the same network: a diode from `RLY_ON` to its gate and a capacitor across R12. Both transistors then hold for 30 to 50 ms. K1 opens without current whenever the triac has stopped by itself.
+- **Keep the fast release and drop the hold parts.** Remove D21 and C50. K1 is then the back-up that interrupts a fault within about one mains cycle when the triac fails to stop, which section 6.6 shows can happen. The price is that K1 breaks current on these rare events.
+
+Review A1 recommends the second, for the reason in its finding M3. Firmware
+sequencing in section 7.3 is not affected by either choice: in normal use the
+relay never switches current.
+
+K1 is an Omron G5NB-1A-E with a 5 V coil of 125 ohm, 40 mA. From the English
+Omron data sheet: the high-capacity contact is rated 5 A at 250 VAC and 3 A at
+30 VDC, resistive, with 5 A maximum switching current. Operate and release
+times are 10 ms maximum each. The must-operate voltage is 75 % of rated,
+3.75 V, at a coil temperature of 23 °C. Copper gains 0.39 % per kelvin, so a
+coil at 85 °C needs 3.75 V x 1.24 = 4.65 V. The coil sees `V5` less 4 mV of
+MOSFET drop, and the lowest `V5` on 24 VAC is 5.16 V - 0.35 V = 4.81 V. The
+margin at that corner is 3 %. Feeding the coil from `V_BUCK` instead of `V5`
+would add the 0.35 V of D3 to it; the relay has nothing to switch on USB power
+anyway. That change is recommended in the review and not made here.
 
 K1 is a through-hole part. The specification limits those to parts with no
 surface-mount equivalent. I did not look for a surface-mount relay with this
@@ -772,7 +800,7 @@ the latch is clear.
 |---|---|---|
 | LED supply | `DRV_EN_N` high turns off Q3 | `V_DRV` falls. No opto LED can conduct, whatever the expander pins do. |
 | Expander reset | `DRV_EN` is the TCA9539 RESET pin | Every expander pin becomes an input. The stored output bits are lost, so nothing comes back on when drive returns. |
-| Relay | `DRV_EN` gates Q2 | K1 opens 30 to 50 ms later. |
+| Relay | `DRV_EN` gates Q2, and resets the expander bit that gates Q1 | K1 opens within its 10 ms release time. Section 7.2 explains why the 30 to 50 ms hold does not apply. |
 
 No ESP32 pin other than `KA` and the I2C bus can influence a valve. Turning one
 on takes a running keep-alive and two valid I2C writes to address 0x74.
@@ -1805,7 +1833,7 @@ For the first prototype. Stop at the first step that fails.
 7. **Over-current latch.** Raise that current. `FAULT` sets between 4.2 and 5.1 A peak, D8 lights, `DRV_EN` falls. It stays set until the keep-alive stops.
 8. **First AC power.** Unplug USB. Feed J1 from a variable 0 to 32 VAC isolated source. The buck starts at about 9 V on `VIN_DC`. At 24 VAC: `VIN_DC` 28 to 31 V, `V_BUCK` 5.16 to 5.40 V, `AC_ZC` a clean square wave, `VIN_MON` about 0.97 V. Raise to 32 VAC for 30 minutes: `VIN_DC` under 45 V, D1 cold.
 9. **Both supplies.** Add USB from a battery laptop. No current flows back into VBUS beyond 1 mA.
-10. **Relay.** Command K1 closed. `COM` is live. Stop the keep-alive: K1 opens 30 to 50 ms after `DRV_EN` falls.
+10. **Relay.** Command K1 closed. `COM` is live. Stop the keep-alive: time K1 opening against `DRV_EN` falling. As drawn it opens within 10 ms, see section 7.2.
 11. **Resistive load.** 47 ohm, 25 W from `COM` to each output in turn: 0.5 A. Scope T2: firing voltage a few volts each half-cycle. Compare the current reading with a meter.
 12. **Valve.** A real solenoid on each output. Scope T2 at turn-off: one clean stop at the current zero, ringing under the 77 V clamp. Then a 50 mA relay coil.
 13. **Short circuit.** With a 40 VA transformer, short an output to `COM` and turn it on. One half-cycle of current, latch set, fuse intact, triac still working. Repeat with the short applied while the output is on.
@@ -1820,7 +1848,7 @@ For the first prototype. Stop at the first step that fails.
 - **Class 2 short-circuit limit.** The 8 A figure in sections 5.3 and 20 is from memory.
 - **USB attach capacitance.** The 10 uF figure in section 5.2 is from memory.
 - **Bulk capacitor ripple rating.** I read the Lelon table for 50 V, not 63 V.
-- **Relay must-operate voltage.** Not legible in the Chinese-language Omron datasheet text. No surface-mount alternative was searched for.
+- **Surface-mount relay.** No surface-mount alternative to K1 was searched for.
 - **Display.** FPC contact side, which marked dimension is the viewing area, the controller variant, the logic supply current, the maximum SPI clock and a second source. I did not read an ST7789 datasheet.
 - **Antenna clearance.** I did not read Espressif's hardware design guidelines.
 - **Module flash.** Its part number and sector-erase time.
@@ -1862,7 +1890,7 @@ is LCSC's copy of the maker's PDF for that LCSC number.
 | SRN6045TA-470M | Bourns SRN6045TA | <https://www.lcsc.com/datasheet/C5151734.pdf> |
 | HS20HS072RX | Hansheng datasheet v1.0, 2020-11-04 | <https://www.lcsc.com/datasheet/C5329582.pdf> |
 | EC11J1525402 | ALPS product sheet | <https://www.lcsc.com/datasheet/C209762.pdf> |
-| G5NB-1A-E | Omron G5NB, Chinese edition | <https://www.lcsc.com/datasheet/C48746.pdf> |
+| G5NB-1A-E | Omron G5NB, Chinese edition; English edition read in review A1 | <https://www.lcsc.com/datasheet/C48746.pdf>, <https://omronfs.omron.com/en_US/ecb/products/pdf/en-g5nb.pdf> |
 | AO3401A, SS34, SS210, M7, BAT54S, USBLC6-2SC6 | Maker datasheets, key ratings only | LCSC pages for C15127, C8678, C14996, C95872, C47546, C7519 |
 
 Stock, price and library class came from the JLCPCB parts search on

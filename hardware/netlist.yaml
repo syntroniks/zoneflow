@@ -358,7 +358,7 @@ components:
     lcsc: C25819
     block: "B valve common relay"
     variant: "all"
-    note: "With C50, holds K1 for 30 to 50 ms after DRV_EN falls"
+    note: "With C50, holds Q2 on for 30 to 50 ms after DRV_EN falls. Q1 does not wait, see section 7.2"
     pins:
       "1": "RLY_G2"
       "2": "GND"
