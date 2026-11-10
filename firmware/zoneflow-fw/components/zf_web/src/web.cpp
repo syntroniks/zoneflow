@@ -74,6 +74,13 @@ public:
 struct Module;
 Module *gm = nullptr;
 
+// An open event stream and the credentials it was opened with.
+struct Stream {
+    httpd_req_t *req = nullptr;
+    std::string cookie;
+    std::string authorization;
+};
+
 class Platform final : public IPlatformPort {
 public:
     FirmwareInfo firmware() const override
@@ -128,7 +135,7 @@ struct Module {
     bool mounted = false;
     std::atomic<uint32_t> stackFreeMin{UINT32_MAX};
     std::mutex streamMutex;
-    std::array<httpd_req_t *, kMaxStreams> streams{};
+    std::array<Stream, kMaxStreams> streams{};
     platform::EventQueueSubscriber events;
 };
 
@@ -580,7 +587,7 @@ esp_err_t eventsHandler(httpd_req_t *req)
     bool free = false;
     {
         std::lock_guard<std::mutex> lock(gm->streamMutex);
-        free = std::find(gm->streams.begin(), gm->streams.end(), nullptr) != gm->streams.end();
+        free = std::any_of(gm->streams.begin(), gm->streams.end(), [](const Stream &s) { return s.req == nullptr; });
     }
     if (!free) {
         ApiResponse busy = Api::error(503, "too_many_streams", "at most 3 event streams");
@@ -602,13 +609,27 @@ esp_err_t eventsHandler(httpd_req_t *req)
         return ESP_OK;
     }
     std::lock_guard<std::mutex> lock(gm->streamMutex);
-    auto slot = std::find(gm->streams.begin(), gm->streams.end(), nullptr);
+    auto slot = std::find_if(gm->streams.begin(), gm->streams.end(), [](const Stream &s) { return s.req == nullptr; });
     if (slot == gm->streams.end()) {
         httpd_req_async_handler_complete(async); // lost a race for the last slot
     } else {
-        *slot = async;
+        *slot = Stream{async, raw.cookie, raw.authorization};
     }
     return ESP_OK;
+}
+
+// Stream task only.
+void dropStream(httpd_req_t *c)
+{
+    {
+        std::lock_guard<std::mutex> lock(gm->streamMutex);
+        for (Stream &s : gm->streams) {
+            if (s.req == c) {
+                s = Stream{};
+            }
+        }
+    }
+    httpd_req_async_handler_complete(c);
 }
 
 // Only this task removes streams, so the copy taken under the lock stays
@@ -618,15 +639,30 @@ void broadcast(const std::string &msg)
     std::array<httpd_req_t *, kMaxStreams> clients{};
     {
         std::lock_guard<std::mutex> lock(gm->streamMutex);
-        clients = gm->streams;
+        for (std::size_t i = 0; i < kMaxStreams; ++i) {
+            clients[i] = gm->streams[i].req;
+        }
     }
     for (httpd_req_t *c : clients) {
         if (c != nullptr && httpd_resp_send_chunk(c, msg.data(), static_cast<ssize_t>(msg.size())) != ESP_OK) {
-            {
-                std::lock_guard<std::mutex> lock(gm->streamMutex);
-                std::replace(gm->streams.begin(), gm->streams.end(), c, static_cast<httpd_req_t *>(nullptr));
-            }
-            httpd_req_async_handler_complete(c);
+            dropStream(c);
+        }
+    }
+}
+
+// Security review F5: with protect_reads on, a stream ends with the session
+// that opened it (logout, password change, expiry), and turning
+// protect_reads on ends streams opened without one.
+void dropUnauthorisedStreams()
+{
+    std::array<Stream, kMaxStreams> copy{};
+    {
+        std::lock_guard<std::mutex> lock(gm->streamMutex);
+        copy = gm->streams;
+    }
+    for (const Stream &s : copy) {
+        if (s.req != nullptr && !gm->api->streamMayContinue(s.cookie, s.authorization)) {
+            dropStream(s.req);
         }
     }
 }
@@ -634,7 +670,7 @@ void broadcast(const std::string &msg)
 bool anyStream()
 {
     std::lock_guard<std::mutex> lock(gm->streamMutex);
-    return std::any_of(gm->streams.begin(), gm->streams.end(), [](httpd_req_t *c) { return c != nullptr; });
+    return std::any_of(gm->streams.begin(), gm->streams.end(), [](const Stream &s) { return s.req != nullptr; });
 }
 
 void streamTask(void *)
@@ -646,6 +682,7 @@ void streamTask(void *)
     int64_t lastState = 0;
     int64_t lastSend = 0;
     int64_t lastOtaSend = 0;
+    int64_t lastAuthCheck = 0;
     for (;;) {
         Event e;
         const bool got = gm->events.receive(e, pdMS_TO_TICKS(250));
@@ -653,6 +690,10 @@ void streamTask(void *)
         if (!anyStream()) {
             stateSeq = gm->services->state.sequence();
             continue;
+        }
+        if (now - lastAuthCheck >= 1000) {
+            lastAuthCheck = now;
+            dropUnauthorisedStreams();
         }
         if (got) {
             JsonPtr o(eventToJson(e));

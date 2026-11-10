@@ -786,6 +786,35 @@ TEST_F(ApiTest, SecuritySettings)
     EXPECT_TRUE(api->settings().https);
 }
 
+// Security review F5. The HTTP glue admits an event stream once and then
+// keeps it open; with protect_reads on, a stream opened with a session kept
+// streaming after logout, a password change or the session's expiry. The
+// stream task now asks streamMayContinue() with the opener's credentials.
+TEST_F(ApiTest, EventStreamEndsWithItsSessionWhenReadsAreProtected)
+{
+    login();
+    EXPECT_TRUE(api->streamMayContinue("", "")); // reads open: anyone may stream
+    ASSERT_EQ(admin("PUT", "/api/v1/security", R"({"protect_reads":true})").status, 200);
+    const std::string bearer = "Bearer " + token;
+    const std::string cookie = "zf_session=" + token;
+    EXPECT_FALSE(api->streamMayContinue("", ""));
+    EXPECT_TRUE(api->streamMayContinue("", bearer));
+    EXPECT_TRUE(api->streamMayContinue(cookie, ""));
+    // Checking does not keep an idle session alive.
+    clock.advanceMs(SessionTable::kIdleTimeoutMs - 1);
+    EXPECT_TRUE(api->streamMayContinue(cookie, ""));
+    clock.advanceMs(2);
+    EXPECT_FALSE(api->streamMayContinue(cookie, ""));
+
+    const ApiResponse r =
+        call({.method = "POST", .path = "/api/v1/auth/login", .body = R"({"password":"admin pass"})"});
+    ASSERT_EQ(r.status, 200) << r.body;
+    token = field(r, "token");
+    EXPECT_TRUE(api->streamMayContinue("", "Bearer " + token));
+    ASSERT_EQ(admin("POST", "/api/v1/auth/logout").status, 200);
+    EXPECT_FALSE(api->streamMayContinue("", "Bearer " + token));
+}
+
 TEST_F(ApiTest, PasswordChangeKeepsCallerSignedIn)
 {
     login();

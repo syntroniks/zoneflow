@@ -125,6 +125,8 @@ public:
     Session create(MonoMs now, IRandom &rng);
     // Expired sessions are removed. Updates the last-used time.
     std::optional<Session> use(std::string_view token, MonoMs now);
+    // Like use(), but leaves the last-used time and the table unchanged.
+    bool valid(std::string_view token, MonoMs now) const;
     void remove(std::string_view token);
     void clear();
     std::size_t count() const;
@@ -183,6 +185,8 @@ public:
     AuthError setInitialPassword(std::string_view password);
 
     Principal authenticate(std::string_view cookieToken, std::string_view bearerToken, MonoMs now);
+    // Same choice of token as authenticate(), without counting as use.
+    bool sessionValid(std::string_view cookieToken, std::string_view bearerToken, MonoMs now) const;
     void logout(std::string_view token);
     // Factory reset: forget the password and every session.
     void erase();

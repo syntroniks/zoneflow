@@ -229,6 +229,16 @@ std::optional<Session> SessionTable::use(std::string_view token, MonoMs now)
     return std::nullopt;
 }
 
+bool SessionTable::valid(std::string_view token, MonoMs now) const
+{
+    if (token.empty()) {
+        return false;
+    }
+    return std::any_of(slots_.begin(), slots_.end(), [&](const std::optional<Session> &slot) {
+        return slot.has_value() && constantTimeEqual(slot->token, token) && !expired(*slot, now);
+    });
+}
+
 void SessionTable::remove(std::string_view token)
 {
     for (auto &slot : slots_) {
@@ -415,6 +425,12 @@ Principal AuthService::authenticate(std::string_view cookieToken, std::string_vi
         p.csrf = s->csrf;
     }
     return p;
+}
+
+bool AuthService::sessionValid(std::string_view cookieToken, std::string_view bearerToken, MonoMs now) const
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    return sessions_.valid(bearerToken.empty() ? cookieToken : bearerToken, now);
 }
 
 void AuthService::logout(std::string_view token)
