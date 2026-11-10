@@ -1,0 +1,263 @@
+name: release
+
+# Tag vX.Y.Z      build, verify, publish a GitHub release, then refresh the docs site.
+# Pull request    the same build and verification, publishes nothing ("dry run").
+# Manual run      the same, publishes nothing unless you run it on a tag.
+#
+# See docs/firmware/releases.md and tools/zfrelease/README.md.
+
+on:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - "tools/zfrelease/**"
+      - "tools/zfflash/**"
+      - "tools/ewt/**"
+      - "docs/assets/**"
+      - "docs/firmware/web-installer.md"
+      - "docs/firmware/releases.md"
+      - "firmware/zoneflow-fw/partitions.csv"
+      - "firmware/zoneflow-fw/sdkconfig.defaults"
+      - "firmware/zoneflow-fw/CMakeLists.txt"
+      - ".github/workflows/release.yml"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Publish only for a tag, whether it came from a push or from "Run workflow" on a tag.
+  PUBLISH: ${{ github.ref_type == 'tag' }}
+
+jobs:
+  # The release tooling and the installer page, on their own, without a firmware build.
+  tooling-tests:
+    name: Tooling tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10.3.3
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: zfrelease
+        working-directory: tools/zfrelease
+        run: |
+          uv run --locked ruff check .
+          uv run --locked ruff format --check .
+          uv run --locked pytest -q
+      - name: zfflash (serial, port list and HTTP are mocked)
+        working-directory: tools/zfflash
+        run: |
+          uv run --locked ruff check .
+          uv run --locked ruff format --check .
+          uv run --locked pytest -q
+      - name: Installer page logic
+        run: node --test tools/ewt/installer.test.mjs
+      - name: Vendored ESP Web Tools is the pinned one
+        run: python3 tools/ewt/vendor.py check
+
+  version:
+    name: Version
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      tag: ${{ steps.v.outputs.tag }}
+      prerelease: ${{ steps.v.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v10.3.3
+      - name: Version from the tag
+        id: v
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            uv run --project tools/zfrelease --locked zfrelease version --tag "$GITHUB_REF_NAME" --github-output
+          else
+            uv run --project tools/zfrelease --locked zfrelease version --commit "$GITHUB_SHA" --github-output
+          fi
+      - name: A release comes from main
+        if: github.ref_type == 'tag'
+        run: |
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || {
+            echo "::error::tag $GITHUB_REF_NAME is not on main; release from main"
+            exit 1
+          }
+
+  www:
+    name: Web interface
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: firmware/zoneflow-fw/web/package-lock.json
+      - name: Build and pack (size budget checked by the build)
+        working-directory: firmware/zoneflow-fw/web
+        run: |
+          npm ci
+          npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: www
+          path: firmware/zoneflow-fw/www
+          if-no-files-found: error
+
+  build-standalone:
+    name: Standalone firmware (esp32s3)
+    needs: [version, www]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10.3.3
+      - uses: actions/download-artifact@v4
+        with:
+          name: www
+          path: firmware/zoneflow-fw/www
+      # ESP-IDF reads the application version from version.txt. This is the only place
+      # the released version enters the firmware: it comes from the tag.
+      - name: Set the firmware version
+        run: echo "${{ needs.version.outputs.version }}" > firmware/zoneflow-fw/version.txt
+      - name: idf.py build (the web interface is packed into www.bin)
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.5.6
+          target: esp32s3
+          path: firmware/zoneflow-fw
+      - name: Package and merge
+        run: |
+          uv run --project tools/zfrelease --locked zfrelease package \
+            --version "${{ needs.version.outputs.version }}" --commit "$GITHUB_SHA" \
+            --build-dir firmware/zoneflow-fw/build \
+            --partitions firmware/zoneflow-fw/partitions.csv \
+            --out dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flavour-standalone
+          path: dist
+          if-no-files-found: error
+
+  # ---- Slot for the second flavour: the ESPHome build (issue #7) ----------------------
+  # Write the job here, set `enabled = true` for `esphome` in tools/zfrelease/flavours.toml,
+  # and add the job to `needs` of `assemble`. The job builds the ESPHome package, then
+  # runs `zfrelease package-prebuilt --flavour esphome --factory <firmware.factory.bin>
+  # --app <firmware.ota.bin> --version <version> --out dist` and uploads `dist` as the
+  # artefact `flavour-esphome`. Nothing else changes: `assemble` merges every `flavour-*`
+  # artefact and the installer page lists what `release.json` lists.
+  #
+  # build-esphome:
+  #   needs: [version]
+  #   runs-on: ubuntu-24.04
+  #   steps: [...]
+
+  assemble:
+    name: Assemble and verify (dry run)
+    needs: [version, build-standalone]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10.3.3
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: flavour-*
+          merge-multiple: true
+          path: dist
+      - name: Assemble release.json and SHA256SUMS
+        run: |
+          uv run --project tools/zfrelease --locked zfrelease assemble \
+            --version "${{ needs.version.outputs.version }}" \
+            --tag "${{ needs.version.outputs.tag }}" --commit "$GITHUB_SHA" dist
+      - name: Verify the layout of the factory image, the manifest and the checksums
+        run: |
+          uv run --project tools/zfrelease --locked zfrelease verify dist \
+            --partitions firmware/zoneflow-fw/partitions.csv | tee "$RUNNER_TEMP/verify.txt"
+      - name: The installer page prints the offsets and commands of this release
+        run: ZF_RELEASE_JSON=dist/release.json node --test tools/ewt/installer.test.mjs
+      - name: zfflash reads and verifies this release (nothing is flashed)
+        run: |
+          uv run --project tools/zfflash --locked zfflash fetch --source dist \
+            --cache-dir "$RUNNER_TEMP/zfcache"
+      - name: The release stages into the docs site
+        run: |
+          mkdir -p "$RUNNER_TEMP/site"
+          uv run --project tools/zfrelease --locked zfrelease stage-site dist "$RUNNER_TEMP/site"
+          ls -l "$RUNNER_TEMP/site/firmware/releases/latest"
+      - name: Release notes
+        run: uv run --project tools/zfrelease --locked zfrelease notes dist > release-notes.md
+      - name: Summary
+        run: |
+          {
+            echo "## Release dry run: ${{ needs.version.outputs.version }}"
+            echo
+            echo "Published: **${{ env.PUBLISH == 'true' && 'yes, by the next job' || 'no' }}**"
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/verify.txt"
+            echo '```'
+            echo
+            cat release-notes.md
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-files-${{ needs.version.outputs.version }}
+          path: |
+            dist
+            release-notes.md
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub release
+    if: github.ref_type == 'tag'
+    needs: [version, assemble, tooling-tests]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-files-${{ needs.version.outputs.version }}
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.version.outputs.tag }}
+          VERSION: ${{ needs.version.outputs.version }}
+          PRERELEASE: ${{ needs.version.outputs.prerelease }}
+        run: |
+          flags=()
+          [ "$PRERELEASE" = true ] && flags+=(--prerelease)
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "release $TAG exists (re-run): replacing its files"
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" dist/* --verify-tag --title "ZoneFlow $VERSION" \
+              --notes-file release-notes.md --generate-notes "${flags[@]}"
+          fi
+
+  # The docs site serves the newest release (WebSerial needs a same-origin copy of the files).
+  # Events made with GITHUB_TOKEN do not start workflows, except workflow_dispatch.
+  site:
+    name: Refresh the docs site
+    if: github.ref_type == 'tag'
+    needs: publish
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run docs.yml --ref main

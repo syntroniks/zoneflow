@@ -1,0 +1,36 @@
+# Firmware flavours the release offers. One table per flavour.
+#
+# Adding a flavour is three small steps:
+#   1. Set `enabled = true` here and fill in the fields.
+#   2. In .github/workflows/release.yml, add a build job that uploads an
+#      artefact `flavour-<id>` holding the output of
+#      `zfrelease package-prebuilt` (see tools/zfrelease/README.md).
+#   3. Add the job to `needs:` of the `assemble` job.
+# The installer page and the manifest list are generated from release.json,
+# which `zfrelease assemble` writes from the flavours that are enabled here.
+# `assemble` fails if an enabled flavour has no artefact.
+
+[standalone]
+enabled = true
+name = "ZoneFlow standalone firmware"
+description = "ESP-IDF firmware with its own web interface, REST API and MQTT. No hub needed."
+chip = "esp32s3"
+# The name in esp_app_desc_t. The firmware's own OTA check refuses any other.
+project_name = "zoneflow-fw"
+# Does the firmware answer Improv Serial after a flash? The standalone
+# firmware does not: it provisions over BLE (ESP-IDF Security 2) and a setup
+# access point. The installer page must not offer Improv for it.
+improv = false
+# How the device gets onto WiFi after the flash. Shown on the installer page.
+next_step = "ble-or-softap"
+
+# Slot for the ESPHome build (issue #7), written by someone else. Not built
+# yet, so `enabled = false`: assemble ignores it and the page does not list it.
+[esphome]
+enabled = false
+name = "ZoneFlow ESPHome package"
+description = "ESPHome firmware for Home Assistant, adopted over the ESPHome native API."
+chip = "esp32s3"
+project_name = ""   # ESPHome images carry the node name; fill in when known.
+improv = true       # The package uses Improv BLE; confirm before enabling.
+next_step = "improv"

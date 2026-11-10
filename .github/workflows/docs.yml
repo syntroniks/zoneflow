@@ -24,8 +24,28 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
 
+      - name: Vendored ESP Web Tools is the pinned one
+        run: python3 tools/ewt/vendor.py check
+
       - name: Build site
         run: uv run mkdocs build --strict
+
+      # WebSerial cannot download GitHub release assets (other origin, no CORS), so the newest
+      # release is copied into the site. Its checksums are checked first. No release yet: skip,
+      # and the installer page says so.
+      - name: Add the newest firmware release to the site
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tag=$(gh release list --exclude-drafts --limit 1 --json tagName --jq '.[0].tagName // empty')
+          if [ -z "$tag" ]; then
+            echo "No release yet; the installer page will say so."
+            exit 0
+          fi
+          mkdir -p "$RUNNER_TEMP/release"
+          gh release download "$tag" --dir "$RUNNER_TEMP/release"
+          uv run --project tools/zfrelease --locked zfrelease stage-site "$RUNNER_TEMP/release" site
 
       - name: Configure Pages
         if: github.event_name != 'pull_request'
@@ -38,7 +58,7 @@ jobs:
           path: site
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     permissions:
