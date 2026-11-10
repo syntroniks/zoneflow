@@ -87,16 +87,17 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git status --short -- hardware/zoneflow-a
+          git diff -- hardware/zoneflow-a/output/zoneflow-a.net | head -n 40
           git diff --exit-code --stat -- hardware/zoneflow-a ':!hardware/zoneflow-a/output/*.pdf'
           test -z "$(git status --porcelain --untracked-files=all -- hardware/zoneflow-a | grep '^??')"
 
-      - name: Keep the schematic PDF and the reports
+      # What this run generated, so that a difference can be looked at.
+      - name: Keep the generated outputs
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: zoneflow-a-schematic
           path: |
-            hardware/zoneflow-a/output/zoneflow-a-schematic.pdf
-            hardware/zoneflow-a/output/reports/
+            hardware/zoneflow-a/output/
             hardware/zoneflow-a/build/kicad-cli.stderr
           if-no-files-found: warn
