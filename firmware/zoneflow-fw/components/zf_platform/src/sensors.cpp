@@ -36,6 +36,19 @@ esp_err_t SensorInputs::init()
     if (err != ESP_OK) {
         return err;
     }
+    if (board::kHasOverCurrentTrip) {
+        const gpio_config_t trip = {
+            .pin_bit_mask = 1ULL << board::kOverCurrentTripGpio,
+            .mode = GPIO_MODE_INPUT,
+            .pull_up_en = board::kOverCurrentTripActiveLow ? GPIO_PULLUP_ENABLE : GPIO_PULLUP_DISABLE,
+            .pull_down_en = board::kOverCurrentTripActiveLow ? GPIO_PULLDOWN_DISABLE : GPIO_PULLDOWN_ENABLE,
+            .intr_type = GPIO_INTR_DISABLE,
+        };
+        err = gpio_config(&trip);
+        if (err != ESP_OK) {
+            return err;
+        }
+    }
 
     // Flow: count falling edges (contact closing) with hardware accumulation.
     pcnt_unit_config_t unitCfg = {};
@@ -109,6 +122,10 @@ SensorSample SensorInputs::read()
     s.spareContactClosed = readContactClosed(board::kSpareSensorGpio);
     const bool acLevel = gpio_get_level(static_cast<gpio_num_t>(board::kAcPresentGpio)) != 0;
     s.acPresent = board::kAcPresentActiveLow ? !acLevel : acLevel;
+    if (board::kHasOverCurrentTrip) {
+        const bool tripLevel = gpio_get_level(static_cast<gpio_num_t>(board::kOverCurrentTripGpio)) != 0;
+        s.overCurrentTripped = board::kOverCurrentTripActiveLow ? !tripLevel : tripLevel;
+    }
 
     if (pcnt_ != nullptr) {
         int count = 0;

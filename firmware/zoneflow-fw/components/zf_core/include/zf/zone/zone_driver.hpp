@@ -113,6 +113,11 @@ public:
     MonoMs lastOutputChangeMs() const { return lastChangeMs_; }
     // Bit index (as in outputMask) of the output most recently switched on.
     uint8_t lastOpenedBit() const { return lastOpenedBit_; }
+    // When the output (bit as in outputMask) last switched on.
+    MonoMs openedAtMs(uint8_t bit) const
+    {
+        return bit == kMasterBit ? masterOnAtMs_ : (bit < kMaxZones ? zones_[bit].openedAtMs : 0);
+    }
 
     static constexpr uint8_t kMasterBit = kMaxZones;
 
@@ -153,6 +158,7 @@ private:
     ZoneDriverConfig cfg_{};
     std::array<Zone, kMaxZones> zones_{};
     bool masterOn_ = false;
+    MonoMs masterOnAtMs_ = 0;
     bool masterCloseArmed_ = false;
     MonoMs masterCloseAtMs_ = 0;
     bool anyClosed_ = false;

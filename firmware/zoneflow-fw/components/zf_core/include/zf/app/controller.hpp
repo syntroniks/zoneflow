@@ -41,6 +41,9 @@ public:
     static constexpr uint32_t kPersistMinIntervalMs = 2000;
     // A snapshot is published at least this often.
     static constexpr uint32_t kSnapshotIntervalMs = 1000;
+    // A hardware over-current latch that comes back after it was released
+    // is released again no more often than this.
+    static constexpr uint32_t kTripClearRetryMs = 1000;
 
     explicit Controller(const ControllerDeps &deps);
 
@@ -90,6 +93,7 @@ private:
     void applyConfig(const Config &cfg);
     void updateInhibit();
     void handleCurrent(const CurrentVerdict &v);
+    void handleTrip(bool tripped, MonoMs now);
     void recordMasterFault();
     void raiseFault(FaultCode code, ZoneIndex zone);
     void clearCondition(FaultCode code);
@@ -124,6 +128,9 @@ private:
     uint8_t masterFaults_ = 0;
     bool masterFaultInSession_ = false;
     MonoMs masterOnSinceMs_ = 0;
+    // Hardware over-current latch.
+    bool tripSeen_ = false;
+    MonoMs nextTripClearMs_ = 0;
 
     bool persistDirty_ = false;
     MonoMs lastPersistMs_ = 0;

@@ -48,6 +48,7 @@ public:
     void setZone(ZoneIndex zone, bool on) override;
     void setMaster(bool on) override;
     void allOff() override;
+    void clearOverCurrentTrip() override;
 };
 
 // ---- output-enable keep-alive ------------------------------------------------------

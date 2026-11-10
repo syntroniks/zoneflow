@@ -603,3 +603,83 @@ TEST_F(ControllerTest, CurrentSenseUnavailableIgnoredWhenDiagnosticsDisabled)
     start();
     EXPECT_FALSE(hasFault(FaultCode::CurrentSenseUnavailable));
 }
+
+// ---- hardware over-current trip -------------------------------------------------------
+
+TEST_F(ControllerTest, TripShutsAllOffLocksZoneAndClearsLatchOnceOff)
+{
+    start();
+    ASSERT_TRUE(ctrl->handle(Command::runZone(2, 600)));
+    ASSERT_TRUE(ctrl->handle(Command::runZone(3, 600)));
+    tick();
+    ASSERT_TRUE(out.zone[2]);
+    sensors.sample.overCurrentTripped = true;
+    tick();
+    EXPECT_FALSE(out.anyOn());
+    EXPECT_TRUE(hasFault(FaultCode::OverCurrentTrip));
+    EXPECT_STREQ(toString(FaultCode::OverCurrentTrip), "over_current_trip");
+    EXPECT_TRUE(ctrl->driver().lockedOut(2));
+    EXPECT_EQ(state.snapshot().zones[2].fault, FaultCode::OverCurrentTrip);
+    EXPECT_EQ(state.snapshot().queue.length, 0); // queue stopped, as for a short
+    EXPECT_EQ(out.tripClears, 0);                // not before the outputs are confirmed off
+    tick();
+    EXPECT_EQ(out.tripClears, 1);
+    EXPECT_FALSE(out.anyOnAtClear);
+    // allOff() is driven again right before the latch is released.
+    ASSERT_GE(out.log.size(), 2u);
+    EXPECT_EQ(out.log[out.log.size() - 2], "off");
+    EXPECT_EQ(out.log.back(), "clear");
+    sensors.sample.overCurrentTripped = false;
+    tick();
+    EXPECT_FALSE(ctrl->handle(Command::runZone(2, 60)));
+    EXPECT_TRUE(ctrl->handle(Command::runZone(3, 60)));
+    tick();
+    EXPECT_TRUE(out.zone[3]);
+    EXPECT_EQ(out.tripClears, 1);
+}
+
+TEST_F(ControllerTest, TripAttributedToOutputsJustSwitchedOn)
+{
+    Config c = config.get();
+    c.master.enabled = true;
+    c.master.preOpenMs = 0;
+    ASSERT_TRUE(config.update(c).ok);
+    start();
+    ASSERT_TRUE(ctrl->handle(Command::runZone(1, 600)));
+    tick();
+    ASSERT_TRUE(out.master);
+    ASSERT_TRUE(out.zone[1]);
+    sensors.sample.overCurrentTripped = true;
+    tick();
+    // Master and zone opened together: both take the fault.
+    EXPECT_TRUE(ctrl->driver().lockedOut(1));
+    tick();
+    EXPECT_EQ(state.snapshot().masterFaultCount, 1);
+}
+
+TEST_F(ControllerTest, TripLongAfterSwitchingBlamesTheLastOpenedOutput)
+{
+    start();
+    ASSERT_TRUE(ctrl->handle(Command::runZone(4, 600)));
+    runMs(10'000);
+    ASSERT_TRUE(out.zone[4]);
+    sensors.sample.overCurrentTripped = true;
+    tick();
+    EXPECT_FALSE(out.anyOn());
+    EXPECT_TRUE(ctrl->driver().lockedOut(4));
+}
+
+TEST_F(ControllerTest, TripWithOutputsOffIsReportedAndClearRetried)
+{
+    start();
+    sensors.sample.overCurrentTripped = true;
+    tick();
+    EXPECT_TRUE(hasFault(FaultCode::OverCurrentTrip));
+    runMs(3000); // the latch keeps coming back: retry about once a second
+    EXPECT_GE(out.tripClears, 3);
+    EXPECT_LE(out.tripClears, 5);
+    const auto trips = std::count_if(events.begin(), events.end(), [](const Event &e) {
+        return e.type == EventType::FaultRaised && e.fault.code == FaultCode::OverCurrentTrip;
+    });
+    EXPECT_EQ(trips, 1); // reported once
+}

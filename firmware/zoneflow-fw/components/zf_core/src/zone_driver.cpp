@@ -266,6 +266,7 @@ void ZoneDriver::setMaster(bool on, MonoMs now)
     lastChangeMs_ = now;
     if (on) {
         lastOpenedBit_ = kMasterBit;
+        masterOnAtMs_ = now;
     }
     updateDemand();
     if (listener_ != nullptr) {

@@ -90,7 +90,19 @@ inline constexpr float kValveCurrentMaPerMv = 1.0f;
 inline constexpr int kValveCurrentOffsetMv = 0;
 inline constexpr int kValveCurrentSamples = 16; // averaged per control tick
 
-// ---- spare GPIO, not assigned: 18 (high glitch), 47, 48 -------------------------------
+// ---- hardware over-current trip (PROVISIONAL: no circuit exists yet) ------------------
+// A comparator on the current shunt removes gate drive on a short and latches
+// until firmware releases it (spec section 3.1: a fast hardware over-current
+// path is preferred). Firmware reads the latch every control tick and pulses
+// the clear output once every output is confirmed off.
+inline constexpr bool kHasOverCurrentTrip = true;
+inline constexpr int kOverCurrentTripGpio = 18;         // input; the high power-up glitch does not matter here
+inline constexpr bool kOverCurrentTripActiveLow = true; // assumed open-drain comparator output
+inline constexpr int kOverCurrentClearGpio = 47;        // output, pulse to release the latch
+inline constexpr bool kOverCurrentClearActiveHigh = true;
+inline constexpr uint32_t kOverCurrentClearPulseUs = 10; // assumed; set from the latch's datasheet
+
+// ---- spare GPIO, not assigned: 48 -------------------------------------------------------
 
 // ---- compile-time checks ---------------------------------------------------------------
 namespace detail {
@@ -105,11 +117,11 @@ constexpr bool forbidden(int gpio)
 
 constexpr bool highGlitch(int gpio) { return gpio == 18 || gpio == 19 || gpio == 20; }
 
-constexpr std::array<int, 22> kAllPins = {
-    kZoneGpio[0],     kZoneGpio[1],   kZoneGpio[2],   kZoneGpio[3],      kZoneGpio[4],   kZoneGpio[5],
-    kZoneGpio[6],     kZoneGpio[7],   kMasterGpio,    kOutputEnableGpio, kStatusLedGpio, kI2cSdaGpio,
-    kI2cSclGpio,      kEncoderAGpio,  kEncoderBGpio,  kEncoderPushGpio,  kButtonGpio,    kRainGpio,
-    kSpareSensorGpio, kFlowPulseGpio, kAcPresentGpio, kValveCurrentGpio,
+constexpr std::array<int, 24> kAllPins = {
+    kZoneGpio[0],     kZoneGpio[1],   kZoneGpio[2],   kZoneGpio[3],      kZoneGpio[4],         kZoneGpio[5],
+    kZoneGpio[6],     kZoneGpio[7],   kMasterGpio,    kOutputEnableGpio, kStatusLedGpio,       kI2cSdaGpio,
+    kI2cSclGpio,      kEncoderAGpio,  kEncoderBGpio,  kEncoderPushGpio,  kButtonGpio,          kRainGpio,
+    kSpareSensorGpio, kFlowPulseGpio, kAcPresentGpio, kValveCurrentGpio, kOverCurrentTripGpio, kOverCurrentClearGpio,
 };
 
 constexpr bool allAllowed()

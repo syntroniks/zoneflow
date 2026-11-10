@@ -7,6 +7,7 @@
 #include "driver/gpio.h"
 #include "esp_attr.h"
 #include "esp_log.h"
+#include "esp_rom_sys.h"
 #include "esp_timer.h"
 #include "freertos/task.h"
 #include "hal/gpio_ll.h"
@@ -104,6 +105,17 @@ esp_err_t GpioOutputs::init()
     if (err == ESP_OK) {
         err = gpio_config(&led);
     }
+    if (err == ESP_OK && board::kHasOverCurrentTrip) {
+        setPin(board::kOverCurrentClearGpio, level(false, board::kOverCurrentClearActiveHigh));
+        const gpio_config_t clear = {
+            .pin_bit_mask = 1ULL << board::kOverCurrentClearGpio,
+            .mode = GPIO_MODE_OUTPUT,
+            .pull_up_en = GPIO_PULLUP_DISABLE,
+            .pull_down_en = GPIO_PULLDOWN_DISABLE,
+            .intr_type = GPIO_INTR_DISABLE,
+        };
+        err = gpio_config(&clear);
+    }
     ESP_LOGI(kTag, "outputs initialised off (%s)", board::kBoardName);
     return err;
 }
@@ -116,6 +128,16 @@ void GpioOutputs::setZone(ZoneIndex zone, bool on)
 }
 
 void GpioOutputs::setMaster(bool on) { setPin(board::kMasterGpio, level(on, board::kOutputActiveHigh)); }
+
+void GpioOutputs::clearOverCurrentTrip()
+{
+    if (!board::kHasOverCurrentTrip) {
+        return;
+    }
+    setPin(board::kOverCurrentClearGpio, level(true, board::kOverCurrentClearActiveHigh));
+    esp_rom_delay_us(board::kOverCurrentClearPulseUs);
+    setPin(board::kOverCurrentClearGpio, level(false, board::kOverCurrentClearActiveHigh));
+}
 
 void GpioOutputs::allOff()
 {

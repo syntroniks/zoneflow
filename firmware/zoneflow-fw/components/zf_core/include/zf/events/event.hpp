@@ -26,6 +26,7 @@ enum class FaultCode : uint8_t {
     StorageError,
     MasterLockedOut,         // repeated current faults on the master output; latched
     CurrentSenseUnavailable, // no valve current readings; zones still run; clears itself
+    OverCurrentTrip,         // hardware over-current comparator tripped; latched
     Count,
 };
 static_assert(static_cast<unsigned>(FaultCode::Count) <= 32, "fault bitmask is 32 bits");

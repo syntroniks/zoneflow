@@ -20,6 +20,10 @@ public:
     // repeatedly. The device implementation is also safe in a panic or
     // brownout context.
     virtual void allOff() = 0;
+    // Releases the hardware over-current latch (SensorSample::
+    // overCurrentTripped). The controller calls it only after every output
+    // is confirmed off. No-op on a board without the trip circuit.
+    virtual void clearOverCurrentTrip() {}
 };
 
 // Raw sensor readings, sampled once per control tick.
@@ -32,6 +36,8 @@ struct SensorSample {
     // False when the current-sense path could not be initialised or
     // calibrated, or gave no reading: raises current_sense_unavailable.
     bool currentSenseAvailable = true;
+    // Hardware over-current comparator has removed gate drive and latched.
+    bool overCurrentTripped = false;
 };
 
 class ISensorHal {

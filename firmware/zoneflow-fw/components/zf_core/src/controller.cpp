@@ -196,6 +196,7 @@ void Controller::tick()
     const MonoMs now = deps_.clock.monoMs();
     const SensorSample s = deps_.sensors.read();
     lastCurrentMa_ = s.valveCurrentMa;
+    handleTrip(s.overCurrentTripped, now);
 
     if (ac_.update(s.acPresent, now)) {
         Event e = makeEvent(EventType::SensorChanged);
@@ -279,7 +280,7 @@ void Controller::updateInhibit()
     if (config_.master.enabled && driver_.masterLockedOut()) {
         flags |= kInhibitMasterLockout;
     }
-    driver_.setInhibit(!acOk || maintenance_);
+    driver_.setInhibit(!acOk || maintenance_ || tripSeen_);
     if (driver_.activeCount() > 0 || driver_.masterOn()) {
         if (maintenance_) {
             driver_.stopAll(StopReason::Maintenance);
@@ -332,6 +333,65 @@ void Controller::handleCurrent(const CurrentVerdict &v)
         // the output stage.
         raiseFault(FaultCode::CurrentWhileIdle, kNoZone);
         return;
+    }
+}
+
+void Controller::handleTrip(bool tripped, MonoMs now)
+{
+    if (!tripped) {
+        if (tripSeen_) {
+            tripSeen_ = false;
+            updateInhibit();
+        }
+        return;
+    }
+    if (!tripSeen_) {
+        // The comparator has already removed gate drive. Bring the firmware
+        // state in line, then blame the outputs that switched on within the
+        // settle time before the trip (a short usually trips at turn-on); if
+        // none did, the output switched on most recently, as for a current
+        // fault.
+        tripSeen_ = true;
+        const uint16_t mask = driver_.outputMask();
+        uint16_t blamed = 0;
+        for (uint8_t bit = 0; bit <= ZoneDriver::kMasterBit; ++bit) {
+            if ((mask & (1u << bit)) != 0 && now - driver_.openedAtMs(bit) <= config_.diag.settleMs) {
+                blamed |= static_cast<uint16_t>(1u << bit);
+            }
+        }
+        const uint8_t last = driver_.lastOpenedBit();
+        if (blamed == 0 && last <= ZoneDriver::kMasterBit && (mask & (1u << last)) != 0) {
+            blamed = static_cast<uint16_t>(1u << last);
+        }
+        const bool master = (blamed & (1u << ZoneDriver::kMasterBit)) != 0;
+        if (master) {
+            masterFaultInSession_ = true; // closing the master is not a clean session
+        }
+        driver_.stopAll(StopReason::Fault);
+        scheduler_.stop();
+        for (uint8_t z = 0; z < kMaxZones; ++z) {
+            if ((blamed & (1u << z)) != 0) {
+                driver_.setLockout(z, true);
+                zoneFault_[z] = FaultCode::OverCurrentTrip;
+                raiseFault(FaultCode::OverCurrentTrip, z);
+            }
+        }
+        if (master || blamed == 0) {
+            raiseFault(FaultCode::OverCurrentTrip, kNoZone);
+        }
+        if (master) {
+            recordMasterFault();
+        }
+        updateInhibit();
+        nextTripClearMs_ = now + 1; // not in this tick: on a later one, once confirmed off
+        return;
+    }
+    // Release the latch only once every output is confirmed off: the driver
+    // has nothing open or waiting, and the off state is driven again here.
+    if (!driver_.anyOutputOn() && driver_.activeCount() == 0 && now >= nextTripClearMs_) {
+        deps_.outputs.allOff();
+        deps_.outputs.clearOverCurrentTrip();
+        nextTripClearMs_ = now + kTripClearRetryMs;
     }
 }
 

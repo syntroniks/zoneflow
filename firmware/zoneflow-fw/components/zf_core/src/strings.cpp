@@ -32,6 +32,8 @@ const char *toString(FaultCode f)
         return "master_locked_out";
     case FaultCode::CurrentSenseUnavailable:
         return "current_sense_unavailable";
+    case FaultCode::OverCurrentTrip:
+        return "over_current_trip";
     case FaultCode::Count:
         break;
     }
