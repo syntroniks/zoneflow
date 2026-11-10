@@ -24,6 +24,10 @@ enum class CommandType : uint8_t {
     ClearFaults,
     SetMaintenance, // flag; stops everything and blocks starts (OTA)
     ReloadConfig,   // ConfigStore changed; re-read and apply
+    // flag: the person confirms the board was repaired. A keep-alive
+    // detector fault (hardware design 19.7 steps 1, 2 and 9) clears only
+    // with it; ClearFaults leaves such a fault in place.
+    AcknowledgeRepair,
 };
 
 const char *toString(CommandType t);
@@ -62,6 +66,13 @@ struct Command {
         Command c;
         c.type = CommandType::SetRainDelay;
         c.until = until;
+        return c;
+    }
+    static Command acknowledgeRepair()
+    {
+        Command c;
+        c.type = CommandType::AcknowledgeRepair;
+        c.flag = true;
         return c;
     }
     static Command maintenance(bool on)

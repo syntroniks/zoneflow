@@ -227,6 +227,7 @@ private:
     ApiResponse rainDelayDelete();
     ApiResponse sensors();
     ApiResponse faultsList();
+    ApiResponse faultsAcknowledgeRepair(const ApiRequest &req);
     ApiResponse configGet();
     ApiResponse configPut(const ApiRequest &req);
     ApiResponse configBackup();

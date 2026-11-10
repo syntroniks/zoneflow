@@ -116,6 +116,26 @@ void homeScenes(Walk &shot)
         shot("zone-detail-fault", w.h);
     }
     {
+        // The rev A board's stop test finds detector A releasing late (an
+        // open bleed resistor): a fault that needs the repair confirmed.
+        World w(true, true, true, true);
+        w.h.board->a.holdMs = 1700;
+        w.h.runSec(8);
+        shot("home-board-fault", w.h);
+        w.h.press(); // Faults
+        w.h.press();
+        shot("fault-detail-detector", w.h);
+        w.h.turn(1);
+        w.h.press(); // Repaired
+        shot("fault-repair-confirm", w.h);
+        w.h.back();
+        w.h.back();
+        w.h.back();
+        openMenu(w.h, "Sensors and flow");
+        w.h.turn(6);
+        shot("sensors-board-fault", w.h);
+    }
+    {
         World w;
         w.h.sensors.sample.acPresent = false;
         w.h.runSec(2);

@@ -14,6 +14,11 @@
 //  - Master valve opens masterPreOpenMs before the first zone and closes
 //    masterPostCloseMs after the last zone.
 //  - A zone opens no sooner than interZoneDelayMs after the previous close.
+//  - No two outputs switch on within staggerMs of each other (hardware
+//    design 19.1 rule 10: two inrush currents can reach the hardware trip).
+//  - Outputs switch on only while the output hal reports power ready. On
+//    rev A that is after the self-test and with the valve-common relay
+//    closed; the driver asks for power while anything is wanted.
 //
 // Threads: every method except emergencyOff() belongs to the control task.
 // emergencyOff() may run in any context (shutdown handler, other task).
@@ -38,6 +43,9 @@ struct ZoneDriverConfig {
     uint32_t masterPreOpenMs = 0;
     uint32_t masterPostCloseMs = 0;
     uint32_t interZoneDelayMs = 0;
+    // Minimum time between two outputs switching on. Never below
+    // kMinStaggerMs.
+    uint32_t staggerMs = 100;
     // A zone that has been open for its maximum run time, counting every run
     // with less than this much closed time in between, stays closed for this
     // long (spec section 2 rule 4).
@@ -58,8 +66,16 @@ public:
     virtual void onMasterChanged(bool on) = 0;
 };
 
+// A zone's run-time budget, for keeping it across a software restart
+// (firmware security residual risk 10).
+struct ZoneBudget {
+    uint32_t burstMs = 0;     // on-time since the zone last rested
+    uint32_t closedForMs = 0; // how long it has been closed (0 while open)
+};
+
 class ZoneDriver final : public IZoneActuator {
 public:
+    static constexpr uint32_t kMinStaggerMs = 100;
     ZoneDriver(IOutputHal &hal, OutputEnableGuard &oe, const IClock &clock);
 
     void setListener(IZoneDriverListener *listener) { listener_ = listener; }
@@ -88,6 +104,13 @@ public:
     // post-close delay.
     void stopAll(StopReason reason);
 
+    // Budget of every zone now; open zones count as closed this instant.
+    std::array<ZoneBudget, kMaxZones> exportBudget() const;
+    // After init(), before the first start: budgets saved before a restart.
+    // The time the restart took is not known and counts as no rest at all,
+    // so a restart can lengthen a zone's rest, never shorten it.
+    void restoreBudget(const std::array<ZoneBudget, kMaxZones> &budget);
+
     // Any context: outputs off and OE tripped, without touching driver
     // state or calling the listener. The next tick() on the control task
     // reconciles the state.
@@ -112,6 +135,8 @@ public:
     bool masterLockedOut() const { return masterLockedOut_; }
 
     bool masterOn() const { return masterOn_; }
+    // The master is wanted but waits for power or the stagger time.
+    bool masterPending() const { return masterPending_; }
     uint8_t activeCount() const;
     bool anyOutputOn() const;
     uint32_t effectiveMaxRunSec(ZoneIndex zone) const;
@@ -142,6 +167,7 @@ private:
         // On-time since the zone last had minRestSec of closed time.
         MonoMs burstMs = 0;
         MonoMs closedAtMs = 0;
+        MonoMs restCreditMs = 0; // closed time carried over a restart
     };
 
     // Smallest run worth starting; a smaller remainder counts as exhausted.
@@ -161,6 +187,10 @@ private:
     void updateDemand();
     void forceAllOff(StopReason reason, MonoMs now);
     void waitForZeroCross();
+    void tryOpen(MonoMs now);
+    bool staggerOk(MonoMs now) const { return !anyOn_ || now - lastOnMs_ >= cfg_.staggerMs; }
+    uint8_t firstPendingBit() const;
+    MonoMs closedFor(const Zone &z, MonoMs now) const { return now - z.closedAtMs + z.restCreditMs; }
 
     IOutputHal &hal_;
     OutputEnableGuard &oe_;
@@ -171,6 +201,9 @@ private:
     ZoneDriverConfig cfg_{};
     std::array<Zone, kMaxZones> zones_{};
     bool masterOn_ = false;
+    bool masterPending_ = false;
+    bool anyOn_ = false;
+    MonoMs lastOnMs_ = 0;
     MonoMs masterOnAtMs_ = 0;
     bool masterCloseArmed_ = false;
     MonoMs masterCloseAtMs_ = 0;

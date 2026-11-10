@@ -122,13 +122,6 @@ esp_err_t start(const AppServices &services, const StartOptions &options)
                                        options.zoneDiag != nullptr ? *options.zoneDiag : sStubDiag,
                                        options.system != nullptr ? *options.system : sSystem, sSettings});
 
-    if (!board::kHasDisplay) {
-        // The provisional pin map has no pins left for the panel's clock,
-        // data and backlight (zf_board, "pin budget").
-        ESP_LOGW(kTag, "no display in this pin map; build with CONFIG_ZF_DISPLAY_ON_SHARED_PINS to try it");
-        return ESP_OK;
-    }
-
     lv_init();
     lv_tick_set_cb([]() -> uint32_t { return static_cast<uint32_t>(esp_timer_get_time() / 1000); });
 

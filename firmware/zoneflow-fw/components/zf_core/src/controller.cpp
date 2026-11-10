@@ -2,6 +2,7 @@
 #include "zf/app/controller.hpp"
 
 #include <algorithm>
+#include <climits>
 
 #include "zf/config/config_json.hpp"
 #include "zf/time/time_zone.hpp"
@@ -9,10 +10,17 @@
 namespace zf {
 namespace {
 
-ZoneDriverConfig driverConfigFrom(const Config &c)
+// Zones the configuration asks for, limited to the outputs the board has
+// (rev A: the variant strap, read in the start-up self-test; 0 = unknown).
+uint8_t zoneCountFor(const Config &c, uint8_t boardZones)
+{
+    return boardZones == 0 ? c.zoneCount : std::min(c.zoneCount, boardZones);
+}
+
+ZoneDriverConfig driverConfigFrom(const Config &c, uint8_t boardZones)
 {
     ZoneDriverConfig d;
-    d.zoneCount = c.zoneCount;
+    d.zoneCount = zoneCountFor(c, boardZones);
     d.maxConcurrent = c.driver.maxConcurrent;
     d.masterEnabled = c.master.enabled;
     d.masterPreOpenMs = c.master.preOpenMs;
@@ -21,7 +29,7 @@ ZoneDriverConfig driverConfigFrom(const Config &c)
     d.minRestSec = c.driver.minRestSec;
     d.zeroCrossSwitching = c.driver.zeroCrossSwitching;
     for (std::size_t i = 0; i < kMaxZones; ++i) {
-        d.zoneEnabled[i] = i < c.zoneCount && c.zones[i].enabled;
+        d.zoneEnabled[i] = i < d.zoneCount && c.zones[i].enabled;
         d.maxRunSec[i] = c.zones[i].maxRunSec;
     }
     return d;
@@ -39,8 +47,55 @@ constexpr uint32_t faultBit(FaultCode c) { return 1u << static_cast<unsigned>(c)
 
 // Conditions clear by themselves when the cause goes away; everything else
 // latches until ClearFaults.
-constexpr uint32_t kSelfClearing =
-    faultBit(FaultCode::AcLost) | faultBit(FaultCode::TimeInvalid) | faultBit(FaultCode::CurrentSenseUnavailable);
+constexpr uint32_t kSelfClearing = faultBit(FaultCode::AcLost) | faultBit(FaultCode::TimeInvalid) |
+                                   faultBit(FaultCode::CurrentSenseUnavailable) | faultBit(FaultCode::SensorSupply) |
+                                   faultBit(FaultCode::MainsSignal);
+
+// Output-stage faults: they clear when the stage accepts the acknowledgement.
+constexpr uint32_t kStageFaults = faultBit(FaultCode::KeepAliveDetector) | faultBit(FaultCode::OutputExpander) |
+                                  faultBit(FaultCode::RelayWelded) | faultBit(FaultCode::OutputShorted) |
+                                  faultBit(FaultCode::TripLatchStuck);
+
+FaultCode faultCodeFor(HwCheck c)
+{
+    switch (c) {
+    case HwCheck::IdleDriveEnabled:
+    case HwCheck::IdleRelayOn:
+    case HwCheck::IdleExpanderAnswers:
+    case HwCheck::PinHighDriveEnabled:
+    case HwCheck::PinHighRelayOn:
+    case HwCheck::StartDriveTimeout:
+    case HwCheck::StartRelayTimeout:
+    case HwCheck::RunDriveLost:
+    case HwCheck::RunRelayLost:
+    case HwCheck::StopDriveRelease:
+    case HwCheck::StopRelayRelease:
+    case HwCheck::StopExpanderAnswers:
+        return FaultCode::KeepAliveDetector;
+    case HwCheck::RelayWelded:
+        return FaultCode::RelayWelded;
+    case HwCheck::OutputShorted:
+        return FaultCode::OutputShorted;
+    case HwCheck::LatchStuck:
+        return FaultCode::TripLatchStuck;
+    case HwCheck::StartNoAcknowledge:
+    case HwCheck::ExpanderInputs:
+    case HwCheck::ExpanderOutputs:
+    case HwCheck::ExpanderConfig:
+    case HwCheck::RelayNoReadback:
+    case HwCheck::RunReadback:
+    case HwCheck::EndNoAcknowledge:
+    case HwCheck::BusError:
+    case HwCheck::TooManyOutputs:
+        return FaultCode::OutputExpander;
+    case HwCheck::None:
+    case HwCheck::Count:
+        break;
+    }
+    return FaultCode::None;
+}
+
+constexpr int64_t kNoTrip = INT64_MIN;
 
 } // namespace
 
@@ -49,13 +104,17 @@ Controller::Controller(const ControllerDeps &deps)
 {
     driver_.setListener(this);
     scheduler_.setListener(this);
+    for (auto &t : tripAtMs_) {
+        t.fill(kNoTrip);
+    }
 }
 
 void Controller::begin()
 {
     config_ = deps_.config.get();
     configRevision_ = deps_.config.revision();
-    driver_.init(driverConfigFrom(config_));
+    driver_.init(driverConfigFrom(config_, boardZones_));
+    restoreRetained(deps_.clock.monoMs());
 
     if (deps_.runtimeStorage != nullptr) {
         std::string json;
@@ -81,7 +140,7 @@ void Controller::reloadConfig()
 
 void Controller::applyConfig(const Config &cfg)
 {
-    const ZoneDriverConfig dc = driverConfigFrom(cfg);
+    const ZoneDriverConfig dc = driverConfigFrom(cfg, boardZones_);
     if (!sameDriverConfig(dc, driver_.config())) {
         driver_.reconfigure(dc);
     }
@@ -90,7 +149,7 @@ void Controller::applyConfig(const Config &cfg)
     const auto tz = TimeZone::parse(cfg.timezone.view());
     SchedulerConfig sc;
     sc.schedule = cfg.schedule;
-    sc.zoneCount = cfg.zoneCount;
+    sc.zoneCount = dc.zoneCount;
     sc.zoneEnabled = dc.zoneEnabled;
     scheduler_.configure(sc, tz ? *tz : TimeZone::utc());
 
@@ -190,6 +249,12 @@ bool Controller::apply(const Command &cmd)
     case CommandType::ReloadConfig:
         reloadConfig();
         return true;
+    case CommandType::AcknowledgeRepair:
+        if (!cmd.flag) {
+            return false;
+        }
+        acknowledgeHardware(true);
+        return true;
     }
     return false;
 }
@@ -198,8 +263,48 @@ void Controller::tick()
 {
     const MonoMs now = deps_.clock.monoMs();
     const SensorSample s = deps_.sensors.read();
-    lastCurrentMa_ = s.valveCurrentMa;
-    handleTrip(s.overCurrentTripped, now);
+    sensorSupplyOn_ = s.sensorSupplyOn;
+    mainsMilliHz_ = s.mainsMilliHz;
+
+    // Valve current. Rev A delivers raw 100 ms windows (one new window every
+    // other tick); fakes and simple boards give a reading every tick.
+    bool freshCurrent = false;
+    int32_t currentMa = -1;
+    if (s.currentWindow.seq != 0) {
+        if (s.currentWindow.seq != lastWindowSeq_) {
+            lastWindowSeq_ = s.currentWindow.seq;
+            // The true current is zero with the keep-alive stopped: the
+            // expander is in reset and the relay open.
+            const bool idle = stage_.phase == StagePhase::Idle || stage_.phase == StagePhase::NoAc;
+            reading_ = currentSense_.process(s.currentWindow, idle, config_.diag.idleMaxMa);
+            freshCurrent = true;
+            currentMa = reading_.valid ? reading_.ma : -1;
+            lastCurrentMa_ = currentMa;
+        }
+    } else {
+        freshCurrent = true;
+        currentMa = s.valveCurrentMa;
+        lastCurrentMa_ = currentMa;
+        reading_ = CurrentReading{};
+        reading_.valid = currentMa >= 0;
+        reading_.ma = currentMa;
+        reading_.startMs = now;
+        reading_.endMs = now;
+    }
+
+    // Output stage first (hardware design 19.7): it may withdraw power,
+    // trip or fault before the driver switches anything this tick.
+    StageTickInput in;
+    in.acPresent = s.acPresent;
+    in.current = reading_;
+    in.currentSenseAvailable = s.currentSenseAvailable && config_.diag.currentEnabled;
+    in.idleThresholdMa = config_.diag.idleMaxMa;
+    in.sensorSupplyOn = s.sensorSupplyOn;
+    deps_.outputs.tick(in);
+    handleStage(now);
+    if (!deps_.outputs.ownsKeepAlive()) {
+        handleTrip(s.overCurrentTripped, now);
+    }
 
     if (ac_.update(s.acPresent, now)) {
         Event e = makeEvent(EventType::SensorChanged);
@@ -213,6 +318,11 @@ void Controller::tick()
     } else if (!ac_.present() && !acFault) {
         raiseFault(FaultCode::AcLost, kNoZone); // also covers "absent since boot"
     }
+    // The zero-cross signal at a rate mains cannot have: bridged to the
+    // keep-alive, or noise (hardware design 19.9).
+    checkCondition(FaultCode::MainsSignal,
+                   ac_.present() && s.mainsMilliHz != 0 &&
+                       (s.mainsMilliHz < kMinMainsMilliHz || s.mainsMilliHz > kMaxMainsMilliHz));
     if (rain_.update(s.rainContactClosed, now)) {
         Event e = makeEvent(EventType::SensorChanged);
         e.sensor = {SensorId::Rain, rain_.active()};
@@ -238,6 +348,18 @@ void Controller::tick()
                (activeFaults_ & faultBit(FaultCode::FlowWithoutZones)) == 0) {
         raiseFault(FaultCode::FlowWithoutZones, kNoZone);
     }
+    // Flow that starts with every valve shut, or stops while one is open, may
+    // be the sensor supply failing: check it now (hardware design 19.6).
+    const bool flowing = config_.flow.enabled && flow_.rateLpm() > 0.0f;
+    if (flowing != flowing_) {
+        flowing_ = flowing;
+        const bool unexplained = flowing ? driver_.outputMask() == 0 : driver_.outputMask() != 0;
+        if (unexplained && (!flowPollArmed_ || now - lastFlowPollMs_ >= kFlowPollMinIntervalMs)) {
+            flowPollArmed_ = true;
+            lastFlowPollMs_ = now;
+            deps_.outputs.requestPoll();
+        }
+    }
 
     // No current sense: report it, keep watering (policy in
     // firmware-architecture.md, sensors and diagnostics). Short-circuit
@@ -250,10 +372,17 @@ void Controller::tick()
         clearCondition(FaultCode::CurrentSenseUnavailable);
     }
 
-    // Without 24 VAC the current reading means nothing.
-    if (ac_.present()) {
-        handleCurrent(current_.evaluate(s.valveCurrentMa, driver_.outputMask(), driver_.lastOpenedBit(),
-                                        driver_.lastOutputChangeMs(), now));
+    // Without 24 VAC the current reading means nothing. While the output
+    // stage tests itself with every valve off, its own checks (weld, shorted
+    // output) judge the current, not the idle check here.
+    const uint16_t mask = driver_.outputMask();
+    const bool stageJudges = mask == 0 && stage_.phase != StagePhase::None && stage_.phase != StagePhase::Idle &&
+                             stage_.phase != StagePhase::NoAc;
+    if (ac_.present() && freshCurrent && !stageJudges) {
+        handleCurrent(current_.evaluate(currentMa, mask, driver_.lastOpenedBit(), driver_.lastOutputChangeMs(), now));
+    }
+    if (freshCurrent && s.currentWindow.seq != 0) {
+        handleDc(reading_);
     }
 
     driver_.tick();
@@ -265,8 +394,84 @@ void Controller::tick()
     if (persist_.takeFailure() && (activeFaults_ & faultBit(FaultCode::StorageError)) == 0) {
         raiseFault(FaultCode::StorageError, kNoZone);
     }
+    saveRetained(now);
     if (stateDirty_ || now - lastSnapshotMs_ >= kSnapshotIntervalMs) {
         publishSnapshot(now);
+    }
+}
+
+void Controller::checkCondition(FaultCode code, bool present)
+{
+    const bool active = (activeFaults_ & faultBit(code)) != 0;
+    if (present && !active) {
+        raiseFault(code, kNoZone);
+    } else if (!present && active) {
+        clearCondition(code);
+    }
+}
+
+void Controller::handleStage(MonoMs now)
+{
+    const OutputStageStatus st = deps_.outputs.status();
+    const bool phaseChanged = st.phase != stage_.phase;
+    stage_ = st;
+    if (phaseChanged) {
+        stateDirty_ = true;
+    }
+    if (st.phase == StagePhase::None) {
+        return;
+    }
+    if (st.zonesFitted != 0 && st.zonesFitted != boardZones_) {
+        boardZones_ = st.zonesFitted;
+        applyConfig(config_); // limits the zone count to the outputs the board has
+    }
+    if (st.faultSeq != stageFaultSeq_) {
+        stageFaultSeq_ = st.faultSeq;
+        if (st.fault != HwCheck::None) {
+            // The stage has already stopped the keep-alive. Bring the
+            // firmware state in line and keep everything from starting.
+            driver_.stopAll(StopReason::Fault);
+            scheduler_.stop();
+            raiseFault(faultCodeFor(st.fault), kNoZone, static_cast<uint8_t>(st.fault));
+        }
+    }
+    const bool faulted = st.phase == StagePhase::Fault;
+    if (faulted != hwFault_) {
+        hwFault_ = faulted;
+        updateInhibit();
+    }
+    if (st.tripSeq != stageTripSeq_) {
+        stageTripSeq_ = st.tripSeq;
+        onTrip(now);
+    }
+    if (st.sensorSupplyKnown) {
+        checkCondition(FaultCode::SensorSupply, sensorSupplyOn_ && st.sensorSupplyFault);
+    }
+}
+
+void Controller::handleDc(const CurrentReading &r)
+{
+    // A DC component in the valve current: one triac polarity is not
+    // conducting (hardware design 19.2). Confirmed over confirmSamples
+    // windows, attributed like any current fault.
+    const uint16_t mask = driver_.outputMask();
+    if (!config_.diag.currentEnabled || !r.valid || !r.dcComponent || mask == 0 ||
+        deps_.clock.monoMs() - driver_.lastOutputChangeMs() < config_.diag.settleMs) {
+        dcWindows_ = 0;
+        return;
+    }
+    if (++dcWindows_ < std::max<uint8_t>(config_.diag.confirmSamples, 1)) {
+        return;
+    }
+    dcWindows_ = 0;
+    const uint8_t bit = driver_.lastOpenedBit();
+    if (bit < kMaxZones && (mask & (1u << bit)) != 0) {
+        driver_.stop(bit, StopReason::Fault);
+        zoneFault_[bit] = FaultCode::ZoneDcCurrent;
+        raiseFault(FaultCode::ZoneDcCurrent, bit);
+    } else {
+        driver_.stopAll(StopReason::Fault);
+        raiseFault(FaultCode::ZoneDcCurrent, kNoZone);
     }
 }
 
@@ -286,7 +491,10 @@ void Controller::updateInhibit()
     if (config_.master.enabled && driver_.masterLockedOut()) {
         flags |= kInhibitMasterLockout;
     }
-    driver_.setInhibit(!acOk || maintenance_ || tripSeen_);
+    if (hwFault_) {
+        flags |= kInhibitHardware;
+    }
+    driver_.setInhibit(!acOk || maintenance_ || tripSeen_ || hwFault_);
     if (driver_.activeCount() > 0 || driver_.masterOn()) {
         if (maintenance_) {
             driver_.stopAll(StopReason::Maintenance);
@@ -344,61 +552,80 @@ void Controller::handleCurrent(const CurrentVerdict &v)
 
 void Controller::handleTrip(bool tripped, MonoMs now)
 {
-    if (!tripped) {
-        if (tripSeen_) {
-            tripSeen_ = false;
-            updateInhibit();
-        }
+    // Boards without a sequenced output stage: the latch is a level on the
+    // sensor sample, cleared by the board. Starts wait until it is clear.
+    if (tripped == tripSeen_) {
         return;
     }
-    if (!tripSeen_) {
-        // The comparator has already removed gate drive. Bring the firmware
-        // state in line, then blame the outputs that switched on within the
-        // settle time before the trip (a short usually trips at turn-on); if
-        // none did, the output switched on most recently, as for a current
-        // fault.
-        tripSeen_ = true;
-        const uint16_t mask = driver_.outputMask();
-        uint16_t blamed = 0;
-        for (uint8_t bit = 0; bit <= ZoneDriver::kMasterBit; ++bit) {
-            if ((mask & (1u << bit)) != 0 && now - driver_.openedAtMs(bit) <= config_.diag.settleMs) {
-                blamed |= static_cast<uint16_t>(1u << bit);
-            }
-        }
-        const uint8_t last = driver_.lastOpenedBit();
-        if (blamed == 0 && last <= ZoneDriver::kMasterBit && (mask & (1u << last)) != 0) {
-            blamed = static_cast<uint16_t>(1u << last);
-        }
-        const bool master = (blamed & (1u << ZoneDriver::kMasterBit)) != 0;
-        if (master) {
-            masterFaultInSession_ = true; // closing the master is not a clean session
-        }
-        driver_.stopAll(StopReason::Fault);
-        scheduler_.stop();
-        for (uint8_t z = 0; z < kMaxZones; ++z) {
-            if ((blamed & (1u << z)) != 0) {
-                driver_.setLockout(z, true);
-                zoneFault_[z] = FaultCode::OverCurrentTrip;
-                raiseFault(FaultCode::OverCurrentTrip, z);
-            }
-        }
-        if (master || blamed == 0) {
-            raiseFault(FaultCode::OverCurrentTrip, kNoZone);
-        }
-        if (master) {
-            recordMasterFault();
-        }
-        updateInhibit();
-        nextTripClearMs_ = now + 1; // not in this tick: on a later one, once confirmed off
-        return;
+    tripSeen_ = tripped;
+    if (tripped) {
+        onTrip(now);
     }
-    // Release the latch only once every output is confirmed off: the driver
-    // has nothing open or waiting, and the off state is driven again here.
-    if (!driver_.anyOutputOn() && driver_.activeCount() == 0 && now >= nextTripClearMs_) {
-        deps_.outputs.allOff();
-        deps_.outputs.clearOverCurrentTrip();
-        nextTripClearMs_ = now + kTripClearRetryMs;
+    updateInhibit();
+}
+
+void Controller::onTrip(MonoMs now)
+{
+    // Hardware design 19.8. The comparator has already removed gate drive
+    // and released the relay. The output switched on within 500 ms is the
+    // faulted one; without one, every output that was on is suspect. Each
+    // trip counts against the outputs it marks; three in a day and the
+    // output stays off until a person clears the faults. The rest of the
+    // queue carries on once the latch is clear (the stage clears it by
+    // holding the keep-alive low and runs the self-test again).
+    lastTripCurrentMa_ = lastCurrentMa_;
+    const uint16_t mask = driver_.outputMask();
+    const uint8_t last = driver_.lastOpenedBit();
+    uint16_t faulted = 0;
+    if (last <= ZoneDriver::kMasterBit && (mask & (1u << last)) != 0 &&
+        now - driver_.openedAtMs(last) <= kTripBlameMs) {
+        faulted = static_cast<uint16_t>(1u << last);
     }
+    const uint16_t marked = faulted != 0 ? faulted : mask;
+    const bool master = (faulted & (1u << ZoneDriver::kMasterBit)) != 0;
+    if (master) {
+        masterFaultInSession_ = true; // closing the master is not a clean session
+    }
+    driver_.stopAll(StopReason::Fault);
+    for (uint8_t z = 0; z < kMaxZones; ++z) {
+        if ((marked & (1u << z)) == 0) {
+            continue;
+        }
+        if (recordTrip(z, now)) {
+            driver_.setLockout(z, true);
+        }
+        if ((faulted & (1u << z)) != 0 || driver_.lockedOut(z)) {
+            zoneFault_[z] = FaultCode::OverCurrentTrip;
+            raiseFault(FaultCode::OverCurrentTrip, z);
+        }
+    }
+    const bool masterLimit = (marked & (1u << ZoneDriver::kMasterBit)) != 0 && recordTrip(ZoneDriver::kMasterBit, now);
+    if (master || faulted == 0) {
+        raiseFault(FaultCode::OverCurrentTrip, kNoZone);
+    }
+    if (master || masterLimit) {
+        recordMasterFault();
+    }
+    updateInhibit();
+}
+
+bool Controller::recordTrip(uint8_t bit, MonoMs now)
+{
+    auto &times = tripAtMs_[bit];
+    const auto t = static_cast<int64_t>(now);
+    // Replace the oldest.
+    std::size_t oldest = 0;
+    for (std::size_t i = 1; i < times.size(); ++i) {
+        if (times[i] < times[oldest]) {
+            oldest = i;
+        }
+    }
+    times[oldest] = t;
+    std::size_t today = 0;
+    for (int64_t at : times) {
+        today += at != kNoTrip && t - at < kDayMs ? 1u : 0u;
+    }
+    return today >= kTripsPerDay;
 }
 
 void Controller::recordMasterFault()
@@ -417,11 +644,13 @@ void Controller::recordMasterFault()
     stateDirty_ = true;
 }
 
-void Controller::raiseFault(FaultCode code, ZoneIndex zone)
+void Controller::raiseFault(FaultCode code, ZoneIndex zone) { raiseFault(code, zone, 0); }
+
+void Controller::raiseFault(FaultCode code, ZoneIndex zone, uint8_t detail)
 {
     activeFaults_ |= faultBit(code);
     Event e = makeEvent(EventType::FaultRaised);
-    e.fault = {code, zone};
+    e.fault = {code, zone, detail};
     publish(e);
     stateDirty_ = true;
 }
@@ -433,7 +662,7 @@ void Controller::clearCondition(FaultCode code)
     }
     activeFaults_ &= ~faultBit(code);
     Event e = makeEvent(EventType::FaultCleared);
-    e.fault = {code, kNoZone};
+    e.fault = {code, kNoZone, 0};
     publish(e);
     stateDirty_ = true;
 }
@@ -444,17 +673,90 @@ void Controller::clearFaults()
     current_.rearm(); // a current fault that is still present is raised again
     zoneFault_.fill(FaultCode::None);
     masterFaults_ = 0;
-    const uint32_t latched = activeFaults_ & ~kSelfClearing;
-    activeFaults_ &= kSelfClearing;
+    for (auto &t : tripAtMs_) {
+        t.fill(kNoTrip); // a cleared output gets its three trips again
+    }
+    // One press acknowledges an output-stage fault, except a keep-alive
+    // detector fault, which needs the repair confirmed (AcknowledgeRepair).
+    const bool stageCleared = deps_.outputs.acknowledgeFault(false);
+    const uint32_t keep = kSelfClearing | (stageCleared ? 0u : (activeFaults_ & kStageFaults));
+    const uint32_t latched = activeFaults_ & ~keep;
+    activeFaults_ &= keep;
     for (unsigned c = 1; c < static_cast<unsigned>(FaultCode::Count); ++c) {
         if ((latched & (1u << c)) != 0) {
             Event e = makeEvent(EventType::FaultCleared);
-            e.fault = {static_cast<FaultCode>(c), kNoZone};
+            e.fault = {static_cast<FaultCode>(c), kNoZone, 0};
             publish(e);
         }
     }
+    handleStage(deps_.clock.monoMs());
     updateInhibit();
     stateDirty_ = true;
+}
+
+void Controller::acknowledgeHardware(bool repaired)
+{
+    if (!deps_.outputs.acknowledgeFault(repaired)) {
+        return;
+    }
+    const uint32_t cleared = activeFaults_ & kStageFaults;
+    activeFaults_ &= ~kStageFaults;
+    for (unsigned c = 1; c < static_cast<unsigned>(FaultCode::Count); ++c) {
+        if ((cleared & (1u << c)) != 0) {
+            Event e = makeEvent(EventType::FaultCleared);
+            e.fault = {static_cast<FaultCode>(c), kNoZone, 0};
+            publish(e);
+        }
+    }
+    handleStage(deps_.clock.monoMs());
+    updateInhibit();
+    stateDirty_ = true;
+}
+
+void Controller::saveRetained(MonoMs now)
+{
+    if (deps_.retained == nullptr) {
+        return;
+    }
+    RetainedRecord r;
+    const auto budget = driver_.exportBudget();
+    for (std::size_t i = 0; i < kMaxZones; ++i) {
+        r.burstMs[i] = budget[i].burstMs;
+        r.closedForMs[i] = budget[i].closedForMs;
+    }
+    r.hwFault = static_cast<uint8_t>(stage_.fault);
+    const auto t = static_cast<int64_t>(now);
+    for (std::size_t b = 0; b <= kMaxZones; ++b) {
+        for (std::size_t k = 0; k < kTripsKept; ++k) {
+            const int64_t at = tripAtMs_[b][k];
+            r.tripAgeSec[b][k] = at == kNoTrip || t - at >= kDayMs ? 0u : static_cast<uint32_t>((t - at) / 1000 + 1);
+        }
+    }
+    seal(r);
+    deps_.retained->save(r);
+}
+
+void Controller::restoreRetained(MonoMs now)
+{
+    RetainedRecord r;
+    if (deps_.retained == nullptr || !deps_.retained->load(r) || !intact(r)) {
+        return;
+    }
+    std::array<ZoneBudget, kMaxZones> budget{};
+    for (std::size_t i = 0; i < kMaxZones; ++i) {
+        budget[i] = {r.burstMs[i], r.closedForMs[i]};
+    }
+    driver_.restoreBudget(budget);
+    if (r.hwFault != 0 && r.hwFault < static_cast<uint8_t>(HwCheck::Count)) {
+        deps_.outputs.restoreFault(static_cast<HwCheck>(r.hwFault));
+    }
+    const auto t = static_cast<int64_t>(now);
+    for (std::size_t b = 0; b <= kMaxZones; ++b) {
+        for (std::size_t k = 0; k < kTripsKept; ++k) {
+            const uint32_t age = r.tripAgeSec[b][k];
+            tripAtMs_[b][k] = age == 0 ? kNoTrip : t - static_cast<int64_t>(age - 1) * 1000;
+        }
+    }
 }
 
 void Controller::savePersist(MonoMs now)
@@ -475,7 +777,7 @@ void Controller::publishSnapshot(MonoMs now)
     st.monoMs = now;
     st.utc = deps_.clock.nowUtc();
     st.timeStatus = timeStatus_;
-    st.zoneCount = config_.zoneCount;
+    st.zoneCount = driver_.config().zoneCount; // limited to the outputs the board has
     for (std::size_t i = 0; i < kMaxZones; ++i) {
         const auto z = static_cast<ZoneIndex>(i);
         ZoneStatus &zs = st.zones[i];
@@ -520,6 +822,26 @@ void Controller::publishSnapshot(MonoMs now)
     st.activeFaults = activeFaults_;
     st.maintenance = maintenance_;
     st.configRevision = configRevision_;
+
+    HardwareStatus &hw = st.hardware;
+    hw.phase = stage_.phase;
+    hw.zonesFitted = stage_.zonesFitted;
+    hw.relayClosed = stage_.relayClosed;
+    hw.sensorSupplyOn = sensorSupplyOn_;
+    hw.sensorSupplyFault = stage_.sensorSupplyKnown && stage_.sensorSupplyFault;
+    hw.check = stage_.fault;
+    hw.step = hwCheckStep(stage_.fault);
+    hw.repairNeeded = hwCheckNeedsRepair(stage_.fault);
+    hw.selfTestsPassed = stage_.selfTestsPassed;
+    hw.enableDriveMs = stage_.enableDriveMs;
+    hw.enableRelayMs = stage_.enableRelayMs;
+    hw.releaseDriveMs = stage_.releaseDriveMs;
+    hw.releaseRelayMs = stage_.releaseRelayMs;
+    hw.mainsMilliHz = mainsMilliHz_;
+    hw.noiseFloorMa = currentSense_.noiseFloorMa();
+    hw.currentChannel = reading_.channel;
+    hw.currentDcMa = reading_.dcMa;
+    hw.lastTripCurrentMa = lastTripCurrentMa_;
     deps_.state.publish(st);
 }
 

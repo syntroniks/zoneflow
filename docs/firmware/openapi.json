@@ -1563,7 +1563,7 @@
             "cookieAuth": []
           }
         ],
-        "description": "A fault whose cause is still present is raised again on the next sample.",
+        "description": "A fault whose cause is still present is raised again on the next sample. Output-stage faults are acknowledged as well, except a keep-alive detector fault (faults.hardware.repair_needed), which needs POST /faults/acknowledge-repair. Trip counts are reset.",
         "responses": {
           "202": {
             "description": "Command queued for the control task",
@@ -1580,6 +1580,68 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
+    },
+    "/faults/acknowledge-repair": {
+      "post": {
+        "operationId": "acknowledgeRepair",
+        "summary": "Confirm that the board was repaired after a keep-alive detector fault",
+        "tags": [
+          "Faults"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "A keep-alive detector fault (hardware design 19.7 steps 1, 2 and 9) means a safety circuit can no longer be relied on, so it is not cleared with one press. This is the second, deliberate action: the body must say repaired: true. 409 `no_repair_fault` when no such fault is active. The full self-test runs again before any valve opens.",
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 512,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcknowledgeRepairRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Command queued for the control task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           },
           "413": {
             "$ref": "#/components/responses/TooLarge"
@@ -3513,7 +3575,11 @@
           },
           "over_current_tripped": {
             "type": "boolean",
-            "description": "The hardware over-current comparator removed gate drive (fault over_current_trip, latched until faults are cleared)."
+            "description": "The hardware over-current latch removed gate drive and released the relay (fault over_current_trip, latched until faults are cleared). The controller clears the latch itself by holding the keep-alive low for 1.5 s; the output switched on within 500 ms before is blamed, and after three trips in a day it stays off until faults are cleared."
+          },
+          "sensor_supply_fault": {
+            "type": "boolean",
+            "description": "The 5 V sensor supply switch reports over-current or over-temperature (fault sensor_supply). Read from the I/O expander during runs and every 10 minutes between them. Sent by firmware with the rev A output stage; optional in this schema so that older firmware and the web UI's mock controller still validate."
           }
         },
         "required": [
@@ -3545,7 +3611,15 @@
                 "storage_error",
                 "master_locked_out",
                 "current_sense_unavailable",
-                "over_current_trip"
+                "over_current_trip",
+                "keepalive_detector",
+                "output_expander",
+                "relay_welded",
+                "output_shorted",
+                "trip_latch_stuck",
+                "sensor_supply",
+                "zone_dc_current",
+                "mains_signal"
               ]
             }
           },
@@ -3570,6 +3644,31 @@
                 "locked_out"
               ]
             }
+          },
+          "hardware": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "The output stage's latched self-test failure (hardware design 19.7), or null. While it is set nothing runs. repair_needed: a keep-alive detector failed (steps 1, 2 or 9); POST /faults/clear leaves it, POST /faults/acknowledge-repair clears it. Sent by firmware with the rev A output stage; optional in this schema so that older firmware and the web UI's mock controller still validate.",
+            "properties": {
+              "check": {
+                "type": "string"
+              },
+              "step": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10
+              },
+              "repair_needed": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "check",
+              "step",
+              "repair_needed"
+            ]
           }
         },
         "required": [
@@ -3652,6 +3751,10 @@
               },
               "master_lockout": {
                 "type": "boolean"
+              },
+              "hardware": {
+                "type": "boolean",
+                "description": "An output-stage fault blocks every start until acknowledged. Sent by firmware with the rev A output stage; optional in this schema so that older firmware and the web UI's mock controller still validate."
               }
             },
             "required": [
@@ -3675,6 +3778,9 @@
           },
           "ota": {
             "$ref": "#/components/schemas/OtaStatus"
+          },
+          "hardware": {
+            "$ref": "#/components/schemas/Hardware"
           }
         },
         "required": [
@@ -4182,7 +4288,7 @@
             "$ref": "#/components/schemas/Error"
           }
         ],
-        "description": "Error answer of a run command. error.code is the controller's RunError: invalid_zone, unknown_program, zero_duration, queue_full, already_queued, inhibited, nothing_to_run, locked_out, zone_resting, master_locked_out (or inhibited when maintenance or missing 24 VAC is known beforehand). zone_resting answers carry Retry-After with the seconds of rest left.",
+        "description": "Error answer of a run command. error.code is the controller's RunError: invalid_zone, unknown_program, zero_duration, queue_full, already_queued, inhibited, nothing_to_run, locked_out, zone_resting, master_locked_out, hardware_fault (or inhibited when maintenance or missing 24 VAC is known beforehand). zone_resting answers carry Retry-After with the seconds of rest left.",
         "x-error-codes": [
           "invalid_zone",
           "unknown_program",
@@ -4193,7 +4299,8 @@
           "nothing_to_run",
           "locked_out",
           "zone_resting",
-          "master_locked_out"
+          "master_locked_out",
+          "hardware_fault"
         ]
       },
       "MqttSettings": {
@@ -5022,7 +5129,8 @@
               "already_queued",
               "queue_full",
               "nothing_to_run",
-              "master_locked_out"
+              "master_locked_out",
+              "hardware_fault"
             ]
           }
         }
@@ -5664,6 +5772,164 @@
             "$ref": "#/components/schemas/ConfigInput"
           }
         }
+      },
+      "Hardware": {
+        "type": "object",
+        "description": "The rev A output stage (I/O expander, valve-common relay, two keep-alive detectors) and the current measurement. Hardware design section 19. Nothing here has been measured on a board. Sent by firmware with the rev A output stage; optional in this schema so that older firmware and the web UI's mock controller still validate.",
+        "properties": {
+          "phase": {
+            "type": "string",
+            "enum": [
+              "none",
+              "no_ac",
+              "startup_test",
+              "idle",
+              "starting",
+              "ready",
+              "stopping",
+              "polling",
+              "trip_clear",
+              "fault",
+              "halted"
+            ],
+            "description": "none: a board without a sequenced stage. ready: the relay is closed and valves may switch. starting and stopping: the self-test before and after a run. polling: the 10-minute check between runs."
+          },
+          "zones_fitted": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "enum": [
+              4,
+              8,
+              null
+            ],
+            "description": "From the board's variant strap, read in the start-up self-test; null before."
+          },
+          "relay_closed": {
+            "type": "boolean"
+          },
+          "sensor_supply_on": {
+            "type": "boolean"
+          },
+          "sensor_supply_fault": {
+            "type": "boolean"
+          },
+          "check": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The latched failed check, or null."
+          },
+          "step": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Self-test step of the check (19.7), 10 for the over-current latch (19.8), 0 for a firmware limit."
+          },
+          "repair_needed": {
+            "type": "boolean"
+          },
+          "self_tests_passed": {
+            "type": "integer",
+            "description": "Complete self-test sequences since start-up."
+          },
+          "detectors": {
+            "type": "object",
+            "description": "Last measured detector times, ms (0 = not measured). Pass limits: enable within 150 ms; release 300 to 1000 ms (drive) and 80 to 1000 ms (relay).",
+            "properties": {
+              "enable_drive_ms": {
+                "type": "integer"
+              },
+              "enable_relay_ms": {
+                "type": "integer"
+              },
+              "release_drive_ms": {
+                "type": "integer"
+              },
+              "release_relay_ms": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "enable_drive_ms",
+              "enable_relay_ms",
+              "release_drive_ms",
+              "release_relay_ms"
+            ]
+          },
+          "mains_hz": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "From the zero-cross signal; null when unknown."
+          },
+          "current": {
+            "type": "object",
+            "properties": {
+              "channel": {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "low",
+                  "none"
+                ],
+                "description": "Amplifier channel of the latest window: low when the high-gain channel clipped."
+              },
+              "noise_floor_ma": {
+                "type": "integer",
+                "description": "Learned with the relay open; removed in quadrature."
+              },
+              "dc_ma": {
+                "type": "integer",
+                "description": "Mean shift of the latest window against the idle mean: a DC component (fault zone_dc_current)."
+              },
+              "last_trip_ma": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Current window before the last over-current trip."
+              }
+            },
+            "required": [
+              "channel",
+              "noise_floor_ma",
+              "dc_ma",
+              "last_trip_ma"
+            ]
+          }
+        },
+        "required": [
+          "phase",
+          "zones_fitted",
+          "relay_closed",
+          "sensor_supply_on",
+          "sensor_supply_fault",
+          "check",
+          "step",
+          "repair_needed",
+          "self_tests_passed",
+          "detectors",
+          "mains_hz",
+          "current"
+        ]
+      },
+      "AcknowledgeRepairRequest": {
+        "type": "object",
+        "properties": {
+          "repaired": {
+            "type": "boolean",
+            "const": true,
+            "description": "The person states the board was repaired."
+          }
+        },
+        "required": [
+          "repaired"
+        ]
       }
     },
     "responses": {

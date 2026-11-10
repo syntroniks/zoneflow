@@ -1,60 +1,53 @@
 // SPDX-License-Identifier: Apache-2.0
-// Mains zero-cross input for zero-cross aware switching (zf/zone/zero_cross.hpp).
-// A GPIO interrupt timestamps each crossing. The interrupt is not IRAM-safe:
-// edges are missed while the flash cache is off, the signal then looks stale
-// for a moment and the driver switches without waiting, as without a signal.
+// AC_ZC (hardware design 11 and 19.9): a square wave at mains frequency.
+// Both edges are timestamped by an IRAM-safe GPIO interrupt into a
+// ZeroCrossTracker, which gives presence (an edge within 25 ms), the mains
+// frequency and the crossings for zero-cross switching. The interrupt keeps
+// running while the flash cache is off, so a flash erase is not mistaken for
+// a loss of 24 VAC.
 #include "driver/gpio.h"
 #include "esp_attr.h"
+#include "esp_intr_alloc.h"
 #include "esp_log.h"
 #include "esp_rom_sys.h"
 #include "esp_timer.h"
+#include "hal/gpio_ll.h"
+#include "soc/gpio_struct.h"
 #include "zf_board/board.hpp"
 #include "zf_platform/platform.hpp"
 
 namespace zf::platform {
 namespace {
 constexpr const char *kTag = "zf.zc";
-// Edges closer than this are noise, not crossings (50 Hz: 10 000 us apart).
-constexpr uint32_t kMinEdgeSpacingUs = 2000;
 } // namespace
+
+ZeroCrossInput::ZeroCrossInput() : tracker_(board::kZeroCrossRisingLagUs, board::kZeroCrossFallingLeadUs) {}
 
 void IRAM_ATTR ZeroCrossInput::onEdge(void *arg)
 {
     auto *self = static_cast<ZeroCrossInput *>(arg);
-    const auto now = static_cast<uint32_t>(esp_timer_get_time());
-    const uint32_t last = self->lastEdgeUs_.load(std::memory_order_relaxed);
-    const uint32_t edges = self->edges_.load(std::memory_order_relaxed);
-    if (edges > 0 && now - last < kMinEdgeSpacingUs) {
-        return;
-    }
-    // Sequence lock: odd while the pair is being written.
-    const uint32_t seq = self->seq_.load(std::memory_order_relaxed);
-    self->seq_.store(seq + 1, std::memory_order_release);
-    if (edges > 0) {
-        self->intervalUs_.store(now - last, std::memory_order_relaxed);
-    }
-    self->lastEdgeUs_.store(now, std::memory_order_relaxed);
-    self->seq_.store(seq + 2, std::memory_order_release);
-    self->edges_.store(edges + 1, std::memory_order_relaxed);
+    const auto now = static_cast<uint32_t>(esp_timer_get_time()); // IRAM (CONFIG_ESP_TIMER_IN_IRAM)
+    const bool high = gpio_ll_get_level(&GPIO, static_cast<uint32_t>(board::kZeroCrossGpio)) != 0;
+    self->tracker_.onEdge(now, high);
 }
 
 esp_err_t ZeroCrossInput::init()
 {
-    if (!board::kHasZeroCross) {
-        return ESP_ERR_NOT_SUPPORTED;
-    }
     const gpio_config_t cfg = {
         .pin_bit_mask = 1ULL << board::kZeroCrossGpio,
         .mode = GPIO_MODE_INPUT,
-        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_up_en = GPIO_PULLUP_DISABLE, // R58 on the board
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type = board::kZeroCrossRisingEdge ? GPIO_INTR_POSEDGE : GPIO_INTR_NEGEDGE,
+        .intr_type = GPIO_INTR_ANYEDGE,
     };
     esp_err_t err = gpio_config(&cfg);
     if (err == ESP_OK) {
-        err = gpio_install_isr_service(0);
+        // IRAM: the service must be installed here first, before any other
+        // module installs it without the flag.
+        err = gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
         if (err == ESP_ERR_INVALID_STATE) {
-            err = ESP_OK; // already installed by another module
+            ESP_LOGW(kTag, "GPIO ISR service already installed; zero-cross edges may stop during flash erases");
+            err = ESP_OK;
         }
     }
     if (err == ESP_OK) {
@@ -66,22 +59,11 @@ esp_err_t ZeroCrossInput::init()
     return err;
 }
 
-ZeroCrossSample ZeroCrossInput::sample() const
-{
-    ZeroCrossSample s;
-    for (int attempt = 0; attempt < 4; ++attempt) {
-        const uint32_t before = seq_.load(std::memory_order_acquire);
-        s.lastEdgeUs = lastEdgeUs_.load(std::memory_order_relaxed);
-        s.intervalUs = intervalUs_.load(std::memory_order_relaxed);
-        const uint32_t after = seq_.load(std::memory_order_acquire);
-        if (before == after && (before & 1u) == 0) {
-            s.present = edges_.load(std::memory_order_relaxed) >= 2;
-            break;
-        }
-    }
-    s.nowUs = static_cast<uint32_t>(esp_timer_get_time());
-    return s;
-}
+ZeroCrossSample ZeroCrossInput::sample() const { return tracker_.sample(static_cast<uint32_t>(esp_timer_get_time())); }
+
+bool ZeroCrossInput::acPresent() const { return tracker_.present(static_cast<uint32_t>(esp_timer_get_time())); }
+
+uint32_t ZeroCrossInput::mainsMilliHz() const { return tracker_.milliHz(static_cast<uint32_t>(esp_timer_get_time())); }
 
 void ZeroCrossInput::delayUs(uint32_t us) { esp_rom_delay_us(us); }
 

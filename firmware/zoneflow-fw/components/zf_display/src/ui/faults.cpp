@@ -8,7 +8,14 @@ namespace {
 
 bool zoneType(FaultCode c)
 {
-    return c == FaultCode::ZoneOpenCircuit || c == FaultCode::ZoneOverCurrent || c == FaultCode::ShortCircuit;
+    return c == FaultCode::ZoneOpenCircuit || c == FaultCode::ZoneOverCurrent || c == FaultCode::ShortCircuit ||
+           c == FaultCode::ZoneDcCurrent;
+}
+
+bool stageFault(FaultCode c)
+{
+    return c == FaultCode::KeepAliveDetector || c == FaultCode::OutputExpander || c == FaultCode::RelayWelded ||
+           c == FaultCode::OutputShorted || c == FaultCode::TripLatchStuck;
 }
 
 } // namespace
@@ -32,7 +39,12 @@ std::vector<FaultItem> listFaults(const SystemState &state)
         if (zoneType(code) && (carriedByZone & (1u << bit)) != 0) {
             continue;
         }
-        out.push_back({code, kNoZone});
+        FaultItem item{code, kNoZone};
+        if (stageFault(code)) {
+            item.check = state.hardware.check;
+            item.repairNeeded = state.hardware.repairNeeded;
+        }
+        out.push_back(item);
     }
     return out;
 }
@@ -66,6 +78,22 @@ std::string faultTitle(const FaultItem &item)
         return tr(Str::FaultSenseTitle);
     case FaultCode::OverCurrentTrip:
         return tr(Str::FaultTripTitle);
+    case FaultCode::KeepAliveDetector:
+        return tr(Str::FaultDetectorTitle);
+    case FaultCode::OutputExpander:
+        return tr(Str::FaultExpanderTitle);
+    case FaultCode::RelayWelded:
+        return tr(Str::FaultWeldedTitle);
+    case FaultCode::OutputShorted:
+        return tr(Str::FaultOutputShortTitle);
+    case FaultCode::TripLatchStuck:
+        return tr(Str::FaultLatchTitle);
+    case FaultCode::SensorSupply:
+        return tr(Str::FaultSupplyTitle);
+    case FaultCode::ZoneDcCurrent:
+        return fmt(Str::FaultDcTitle, who.c_str());
+    case FaultCode::MainsSignal:
+        return tr(Str::FaultMainsTitle);
     case FaultCode::None:
     case FaultCode::Count:
         break;
@@ -100,6 +128,22 @@ Str faultBody(FaultCode code)
         return Str::FaultSenseBody;
     case FaultCode::OverCurrentTrip:
         return Str::FaultTripBody;
+    case FaultCode::KeepAliveDetector:
+        return Str::FaultDetectorBody;
+    case FaultCode::OutputExpander:
+        return Str::FaultExpanderBody;
+    case FaultCode::RelayWelded:
+        return Str::FaultWeldedBody;
+    case FaultCode::OutputShorted:
+        return Str::FaultOutputShortBody;
+    case FaultCode::TripLatchStuck:
+        return Str::FaultLatchBody;
+    case FaultCode::SensorSupply:
+        return Str::FaultSupplyBody;
+    case FaultCode::ZoneDcCurrent:
+        return Str::FaultDcBody;
+    case FaultCode::MainsSignal:
+        return Str::FaultMainsBody;
     case FaultCode::None:
     case FaultCode::Count:
         break;
@@ -109,12 +153,25 @@ Str faultBody(FaultCode code)
 
 bool faultClearsItself(FaultCode code)
 {
-    return code == FaultCode::AcLost || code == FaultCode::TimeInvalid || code == FaultCode::CurrentSenseUnavailable;
+    return code == FaultCode::AcLost || code == FaultCode::TimeInvalid || code == FaultCode::CurrentSenseUnavailable ||
+           code == FaultCode::SensorSupply || code == FaultCode::MainsSignal;
 }
 
 Tone faultTone(FaultCode code)
 {
-    return code == FaultCode::TimeInvalid || code == FaultCode::CurrentSenseUnavailable ? Tone::Warn : Tone::Fault;
+    return code == FaultCode::TimeInvalid || code == FaultCode::CurrentSenseUnavailable ||
+                   code == FaultCode::SensorSupply || code == FaultCode::MainsSignal
+               ? Tone::Warn
+               : Tone::Fault;
+}
+
+std::string faultStepText(const FaultItem &item)
+{
+    const uint8_t step = hwCheckStep(item.check);
+    if (item.check == HwCheck::None || step == 0 || step > 9) {
+        return {};
+    }
+    return fmt(Str::FaultStep, static_cast<int>(step), toString(item.check));
 }
 
 } // namespace zf::ui

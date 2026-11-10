@@ -16,6 +16,10 @@ CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF=y
 CONFIG_SPIRAM=y
 CONFIG_SPIRAM_MODE_OCT=y
 CONFIG_SPIRAM_SPEED_80M=y
+# Hardware design 19.1 rule 7: the enclosure reaches 70 C; the module's
+# PSRAM is rated to 65 C without ECC and 85 C with it. Costs 1/16 of the
+# PSRAM. Name checked against ESP-IDF v5.5.6 (esp_psram/esp32s3/Kconfig.spiram).
+CONFIG_SPIRAM_ECC_ENABLE=y
 
 # Logs and flashing over the native USB port.
 CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
@@ -26,6 +30,10 @@ CONFIG_FREERTOS_HZ=1000
 # The OE keep-alive is a GPTimer interrupt that must keep running while the
 # flash cache is off (NVS writes, OTA): handler and driver objects in IRAM.
 CONFIG_GPTIMER_ISR_CACHE_SAFE=y
+# The zero-cross interrupt (AC presence) runs from IRAM too, so a flash
+# erase is not mistaken for a loss of 24 VAC; it reads the time with
+# esp_timer_get_time(), which ESP_TIMER_IN_IRAM keeps in IRAM.
+CONFIG_ESP_TIMER_IN_IRAM=y
 
 # Watchdogs: the control task is subscribed to the task watchdog.
 CONFIG_ESP_TASK_WDT_EN=y

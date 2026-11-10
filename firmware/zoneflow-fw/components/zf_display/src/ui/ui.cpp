@@ -51,6 +51,8 @@ Str skipReasonText(SkipReason r)
         return Str::SkipNothing;
     case SkipReason::MasterLockedOut:
         return Str::SkipMasterLocked;
+    case SkipReason::HardwareFault:
+        return Str::SkipHardware;
     }
     return Str::SkipNothing;
 }
@@ -79,6 +81,8 @@ Str runErrorText(RunError e)
         return Str::WhyZoneResting;
     case RunError::MasterLockedOut:
         return Str::SkipMasterLocked;
+    case RunError::HardwareFault:
+        return Str::SkipHardware;
     }
     return Str::WhyUnknown;
 }

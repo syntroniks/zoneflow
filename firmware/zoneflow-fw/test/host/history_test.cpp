@@ -293,7 +293,7 @@ TEST(HistoryEvents, KeepsWhatMattersAndDropsTheRest)
     EXPECT_EQ(historyFromEvent(e)->e >> 16, kHistoryNoVolume);
 
     e.type = EventType::FaultRaised;
-    e.fault = {FaultCode::ShortCircuit, 3};
+    e.fault = {FaultCode::ShortCircuit, 3, 0};
     r = historyFromEvent(e);
     ASSERT_TRUE(r.has_value());
     EXPECT_EQ(r->kind, HistoryKind::FaultRaised);
