@@ -13,13 +13,17 @@
 // Pin rules applied (ESP32-S3 Series Datasheet v2.2, Espressif):
 //  - Strapping pins GPIO0, 3, 45, 46 are not used (section 2, "Strapping pins").
 //  - USB D-/D+ GPIO19, 20 stay free for native USB flashing and logs.
-//  - GPIO26..37 are left to SPI flash and octal PSRAM on WROOM-1 variants.
+//  - Module: ESP32-S3-WROOM-1-N16R8, 16 MB flash and 8 MB octal PSRAM (spec
+//    v0.3 asks for PSRAM; sdkconfig.defaults enables it). GPIO26..32 carry the
+//    flash, and octal PSRAM takes GPIO33..37; the module brings out GPIO35..37
+//    but they are not available. GPIO22..25 do not exist on the chip.
 //  - Valve outputs and OE avoid pins with a HIGH-level power-up glitch
 //    (Table 2-2: GPIO18, 19, 20). GPIO1..14 and 17 show only a low-level
 //    glitch (~60 us), which keeps an active-high output off.
 //  - GPIO43 (U0TXD) carries ROM boot messages; not used for outputs.
-//  - GPIO47/48 run at 1.8 V on R8V/R16V chip variants (datasheet note 4);
-//    left spare.
+//  - GPIO47/48 run at 1.8 V on R8V/R16V chip variants (datasheet note 4).
+//    The N16R8 is not one of them, so they are used below at 3.3 V; check
+//    again if the module changes.
 //  - The valve current input is on ADC1 (ADC2 is shared with WiFi).
 //
 // The firmware assumes external pull-downs on every valve output and on OE so
@@ -33,6 +37,10 @@
 namespace zf::board {
 
 inline constexpr const char *kBoardName = "zoneflow-rev-a (provisional pin map)";
+
+// ---- module ------------------------------------------------------------------
+inline constexpr uint32_t kFlashBytes = 16u * 1024u * 1024u; // keep in step with sdkconfig.defaults
+inline constexpr bool kOctalPsram = true;                    // N16R8
 
 // ---- valve outputs: direct GPIO, active high --------------------------------
 inline constexpr std::size_t kZoneOutputs = 8; // a 4-zone build fits only Z1..Z4
@@ -121,9 +129,12 @@ constexpr bool forbidden(int gpio)
 {
     return gpio == 0 || gpio == 3 || gpio == 45 || gpio == 46 || // strapping
            gpio == 19 || gpio == 20 ||                           // USB
-           (gpio >= 22 && gpio <= 37) ||                         // not bonded (22..25) / flash, PSRAM
+           (gpio >= 22 && gpio <= 32) ||                         // not on the chip (22..25) / flash (26..32)
            gpio < 0 || gpio > 48;
 }
+
+// Octal PSRAM data lines: GPIO33..37 (35..37 are on module pins but taken).
+constexpr bool octalPsramPin(int gpio) { return gpio >= 33 && gpio <= 37; }
 
 constexpr bool highGlitch(int gpio) { return gpio == 18 || gpio == 19 || gpio == 20; }
 
@@ -139,6 +150,16 @@ constexpr bool allAllowed()
 {
     for (int p : kAllPins) {
         if (forbidden(p)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+constexpr bool noneOnOctalPsram()
+{
+    for (int p : kAllPins) {
+        if (kOctalPsram && octalPsramPin(p)) {
             return false;
         }
     }
@@ -169,7 +190,8 @@ constexpr bool outputsGlitchFree()
 
 } // namespace detail
 
-static_assert(detail::allAllowed(), "board pin on a strapping, USB or flash/PSRAM pin");
+static_assert(detail::allAllowed(), "board pin on a strapping, USB, flash or non-existent pin");
+static_assert(detail::noneOnOctalPsram(), "board pin on GPIO33..37, used by the octal PSRAM of the N16R8 module");
 static_assert(detail::allUnique(), "board pin used twice");
 static_assert(detail::outputsGlitchFree(), "valve output or OE on a pin with a high-level boot glitch");
 static_assert(kValveCurrentGpio >= 1 && kValveCurrentGpio <= 10, "valve current must be on ADC1 (GPIO1..10)");
