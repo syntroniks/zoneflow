@@ -16,7 +16,7 @@ Documentation: <https://syntroniks.github.io/zoneflow/>
 - ESP32-S3 with WiFi and Bluetooth LE
 - Rain sensor and flow meter inputs
 - Valve current monitoring: open and shorted valve detection
-- OLED display, local controls and per-zone LEDs
+- 2.0-2.4 inch colour display, rotary encoder and buttons, per-zone LEDs
 - Real-time clock so schedules run without a network
 - Two firmware options: standalone ZoneFlow firmware, or ESPHome
 - 3D-printable indoor enclosure

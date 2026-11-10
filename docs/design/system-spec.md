@@ -1,6 +1,6 @@
 # ZoneFlow system specification
 
-Status: **v0.2 draft**. This file is the source of truth for hardware,
+Status: **v0.3 draft**. This file is the source of truth for hardware,
 firmware, enclosure and documentation work. Change it by pull request; do not
 let a subsystem drift from it silently.
 
@@ -20,7 +20,7 @@ keeps watering on schedule when the network is down.
 | Radio | WiFi 2.4 GHz and Bluetooth LE, PCB-antenna module with FCC/CE modular approval. |
 | Sensors | Rain sensor (dry contact, NO or NC). Flow meter (pulse, dry contact or open collector, up to 200 Hz). One spare general-purpose sensor input. A current-limited sensor supply terminal for powered flow meters. |
 | Diagnostics | Measure total solenoid current. Detect open valve, shorted valve and loss of 24 VAC. A shorted valve or wire must not destroy the output; the board shuts the zone off and reports it. |
-| Local UI | One status LED per output, a power/status LED, a small OLED, and controls for manual run without a phone. |
+| Local UI | One status LED per output, a power/status LED, a colour display large enough for a real menu interface (zone status, manual run, schedule viewing and editing, setup), and controls to drive it without a phone. |
 | Timekeeping | Battery-backed or supercap-backed RTC so schedules survive a power cut with no network. |
 | Install | Indoor or garage wall mount. Not weatherproof. |
 | Manufacture | Machine-assembled SMT (JLCPCB-class). Through-hole parts are limited to terminal blocks and parts with no SMT equivalent. |
@@ -48,7 +48,7 @@ keeps watering on schedule when the network is down.
 
 | Block | Decision | Notes |
 |---|---|---|
-| MCU module | ESP32-S3-WROOM-1 (PCB antenna, at least 8 MB flash) | Enough GPIO without an expander, native USB, mature in ESP-IDF and ESPHome. |
+| MCU module | ESP32-S3-WROOM-1 (PCB antenna, at least 8 MB flash, with PSRAM for the display interface) | Enough GPIO without an expander, native USB, mature in ESP-IDF and ESPHome. |
 | Output stage | One triac per output, OpenSprinkler-style topology | One 24 VAC leg is circuit ground, the other is valve COM. Each valve sits between COM and its triac; all triac returns share one path to ground through the current shunt. Triac rated at least 1 A RMS with a high surge rating; no MAC97-class parts. Gate drive comes from ESP32 GPIO through the fail-safe gate of section 2, not from an unguarded pin. See `prior-art.md` for the evidence. |
 | Logic supply | Half-wave rectifier, bulk capacitor sized for half-wave ripple at peak WiFi load, buck converter rated at least 60 V input, 3.3 V rail | 32 VAC RMS gives about 45 V peak, and the 45 V regulators used by older designs have no margin. |
 | USB | USB-C, native ESP32-S3 USB for flashing and logs | USB alone powers the logic so the board can be flashed on a desk. Valve outputs stay unpowered without 24 VAC. Logic ground is tied to one 24 VAC leg, so the design notes must state what happens when USB and 24 VAC are connected together and what the user must not do (for example earthing the other transformer leg). |
@@ -56,8 +56,8 @@ keeps watering on schedule when the network is down.
 | Current sense | One low-side shunt in the shared triac return, with a rectifying/averaging front end | Measures total current; firmware attributes it to zones at turn-on. The reading must not sit in the non-linear region of the ESP32 ADC near 0 V: bias it or use an external ADC. A fast hardware over-current path that removes gate drive without firmware is preferred. |
 | AC presence | A signal that tells firmware 24 VAC is present | Lets firmware tell "USB only" from "valves powered". |
 | RTC | I2C RTC with backup | |
-| Display | 128x64 monochrome OLED on I2C | |
-| Controls | Rotary encoder with push switch, plus one Back/Manual button | Hardware lead may substitute 3-4 buttons if it assembles better. |
+| Display | 2.0 to 2.4 inch colour IPS TFT, 320x240, ST7789-class controller on SPI, no touch, PWM-dimmable backlight | Chosen by the project owner: the small screens on existing controllers limit the local interface too much. |
+| Controls | Rotary encoder with push switch, plus Back and Manual/Home buttons | The display has no touch, so these are the only local inputs. |
 | Expansion | One I2C connector (Qwiic/STEMMA QT pinout) | Future soil sensors, displays. |
 | Terminals | Pluggable screw terminal blocks | 24VAC x2, COM x2, MV, Z1-Z8, sensor inputs with ground. |
 | PCB | 2 or 4 layers, JLCPCB standard capabilities | Prefer JLCPCB basic parts; every BOM line carries an LCSC part number. |
@@ -100,7 +100,10 @@ ESP-IDF based. Works with no hub and no cloud.
   status stream.
 - MQTT with Home Assistant discovery.
 - OTA update with rollback.
-- OLED and local controls: status, manual run, network info.
+- Display interface (LVGL) driven by the encoder and buttons: home screen with
+  zone status and next run, manual zone and program runs, schedule viewing and
+  editing, rain delay, sensor and fault status, network setup and info.
+  Backlight dims and times out.
 - Flow and current diagnostics: per-zone learned current, fault reporting.
 - Host-side unit tests for the scheduler and other pure logic.
 
@@ -126,7 +129,7 @@ firmware option onto a board over USB, and release builds produced by CI.
 - Prints without supports on a 220 x 220 mm bed in PLA or PETG.
 - Separate wiring compartment cover so the user wires valves without exposing
   the electronics.
-- Window or opening for the OLED, access to the controls, light pipes or
+- Window or opening for the display, access to the controls, light pipes or
   openings for the LEDs.
 - Wall-mount keyholes, cable entry at the bottom, strain relief.
 - Deliverables: source, STL and 3MF exports, STEP if the tool allows, assembly
