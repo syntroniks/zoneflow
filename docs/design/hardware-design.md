@@ -343,8 +343,11 @@ plugging in USB earths one leg of the 24 VAC secondary.
 **Safe.**
 
 - **Floating secondary**: a Class 2 sprinkler transformer whose secondary has no connection to earth. Nearly all plug-in and DIN-rail sprinkler transformers are built this way. USB earths the `AC_N` leg and nothing flows.
-- **Earthed on the `AC_N` side**: if the installation earths the leg wired to terminal 2, USB earths the same leg again. Nothing flows.
 - **Battery laptop or USB isolator**: no earth path at all.
+
+**Safe only while nothing on the board fails.**
+
+- **Earthed on the `AC_N` side**: if the installation earths the leg wired to terminal 2, USB earths the same leg again. Nothing flows through the cable while the board is healthy. But the USB ground is then a second path from board `GND` to that leg, in parallel with F1. Review A1 moved this case out of the safe list for the reason given under "What F1 does not cover" below.
 
 **Not safe.**
 
@@ -359,6 +362,20 @@ see it. That is why F1 is in the `AC_N` leg. Every loop that goes through board
 `GND` to the transformer goes through F1. In the third case relay K1 also helps,
 because COM is disconnected from the transformer whenever no valve is running.
 
+**What F1 does not cover.** F1 is between board `GND` and terminal 2. Any
+other connection from board `GND` to that transformer leg is in parallel with
+it. There are two ways to get one: the terminal-2 leg is earthed and an
+earthed computer is on USB, or a second device on the same transformer, with
+the same leg as its ground, shares a sensor, Qwiic or USB ground with this
+board. A fault on the board then has two ways back: a shorted TVS D1, a
+shorted C1, or a shorted valve wire behind a triac that will not turn off.
+The current divides between F1 and the other path. When F1 opens, all of it
+takes the other path, with nothing but the transformer to limit it. A fuse in
+the `AC_L` leg would be in that loop, and would miss the three loops above
+instead. No single fuse position covers every loop. Review A1 recommends a
+fuse in each leg, finding M2. This document keeps one fuse and relies on the
+warning below; the choice is the owner's.
+
 F1 is a 3 A time-lag fuse. I take 8 A as the short-circuit limit of a Class 2
 source. That figure is from memory of the NEC Class 2 tables and I did not
 re-read it. At 8 A, 270 % of rating, the fuse datasheet bounds the opening time
@@ -372,7 +389,7 @@ fuse and the warning.
 **What the documentation must say.** These warnings belong in the wiring page
 and the safety page.
 
-1. Use a transformer whose 24 V output is not connected to earth. If you are not sure, measure for continuity between each output terminal and the earth pin with the transformer unplugged.
+1. Use a transformer whose 24 V output is not connected to earth on either side. If you are not sure, measure for continuity between each output terminal and the earth pin with the transformer unplugged. If either terminal is earthed, never connect a mains-powered computer by USB while the 24 VAC plug is in, whichever way round the plug is wired.
 2. Never connect a computer by USB while the controller shares its transformer with another device, unless you have checked that both devices have the same leg on the same terminal.
 3. For firmware work on an installed controller, prefer a laptop on battery, or unplug the 24 VAC plug block J1 first. The board runs from USB alone.
 4. Sensor grounds and the Qwiic ground are the same net as transformer terminal 2. Do not join them to any other equipment that has its own connection to the transformer.
