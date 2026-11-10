@@ -707,3 +707,16 @@ TEST_F(SchedulerTest, HugeManualDurationIsClampedNotWrapped)
     EXPECT_TRUE(out.zone[0]);
     EXPECT_GT(drv.remainingMs(0), 3000u * 1000u);
 }
+
+// The config accepts the same start time twice. Both copies became candidates
+// for the same instant, so every day one ran and the other was reported as a
+// missed start.
+TEST_F(SchedulerTest, DuplicateStartTimesRunOnceAndAreNotReportedMissed)
+{
+    addProgram(makeProgram(1, {at(6, 0), at(6, 0)}, {{0, 60}}));
+    apply();
+    begin(utcOf(2026, 6, 1, 5, 59, 50));
+    runUntil(utcOf(2026, 6, 2, 6, 0, 10));
+    EXPECT_EQ(rec.started.size(), 2u);
+    EXPECT_TRUE(rec.missed.empty());
+}

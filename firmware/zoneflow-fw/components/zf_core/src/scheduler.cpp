@@ -120,7 +120,10 @@ void Scheduler::configure(const SchedulerConfig &cfg, const TimeZone &tz)
     for (std::size_t i = 0; i < sched.programCount; ++i) {
         Program &p = sched.programs[i];
         p.startCount = std::min<uint8_t>(p.startCount, kMaxStartTimes);
-        std::sort(p.startMinutes.begin(), p.startMinutes.begin() + p.startCount);
+        const auto first = p.startMinutes.begin();
+        std::sort(first, first + p.startCount);
+        // A start listed twice is one start, not one run plus one "missed".
+        p.startCount = static_cast<uint8_t>(std::unique(first, first + p.startCount) - first);
     }
 
     const bool advance = configured_ && timeValid_;
