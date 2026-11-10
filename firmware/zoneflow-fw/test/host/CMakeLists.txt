@@ -70,10 +70,12 @@ add_executable(zf_host_tests
     web_auth_test.cpp
     web_http_test.cpp
     web_openapi_test.cpp
+    schedule_vectors_test.cpp
 )
 target_compile_options(zf_host_tests PRIVATE -Wall -Wextra)
 target_compile_definitions(zf_host_tests PRIVATE
-    ZF_OPENAPI_PATH="${CMAKE_CURRENT_LIST_DIR}/../../../../docs/firmware/openapi.json")
+    ZF_OPENAPI_PATH="${CMAKE_CURRENT_LIST_DIR}/../../../../docs/firmware/openapi.json"
+    ZF_SCHEDULE_VECTORS_PATH="${CMAKE_CURRENT_LIST_DIR}/../vectors/schedule_preview.json")
 target_link_libraries(zf_host_tests PRIVATE zf_core zf_ext cjson GTest::gtest_main)
 
 enable_testing()
