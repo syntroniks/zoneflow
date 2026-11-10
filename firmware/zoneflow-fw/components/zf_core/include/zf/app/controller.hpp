@@ -10,6 +10,7 @@
 #include <array>
 #include <cstdint>
 
+#include "zf/app/persist.hpp"
 #include "zf/config/config_store.hpp"
 #include "zf/diag/current_monitor.hpp"
 #include "zf/diag/sensors.hpp"
@@ -32,7 +33,9 @@ struct ControllerDeps {
     EventBus &events;
     StateStore &state;
     ConfigStore &config;
-    IBlobStorage *runtimeStorage; // may be null (no persistence)
+    // Read once in begin(). Writes go through persistMailbox() and a writer
+    // task, never from the control task. May be null (no persistence).
+    IBlobStorage *runtimeStorage;
 };
 
 class Controller final : private IZoneDriverListener, private ISchedulerListener {
@@ -71,6 +74,10 @@ public:
     // Control task: report a fault found outside the controller (config
     // rejected at boot, storage failure). Latched until ClearFaults.
     void reportFault(FaultCode code) { raiseFault(code, kNoZone); }
+
+    // Runtime state to store. The device drains it from a low-priority
+    // writer task (persistWriteOnce); host tests call that directly.
+    PersistMailbox &persistMailbox() { return persist_; }
 
     const ZoneDriver &driver() const { return driver_; }
     const Scheduler &scheduler() const { return scheduler_; }
@@ -135,6 +142,7 @@ private:
     bool tripSeen_ = false;
     MonoMs nextTripClearMs_ = 0;
 
+    PersistMailbox persist_;
     bool persistDirty_ = false;
     MonoMs lastPersistMs_ = 0;
     bool stateDirty_ = true;

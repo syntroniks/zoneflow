@@ -260,6 +260,9 @@ void Controller::tick()
     if (persistDirty_ && now - lastPersistMs_ >= kPersistMinIntervalMs) {
         savePersist(now);
     }
+    if (persist_.takeFailure() && (activeFaults_ & faultBit(FaultCode::StorageError)) == 0) {
+        raiseFault(FaultCode::StorageError, kNoZone);
+    }
     if (stateDirty_ || now - lastSnapshotMs_ >= kSnapshotIntervalMs) {
         publishSnapshot(now);
     }
@@ -454,16 +457,11 @@ void Controller::clearFaults()
 
 void Controller::savePersist(MonoMs now)
 {
+    // A plain-data copy for the writer task: no JSON, no heap, no flash here.
     lastPersistMs_ = now;
     persistDirty_ = false;
-    if (deps_.runtimeStorage == nullptr) {
-        return;
-    }
-    const std::string json = persistToJson(scheduler_.persist());
-    if (json.empty() || !deps_.runtimeStorage->write(ConfigStore::kRuntimeKey, json)) {
-        if ((activeFaults_ & faultBit(FaultCode::StorageError)) == 0) {
-            raiseFault(FaultCode::StorageError, kNoZone);
-        }
+    if (deps_.runtimeStorage != nullptr) {
+        persist_.post(scheduler_.persist());
     }
 }
 

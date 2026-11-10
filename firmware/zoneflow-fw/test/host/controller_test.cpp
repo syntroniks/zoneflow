@@ -218,6 +218,7 @@ TEST_F(ControllerTest, ScheduledRunPersistsRuntimeState)
     runMs(15'000);
     EXPECT_TRUE(out.zone[0]);
     EXPECT_EQ(count(EventType::ProgramStarted), 1);
+    EXPECT_TRUE(persistWriteOnce(ctrl->persistMailbox(), storage)); // the writer task's job
     ASSERT_EQ(storage.data.count("runtime"), 1u);
     SchedulerPersist p;
     ASSERT_TRUE(persistFromJson(storage.data["runtime"], p));

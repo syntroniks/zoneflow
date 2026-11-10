@@ -2,6 +2,7 @@
 idf_component_register(
     SRCS src/event_log.cpp
          src/outputs.cpp
+         src/persist_writer.cpp
          src/safety.cpp
          src/sensors.cpp
          src/time_storage.cpp

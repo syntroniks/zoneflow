@@ -105,6 +105,10 @@ private:
     bool open_ = false;
 };
 
+// Starts the low-priority task that drains the controller's PersistMailbox
+// into storage (static allocation, core 0).
+esp_err_t startPersistWriter(PersistMailbox &box, IBlobStorage &storage);
+
 // ---- I2C and RTC ------------------------------------------------------------------------
 
 class I2cBus {

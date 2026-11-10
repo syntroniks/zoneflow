@@ -4,6 +4,7 @@
 // Tasks (see docs/design/firmware-architecture.md, threading model):
 //   zf_keepalive  prio max-2, core 1  drives OE from OutputEnableGuard
 //   zf_control    prio 10,    core 1  commands -> Controller::tick(), TWDT
+//   zf_persist    prio 3,     core 0  stores runtime state (JSON, NVS)
 //   zf_evlog      prio 2,     core 0  logs events
 //   main          prio 1             status LED and a periodic state log
 #include <cinttypes>
@@ -127,6 +128,7 @@ extern "C" void app_main(void)
     ESP_ERROR_CHECK(platform::installSafetyHooks(controller, gOutputEnable));
     ESP_ERROR_CHECK(platform::startEventLogger(gEvents));
     controller.begin();
+    ESP_ERROR_CHECK(platform::startPersistWriter(controller.persistMailbox(), gStorage));
     if (loaded.status == ConfigStore::LoadStatus::InvalidDefaults) {
         controller.reportFault(FaultCode::ConfigInvalid);
     }
