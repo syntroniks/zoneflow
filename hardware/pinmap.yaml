@@ -294,8 +294,10 @@ gpio:
     powerup_glitch: none
     notes: >-
       High during the half-cycle in which the COM leg is positive, low during
-      the other. Square wave at mains frequency. No edges for 50 ms means no
-      24 VAC. The rising edge is about 0.2 ms after the true zero crossing.
+      the other. Square wave at mains frequency, one rising and one falling
+      edge per period. No edge of either polarity for 25 ms means no 24 VAC.
+      At 24 VAC the rising edge is about 0.30 ms after the zero crossing and
+      the falling edge about 0.09 ms before the next one.
 
   - gpio: 42
     signal: SPARE_IO42

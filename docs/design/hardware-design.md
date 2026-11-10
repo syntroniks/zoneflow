@@ -1055,20 +1055,33 @@ valve at 0 mA against 200 mA, or a short at 3 A against 0.3 A, is far outside
 
 | Ref | Part | Package | LCSC | Connections | Note |
 |---|---|---|---|---|---|
-| R55 | 100k 1% 200 V 0.25 W | 1206 | C17900 | `AC_L` to `ZC_DIV` |  |
+| R55 | 100k 1% 200 V 0.25 W | 1206 | C17900 | `AC_L` to `ZC_CLAMP` |  |
+| D9 | BAT54S dual Schottky, series | SOT-23 | C47546 | 1 A `GND`, 2 K `3V3`, 3 common `ZC_CLAMP` | Clamp |
+| R88 | 10k 1% | 0603 | C25804 | `ZC_CLAMP` to `ZC_DIV` | Halves the clamped level at the comparator pin |
 | R56 | 10k 1% | 0603 | C25804 | `ZC_DIV` to `GND` |  |
 | C34 | 10 nF 50 V X7R | 0603 | C1589 | `ZC_DIV` to `GND` |  |
-| D9 | BAT54S dual Schottky, series | SOT-23 | C47546 | 1 A `GND`, 2 K `3V3`, 3 common `ZC_DIV` | Clamp |
 | R57 | 1M 1% | 0603 | C22935 | `ZC_DIV` to `AC_ZC` | Hysteresis |
 | R58 | 10k 1% | 0603 | C25804 | `3V3` to `AC_ZC` | Pull-up |
 
-R55 and R56 divide `AC_L` by 11. D9 clamps the divided signal between -0.3 V
-and 3.6 V. Comparator U6D compares it with `VL`, 0.188 V, and R57 adds 28 mV of
-hysteresis. `AC_ZC` is high while `AC_L` is above about 2.1 V and low
-otherwise. It is a square wave at mains frequency.
+R55, R88 and R56 divide `AC_L` by 12 at the comparator pin. D9 clamps the node
+between R55 and R88 to one Schottky drop outside the rails. Comparator U6D
+compares `ZC_DIV` with `VL`, 0.188 V, and R57 adds 30 mV of hysteresis.
+`AC_ZC` is high while `AC_L` is above about 2.3 V and low otherwise. It is a
+square wave at mains frequency.
 
-- **Edge timing**: the rising edge is at 2.06 V on `AC_L`. At 24 VAC and 50 Hz that is 0.19 ms after the zero crossing, plus 0.09 ms from C34. The falling edge is about the same time before the next zero crossing. The midpoint of the high period is the positive peak.
-- **Presence**: no edge for 25 ms means the 24 VAC is gone or F1 has opened. C1 holds the logic for about 100 ms after that, long enough to log it.
+**Why R88 is there.** The first draft had no R88: the clamp node went straight
+to the comparator pin. The LM2901 allows -0.3 V at an input, and its data
+sheet (TI SLCS006S, note 4 of the electrical table) says neither input may go
+more than 0.3 V negative. The BAT54S is specified at 240 mV at 0.1 mA and
+320 mV at 1 mA, maximum, at 25 °C. With 0.3 to 0.45 mA in the clamp every
+negative half-cycle that is -0.28 to -0.29 V at 25 °C and about -0.36 V at
+-20 °C. U6 also holds the keep-alive and over-current comparators, so an input
+at its limit is not acceptable there. R88 and R56 halve the clamped level:
+`hardware/sim/zerocross.cir` gives -0.18 V at the pin at -20 °C and 32 VAC, and
++1.83 V at the positive clamp.
+
+- **Edge timing**: the rising edge is at 2.3 V on `AC_L`. At 24 VAC and 50 Hz the simulation puts it 0.30 ms after the zero crossing: 0.21 ms for the threshold and 0.09 ms for C34. The falling edge is 0.09 ms before the next zero crossing, because the same C34 delay now subtracts. So the high period is not centred on the positive peak. Its midpoint is 0.1 ms late. At 32 VAC the figures are 0.25 ms and 0.04 ms.
+- **Presence**: no edge of either polarity for 25 ms means the 24 VAC is gone or F1 has opened. C1 holds the logic for about 100 ms after that, long enough to log it.
 - **Frequency**: firmware gets 50 or 60 Hz from the period.
 - **Dissipation**: R55 is a 1206 part rated 200 V. It dissipates 9 mW at 32 VAC.
 

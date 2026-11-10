@@ -1322,7 +1322,7 @@ components:
     variant: "all"
     pins:
       "1": "AC_L"
-      "2": "ZC_DIV"
+      "2": "ZC_CLAMP"
   - ref: R56
     value: "10k 1%"
     package: "0603"
@@ -1351,7 +1351,17 @@ components:
     pins:
       "1 A": "GND"
       "2 K": "3V3"
-      "3 common": "ZC_DIV"
+      "3 common": "ZC_CLAMP"
+  - ref: R88
+    value: "10k 1%"
+    package: "0603"
+    lcsc: C25804
+    block: "H AC zero-cross"
+    variant: "all"
+    note: "Halves the clamped level at the comparator pin"
+    pins:
+      "1": "ZC_CLAMP"
+      "2": "ZC_DIV"
   - ref: R57
     value: "1M 1%"
     package: "0603"

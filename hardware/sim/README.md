@@ -1,7 +1,9 @@
 # Simulations
 
-ngspice netlists for the three parts of the rev A design where a simulation
-tells more than a hand calculation. The design is in
+ngspice netlists for the parts of the rev A design where a simulation
+tells more than a hand calculation. `keepalive.cir`, `isense.cir` and
+`supply.cir` are the author's. The others were added by review A1
+(`docs/design/hardware-review-a1.md`). The design is in
 `docs/design/hardware-design.md`. No board exists. These runs check the
 circuit as drawn against idealised parts. They do not replace a bench test.
 
@@ -87,3 +89,26 @@ What it showed:
 - **Ripple**: at the typical load the valley stays above 24 V down to 21.6 VAC.
 - **Brownout**: the valley stays above the buck's 8.4 V lockout for a sag to 16 VAC at up to 3 W. An 18 VAC sag with every consumer at its limit, 5 W, does not hold.
 - **R1**: 1 W is enough for every case except that last one, which is a transient condition.
+
+## zerocross.cir
+
+Added by review A1. The AC-presence and zero-cross input of section 11: R55,
+the BAT54S clamp D9, R88, R56, C34 and comparator U6D. It compares the circuit
+with R88 against the first draft, where the clamp node went straight to the
+LM2901 pin. The Schottky model is fitted to the BAT54S maximum forward voltage
+at 25 °C, so the 25 °C rows are a worst-case part. The -20 °C and 60 °C rows
+scale that model and are not data sheet limits.
+
+| R88 | Temperature | Supply | Comparator pin | `AC_ZC` rises after the crossing | falls before the next |
+|---|---|---|---|---|---|
+| none | 25 °C | 24 VAC | -0.28 to 3.09 V | 0.28 ms | 0.08 ms |
+| none | 25 °C | 32 VAC | -0.29 to 3.53 V | 0.23 ms | 0.03 ms |
+| none | -20 °C | 32 VAC | -0.36 to 3.60 V | 0.23 ms | 0.03 ms |
+| 10k | 25 °C | 24 VAC | -0.14 to 1.78 V | 0.30 ms | 0.09 ms |
+| 10k | -20 °C | 32 VAC | -0.18 to 1.83 V | 0.25 ms | 0.04 ms |
+| 10k | 60 °C | 24 VAC | -0.12 to 1.76 V | 0.30 ms | 0.09 ms |
+
+What it showed:
+
+- **Rating**: without R88 the pin sits at the LM2901's -0.3 V absolute maximum at 25 °C and goes past it when cold. With R88 it stays above -0.2 V.
+- **Timing**: the rising edge lags the zero crossing by 0.25 to 0.30 ms and the falling edge leads the next one by 0.04 to 0.09 ms. The two are not symmetric, because the C34 delay adds to one and subtracts from the other. Firmware needs a separate offset for each edge.
