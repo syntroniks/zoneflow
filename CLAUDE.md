@@ -52,6 +52,25 @@ before touching anything under `hardware/`.
 - `hardware/toolchain-test/` is a test of the flow, not the product. Do not
   reuse its part choices.
 
+## Enclosure flow
+
+The enclosure is generated from text. Read `docs/design/mechanical.md` before
+touching `hardware/mechanical.yaml` or anything under `enclosure/`.
+
+- `hardware/mechanical.yaml` is the mechanical contract between the board
+  and the enclosure. Edit it, `enclosure/params.scad` and
+  `enclosure/zoneflow.scad`. Run `make` in `enclosure/`. It fails if the
+  interference check fails.
+- `enclosure/board_params.scad`, `enclosure/output/` and
+  `docs/assets/enclosure/` are generated and committed, so that someone can
+  print the parts and read the site without the tools. Never edit them by
+  hand.
+- `make` needs an OpenSCAD with the Manifold backend. The packaged 2021.01
+  does not have it. `make openscad` in `enclosure/` fetches a snapshot into
+  `enclosure/.cache/`, which is not committed.
+- Nothing has been printed. Claim only what `enclosure/tools/check.py`
+  checked.
+
 ## Tools on the build machine
 
 KiCad 10 (`kicad-cli`, `pcbnew` Python module), ngspice, OpenSCAD, `uv`,

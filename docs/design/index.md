@@ -10,6 +10,7 @@ one to change, change it in the same pull request. See
 - [Display interface](display-ui.md): the local interface on the 320x240 panel: controls, screen map, every screen as drawn by the desktop simulator, visual language, wording, what is verified and what is still weak.
 - [Hardware toolchain](hardware-toolchain.md): how a board goes from text to a KiCad 10 project and fabrication files with no GUI, what was checked, and the known limits.
 - [Hardware design](hardware-design.md): the rev A circuit, block by block, with part numbers, calculations, the net list, the risk register and the bring-up plan. A paper design. Nothing in it is measured.
+- [Mechanical design](mechanical.md): the board outline, every mechanically fixed part position, the component height limits and the antenna rule, for the PCB layout engineer. Explains `hardware/mechanical.yaml`. A paper design. Nothing has been printed.
 - [Hardware review A1](hardware-review-a1.md): the independent review of the rev A circuit before schematic capture. Findings by severity, the verdict on each departure from the specification, the keep-alive contract with the firmware, what was verified from data sheets and what was not.
 
 The independent design review before fabrication is tracked in
