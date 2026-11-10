@@ -12,6 +12,7 @@ Design and interfaces: [`docs/design/firmware-architecture.md`](../../docs/desig
 Network security: [`docs/design/firmware-security.md`](../../docs/design/firmware-security.md).
 REST API: [`docs/firmware/api.md`](../../docs/firmware/api.md) and
 [`docs/firmware/openapi.json`](../../docs/firmware/openapi.json).
+The display: [`docs/design/display-ui.md`](../../docs/design/display-ui.md).
 
 ## Build the firmware
 
@@ -27,7 +28,26 @@ idf.py -p /dev/ttyACM0 flash monitor
 
 `sdkconfig` is generated from `sdkconfig.defaults` and is not committed.
 Board options (output-enable type, keep-alive period, control period) are in
-`idf.py menuconfig` under "ZoneFlow board".
+`idf.py menuconfig` under "ZoneFlow board". The first build downloads LVGL
+9.6.0 into `managed_components/` (ESP-IDF component manager).
+
+The provisional pin map is three GPIO short, so this default build does not
+start the display (see `components/zf_board`, "pin budget"). To build with
+the display on the pins of the over-current trip and zero-cross inputs:
+
+```sh
+idf.py -B build-display -D SDKCONFIG=build-display/sdkconfig -D ZF_DISPLAY=1 build
+```
+
+## Run the display on a desktop
+
+```sh
+firmware/zoneflow-fw/sim/run.sh                      # window, needs SDL2
+firmware/zoneflow-fw/sim/run.sh --screenshots out/   # headless, a PNG of every screen
+```
+
+The simulator runs the firmware's display code on the real controller core
+with fake hardware. Keys and details: [`sim/README.md`](sim/README.md).
 
 The first build downloads two managed components from the ESP-IDF component
 registry (`espressif/mdns` 1.14.1, `joltwallet/littlefs` 1.22.3) into
@@ -59,7 +79,9 @@ firmware/zoneflow-fw/test/host/run.sh
 ```
 
 The script builds with AddressSanitizer and UndefinedBehaviorSanitizer and
-runs every test through CTest. Extra arguments go to `ctest`.
+runs every test through CTest. Extra arguments go to `ctest`. The suites
+cover the core and the display logic (`ui_*_test.cpp`); the display tests
+need no LVGL.
 
 ## Format
 
@@ -80,9 +102,11 @@ CI checks formatting with the same clang-format version.
 | `components/zf_net/` | WiFi station with backoff, BLE (Security 2) and SoftAP provisioning, hostname, mDNS, captive DNS, re-provision and factory reset. |
 | `components/zf_web/` | HTTP(S) server, REST API under `/api/v1`, Server-Sent Events stream, admin authentication, static files from LittleFS, built-in fallback and setup pages. |
 | `components/zf_ota/` | Firmware upload and HTTPS pull, web UI image upload, post-boot self-test and rollback. |
-| `components/zf_mqtt`, `zf_display` | Stubs with the planned work written in each header. |
+| `components/zf_display/` | The local interface. `src/ui`: display logic, no LVGL, host-tested. `src/view`: LVGL drawing. `src/port`: ST7789 over SPI, backlight, encoder, buttons, the UI task. |
+| `components/zf_mqtt` | Stub with the planned work written in its header. |
+| `sim/` | Desktop simulator of the display and the screenshot generator. |
 | `main/app_main.cpp` | Wires everything together and starts the tasks. |
-| `test/host/` | GoogleTest suites and fakes for the core. |
+| `test/host/` | GoogleTest suites and fakes for the core and the display logic. |
 | `test/vectors/` | Schedule cases shared by the C++ scheduler test and the web UI's preview. |
 | `web/` | Browser UI (Preact, TypeScript), mock controller and its tests. |
 | `partitions.csv` | 16 MB layout: NVS, two 4 MB OTA slots, 7.75 MB LittleFS `www` for web and display assets, 128 KB core dump. |
@@ -90,8 +114,11 @@ CI checks formatting with the same clang-format version.
 ## What is verified
 
 - Host tests: `test/host/run.sh`, all suites pass under ASan and UBSan.
+- Display simulator: `sim/run.sh --screenshots <dir>` draws all 65 scenes.
+  The pictures in `docs/design/display-ui/` are its output.
 - `idf.py build` with ESP-IDF v5.5.6 for esp32s3 completes with no warnings
-  in ZoneFlow code. Image size 1 501 983 bytes (35.8 % of a 4 MB OTA slot).
+  in ZoneFlow code, in the default configuration and with `-D ZF_DISPLAY=1`.
+  Image sizes are in the firmware architecture document.
 - Web UI (`web/`): unit tests (vitest) and Playwright end-to-end tests on a
   phone, a 320 px and a desktop viewport, all against the mock controller in
   `web/mock/`, not against firmware. The schedule preview and the C++
@@ -100,4 +127,6 @@ CI checks formatting with the same clang-format version.
   timing, the current-sense scaling and the PCF8563 driver are untested
   against hardware. So are WiFi, provisioning with a phone, mDNS, the HTTP
   server, HTTPS, the event stream and OTA: only their logic is unit-tested,
-  the ESP-IDF glue is compiled but has never executed.
+  the ESP-IDF glue is compiled but has never executed. The same holds for
+  every part of the display that touches hardware: panel, backlight,
+  encoder, buttons, PSRAM.

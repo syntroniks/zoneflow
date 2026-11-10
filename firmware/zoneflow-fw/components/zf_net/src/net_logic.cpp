@@ -160,10 +160,13 @@ ProvAction ProvisioningFsm::onSuccess()
 
 ProvAction ProvisioningFsm::tick(MonoMs now)
 {
-    if (!active_ || session_) {
+    if (!active_) {
         return ProvAction::None;
     }
     const MonoMs elapsed = now - since_;
+    if (session_ && elapsed < timeouts_.heldWindowMaxMs) {
+        return ProvAction::None;
+    }
     if (provisioned_) {
         if (elapsed >= timeouts_.reprovisionWindowMs) {
             active_ = false;

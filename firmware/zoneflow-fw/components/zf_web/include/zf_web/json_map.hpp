@@ -28,7 +28,8 @@ using JsonPtr = std::unique_ptr<cJSON, JsonDeleter>;
 std::string printJson(const cJSON *json);
 
 // cJSON parses recursively; the request is rejected before parsing when it
-// nests deeper than this. Same limit as the configuration parser.
+// nests deeper than this, or closes a bracket it never opened. Same limit as
+// the configuration parser.
 inline constexpr int kMaxJsonDepth = 16;
 bool jsonDepthOk(std::string_view text, int maxDepth = kMaxJsonDepth);
 // Parses after the depth check; null on error.

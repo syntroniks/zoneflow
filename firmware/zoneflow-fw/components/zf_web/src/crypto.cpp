@@ -116,6 +116,21 @@ Sha256Digest Sha256::hash(const void *data, std::size_t len)
     return s.finish();
 }
 
+void Sha256::wipe()
+{
+    secureZero(h_.data(), sizeof h_);
+    secureZero(buf_.data(), sizeof buf_);
+    reset();
+}
+
+void secureZero(void *p, std::size_t len)
+{
+    auto *v = static_cast<volatile uint8_t *>(p);
+    while (len-- > 0) {
+        *v++ = 0;
+    }
+}
+
 HmacSha256::HmacSha256(const void *key, std::size_t keyLen)
 {
     std::array<uint8_t, 64> k{};
@@ -135,6 +150,15 @@ HmacSha256::HmacSha256(const void *key, std::size_t keyLen)
     }
     outerStart_.update(pad.data(), pad.size());
     inner_ = innerStart_;
+    secureZero(k.data(), k.size());
+    secureZero(pad.data(), pad.size());
+}
+
+HmacSha256::~HmacSha256()
+{
+    innerStart_.wipe();
+    outerStart_.wipe();
+    inner_.wipe();
 }
 
 Sha256Digest HmacSha256::finish()
@@ -143,7 +167,9 @@ Sha256Digest HmacSha256::finish()
     Sha256 outer = outerStart_;
     outer.update(innerDigest.data(), innerDigest.size());
     inner_ = innerStart_;
-    return outer.finish();
+    const Sha256Digest out = outer.finish();
+    outer.wipe();
+    return out;
 }
 
 Sha256Digest HmacSha256::mac(const void *key, std::size_t keyLen, const void *data, std::size_t len)
@@ -177,6 +203,8 @@ void pbkdf2Sha256(std::string_view password, const uint8_t *salt, std::size_t sa
         }
         const std::size_t n = std::min(outLen, t.size());
         std::memcpy(out, t.data(), n);
+        secureZero(u.data(), u.size());
+        secureZero(t.data(), t.size());
         out += n;
         outLen -= n;
         ++blockIndex;
