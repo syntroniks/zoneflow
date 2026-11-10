@@ -1,0 +1,506 @@
+# ZoneFlow rev A: mechanical contract between the enclosure and the PCB layout.
+#
+# Status: paper design, 2026-11-10. No board exists and no part has been
+# printed. Every dimension is from a datasheet or drawing named in `sources`,
+# or is a design decision made here. `unconfirmed` lists what must be checked
+# against a physical sample before the board is ordered.
+#
+# This file is the source. `enclosure/tools/gen_params.py` turns it into
+# `enclosure/board_params.scad`, which the enclosure model and the placeholder
+# board model both include. Change a number here, run `make` in `enclosure/`,
+# and the interference check tells you whether the enclosure still clears it.
+# The reasoning is in docs/design/mechanical.md.
+
+schema: 1
+units: mm
+
+frame:
+  origin: >-
+    Bottom-left corner of the board outline, seen from the component (top)
+    side with the terminal blocks along the bottom edge.
+  x: to the right, along the terminal-block edge
+  y: up, away from the terminal blocks, towards the antenna
+  z: >-
+    Out of the top side, towards the user. z = 0 is the top copper surface.
+    The bottom surface is at z = -thickness.
+  rotation: >-
+    Degrees counter-clockwise seen from the top side. Each part states what
+    its 0 degree orientation is.
+  mounted: The board is vertical on a wall, +y up, top side facing the room.
+
+board:
+  # 114 x 100 mm rectangle. Width is set by the bottom-edge connectors
+  # (docs/design/mechanical.md, "Why 114 x 100"). Area 114 cm2.
+  outline: [[0, 0], [114, 0], [114, 100], [0, 100]]
+  corner_radius_max: 1.5
+  thickness: 1.6
+  thickness_tol: 0.16        # 10 %, JLCPCB standard; enclosure allows 0.2
+  outline_tol: 0.2           # enclosure keeps 0.4 to 1.1 mm from every edge
+  edge_keepout: 1.0          # no component body within this of any edge,
+                             # except the edge connectors listed below
+  layers: 2 or 4             # no mechanical preference
+  top_side: all SMT parts, edge connectors, encoder, switches, LEDs, module
+  bottom_side: >-
+    Only C1 and K1 (too tall for the top side) and through-hole pin ends.
+    Everything else on the bottom is the layout engineer's choice within the
+    bottom zones.
+
+# Heights of the enclosure surfaces the board looks at. z as in `frame`.
+stack:
+  fascia_outer_z: 12.5       # front face of the product over the board
+  fascia_inner_z: 10.5       # inside surface of the fascia (2.0 mm skin)
+  cover_inner_z: 13.0        # inside of the wiring cover, over the plugs
+  bottom_clearance: 18.0     # free height below the bottom surface
+  panel_front_z: 11.0        # display glass; 0.5 mm under the bezel lip
+  panel_back_z: 8.95         # panel_front_z - 2.05
+  panel_pad: 0.1             # tape between panel and carrier deck
+  deck_thickness: 1.2        # display carrier deck under the panel
+  header_face_y: -2.0        # mating face of J1 to J4, beyond the board edge
+  top_gap: 10.0              # free space above the top board edge (antenna)
+
+holes:
+  # M3 clearance holes, 3.4 mm, not plated or plated and isolated. The 0.2 mm
+  # of radial play is how the enclosure takes up a board that is 0.2 mm off.
+  # keepout diameters: no component and no exposed copper other than an
+  # optional ground ring under a screw head.
+  - {id: A, x: 5.5, y: 95.0, d: 3.4, kind: screw, top_keepout: 9.0, bottom_keepout: 10.0,
+     note: "Display carrier leg and board screw, M3x16 countersunk from the top"}
+  - {id: B, x: 70.0, y: 95.0, d: 3.4, kind: screw, top_keepout: 9.0, bottom_keepout: 10.0,
+     note: "Display carrier leg and board screw, M3x16 countersunk from the top"}
+  - {id: C, x: 4.5, y: 12.0, d: 3.4, kind: screw, top_keepout: 7.0, bottom_keepout: 10.0,
+     note: "Board screw, M3x6 pan head"}
+  - {id: D, x: 109.5, y: 12.0, d: 3.4, kind: screw, top_keepout: 7.0, bottom_keepout: 10.0,
+     note: "Board screw, M3x6 pan head"}
+  # No hole: the carrier rests on the top surface here.
+  - {id: E, x: 5.0, y: 61.0, d: 0, kind: foot, top_keepout: 6.0, bottom_keepout: 0,
+     note: "Display carrier foot, 4 x 4 mm, rests on the board"}
+  - {id: F, x: 70.0, y: 61.0, d: 0, kind: foot, top_keepout: 6.0, bottom_keepout: 0,
+     note: "Display carrier foot, 4 x 4 mm, rests on the board"}
+  # No hole: a post in the base supports the board under the encoder.
+  - {id: G, x: 86.0, y: 64.0, d: 0, kind: post, top_keepout: 0, bottom_keepout: 7.0,
+     note: "Support post under the board, takes encoder push force"}
+  # There is deliberately no screw in the top-right corner: a steel screw
+  # there would sit inside the 15 mm antenna clearance.
+
+# Mechanically constrained parts. x, y is the part's reference point in board
+# coordinates. `model` lists the boxes and cylinders that the placeholder
+# board model and the interference check use, as offsets from x, y with the
+# part already in its final orientation:
+#   box: [dx, dy, size_x, size_y, z0, z1]   cyl: [dx, dy, diameter, z0, z1]
+# z0 and z1 are heights above the surface the part is mounted on, so a
+# bottom-side part also counts upward from 0.
+parts:
+  - ref: DS1
+    name: HS20HS072RX 2.0 inch TFT panel
+    side: top
+    mount: >-
+      Not on the board. The panel lies on the printed display carrier, which
+      stands on the board at A, B, E and F. Ribs inside the fascia locate it;
+      nothing clamps the glass. It is used in landscape with the FPC edge
+      towards +x.
+    x: 35.0                  # centre of the active area
+    y: 78.0
+    rot: 90                  # 0 = datasheet front view, FPC at the bottom
+    active_area: [40.8, 30.6]          # src: display
+    outline: [51.8, 36.2]              # src: display, tolerance 0.2
+    outline_origin: [11.96, 59.9]      # lower-left corner of the outline
+    aa_to_edge_opposite_fpc: 2.64      # src: display
+    aa_to_long_edge: 2.8               # src: display
+    viewing_area: [43.94, 33.6]        # src: display note 8, recommended window
+    thickness: 2.05                    # src: display, tolerance 0.05
+    window_margin: 0.6                 # bezel opening = active area + this per side
+    fpc_tail_length: 20.7              # src: display, tolerance 0.5, beyond the outline
+    fpc_tail_width: 6.5                # src: display
+    fpc_tail_centre_y: 78.43           # 59.9 + 15.28 + 6.5 / 2
+    fpc_root_y: [67.2, 88.65]          # wide part of the FPC, first 10 mm; scaled from the drawing
+    fpc_exit_below_front: 1.3          # scaled from the side view, not dimensioned
+    model:
+      - box: [2.86, 0, 51.8, 36.2, 8.95, 11.0]
+  - ref: DS1-FPC
+    name: Space swept by the display FPC as it folds under the panel
+    side: top
+    x: 67.0
+    y: 78.0
+    rot: 0
+    model:
+      - box: [0, -0.075, 6.4, 21.65, 4.0, 10.0]    # wide root and bend
+      - box: [-0.5, 0.43, 7.4, 6.9, 0.6, 4.0]      # narrow tail down to J7
+  - ref: J7
+    name: FPC connector 12-way 0.5 mm, flip lock, FPC-05F-12PH20
+    side: top
+    x: 60.5                  # centre of the body
+    y: 78.43                 # centre of the FPC slot = tail centre
+    rot: 0                   # 0 = FPC enters from +x, travelling in -x
+    fpc_entry_x: 63.0        # mouth of the connector
+    pin1_y: 75.68            # pin 1 is the contact nearest y = 0
+    height: 2.0              # src: fpc (part name and listing; no drawing in the PDF)
+    body: [5.0, 9.6]         # assumed, not from a drawing; the footprint governs
+    model:
+      - box: [0, 0, 5.0, 9.6, 0, 2.0]
+  - ref: SW3
+    name: EC11J1525402 encoder with push switch
+    side: top
+    x: 85.0                  # shaft axis
+    y: 78.0
+    rot: 0                   # 0 = terminals A, C, B towards -y; any multiple of 90 is acceptable
+    shaft_top_z: 24.5        # src: encoder, 4.5 body + 20 shaft
+    bushing_d: 8.975         # src: encoder
+    bushing_top_z: 14.5      # src: encoder, 4.5 + 10
+    shaft_d: 5.975           # src: encoder
+    shaft_flat_across: 4.45  # src: encoder
+    shaft_flat_length: 7.0   # src: encoder
+    push_travel: 1.5         # src: encoder, tolerance 0.5
+    model:
+      - box: [0, 0, 15.0, 13.5, 0, 4.5]
+      - box: [0, 0, 8.5, 18.0, 0, 1.2]
+      - cyl: [0, 0, 8.975, 4.5, 14.5]
+      - cyl: [0, 0, 5.975, 14.5, 24.5]
+  - ref: SW4
+    name: Back button, TS-1102S-C-M-B, 10 mm actuator
+    side: top
+    x: 22.0
+    y: 51.5
+    rot: 0                   # 0 = terminals along x
+    actuator_top_z: 10.0     # src: tact, height code M
+    travel: 0.25             # src: tact
+    model:
+      - box: [0, 0, 8.6, 6.0, 0, 3.3]
+      - cyl: [0, 0, 3.5, 3.3, 10.0]
+  - ref: SW5
+    name: Home / Manual button, TS-1102S-C-M-B, 10 mm actuator
+    side: top
+    x: 48.0
+    y: 51.5
+    rot: 0
+    actuator_top_z: 10.0
+    travel: 0.25
+    model:
+      - box: [0, 0, 8.6, 6.0, 0, 3.3]
+      - cyl: [0, 0, 3.5, 3.3, 10.0]
+  # LEDs. One square light pipe stands 0.7 mm above each. All on y = 42.
+  - {ref: D6, name: Status LED, side: top, x: 12.0, y: 42.0, rot: 0, label: "",
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+  - {ref: D902, name: Master valve LED, side: top, x: 26.0, y: 42.0, rot: 0, label: "M",
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+  - {ref: D102, name: Zone 1 LED, side: top, x: 35.5, y: 42.0, rot: 0, label: "1",
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+  - {ref: D202, name: Zone 2 LED, side: top, x: 45.0, y: 42.0, rot: 0, label: "2",
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+  - {ref: D302, name: Zone 3 LED, side: top, x: 54.5, y: 42.0, rot: 0, label: "3",
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+  - {ref: D402, name: Zone 4 LED, side: top, x: 64.0, y: 42.0, rot: 0, label: "4",
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+  - {ref: D502, name: Zone 5 LED, side: top, x: 73.5, y: 42.0, rot: 0, label: "5",
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+  - {ref: D602, name: Zone 6 LED, side: top, x: 83.0, y: 42.0, rot: 0, label: "6",
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+  - {ref: D702, name: Zone 7 LED, side: top, x: 92.5, y: 42.0, rot: 0, label: "7",
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+  - {ref: D802, name: Zone 8 LED, side: top, x: 102.0, y: 42.0, rot: 0, label: "8",
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+  # Bottom edge, left to right as the installer sees it. Mating faces point
+  # towards -y into the wiring compartment.
+  - ref: J5
+    name: USB-C receptacle TYPE-C-31-M-12
+    side: top
+    x: 8.0                   # centre line
+    y: 2.675                 # body centre; mouth 1.0 mm beyond the board edge
+    rot: 0                   # 0 = mouth towards -y
+    mouth_y: -1.0            # read off the footprint drawing, not dimensioned
+    opening_centre_z: 1.63   # half the 3.26 body height
+    model:
+      - box: [0, 0, 8.94, 7.35, 0, 3.26]
+  - ref: J1
+    name: KF2EDGR-3.81-2P header, 24 VAC
+    side: top
+    x: 19.71                 # centre of the body
+    y: 2.6                   # body centre; mating face at y = -2.0
+    rot: 0                   # 0 = mating face towards -y, pin 1 at the -x end
+    poles: 2
+    pin1: [17.805, 5.9]
+    labels: ["24V~", "24V~"]
+    model:
+      - box: [0, 0, 8.42, 9.2, 0, 7.0]
+  - ref: J2
+    name: KF2EDGR-3.81-7P header, COM COM MV 1 2 3 4
+    side: top
+    x: 41.655
+    y: 2.6
+    rot: 0
+    poles: 7
+    pin1: [30.225, 5.9]
+    labels: ["COM", "COM", "MV", "1", "2", "3", "4"]
+    model:
+      - box: [0, 0, 27.47, 9.2, 0, 7.0]
+  - ref: J3
+    name: KF2EDGR-3.81-4P header, zones 5 to 8
+    side: top
+    x: 64.01
+    y: 2.6
+    rot: 0
+    poles: 4
+    pin1: [58.295, 5.9]
+    labels: ["5", "6", "7", "8"]
+    model:
+      - box: [0, 0, 16.04, 9.2, 0, 7.0]
+  - ref: J4
+    name: KF2EDGR-3.81-7P header, 5V FLOW GND RAIN GND AUX GND
+    side: top
+    x: 89.765
+    y: 2.6
+    rot: 0
+    poles: 7
+    pin1: [78.335, 5.9]
+    labels: ["5V", "FLOW", "GND", "RAIN", "GND", "AUX", "GND"]
+    model:
+      - box: [0, 0, 27.47, 9.2, 0, 7.0]
+  - ref: J6
+    name: JST SH 4-way side entry, Qwiic
+    side: top
+    x: 109.25
+    y: 1.625                 # body centre; mouth 0.5 mm beyond the board edge
+    rot: 0                   # 0 = mouth towards -y
+    model:
+      - box: [0, 0, 6.0, 4.25, 0, 2.95]
+  # Mated screw plugs. Not on the board; here so the check covers them.
+  - {ref: J1-plug, name: KF2EDGK-3.81-2P plug, side: top, x: 19.71, y: -6.45, rot: 0, group: mate,
+     model: [{box: [0, 0, 8.42, 8.9, 0, 11.6]}]}
+  - {ref: J2-plug, name: KF2EDGK-3.81-7P plug, side: top, x: 41.655, y: -6.45, rot: 0, group: mate,
+     model: [{box: [0, 0, 27.47, 8.9, 0, 11.6]}]}
+  - {ref: J3-plug, name: KF2EDGK-3.81-4P plug, side: top, x: 64.01, y: -6.45, rot: 0, group: mate,
+     model: [{box: [0, 0, 16.04, 8.9, 0, 11.6]}]}
+  - {ref: J4-plug, name: KF2EDGK-3.81-7P plug, side: top, x: 89.765, y: -6.45, rot: 0, group: mate,
+     model: [{box: [0, 0, 27.47, 8.9, 0, 11.6]}]}
+  - ref: U4
+    name: ESP32-S3-WROOM-1-N16R8
+    side: top
+    x: 103.0                 # centre of the 18 x 25.5 mm module
+    y: 93.25                 # the 6 mm antenna end is beyond the board edge
+    rot: 0                   # 0 = antenna towards +y
+    antenna_rect: [94.0, 100.0, 112.0, 106.0]   # x0, y0, x1, y1, off the board
+    model:
+      - box: [0, 0, 18.0, 25.5, 0, 3.25]
+  - ref: BT1
+    name: CR2032 holder BS-6
+    side: top
+    x: 93.0
+    y: 54.0
+    rot: 0                   # 0 = long axis along x
+    placement: >-
+      Reserved position. May move anywhere on the top side that is in zone
+      T_GENERAL and not under the display carrier, a button or the light-pipe
+      strip, so that the cell lifts out once the fascia is off.
+    model:
+      - box: [0, 0, 31.3, 16.0, 0, 5.5]
+  # The two parts that do not fit on the top side.
+  - ref: C1
+    name: Lelon VZH471M1JTR-1616, 16 x 16.5 mm
+    side: bottom
+    x: 16.0
+    y: 32.0
+    rot: 0
+    placement: Suggested position. Free within the bottom zones.
+    model:
+      - box: [0, 0, 17.0, 17.0, 0, 17.0]
+  - ref: K1
+    name: Omron G5NB-1A-E relay
+    side: bottom
+    x: 42.0
+    y: 22.0
+    rot: 0
+    placement: Suggested position. Free within the bottom zones.
+    model:
+      - box: [0, 0, 20.5, 7.2, 0, 15.3]
+
+# Maximum component height above each surface, per region. A region listed
+# later overrides one listed earlier where they overlap, and the lowest limit
+# wins between the general zone and any specific zone. `max_height: 0` means
+# no component. The parts in `parts` are exempt inside their own footprint.
+zones:
+  - {id: T_GENERAL, side: top, rect: [0, 0, 114, 100], max_height: 9.0,
+     why: "Fascia inner surface at 10.5, less 1.5 for print tolerance"}
+  - {id: T_CARRIER, side: top, rect: [0, 57.5, 74.5, 100], max_height: 6.5,
+     why: "Display carrier deck and arms, underside at 7.65"}
+  - {id: T_FPC, side: top, rect: [58, 66.5, 72, 89.5], max_height: 0,
+     why: "The display FPC folds through here. J7 only."}
+  - {id: T_BTN_BACK, side: top, rect: [11.5, 45, 32.5, 58], max_height: 7.0,
+     why: "Flange of the button cap, underside at 8.0, moves 0.25"}
+  - {id: T_BTN_HOME, side: top, rect: [37.5, 45, 58.5, 58], max_height: 7.0,
+     why: "Flange of the button cap"}
+  - {id: T_LIGHTPIPE, side: top, rect: [9.3, 39.3, 104.7, 44.7], max_height: 1.0,
+     why: "Light pipes end at z = 1.5 over each LED; their rail runs the length"}
+  - {id: T_ANTENNA, side: top, rect: [79, 85, 114, 100], max_height: 3.5,
+     why: "Within 15 mm of the antenna: nothing tall, no metal body other than U4"}
+  - {id: T_EDGE_LEFT, side: top, rect: [0, 0, 1.0, 100], max_height: 0,
+     why: "Fascia lip overhangs the board edge from z = 0.6"}
+  - {id: T_EDGE_RIGHT, side: top, rect: [113, 0, 114, 100], max_height: 0,
+     why: "Fascia lip overhangs the board edge from z = 0.6"}
+  - {id: B_GENERAL, side: bottom, rect: [0, 0, 114, 100], max_height: 17.0,
+     why: "18.0 mm to the back wall. C1 is 17.0 at its maximum."}
+  - {id: B_KEYHOLE_L, side: bottom, rect: [10.5, 70, 28.5, 94], max_height: 10.0,
+     why: "Pocket for the wall screw head, top 11.3 below the board"}
+  - {id: B_KEYHOLE_R, side: bottom, rect: [85.5, 70, 103.5, 94], max_height: 10.0,
+     why: "Pocket for the wall screw head"}
+  - {id: B_ANTENNA, side: bottom, rect: [79, 85, 114, 100], max_height: 3.5,
+     why: "Within 15 mm of the antenna"}
+
+antenna:
+  module: U4
+  rule: >-
+    The module sits in the top-right corner with its 18 x 6 mm antenna area
+    wholly beyond the top board edge, feed point towards the corner. That is
+    position 3 of figure 24 in Espressif's guidelines. No board material, and
+    therefore no copper, lies beside or under the antenna.
+  clearance: 15.0            # src: esp-hw-guide, "at least 15 mm ... in all directions"
+  antenna_area: [18.0, 6.0]  # src: wroom
+  what_the_enclosure_gives: >-
+    No metal within 15 mm in the board plane: nearest are the encoder frame at
+    15.3 mm and screw B at 24 mm. Plastic is closer than 15 mm: the top wall
+    is 4 mm above the antenna, the fascia 9.5 mm in front. The wall the unit
+    hangs on is 21 mm behind.
+
+# Heights of the tall or awkward parts, with where each number came from.
+heights:
+  - {ref: C1, part: VZH471M1JTR-1616, height: 17.0, src: cap,
+     note: "16.5 +/- 0.5. Base 17.0 x 17.0. Bottom side only."}
+  - {ref: C1-alt, part: 63PX470MEFC12.5X20, height: 21.5, src: rubycon,
+     note: "12.5 x 20 radial plus its length tolerance, taken as 1.5. Does not fit standing. Fits lying down, 12.5 high."}
+  - {ref: K1, part: G5NB-1A-E, height: 15.3, src: relay,
+     note: "20.5 x 7.2 x 15.3 maximum. Bottom side only."}
+  - {ref: L1, part: SRN6045TA-470M, height: 4.5, src: inductor,
+     note: "4.2 +/- 0.3. Top side, anywhere in T_GENERAL."}
+  - {ref: J1-J4, part: KF2EDGR-3.81, height: 7.0, src: header,
+     note: "9.2 deep, pin row 1.3 from the back, length P x 3.81 + 0.8"}
+  - {ref: plugs, part: KF2EDGK-3.81, height: 11.6, src: plug,
+     note: "11.1 thick, taken as starting 0.5 above the board; 15.6 long, 6.7 inserted"}
+  - {ref: SW3, part: EC11J1525402, height: 24.5, src: encoder, note: "Shaft top"}
+  - {ref: SW4 SW5, part: TS-1102S-C-M-B, height: 10.0, src: tact, note: "Code M"}
+  - {ref: BT1, part: CR2032-BS-6-1, height: 5.5, src: cr2032, note: "31.3 x 16 over the pins"}
+  - {ref: U4, part: ESP32-S3-WROOM-1, height: 3.25, src: wroom, note: "3.1 +/- 0.15"}
+  - {ref: J5, part: TYPE-C-31-M-12, height: 3.26, src: usbc, note: "8.94 x 7.35 body"}
+  - {ref: J6, part: SM04B-SRSS-TB, height: 2.95, src: jst, note: "4.25 deep; width 6.0 not read from the drawing"}
+  - {ref: Q101-Q901, part: T410-600B-TR DPAK, height: 2.4, src: triac, note: "Dimension A maximum"}
+  - {ref: D6 D102-D902, part: LTST-C190KGKT, height: 0.8, src: led, note: "\"Extra thin (0.80 mm)\""}
+
+unconfirmed:
+  - id: fpc_contact_side
+    what: Which face of the display FPC carries the contacts
+    assumed: >-
+      The display side. The front view of the drawing shows the twelve
+      fingers and the rear view shows a hatched 5 x 6.5 mm stiffener. Folded
+      under the panel, the contacts then face the board, which is what the
+      bottom-contact J7 needs.
+    if_wrong: Fit the top-contact version of J7 on the same footprint. Nothing mechanical moves.
+  - id: fpc_reach
+    what: Whether the 20.7 +/- 0.5 mm tail reaches J7 in a C-fold
+    assumed: >-
+      Tail leaves the panel 1.3 mm below the glass, drops 8.7 mm to a slot
+      1.0 mm above the board on a 4.35 mm radius (13.7 mm of length), 3.3 mm
+      inserted, 3.7 mm straight. J7's mouth is 0.76 mm inside the panel edge.
+    if_wrong: Move J7 along x. It is the only part that moves.
+  - id: fpc_tail_offset
+    what: Whether 15.28 mm is to the edge of the tail or its centre
+    assumed: The edge. Scaling the drawing agrees within 0.1 mm.
+    if_wrong: J7 moves 3.25 mm along y.
+  - id: j7_body
+    what: Body size and slot height of FPC-05F-12PH20
+    assumed: 5.0 x 9.6 mm body, slot 1.0 mm above the board, 2.0 mm high
+    if_wrong: The carrier cut-out is 9 x 23 mm, so there is room.
+  - id: panel_tabs
+    what: The eight 0.6 mm frame tabs marked on the panel drawing
+    assumed: They stay within 0.4 mm of the outline
+    if_wrong: Raise display_fit in enclosure/params.scad.
+  - id: plug_height
+    what: Height of the top of a mated KF2EDGK plug above the board
+    assumed: 11.6 mm. The drawing gives 11.1 mm thickness but not its offset to the header.
+    if_wrong: The wiring cover has 1.4 mm above that.
+  - id: usb_mouth
+    what: How far the USB-C shell overhangs the board edge
+    assumed: 1.0 mm
+    if_wrong: The opening is sized for the plug overmold, so up to 2 mm either way is fine.
+  - id: usb_overmold
+    what: Largest USB-C plug overmold
+    assumed: 12.35 x 6.5 mm, from memory of the USB Type-C specification, not re-read
+    if_wrong: Opening is 13 x 7.4 mm. A fatter plug will not go in.
+  - id: sm04b_width
+    what: Width of the SM04B-SRSS-TB body
+    assumed: 6.0 mm
+    if_wrong: Opening is 7.5 mm wide.
+  - id: moc_fuse_height
+    what: Heights of MOC3023SR2M and the 0154 fuse holder
+    assumed: Under 9 mm. Not read from a drawing.
+    if_wrong: Both are well under the limit for any plausible value.
+  - id: insert
+    what: Hole for the M3 heat-set insert
+    assumed: 4.0 mm diameter for a 5.7 mm long insert
+    if_wrong: insert_d and insert_depth in enclosure/params.scad.
+
+sources:
+  display:
+    doc: HS20HS072RX datasheet v1.0, 2020-11-04, outline drawing on PDF page 10
+    url: https://www.lcsc.com/datasheet/C5329582.pdf
+    read: Rendered at 360 dpi and read as an image.
+  encoder:
+    doc: ALPS EC11J1525402 product sheet, dimensions drawing
+    url: https://www.lcsc.com/datasheet/C209762.pdf
+    read: Image. The hardware design document's "did not take the encoder's height" is now closed.
+  tact:
+    doc: XKB TS-1102S-C-M-B drawing rev A1
+    url: https://www.lcsc.com/datasheet/C381050.pdf
+    read: Image. Height table, body 6 x 6 x 3.3, actuator 3.5 diameter.
+  header:
+    doc: Cixi Kefa KF2EDGR-3.81 drawing rev A
+    url: https://www.lcsc.com/datasheet/C441187.pdf
+    read: Image
+  plug:
+    doc: Cixi Kefa KF2EDGK-3.81 drawing rev A
+    url: https://www.lcsc.com/datasheet/C440863.pdf
+    read: Image
+  usbc:
+    doc: HRO TYPE-C-31-M-12 drawing
+    url: https://www.lcsc.com/datasheet/C165948.pdf
+    read: Image
+  jst:
+    doc: JST SH connector catalogue page
+    url: https://www.lcsc.com/datasheet/C160404.pdf
+    read: Text only, heights 2.95 and depth 4.25
+  cr2032:
+    doc: Q&J BS-6 battery holder drawing
+    url: https://www.lcsc.com/datasheet/C70377.pdf
+    read: Image
+  cap:
+    doc: Lelon VZH series, catalogue 2025E3
+    url: https://www.lcsc.com/datasheet/C249935.pdf
+    read: Text, dimension table row 16 x 16.5
+  rubycon:
+    doc: Rubycon PX series
+    url: https://www.lcsc.com/datasheet/C88758.pdf
+    read: Text
+  relay:
+    doc: Omron G5NB, Chinese edition
+    url: https://www.lcsc.com/datasheet/C48746.pdf
+    read: Text, outline dimensions
+  inductor:
+    doc: Bourns SRN6045TA
+    url: https://www.lcsc.com/datasheet/C5151734.pdf
+    read: Text
+  fpc:
+    doc: XUNPU FPC-05F-12PH20 product specification
+    url: https://www.lcsc.com/datasheet/C2856799.pdf
+    read: Text. The PDF refers to a drawing that is not in it.
+  triac:
+    doc: ST T4 series, DPAK package data
+    url: https://www.lcsc.com/datasheet/C2970064.pdf
+    read: Text
+  led:
+    doc: Lite-On LTST-C190KGKT
+    url: https://www.lcsc.com/datasheet/C125094.pdf
+    read: Text
+  wroom:
+    doc: ESP32-S3-WROOM-1 datasheet v1.8, figure 10-1
+    url: https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf
+    read: Image
+  esp-hw-guide:
+    doc: ESP32-S3 Hardware Design Guidelines, release master of 2026-11-10, section 1.4.7, figures 24 and 26
+    url: https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32s3/esp-hardware-design-guidelines-en-master-esp32s3.pdf
+    read: Text and image
