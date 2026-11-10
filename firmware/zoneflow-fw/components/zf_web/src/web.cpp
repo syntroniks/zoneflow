@@ -17,6 +17,7 @@
 #include <atomic>
 #include <cinttypes>
 #include <cstdio>
+#include <cstring>
 #include <memory>
 #include <mutex>
 #include <sys/stat.h>
@@ -73,6 +74,13 @@ public:
 
 struct Module;
 Module *gm = nullptr;
+
+// An open event stream and the credentials it was opened with.
+struct Stream {
+    httpd_req_t *req = nullptr;
+    std::string cookie;
+    std::string authorization;
+};
 
 class Platform final : public IPlatformPort {
 public:
@@ -138,7 +146,7 @@ struct Module {
     bool mounted = false;
     std::atomic<uint32_t> stackFreeMin{UINT32_MAX};
     std::mutex streamMutex;
-    std::array<httpd_req_t *, kMaxStreams> streams{};
+    std::array<Stream, kMaxStreams> streams{};
     platform::EventQueueSubscriber events;
 };
 
@@ -202,11 +210,38 @@ std::string peerAddress(httpd_req_t *req)
     return buf;
 }
 
+// True when the client reached this socket through the setup access point
+// (security review F1): the local address is the SoftAP's. IPv4 clients of
+// the dual-stack listener appear as IPv4-mapped IPv6 addresses.
+bool viaSetupAp(httpd_req_t *req)
+{
+    sockaddr_storage addr{};
+    socklen_t len = sizeof addr;
+    if (getsockname(httpd_req_to_sockfd(req), reinterpret_cast<sockaddr *>(&addr), &len) != 0) {
+        return false;
+    }
+    uint32_t v4 = 0;
+    if (addr.ss_family == AF_INET) {
+        v4 = reinterpret_cast<sockaddr_in *>(&addr)->sin_addr.s_addr;
+    } else if (addr.ss_family == AF_INET6) {
+        const uint8_t *b = reinterpret_cast<sockaddr_in6 *>(&addr)->sin6_addr.s6_addr;
+        static constexpr uint8_t kMapped[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff};
+        if (std::memcmp(b, kMapped, sizeof kMapped) != 0) {
+            return false;
+        }
+        std::memcpy(&v4, b + 12, sizeof v4);
+    } else {
+        return false;
+    }
+    return net::isSetupApAddress(v4);
+}
+
 // Owns the strings an ApiRequest points into.
 struct RawRequest {
     std::string method, path, query, host, origin, cookie, authorization, csrf, contentType, peer, body;
     std::size_t contentLength = 0;
     bool tls = false;
+    bool setupAp = false;
 
     explicit RawRequest(httpd_req_t *req)
     {
@@ -224,6 +259,7 @@ struct RawRequest {
         peer = peerAddress(req);
         contentLength = req->content_len;
         tls = req->handle == gm->https && gm->https != nullptr;
+        setupAp = viaSetupAp(req);
     }
 
     ApiRequest view() const
@@ -242,6 +278,7 @@ struct RawRequest {
         r.contentType = contentType;
         r.peer = peer;
         r.tls = tls;
+        r.viaSetupAp = setupAp;
         return r;
     }
 };
@@ -360,11 +397,11 @@ void runPostAction(const ApiResponse &r)
     }
 }
 
-// HTTPS on: port 80 only redirects, except while the setup access point runs
-// (phones reach the setup page over plain HTTP; the AP itself is WPA2).
+// HTTPS on: port 80 only redirects, except for clients of the setup access
+// point (phones reach the setup page over plain HTTP; the AP itself is WPA2).
 bool redirectToHttps(httpd_req_t *req)
 {
-    if (gm->https == nullptr || req->handle != gm->http || net::status().provisioning == net::ProvTransport::SoftAp) {
+    if (gm->https == nullptr || req->handle != gm->http || viaSetupAp(req)) {
         return false;
     }
     const std::string host(hostWithoutPort(header(req, "Host")));
@@ -561,7 +598,7 @@ esp_err_t eventsHandler(httpd_req_t *req)
     bool free = false;
     {
         std::lock_guard<std::mutex> lock(gm->streamMutex);
-        free = std::find(gm->streams.begin(), gm->streams.end(), nullptr) != gm->streams.end();
+        free = std::any_of(gm->streams.begin(), gm->streams.end(), [](const Stream &s) { return s.req == nullptr; });
     }
     if (!free) {
         ApiResponse busy = Api::error(503, "too_many_streams", "at most 3 event streams");
@@ -583,13 +620,27 @@ esp_err_t eventsHandler(httpd_req_t *req)
         return ESP_OK;
     }
     std::lock_guard<std::mutex> lock(gm->streamMutex);
-    auto slot = std::find(gm->streams.begin(), gm->streams.end(), nullptr);
+    auto slot = std::find_if(gm->streams.begin(), gm->streams.end(), [](const Stream &s) { return s.req == nullptr; });
     if (slot == gm->streams.end()) {
         httpd_req_async_handler_complete(async); // lost a race for the last slot
     } else {
-        *slot = async;
+        *slot = Stream{async, raw.cookie, raw.authorization};
     }
     return ESP_OK;
+}
+
+// Stream task only.
+void dropStream(httpd_req_t *c)
+{
+    {
+        std::lock_guard<std::mutex> lock(gm->streamMutex);
+        for (Stream &s : gm->streams) {
+            if (s.req == c) {
+                s = Stream{};
+            }
+        }
+    }
+    httpd_req_async_handler_complete(c);
 }
 
 // Only this task removes streams, so the copy taken under the lock stays
@@ -599,15 +650,30 @@ void broadcast(const std::string &msg)
     std::array<httpd_req_t *, kMaxStreams> clients{};
     {
         std::lock_guard<std::mutex> lock(gm->streamMutex);
-        clients = gm->streams;
+        for (std::size_t i = 0; i < kMaxStreams; ++i) {
+            clients[i] = gm->streams[i].req;
+        }
     }
     for (httpd_req_t *c : clients) {
         if (c != nullptr && httpd_resp_send_chunk(c, msg.data(), static_cast<ssize_t>(msg.size())) != ESP_OK) {
-            {
-                std::lock_guard<std::mutex> lock(gm->streamMutex);
-                std::replace(gm->streams.begin(), gm->streams.end(), c, static_cast<httpd_req_t *>(nullptr));
-            }
-            httpd_req_async_handler_complete(c);
+            dropStream(c);
+        }
+    }
+}
+
+// Security review F5: with protect_reads on, a stream ends with the session
+// that opened it (logout, password change, expiry), and turning
+// protect_reads on ends streams opened without one.
+void dropUnauthorisedStreams()
+{
+    std::array<Stream, kMaxStreams> copy{};
+    {
+        std::lock_guard<std::mutex> lock(gm->streamMutex);
+        copy = gm->streams;
+    }
+    for (const Stream &s : copy) {
+        if (s.req != nullptr && !gm->api->streamMayContinue(s.cookie, s.authorization)) {
+            dropStream(s.req);
         }
     }
 }
@@ -615,7 +681,7 @@ void broadcast(const std::string &msg)
 bool anyStream()
 {
     std::lock_guard<std::mutex> lock(gm->streamMutex);
-    return std::any_of(gm->streams.begin(), gm->streams.end(), [](httpd_req_t *c) { return c != nullptr; });
+    return std::any_of(gm->streams.begin(), gm->streams.end(), [](const Stream &s) { return s.req != nullptr; });
 }
 
 void streamTask(void *)
@@ -627,6 +693,7 @@ void streamTask(void *)
     int64_t lastState = 0;
     int64_t lastSend = 0;
     int64_t lastOtaSend = 0;
+    int64_t lastAuthCheck = 0;
     for (;;) {
         Event e;
         const bool got = gm->events.receive(e, pdMS_TO_TICKS(250));
@@ -634,6 +701,10 @@ void streamTask(void *)
         if (!anyStream()) {
             stateSeq = gm->services->state.sequence();
             continue;
+        }
+        if (now - lastAuthCheck >= 1000) {
+            lastAuthCheck = now;
+            dropUnauthorisedStreams();
         }
         if (got) {
             JsonPtr o(eventToJson(e));
@@ -690,7 +761,7 @@ esp_err_t staticHandler(httpd_req_t *req)
     const std::string host = header(req, "Host");
     const std::string_view uri(req->uri);
     const std::string_view path = uri.substr(0, uri.find('?'));
-    if (n.provisioning == net::ProvTransport::SoftAp) {
+    if (n.provisioning == net::ProvTransport::SoftAp && viaSetupAp(req)) {
         // Captive portal: any foreign host name (OS connectivity checks)
         // goes to the setup page.
         if (!hostAllowed(host, n.hostname.view())) {
@@ -792,9 +863,24 @@ esp_err_t registerHandlers(httpd_handle_t h)
     return ESP_OK;
 }
 
+// The hardware RNG is a true random source only while WiFi or BT runs
+// (ESP-IDF "Random Number Generation"); otherwise it is a PRNG. zf_net
+// starts the radio on its own task and publishes a state other than Off once
+// esp_wifi_start() has returned. A new TLS key waits for that, up to 10 s.
+bool radioRunning()
+{
+    for (int i = 0; i < 100; ++i) {
+        if (net::status().state != net::NetState::Off) {
+            return true;
+        }
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+    return false;
+}
+
 esp_err_t startHttps()
 {
-    if (!loadOrCreateTls(gm->store, std::string(net::status().hostname.view()), gm->tls)) {
+    if (!loadOrCreateTls(gm->store, std::string(net::status().hostname.view()), gm->tls, &radioRunning)) {
         return ESP_FAIL;
     }
     httpd_ssl_config_t c = HTTPD_SSL_CONFIG_DEFAULT();

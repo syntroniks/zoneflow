@@ -44,7 +44,11 @@ bool jsonDepthOk(std::string_view text, int maxDepth)
                 return false;
             }
         } else if (c == ']' || c == '}') {
-            --depth;
+            // A closer with nothing open is not JSON. Letting the count go
+            // negative would hide the openers after it (security review F7).
+            if (--depth < 0) {
+                return false;
+            }
         }
     }
     return true;

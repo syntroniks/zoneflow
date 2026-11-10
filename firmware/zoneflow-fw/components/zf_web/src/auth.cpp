@@ -59,8 +59,10 @@ bool PasswordRecord::verify(std::string_view password) const
 {
     Sha256Digest d{};
     pbkdf2Sha256(password, salt.data(), salt.size(), iterations, d.data(), d.size());
-    return constantTimeEqual(std::string_view(reinterpret_cast<const char *>(d.data()), d.size()),
-                             std::string_view(reinterpret_cast<const char *>(hash.data()), hash.size()));
+    const bool ok = constantTimeEqual(std::string_view(reinterpret_cast<const char *>(d.data()), d.size()),
+                                      std::string_view(reinterpret_cast<const char *>(hash.data()), hash.size()));
+    secureZero(d.data(), d.size());
+    return ok;
 }
 
 bool passwordAcceptable(std::string_view password)
@@ -91,9 +93,14 @@ const LoginLimiter::Entry *LoginLimiter::find(uint64_t client) const
     return const_cast<LoginLimiter *>(this)->find(client);
 }
 
+bool LoginLimiter::known(uint64_t client) const
+{
+    return std::find(known_.begin(), known_.begin() + knownCount_, client) != known_.begin() + knownCount_;
+}
+
 uint32_t LoginLimiter::retryAfterMs(uint64_t client, MonoMs now) const
 {
-    MonoMs until = globalLockedUntil_;
+    MonoMs until = known(client) ? 0 : globalLockedUntil_;
     if (const Entry *e = find(client)) {
         until = std::max(until, e->lockedUntil);
     }
@@ -143,6 +150,17 @@ void LoginLimiter::success(uint64_t client)
     if (Entry *e = find(client)) {
         *e = Entry{};
     }
+    if (!known(client)) {
+        known_[knownNext_] = client;
+        knownNext_ = (knownNext_ + 1) % kKnownClients;
+        knownCount_ = std::min(knownCount_ + 1, kKnownClients);
+    }
+}
+
+void LoginLimiter::forgetKnown()
+{
+    knownCount_ = 0;
+    knownNext_ = 0;
 }
 
 uint64_t clientKey(std::string_view peerAddress)
@@ -211,6 +229,16 @@ std::optional<Session> SessionTable::use(std::string_view token, MonoMs now)
         }
     }
     return std::nullopt;
+}
+
+bool SessionTable::valid(std::string_view token, MonoMs now) const
+{
+    if (token.empty()) {
+        return false;
+    }
+    return std::any_of(slots_.begin(), slots_.end(), [&](const std::optional<Session> &slot) {
+        return slot.has_value() && constantTimeEqual(slot->token, token) && !expired(*slot, now);
+    });
 }
 
 void SessionTable::remove(std::string_view token)
@@ -287,6 +315,7 @@ AuthError AuthService::storeLocked(std::string_view password)
     }
     record_ = r;
     sessions_.clear();
+    limiter_.forgetKnown();
     return AuthError::Ok;
 }
 
@@ -400,6 +429,12 @@ Principal AuthService::authenticate(std::string_view cookieToken, std::string_vi
     return p;
 }
 
+bool AuthService::sessionValid(std::string_view cookieToken, std::string_view bearerToken, MonoMs now) const
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    return sessions_.valid(bearerToken.empty() ? cookieToken : bearerToken, now);
+}
+
 void AuthService::logout(std::string_view token)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -412,6 +447,7 @@ void AuthService::erase()
     storage_.erase(kPasswordKey);
     record_.reset();
     sessions_.clear();
+    limiter_.forgetKnown();
 }
 
 std::size_t AuthService::sessionCount() const

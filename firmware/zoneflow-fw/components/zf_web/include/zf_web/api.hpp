@@ -48,6 +48,9 @@ struct ApiRequest {
     std::string_view contentType;
     std::string_view peer; // client address, for rate limiting
     bool tls = false;
+    // The connection arrived on the setup access point (local address is the
+    // SoftAP's, not the station's). Provisioning routes need it.
+    bool viaSetupAp = false;
 };
 
 // Work the HTTP glue does after it has sent the response.
@@ -176,6 +179,13 @@ public:
     ApiResponse handle(const ApiRequest &req);
 
     WebSettings settings() const;
+
+    // May an open event stream keep running? The glue admits a stream once
+    // and calls this about once a second with the opener's Cookie and
+    // Authorization headers: with protect_reads on, the stream ends with
+    // the session that opened it (logout, password change, expiry). Does not
+    // count as session use.
+    bool streamMayContinue(std::string_view cookie, std::string_view authorization) const;
 
     // Helpers shared with the glue.
     static ApiResponse error(int status, std::string_view code, std::string_view message, std::string_view path = {});
