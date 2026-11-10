@@ -511,6 +511,20 @@ void Scheduler::evaluate(UtcSeconds now)
         // look back so starts missed during a power cut are found.
         cursor_ = now - kLookBackSec;
         cursorValid_ = true;
+        // A key more than kLargeBackJumpSec ahead of the clock was stored
+        // while the clock was wrong. The clamp below only sees a jump within
+        // one boot, so check the restored keys here.
+        const int64_t k = keyAt(now);
+        bool clamped = false;
+        for (std::size_t i = 0; i < cfg_.schedule.programCount; ++i) {
+            if (keys_[i] > k + kLargeBackJumpSec / 60) {
+                keys_[i] = k;
+                clamped = true;
+            }
+        }
+        if (clamped && listener_ != nullptr) {
+            listener_->onPersistDirty();
+        }
     } else if (now < cursor_) {
         if (cursor_ - now > kLargeBackJumpSec) {
             const int64_t k = keyAt(now);

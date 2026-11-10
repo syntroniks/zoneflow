@@ -650,3 +650,48 @@ TEST_F(SchedulerTest, ProgramWithoutStoredKeyGetsNoCatchUp)
     EXPECT_TRUE(rec.started.empty());
     EXPECT_TRUE(rec.missed.empty());
 }
+
+// ---- review findings ---------------------------------------------------------
+
+// A bogus future RTC time stored keys years ahead. After a reboot the cursor
+// is new, so the "clock set back more than 24 h" clamp never ran and the
+// program stayed silent until the stored date came round again.
+TEST_F(SchedulerTest, FutureKeysFromBogusClockAreClampedAfterReboot)
+{
+    addProgram(makeProgram(1, {at(6, 0)}, {{0, 60}}));
+    apply();
+    begin(utcOf(2031, 6, 1, 5, 59, 59)); // RTC wrong, network down
+    step();
+    ASSERT_EQ(rec.started.size(), 1u);
+    const SchedulerPersist saved = sched->persist();
+
+    // Power cut. At the next boot the clock is right (RTC reset, then SNTP).
+    drv.init(dcfg);
+    makeScheduler();
+    sched->restore(saved);
+    apply();
+    begin(utcOf(2026, 6, 1, 5, 59, 0));
+    runUntil(utcOf(2026, 6, 1, 6, 0, 1));
+    EXPECT_EQ(rec.started.size(), 2u);
+}
+
+// A reboot inside the repeated hour must still not run a start twice: keys
+// less than 24 h ahead of the clock are kept.
+TEST_F(SchedulerTest, KeysSlightlyAheadAreKeptAfterReboot)
+{
+    setBerlin();
+    addProgram(makeProgram(1, {at(2, 30)}, {{0, 60}}));
+    apply();
+    begin(utcOf(2026, 10, 25, 0, 29, 59)); // 02:29:59 CEST
+    step();
+    ASSERT_EQ(rec.started.size(), 1u);
+    const SchedulerPersist saved = sched->persist();
+
+    drv.init(dcfg);
+    makeScheduler();
+    sched->restore(saved);
+    apply();
+    begin(utcOf(2026, 10, 25, 1, 29, 0)); // 02:29 CET, the repeated hour
+    runFor(120);
+    EXPECT_EQ(rec.started.size(), 1u);
+}
