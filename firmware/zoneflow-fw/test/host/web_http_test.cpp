@@ -161,6 +161,45 @@ TEST(StaticFiles, ResolveRules)
     EXPECT_EQ(resolveStatic("relative", true, exists).kind, StaticTarget::Kind::BadPath);
 }
 
+// Security review: encoded and double-encoded traversal, NUL, backslash and
+// overlong UTF-8. Decoding happens once; whatever survives must not contain
+// "..", a backslash or an empty segment.
+TEST(StaticFiles, HostileEncodingsNeverEscapeTheMount)
+{
+    const std::set<std::string> files = {"/index.html", "/assets/app.js"};
+    auto exists = [&](const std::string &p) { return files.count(p) > 0; };
+    for (const char *bad : {"/assets/%2E%2E/%2e%2e/secret", "/..%2fsecret", "/%2e%2e%5csecret", "/a%5c..%5cb",
+                            "/index.html%00.png", "/assets//app.js", "/%2F%2Fetc", "/x/%2e%2e"}) {
+        EXPECT_EQ(resolveStatic(bad, true, exists).kind, StaticTarget::Kind::BadPath) << bad;
+    }
+    for (const char *odd : {"/%252e%252e/secret", "/%c0%ae%c0%ae/secret", "/assets/app.js%3f.gz", "/.%2e.x"}) {
+        const StaticTarget t = resolveStatic(odd, true, exists);
+        EXPECT_EQ(t.path.find(".."), std::string::npos) << odd;
+        EXPECT_EQ(t.path.find('\\'), std::string::npos) << odd;
+    }
+    // A precompressed file is served only as itself, never as "<name>.gz"
+    // with a wrong Content-Encoding.
+    const std::set<std::string> gz = {"/assets/app.js.gz"};
+    auto gzExists = [&](const std::string &p) { return gz.count(p) > 0; };
+    const StaticTarget direct = resolveStatic("/assets/app.js.gz", true, gzExists);
+    EXPECT_EQ(direct.path, "/assets/app.js.gz");
+    EXPECT_FALSE(direct.gzip);
+    EXPECT_STREQ(direct.contentType, "application/octet-stream");
+    EXPECT_EQ(resolveStatic("/assets/app.js", false, gzExists).kind, StaticTarget::Kind::NotFound);
+}
+
+TEST(HttpUtil, HostCheckEdgeCases)
+{
+    EXPECT_FALSE(hostAllowed("zoneflow-ab12.local.evil.com", "zoneflow-ab12"));
+    EXPECT_FALSE(hostAllowed("zoneflow-ab12.localhost", "zoneflow-ab12"));
+    EXPECT_FALSE(hostAllowed("xzoneflow-ab12.local", "zoneflow-ab12"));
+    EXPECT_FALSE(hostAllowed("192.168.1.30.nip.io", "zoneflow-ab12"));
+    EXPECT_FALSE(hostAllowed("1.2.3.4.", "zoneflow-ab12")); // trailing dot: a DNS name, not an address
+    EXPECT_FALSE(hostAllowed(".local", "zoneflow-ab12"));
+    EXPECT_FALSE(originMatchesHost("http://192.168.1.30.evil.com", "192.168.1.30"));
+    EXPECT_FALSE(originMatchesHost("http://192.168.1.30@evil.com", "192.168.1.30"));
+}
+
 TEST(StaticFiles, EmptyPartitionFindsNothing)
 {
     auto none = [](const std::string &) { return false; };
