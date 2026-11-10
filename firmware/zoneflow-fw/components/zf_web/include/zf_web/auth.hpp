@@ -58,9 +58,14 @@ bool passwordAcceptable(std::string_view password);
 // total. Per client: 5 free failures, then a lock of 1 s doubling per further
 // failure, capped at 15 min. In total: 30 failures within 5 min lock every
 // client out for 60 s, which bounds guessing from many spoofed addresses.
+// The global lock spares the last 8 client addresses that proved the
+// password since boot (security review F2): without that, a LAN device
+// rotating through more addresses than there are slots keeps the owner out
+// for as long as it keeps failing. Their own per-client lock still applies.
 class LoginLimiter {
 public:
     static constexpr std::size_t kClients = 16;
+    static constexpr std::size_t kKnownClients = 8;
     static constexpr uint32_t kFreeFailures = 5;
     static constexpr uint32_t kBaseLockMs = 1000;
     static constexpr uint32_t kMaxLockMs = 15u * 60u * 1000u;
@@ -71,7 +76,10 @@ public:
     // 0 if an attempt is allowed now, else milliseconds to wait.
     uint32_t retryAfterMs(uint64_t client, MonoMs now) const;
     void failure(uint64_t client, MonoMs now);
+    // Clears the client's failures and remembers it as known.
     void success(uint64_t client);
+    // New password or factory reset: no client has proved it yet.
+    void forgetKnown();
 
 private:
     struct Entry {
@@ -83,8 +91,12 @@ private:
     };
     Entry *find(uint64_t client);
     const Entry *find(uint64_t client) const;
+    bool known(uint64_t client) const;
 
     std::array<Entry, kClients> entries_{};
+    std::array<uint64_t, kKnownClients> known_{};
+    std::size_t knownCount_ = 0;
+    std::size_t knownNext_ = 0;
     std::array<MonoMs, kGlobalFailures> recent_{};
     std::size_t recentNext_ = 0;
     std::size_t recentCount_ = 0;

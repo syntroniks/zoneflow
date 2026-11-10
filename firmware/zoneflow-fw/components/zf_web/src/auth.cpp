@@ -91,9 +91,14 @@ const LoginLimiter::Entry *LoginLimiter::find(uint64_t client) const
     return const_cast<LoginLimiter *>(this)->find(client);
 }
 
+bool LoginLimiter::known(uint64_t client) const
+{
+    return std::find(known_.begin(), known_.begin() + knownCount_, client) != known_.begin() + knownCount_;
+}
+
 uint32_t LoginLimiter::retryAfterMs(uint64_t client, MonoMs now) const
 {
-    MonoMs until = globalLockedUntil_;
+    MonoMs until = known(client) ? 0 : globalLockedUntil_;
     if (const Entry *e = find(client)) {
         until = std::max(until, e->lockedUntil);
     }
@@ -143,6 +148,17 @@ void LoginLimiter::success(uint64_t client)
     if (Entry *e = find(client)) {
         *e = Entry{};
     }
+    if (!known(client)) {
+        known_[knownNext_] = client;
+        knownNext_ = (knownNext_ + 1) % kKnownClients;
+        knownCount_ = std::min(knownCount_ + 1, kKnownClients);
+    }
+}
+
+void LoginLimiter::forgetKnown()
+{
+    knownCount_ = 0;
+    knownNext_ = 0;
 }
 
 uint64_t clientKey(std::string_view peerAddress)
@@ -287,6 +303,7 @@ AuthError AuthService::storeLocked(std::string_view password)
     }
     record_ = r;
     sessions_.clear();
+    limiter_.forgetKnown();
     return AuthError::Ok;
 }
 
@@ -412,6 +429,7 @@ void AuthService::erase()
     storage_.erase(kPasswordKey);
     record_.reset();
     sessions_.clear();
+    limiter_.forgetKnown();
 }
 
 std::size_t AuthService::sessionCount() const

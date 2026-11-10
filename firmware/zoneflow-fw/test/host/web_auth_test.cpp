@@ -115,6 +115,28 @@ TEST(LoginLimiter, SlowFailuresDoNotTripGlobalLock)
     EXPECT_EQ(l.retryAfterMs(clientKey("10.9.9.9"), now), 0u);
 }
 
+// Security review F2. A LAN device that rotates through more addresses than
+// the limiter has slots (16) keeps the global lock up for as long as it likes:
+// LRU eviction forgets each address's failures. The lock must not keep out a
+// client that has already proved the password since boot.
+TEST(LoginLimiter, GlobalLockSparesAClientThatLoggedInBefore)
+{
+    LoginLimiter l;
+    const uint64_t owner = clientKey("192.168.1.50");
+    l.success(owner);
+    MonoMs now = 1000;
+    for (std::size_t i = 0; i < LoginLimiter::kGlobalFailures; ++i) {
+        l.failure(clientKey("10.0.3." + std::to_string(i)), now);
+    }
+    EXPECT_GT(l.retryAfterMs(clientKey("10.9.9.9"), now), 0u); // strangers stay locked
+    EXPECT_EQ(l.retryAfterMs(owner, now), 0u);
+    // The owner's own failures still lock the owner's address.
+    for (uint32_t i = 0; i < LoginLimiter::kFreeFailures; ++i) {
+        l.failure(owner, now);
+    }
+    EXPECT_GT(l.retryAfterMs(owner, now), 0u);
+}
+
 TEST(Sessions, CreateUseExpireEvict)
 {
     SeqRandom rng;
@@ -203,6 +225,37 @@ TEST_F(AuthServiceTest, LoginRateLimited)
     EXPECT_EQ(limited.error, AuthError::RateLimited);
     EXPECT_EQ(limited.retryAfterS, 1u);
     EXPECT_EQ(auth.login(client, "admin pass", 1000).error, AuthError::Ok);
+}
+
+// Security review F2, end to end: 17 rotating addresses keep everyone else
+// locked out, but the owner who logged in earlier still gets in.
+TEST_F(AuthServiceTest, OwnerLogsInDuringAGlobalLockout)
+{
+    ASSERT_EQ(auth.setInitialPassword("admin pass"), AuthError::Ok);
+    ASSERT_EQ(auth.login(client, "admin pass", 0).error, AuthError::Ok);
+    MonoMs now = 0;
+    for (int round = 0; round < 3; ++round) {
+        now += LoginLimiter::kGlobalLockMs / 2;
+        for (int a = 0; a < 17; ++a) {
+            auth.login(clientKey("10.0.4." + std::to_string(a)), "wrong pass", now);
+        }
+    }
+    EXPECT_EQ(auth.login(clientKey("192.168.1.77"), "admin pass", now).error, AuthError::RateLimited);
+    EXPECT_EQ(auth.login(client, "admin pass", now).error, AuthError::Ok);
+}
+
+// A new password ends the exemption of addresses that proved the old one.
+TEST_F(AuthServiceTest, PasswordChangeForgetsOtherKnownClients)
+{
+    ASSERT_EQ(auth.setInitialPassword("admin pass"), AuthError::Ok);
+    const uint64_t other = clientKey("192.168.1.51");
+    ASSERT_EQ(auth.login(other, "admin pass", 0).error, AuthError::Ok);
+    ASSERT_EQ(auth.changePassword(client, "admin pass", "new password", 0).error, AuthError::Ok);
+    for (std::size_t i = 0; i < LoginLimiter::kGlobalFailures; ++i) {
+        auth.login(clientKey("10.0.5." + std::to_string(i)), "wrong pass", 10);
+    }
+    EXPECT_EQ(auth.login(other, "new password", 10).error, AuthError::RateLimited);
+    EXPECT_EQ(auth.login(client, "new password", 10).error, AuthError::Ok);
 }
 
 TEST_F(AuthServiceTest, AuthenticateCookieAndBearer)
