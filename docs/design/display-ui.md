@@ -6,9 +6,9 @@ firmware's display code on the real controller core with fake hardware. What
 has been checked is listed in [section 12](#12-what-is-verified). Colours,
 brightness, drawing speed and the feel of the encoder need a board.
 
-The provisional pin map is three pins short, so the default firmware build
-does not start the display. A build option gives it the pins of two other
-inputs. See [section 15](#15-open-questions-for-the-hardware-team).
+The display has its own pins on the rev A board (`hardware/pinmap.yaml`):
+SPI2 clock, data and chip select, data/command, reset and backlight. Every
+build starts it.
 
 This document covers the local interface of the standalone firmware
 (system spec sections 3.1 and 4.1): what each screen shows, how the controls
@@ -304,7 +304,8 @@ delay that is running. Home then shows until when, and the next run moves
 past the delay.
 
 **Sensors and flow** is read-only: rain sensor, 24 V AC supply, valve
-current, flow rate, water counted since power-on, master valve, spare input.
+current, flow rate, water counted since power-on, the valve board's state,
+master valve, spare input.
 
 **Faults** lists what is wrong, one row per fault. A row opens the
 explanation:
@@ -327,7 +328,27 @@ uses. No codes.
 | Storage error | Settings could not be saved | Writing to memory failed. Try again. If it keeps failing, the board needs service. |
 | Master lockout | Master valve locked | The master valve failed several times in a row, so no zone can run. Check: master valve wiring and solenoid. Then clear the fault. |
 | No current reading | Valve current not measured | The board gets no current reading. Zones still run, but a broken or shorted valve is not noticed. If it stays, the board needs service. |
-| Hardware trip | Protection tripped | A short circuit made the board switch all valves off. Check: valve wires touching each other or the common wire. Then clear the fault. |
+| Hardware trip | Protection tripped | A short made the board switch all valves off for a moment. The other zones carry on. A zone with three trips in a day stays off. Check: valve wires touching each other or the common wire. Then clear the fault. |
+| Keep-alive detector | Safety circuit failed its test | The circuit that turns the valves off if the controller stops failed its self-test. Nothing runs. Repair the board, then confirm it here. |
+| Expander | Valve driver not responding | The chip that drives the valves did not answer or did not read back what was written. All valves were switched off. Clear the fault to try again. If it comes back, the board needs service. |
+| Welded relay | Valve relay stuck closed | Current flowed although the valve relay should have been open: a welded relay contact or a bridged jumper. Nothing runs. The board needs service. |
+| Shorted output | Valve output stuck on | Current flowed with every valve off: a valve output on the board is shorted. The relay was opened and nothing runs. The board needs service. |
+| Latch stuck | Protection did not reset | The short-circuit protection stayed tripped after the valves were switched off. Nothing runs. Clear the fault to try again. If it comes back, the board needs service. |
+| Sensor supply | Sensor supply overloaded | The 5 V terminal for sensors is overloaded or too hot. Check: sensor wiring and how much current the sensors draw (100 mA at most). |
+| DC current | Zone 3: valve current lopsided | The valve current flowed in one direction only, so the output that drives it is failing. The zone was switched off. The board needs service. |
+| Mains signal | Mains signal wrong | The 24 V AC timing signal is not at mains frequency. Zero-cross switching and current readings may be off. The board needs service. |
+
+A failed self-test of the valve board (hardware design section 19.7) adds a
+line with its step and check, for whoever repairs the board. When a
+keep-alive detector failed (steps 1, 2 and 9), one press does not clear it:
+the button is **Repaired**, and it asks again, with Cancel first, before it
+confirms the repair. The full self-test then runs before any valve opens.
+**Sensors and flow** shows the valve board's state on its own row.
+
+| | | |
+|---|---|---|
+| ![Board fault](display-ui/home-board-fault.png){ width="300" } | ![Detector fault](display-ui/fault-detail-detector.png){ width="300" } | ![Confirm the repair](display-ui/fault-repair-confirm.png){ width="300" } |
+| ![Valve board row](display-ui/sensors-board-fault.png){ width="300" } | | |
 
 A zone-type fault that no zone carries belongs to the master valve and reads
 "Master valve: ...". "No 24 V AC supply", "Clock not set" and "Valve current
@@ -447,12 +468,12 @@ checks after each one that an open valve is shown as open
 | Check | Covers |
 |---|---|
 | `test/host/run.sh` (GoogleTest, ASan, UBSan): 67 display tests | Button debounce, long press, repeat. Encoder detents, lost counts, counter wrap, acceleration. Every picker. Program editor and its mapping into the core configuration, through the stored JSON and back. Next-run forecast including rain delay and a start inside a DST gap. Every time zone entry parses. Navigation: three-input manual run, one-press stop, hold to stop, wake on first input, queue, pause, faults, rain delay, program edit with save, discard and delete, setup, clock, factory reset, wizard, a refused command, a resting zone, a pause that times out. |
-| Simulator, `sim/run.sh --screenshots` | All 65 scenes draw and write a PNG. Each scene is reached with user inputs against the real controller core. |
-| `idf.py build`, ESP-IDF v5.5.6, esp32s3, default and with `sdkconfig.display` | Both configurations build with no warnings. The panel, backlight, encoder and button code is linked only in the second. |
+| Simulator, `sim/run.sh --screenshots` | All 69 scenes draw and write a PNG. Each scene is reached with user inputs against the real controller core; the four valve-board scenes run it on the simulated rev A output stage of the host tests. |
+| `idf.py build`, ESP-IDF v5.5.6, esp32s3 | Builds with no warnings, display included. |
 | Looked at, by the author | All 65 pictures, three rounds. Found and fixed: buttons clipped with four in a row, list rows truncated, weekday labels cut by their frame, the fault too small on Home, no time shown while paused. |
 
 Not checked, because it needs a board: the panel init sequence, orientation
-and colour inversion, SPI at 40 MHz on the chosen pins, PCNT counting with a
+and colour inversion, SPI at 15 MHz on the board's pins, PCNT counting with a
 real encoder, backlight levels, drawing speed, PSRAM, the QR code under a
 phone camera.
 
@@ -526,17 +547,13 @@ build silences it for `zf_core`.
 
 ## 15. Open questions for the hardware team
 
-1. **Pins.** The display needs five signals the provisional map did not
-   have: SPI clock, SPI data, data/command, backlight PWM and the
-   Manual/Home button, with the panel's CS tied low and its reset tied to
-   EN. Two pins were free (43 and 44, UART0); they carry data/command and
-   the button. Clock, data and backlight have no pin. The firmware wants 30
-   signals and the pin rules leave 27 GPIO. Until the hardware lead settles
-   it, `CONFIG_ZF_DISPLAY_ON_SHARED_PINS` gives GPIO47, 48 and 18 to the
-   display and switches the over-current trip and zero-cross inputs off;
-   the default build keeps those inputs and does not start the display.
-   See [firmware architecture](firmware-architecture.md), open question 14,
-   for the ways out.
+1. **Pins.** Answered by `hardware/pinmap.yaml` (hardware design 19.3,
+   questions 8 and 14): SPI2 on GPIO12, 11 and 10, data/command GPIO13,
+   reset GPIO14, backlight GPIO21 (1 to 20 kHz; the firmware uses 5 kHz),
+   Back GPIO18, Manual/Home GPIO39. The firmware drives chip select and
+   reset. The SPI clock is 15 MHz, the ST7789V's guaranteed figure
+   (hardware design 15.3), down from the 40 MHz placeholder. The encoder
+   gives two counts per detent. The shared-pin build option is gone.
 2. **Panel.** Which module, which controller revision, which orientation in
    the enclosure. Clock rate, SPI mode, mirror flags and colour inversion
    are placeholders in the board header.

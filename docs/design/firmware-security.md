@@ -371,12 +371,13 @@ login.
    a server change.
 9. **Event stream slots.** With reads open, any LAN device can hold all 3
    stream slots; the owner's UI then gets 503 for the stream and must poll.
-10. **A restart resets the run-time budget.** The zone driver keeps each
-    zone's accumulated on-time and rest in RAM. An admin who restarts the
-    controller (`POST /system/reboot`, an update, a factory reset,
-    re-provisioning) can shorten the minimum rest from 60 s to the restart
-    time. Holding the budget in RTC memory that survives a software reset
-    would close it; that is a `zf_core` and `zf_platform` change.
+10. **A restart resets the run-time budget: closed for software restarts.**
+    The controller keeps each zone's on-time and closed time in RTC memory
+    with a CRC (firmware architecture section 20), and a restart counts as
+    no rest, so `POST /system/reboot`, an update, a factory reset or
+    re-provisioning no longer shortens the rest. A power cycle or a
+    brownout still loses it: that needs physical access to the controller
+    or its supply. Checked only in host tests.
 11. **Unprovisioned devices advertise indefinitely** (BLE, then the access
     point). Someone in range who also has the setup code could provision it.
 12. **PBKDF2 cost not measured** on the target (4.2).
