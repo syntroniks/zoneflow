@@ -62,6 +62,9 @@ public:
     // One control step. Call every 20..100 ms.
     void tick();
 
+    // Optional, before begin(): a zero-cross input for driver.zero_cross_switching.
+    void attachZeroCross(IZeroCrossHal *zc, int32_t offsetUs) { driver_.setZeroCross(zc, offsetUs); }
+
     // Any context: outputs off and OE tripped. For shutdown/OTA/panic paths.
     void emergencyOff() { driver_.emergencyOff(); }
 

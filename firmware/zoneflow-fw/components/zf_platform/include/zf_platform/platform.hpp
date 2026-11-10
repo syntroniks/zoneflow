@@ -17,6 +17,7 @@
 #include "zf/time/clock.hpp"
 #include "zf/time/time_service.hpp"
 #include "zf/zone/output_enable.hpp"
+#include "zf/zone/zero_cross.hpp"
 
 // IRAM-safe: valve outputs and OE inactive using direct register writes.
 // Safe in panic, brownout and shutdown handlers.
@@ -49,6 +50,23 @@ public:
     void setMaster(bool on) override;
     void allOff() override;
     void clearOverCurrentTrip() override;
+};
+
+// ---- mains zero-cross input --------------------------------------------------------
+
+class ZeroCrossInput final : public IZeroCrossHal {
+public:
+    // ESP_ERR_NOT_SUPPORTED on a board without the signal.
+    esp_err_t init();
+    ZeroCrossSample sample() const override;
+    void delayUs(uint32_t us) override;
+
+private:
+    static void onEdge(void *arg);
+    std::atomic<uint32_t> seq_{0};
+    std::atomic<uint32_t> edges_{0};
+    std::atomic<uint32_t> lastEdgeUs_{0};
+    std::atomic<uint32_t> intervalUs_{0};
 };
 
 // ---- output-enable keep-alive ------------------------------------------------------

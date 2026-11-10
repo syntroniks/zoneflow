@@ -5,6 +5,7 @@ idf_component_register(
          src/safety.cpp
          src/sensors.cpp
          src/time_storage.cpp
+         src/zero_cross.cpp
     INCLUDE_DIRS include
     REQUIRES zf_core esp_driver_i2c freertos esp_event
     PRIV_REQUIRES zf_board esp_driver_gpio esp_driver_pcnt esp_adc esp_timer esp_netif esp_system

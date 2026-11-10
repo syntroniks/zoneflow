@@ -39,6 +39,7 @@ add_executable(zf_host_tests
     scheduler_test.cpp
     time_service_test.cpp
     time_zone_test.cpp
+    zero_cross_test.cpp
     zone_driver_test.cpp
 )
 target_compile_options(zf_host_tests PRIVATE -Wall -Wextra)

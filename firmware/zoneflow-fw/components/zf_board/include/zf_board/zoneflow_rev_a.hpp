@@ -102,7 +102,17 @@ inline constexpr int kOverCurrentClearGpio = 47;        // output, pulse to rele
 inline constexpr bool kOverCurrentClearActiveHigh = true;
 inline constexpr uint32_t kOverCurrentClearPulseUs = 10; // assumed; set from the latch's datasheet
 
-// ---- spare GPIO, not assigned: 48 -------------------------------------------------------
+// ---- mains zero-cross input (PROVISIONAL: no circuit exists yet) -----------------------
+// One pulse per zero crossing of the 24 VAC supply (twice per mains period).
+// Used only with driver.zero_cross_switching; firmware ignores a missing or
+// implausible signal. The offset is the detector's lead (+) or lag (-)
+// relative to the real crossing, to be measured on the first board.
+inline constexpr bool kHasZeroCross = true;
+inline constexpr int kZeroCrossGpio = 48;
+inline constexpr bool kZeroCrossRisingEdge = true;
+inline constexpr int32_t kZeroCrossOffsetUs = 0;
+
+// ---- spare GPIO: none left in this provisional map ----------------------------------------
 
 // ---- compile-time checks ---------------------------------------------------------------
 namespace detail {
@@ -117,11 +127,12 @@ constexpr bool forbidden(int gpio)
 
 constexpr bool highGlitch(int gpio) { return gpio == 18 || gpio == 19 || gpio == 20; }
 
-constexpr std::array<int, 24> kAllPins = {
+constexpr std::array<int, 25> kAllPins = {
     kZoneGpio[0],     kZoneGpio[1],   kZoneGpio[2],   kZoneGpio[3],      kZoneGpio[4],         kZoneGpio[5],
     kZoneGpio[6],     kZoneGpio[7],   kMasterGpio,    kOutputEnableGpio, kStatusLedGpio,       kI2cSdaGpio,
     kI2cSclGpio,      kEncoderAGpio,  kEncoderBGpio,  kEncoderPushGpio,  kButtonGpio,          kRainGpio,
     kSpareSensorGpio, kFlowPulseGpio, kAcPresentGpio, kValveCurrentGpio, kOverCurrentTripGpio, kOverCurrentClearGpio,
+    kZeroCrossGpio,
 };
 
 constexpr bool allAllowed()

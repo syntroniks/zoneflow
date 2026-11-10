@@ -68,6 +68,24 @@ const char *toString(StartError e)
     return "?";
 }
 
+uint32_t zeroCrossWaitUs(const ZeroCrossSample &s, int32_t offsetUs)
+{
+    if (!s.present || s.intervalUs < kZeroCrossMinIntervalUs || s.intervalUs > kZeroCrossMaxIntervalUs) {
+        return 0;
+    }
+    const uint32_t age = s.nowUs - s.lastEdgeUs; // wraps correctly
+    if (age >= s.intervalUs * kZeroCrossMaxAgeIntervals) {
+        return 0;
+    }
+    // Phase since the last target instant, in [0, interval).
+    const auto interval = static_cast<int64_t>(s.intervalUs);
+    int64_t phase = (static_cast<int64_t>(age) - offsetUs) % interval;
+    if (phase < 0) {
+        phase += interval;
+    }
+    return phase == 0 ? 0 : static_cast<uint32_t>(interval - phase);
+}
+
 ZoneDriver::ZoneDriver(IOutputHal &hal, OutputEnableGuard &oe, const IClock &clock) : hal_(hal), oe_(oe), clock_(clock)
 {
 }
@@ -225,9 +243,21 @@ void ZoneDriver::tick()
     oe_.heartbeat(static_cast<uint32_t>(now));
 }
 
+void ZoneDriver::waitForZeroCross()
+{
+    if (zeroCross_ == nullptr || !cfg_.zeroCrossSwitching) {
+        return;
+    }
+    const uint32_t wait = zeroCrossWaitUs(zeroCross_->sample(), zeroCrossOffsetUs_);
+    if (wait > 0) {
+        zeroCross_->delayUs(wait);
+    }
+}
+
 void ZoneDriver::openZone(ZoneIndex zone, MonoMs now)
 {
     Zone &z = zones_[zone];
+    waitForZeroCross();
     hal_.setZone(zone, true);
     z.state = ValveState::Open;
     z.openedAtMs = now;
@@ -261,6 +291,9 @@ void ZoneDriver::closeZone(ZoneIndex zone, StopReason reason, MonoMs now)
 
 void ZoneDriver::setMaster(bool on, MonoMs now)
 {
+    if (on) {
+        waitForZeroCross(); // turning off needs no alignment (triac)
+    }
     hal_.setMaster(on);
     masterOn_ = on;
     lastChangeMs_ = now;

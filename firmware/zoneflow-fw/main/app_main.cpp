@@ -45,6 +45,7 @@ EventBus gEvents;
 StateStore gState;
 CommandQueue gCommands;
 ConfigStore gConfig(gStorage);
+platform::ZeroCrossInput gZeroCross;
 TimeService *gTime = nullptr;
 Controller *gController = nullptr;
 
@@ -120,6 +121,9 @@ extern "C" void app_main(void)
     static Controller controller(
         ControllerDeps{gClock, gOutputs, gSensors, gOutputEnable, gEvents, gState, gConfig, &gStorage});
     gController = &controller;
+    if (gZeroCross.init() == ESP_OK) {
+        controller.attachZeroCross(&gZeroCross, board::kZeroCrossOffsetUs);
+    }
     ESP_ERROR_CHECK(platform::installSafetyHooks(controller, gOutputEnable));
     ESP_ERROR_CHECK(platform::startEventLogger(gEvents));
     controller.begin();

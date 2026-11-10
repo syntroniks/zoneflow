@@ -43,6 +43,9 @@ struct DriverSettings {
     // Closed time a zone needs after reaching its maximum run time, and the
     // closed time that ends a run of back-to-back runs (spec section 2 rule 4).
     uint32_t minRestSec = 1800;
+    // Turn outputs on at a mains zero crossing when the board has the
+    // signal; ignored without it.
+    bool zeroCrossSwitching = false;
 };
 
 enum class SpareFunction : uint8_t {

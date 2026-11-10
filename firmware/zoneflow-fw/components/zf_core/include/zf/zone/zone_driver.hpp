@@ -26,6 +26,7 @@
 #include "zf/hal.hpp"
 #include "zf/time/clock.hpp"
 #include "zf/zone/output_enable.hpp"
+#include "zf/zone/zero_cross.hpp"
 #include "zf/zone/zone_types.hpp"
 
 namespace zf {
@@ -41,6 +42,9 @@ struct ZoneDriverConfig {
     // with less than this much closed time in between, stays closed for this
     // long (spec section 2 rule 4).
     uint32_t minRestSec = 1800;
+    // Turn outputs on at the next mains zero crossing when a zero-cross
+    // input is attached and has a usable signal.
+    bool zeroCrossSwitching = false;
     std::array<bool, kMaxZones> zoneEnabled{};
     std::array<uint32_t, kMaxZones> maxRunSec{};
 };
@@ -59,6 +63,12 @@ public:
     ZoneDriver(IOutputHal &hal, OutputEnableGuard &oe, const IClock &clock);
 
     void setListener(IZoneDriverListener *listener) { listener_ = listener; }
+    // Optional. offsetUs: detector lead (+) or lag (-) from the board header.
+    void setZeroCross(IZeroCrossHal *zc, int32_t offsetUs)
+    {
+        zeroCross_ = zc;
+        zeroCrossOffsetUs_ = offsetUs;
+    }
 
     // Forces all outputs off, then applies the configuration.
     void init(const ZoneDriverConfig &cfg);
@@ -150,11 +160,14 @@ private:
     void updateMaster(MonoMs now);
     void updateDemand();
     void forceAllOff(StopReason reason, MonoMs now);
+    void waitForZeroCross();
 
     IOutputHal &hal_;
     OutputEnableGuard &oe_;
     const IClock &clock_;
     IZoneDriverListener *listener_ = nullptr;
+    IZeroCrossHal *zeroCross_ = nullptr;
+    int32_t zeroCrossOffsetUs_ = 0;
     ZoneDriverConfig cfg_{};
     std::array<Zone, kMaxZones> zones_{};
     bool masterOn_ = false;

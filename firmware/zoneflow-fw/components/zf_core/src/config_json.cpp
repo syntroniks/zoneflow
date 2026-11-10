@@ -407,6 +407,7 @@ void readConfig(Reader &rd, const cJSON *root, Config &c)
         rd.integer(d, "max_concurrent", c.driver.maxConcurrent, "driver");
         rd.integer(d, "inter_zone_delay_ms", c.driver.interZoneDelayMs, "driver");
         rd.integer(d, "min_rest_s", c.driver.minRestSec, "driver");
+        rd.boolean(d, "zero_cross_switching", c.driver.zeroCrossSwitching, "driver");
     }
 
     if (const cJSON *s = rd.object(root, "sensors", top)) {
@@ -565,6 +566,7 @@ std::string configToJson(const Config &c, bool pretty)
         cJSON_AddNumberToObject(d, "max_concurrent", c.driver.maxConcurrent);
         cJSON_AddNumberToObject(d, "inter_zone_delay_ms", c.driver.interZoneDelayMs);
         cJSON_AddNumberToObject(d, "min_rest_s", c.driver.minRestSec);
+        cJSON_AddBoolToObject(d, "zero_cross_switching", c.driver.zeroCrossSwitching);
     }
 
     if (cJSON *s = cJSON_AddObjectToObject(r, "sensors")) {

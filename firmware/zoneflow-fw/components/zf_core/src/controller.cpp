@@ -17,6 +17,7 @@ ZoneDriverConfig driverConfigFrom(const Config &c)
     d.masterPostCloseMs = c.master.postCloseMs;
     d.interZoneDelayMs = c.driver.interZoneDelayMs;
     d.minRestSec = c.driver.minRestSec;
+    d.zeroCrossSwitching = c.driver.zeroCrossSwitching;
     for (std::size_t i = 0; i < kMaxZones; ++i) {
         d.zoneEnabled[i] = i < c.zoneCount && c.zones[i].enabled;
         d.maxRunSec[i] = c.zones[i].maxRunSec;
@@ -28,8 +29,8 @@ bool sameDriverConfig(const ZoneDriverConfig &a, const ZoneDriverConfig &b)
 {
     return a.zoneCount == b.zoneCount && a.maxConcurrent == b.maxConcurrent && a.masterEnabled == b.masterEnabled &&
            a.masterPreOpenMs == b.masterPreOpenMs && a.masterPostCloseMs == b.masterPostCloseMs &&
-           a.interZoneDelayMs == b.interZoneDelayMs && a.minRestSec == b.minRestSec && a.zoneEnabled == b.zoneEnabled &&
-           a.maxRunSec == b.maxRunSec;
+           a.interZoneDelayMs == b.interZoneDelayMs && a.minRestSec == b.minRestSec &&
+           a.zeroCrossSwitching == b.zeroCrossSwitching && a.zoneEnabled == b.zoneEnabled && a.maxRunSec == b.maxRunSec;
 }
 
 constexpr uint32_t faultBit(FaultCode c) { return 1u << static_cast<unsigned>(c); }
