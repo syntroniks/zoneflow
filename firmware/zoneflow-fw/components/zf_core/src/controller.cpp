@@ -130,6 +130,20 @@ void Controller::setTimeStatus(TimeStatus status)
 bool Controller::handle(const Command &cmd)
 {
     stateDirty_ = true;
+    lastRunError_ = RunError::Ok;
+    const bool accepted = apply(cmd);
+    if (!accepted) {
+        // Commands arrive through a queue; this event is how the poster
+        // (REST, MQTT, display) learns the reason.
+        Event e = makeEvent(EventType::CommandRejected);
+        e.rejected = {cmd.type, cmd.zone, cmd.programId, lastRunError_};
+        publish(e);
+    }
+    return accepted;
+}
+
+bool Controller::apply(const Command &cmd)
+{
     switch (cmd.type) {
     case CommandType::RunZone:
         lastRunError_ = scheduler_.runZone(cmd.zone, cmd.durationSec);

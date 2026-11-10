@@ -54,6 +54,7 @@ enum class RunError : uint8_t {
     AlreadyQueued,
     Inhibited,
     NothingToRun,
+    LockedOut, // zone locked out by a latched fault (RunZone)
 };
 
 // Inhibit flags (bitmask).

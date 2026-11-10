@@ -76,6 +76,8 @@ const char *toString(EventType t)
         return "time_status_changed";
     case EventType::MaintenanceChanged:
         return "maintenance_changed";
+    case EventType::CommandRejected:
+        return "command_rejected";
     case EventType::Count:
         break;
     }

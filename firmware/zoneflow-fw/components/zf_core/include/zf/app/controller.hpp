@@ -52,8 +52,8 @@ public:
 
     void setTimeStatus(TimeStatus status);
 
-    // Returns false if the command was rejected (reason is logged as an
-    // event where one applies).
+    // Returns false if the command was rejected. lastRunError() holds the
+    // reason and a CommandRejected event carries it to other modules.
     bool handle(const Command &cmd);
 
     // One control step. Call every 20..100 ms.
@@ -84,6 +84,7 @@ private:
     void onRainDelayChanged(UtcSeconds until) override;
     void onPersistDirty() override { persistDirty_ = true; }
 
+    bool apply(const Command &cmd);
     void applyConfig(const Config &cfg);
     void updateInhibit();
     void handleCurrent(const CurrentVerdict &v);

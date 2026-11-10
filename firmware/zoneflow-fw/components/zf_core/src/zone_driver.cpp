@@ -343,6 +343,14 @@ uint32_t ZoneDriver::remainingMs(ZoneIndex zone) const
     return 0;
 }
 
+StartError ZoneDriver::startBlocker(ZoneIndex zone) const
+{
+    if (zone < kMaxZones && zones_[zone].lockedOut) {
+        return StartError::LockedOut;
+    }
+    return StartError::Ok;
+}
+
 StopReason ZoneDriver::lastStopReason(ZoneIndex zone) const
 {
     return zone < kMaxZones ? zones_[zone].lastStop : StopReason::None;

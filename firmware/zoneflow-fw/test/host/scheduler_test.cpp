@@ -775,3 +775,16 @@ TEST_F(SchedulerTest, SameTimeZoneReappliedKeepsKeys)
     ASSERT_EQ(after.count, 1);
     EXPECT_EQ(after.fired[0].key, before.fired[0].key);
 }
+
+// RunZone on a locked-out zone was accepted (RunError::Ok) and the entry was
+// dropped silently when it reached the head of the queue.
+TEST_F(SchedulerTest, RunZoneOnLockedOutZoneIsRefused)
+{
+    begin(utcOf(2026, 6, 1, 0, 0));
+    drv.setLockout(2, true);
+    EXPECT_EQ(sched->runZone(2, 60), RunError::LockedOut);
+    EXPECT_EQ(sched->queueSize(), 0u);
+    EXPECT_FALSE(out.anyOn());
+    drv.setLockout(2, false);
+    EXPECT_EQ(sched->runZone(2, 60), RunError::Ok);
+}

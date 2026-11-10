@@ -379,3 +379,26 @@ TEST_F(ControllerTest, IdleCurrentRisingToShortRaisesShortCircuit)
     runMs(200);
     EXPECT_TRUE(hasFault(FaultCode::ShortCircuit));
 }
+
+// The caller of a rejected command learns why: handle() returns false and a
+// command_rejected event carries the error for the API layer.
+TEST_F(ControllerTest, RunZoneOnLockedOutZoneReturnsError)
+{
+    start();
+    ctrl->handle(Command::runZone(3, 600));
+    tick();
+    sensors.sample.valveCurrentMa = 5000;
+    runMs(200);
+    ASSERT_TRUE(ctrl->driver().lockedOut(3));
+    sensors.sample.valveCurrentMa = -1;
+    events.clear();
+    EXPECT_FALSE(ctrl->handle(Command::runZone(3, 60)));
+    EXPECT_EQ(ctrl->lastRunError(), RunError::LockedOut);
+    ASSERT_EQ(count(EventType::CommandRejected), 1);
+    const auto it =
+        std::find_if(events.begin(), events.end(), [](const Event &e) { return e.type == EventType::CommandRejected; });
+    EXPECT_EQ(it->rejected.command, CommandType::RunZone);
+    EXPECT_EQ(it->rejected.zone, 3);
+    EXPECT_EQ(it->rejected.error, RunError::LockedOut);
+    EXPECT_STREQ(toString(EventType::CommandRejected), "command_rejected");
+}

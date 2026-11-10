@@ -62,6 +62,7 @@ public:
     void stop(ZoneIndex zone, StopReason reason) override;
     ValveState state(ZoneIndex zone) const override;
     uint32_t remainingMs(ZoneIndex zone) const override;
+    StartError startBlocker(ZoneIndex zone) const override;
 
     // Turns every output off at once, master included, skipping the master
     // post-close delay.

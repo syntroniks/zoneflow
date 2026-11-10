@@ -55,6 +55,14 @@ public:
     virtual ValveState state(ZoneIndex zone) const = 0;
     // Remaining run time; for a waiting zone, the full accepted duration.
     virtual uint32_t remainingMs(ZoneIndex zone) const = 0;
+    // A latched condition of the zone that refuses any start now (LockedOut),
+    // or Ok. Lets a manual run be refused when it is requested instead of
+    // being dropped later at the head of the queue.
+    virtual StartError startBlocker(ZoneIndex zone) const
+    {
+        (void)zone;
+        return StartError::Ok;
+    }
 };
 
 } // namespace zf

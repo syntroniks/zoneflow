@@ -88,6 +88,8 @@ const char *toString(RunError e)
         return "inhibited";
     case RunError::NothingToRun:
         return "nothing_to_run";
+    case RunError::LockedOut:
+        return "locked_out";
     }
     return "?";
 }
@@ -299,6 +301,9 @@ RunError Scheduler::runZone(ZoneIndex zone, uint32_t durationSec)
     }
     if (durationSec == 0) {
         return RunError::ZeroDuration;
+    }
+    if (actuator_.startBlocker(zone) == StartError::LockedOut) {
+        return RunError::LockedOut;
     }
     // The driver clamps again to the zone's limit; this keeps the
     // millisecond value below from wrapping.

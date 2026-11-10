@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <type_traits>
 
+#include "zf/events/command.hpp"
 #include "zf/sched/scheduler.hpp"
 #include "zf/types.hpp"
 #include "zf/zone/zone_types.hpp"
@@ -53,6 +54,7 @@ enum class EventType : uint8_t {
     ConfigApplied,
     TimeStatusChanged,
     MaintenanceChanged,
+    CommandRejected, // Controller::handle() refused a command; data: rejected
     Count,
 };
 static_assert(static_cast<unsigned>(EventType::Count) <= 32, "event mask is 32 bits");
@@ -95,6 +97,12 @@ struct TimeStatusData {
 struct FlagData {
     bool on;
 };
+struct CommandRejectedData {
+    CommandType command;
+    ZoneIndex zone;     // as in the command (RunZone)
+    uint16_t programId; // as in the command (RunProgram)
+    RunError error;
+};
 
 struct Event {
     EventType type;
@@ -109,6 +117,7 @@ struct Event {
         RainDelayData rainDelay;
         TimeStatusData time;
         FlagData flag;
+        CommandRejectedData rejected;
     };
 };
 static_assert(std::is_trivially_copyable_v<Event>, "events are copied with memcpy into RTOS queues");

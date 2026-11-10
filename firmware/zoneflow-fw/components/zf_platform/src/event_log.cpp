@@ -48,6 +48,9 @@ void logEvent(const Event &e)
     case EventType::MaintenanceChanged:
         ESP_LOGI(kTag, "maintenance %s", e.flag.on ? "on" : "off");
         break;
+    case EventType::CommandRejected:
+        ESP_LOGW(kTag, "command %s rejected: %s", toString(e.rejected.command), toString(e.rejected.error));
+        break;
     case EventType::QueueChanged:
     case EventType::ConfigApplied:
     case EventType::Count:
