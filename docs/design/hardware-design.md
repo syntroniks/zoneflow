@@ -23,7 +23,7 @@ run showed.
 | Block | Choice | Main reason |
 |---|---|---|
 | Logic supply | Fuse in the ground leg, 1500 W TVS, half-wave rectifier, 470 uF, LM5164 100 V buck to 5.3 V, Schottky OR with USB, LDL1117 to 3.3 V | The TVS clamps at 77.4 V. A 100 V regulator survives that with no further argument. A 5 V bus makes USB and 24 VAC equal sources and gives the LDO room to reject ripple. |
-| Output switch | BTA204S-600D 4 A three-quadrant triac in DPAK, fired by a MOC3023 opto-triac from its own T2 | The triacs JLCPCB stocks with real surge ratings are three-quadrant parts. Positive-only gate drive from logic cannot fire them on the negative half-cycle. Section 6 has the analysis. |
+| Output switch | T410-600B-TR 4 A three-quadrant triac in DPAK, fired by a MOC3023 opto-triac from its own T2 | The triacs JLCPCB stocks with real surge ratings are three-quadrant parts. Positive-only gate drive from logic cannot fire them on the negative half-cycle. Section 6 has the analysis. |
 | Output control | TCA9539 I2C expander sinks the opto LEDs | The TFT took six GPIOs. Nine valve pins no longer fit. The expander is held in reset by the fail-safe circuit, so no valve bit survives a crash. |
 | Fail-safe | Diode pump on the keep-alive pin, comparator with hysteresis, switched LED supply, expander reset | Gate drive needs an edge at least every 50 ms. It is gone 0.5 to 0.9 s after the edges stop. |
 | Over-current | Window comparator on the shunt amplifier, NAND latch, same switch as the fail-safe | Removes drive about 70 us after a short begins. The triac then stops at the next current zero. |
@@ -475,10 +475,13 @@ The WeEn BTA204S-600D fits the same footprint. It has a 5 mA gate and 6 mA
 holding current, but 25 A surge, 3.1 A²s and a higher on-state voltage model
 of 1.27 V + 0.091 ohm. I made the T410 the primary part because the
 specification's short-circuit requirement matters more than behaviour with very
-small loads. Section 6.6 has the surge numbers. Confirm the pin order of both
-parts against the footprint before substituting. I read the WeEn pin table,
-pin 1 T1, pin 2 and tab T2, pin 3 gate. I could not read the ST pin drawing
-from the PDF text.
+small loads. Section 6.6 has the surge numbers.
+
+Both parts have the same pin order: pin 1 T1, pin 2 and tab T2, pin 3 gate.
+The WeEn order is from table 2 of its data sheet. The ST order is from the
+package drawing on page 1 of DocID7699 rev 9, read as an image during review
+A1: left lead A1, cropped centre lead and tab A2, right lead G. ST names the
+main terminals A1 and A2 where this document says T1 and T2.
 
 ### 6.4 Drive margins
 
@@ -1731,7 +1734,6 @@ For the first prototype. Stop at the first step that fails.
 
 - **Class 2 short-circuit limit.** The 8 A figure in sections 5.3 and 20 is from memory.
 - **USB attach capacitance.** The 10 uF figure in section 5.2 is from memory.
-- **T410 pin order.** The package drawing in the ST PDF did not survive text extraction. I assumed pin 1 T1, pin 2 and tab T2, pin 3 gate, as on the WeEn part.
 - **Bulk capacitor ripple rating.** I read the Lelon table for 50 V, not 63 V.
 - **Relay must-operate voltage.** Not legible in the Chinese-language Omron datasheet text. No surface-mount alternative was searched for.
 - **Display.** FPC contact side, which marked dimension is the viewing area, the controller variant, the logic supply current, the maximum SPI clock and a second source. I did not read an ST7789 datasheet.
