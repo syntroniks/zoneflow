@@ -59,7 +59,9 @@ public:
 
     // outputMask: bit z = zone z on, bit kMasterBit = master on.
     // Returns a fault once, when it is confirmed; later samples of the same
-    // condition return None until the output mask changes or rearm().
+    // condition return None until the output mask changes or rearm(). A
+    // short circuit is reported even after a milder condition was reported
+    // for the same mask.
     // Over-current and short-circuit samples count towards one confirmation.
     CurrentVerdict evaluate(int32_t measuredMa, uint16_t outputMask, uint8_t lastOpenedBit, MonoMs lastChangeMs,
                             MonoMs now);
@@ -76,7 +78,7 @@ private:
     uint16_t lastMask_ = 0xFFFF;
     CurrentFault pending_ = CurrentFault::None;
     uint8_t count_ = 0;
-    bool reported_ = false;
+    CurrentFault reported_ = CurrentFault::None; // condition reported for lastMask_
     std::array<uint16_t, kMaxZones + 1> observed_{};
 };
 

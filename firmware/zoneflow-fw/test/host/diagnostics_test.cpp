@@ -248,3 +248,30 @@ TEST(CurrentMonitor, ShortAndOverCurrentAlternatingStillTrips)
     EXPECT_TRUE(first == CurrentFault::ShortCircuit || first == CurrentFault::OverCurrent);
     EXPECT_LE(samples, 3);
 }
+
+// ---- phase 2 hardening ---------------------------------------------------------
+
+// Current with every output off was reported as current_while_idle. If it then
+// rises past the short-circuit limit, the short circuit must be reported too,
+// although the output mask did not change.
+TEST(CurrentMonitor, IdleCurrentEscalatingToShortIsReported)
+{
+    CurrentMonitor m;
+    m.configure(currentCfg());
+    CurrentVerdict v;
+    for (MonoMs t = 600; t <= 800; t += 100) {
+        v = m.evaluate(200, 0, 0xFF, 0, t);
+    }
+    ASSERT_EQ(v.fault, CurrentFault::CurrentWhileIdle);
+    CurrentVerdict first = m.evaluate(5000, 0, 0xFF, 0, 900);
+    CurrentVerdict second = m.evaluate(5000, 0, 0xFF, 0, 1000);
+    EXPECT_EQ(first.fault, CurrentFault::None); // two samples confirm a short
+    EXPECT_EQ(second.fault, CurrentFault::ShortCircuit);
+    EXPECT_EQ(second.outputBit, 0xFF);
+    // Reported once, and not repeated while it lasts.
+    EXPECT_EQ(m.evaluate(5000, 0, 0xFF, 0, 1100).fault, CurrentFault::None);
+    // Falling back to idle current is not a new report.
+    for (MonoMs t = 1200; t <= 1600; t += 100) {
+        EXPECT_EQ(m.evaluate(200, 0, 0xFF, 0, t).fault, CurrentFault::None);
+    }
+}

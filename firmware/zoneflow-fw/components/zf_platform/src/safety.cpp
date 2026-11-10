@@ -14,7 +14,7 @@ namespace zf::platform {
 namespace {
 
 Controller *sController = nullptr;
-OutputEnableGuard *sGuard = nullptr;
+DRAM_ATTR OutputEnableGuard *sGuard = nullptr;
 
 // esp_restart() calls this before resetting the chip, on the calling task.
 void onShutdown()
@@ -29,8 +29,16 @@ void onShutdown()
 }
 
 #if CONFIG_ESP_BROWNOUT_USE_INTR
-// Brownout interrupt, just before the chip resets. IRAM only.
-IRAM_ATTR void onBrownout() { zf_platform_force_outputs_off(); }
+// Brownout interrupt, just before the chip resets. IRAM only: trip() is
+// forced inline and the guard is in DRAM. Tripping stops the keep-alive
+// interrupt from driving OE active again before the reset.
+IRAM_ATTR void onBrownout()
+{
+    if (sGuard != nullptr) {
+        sGuard->trip();
+    }
+    zf_platform_force_outputs_off();
+}
 #endif
 
 } // namespace

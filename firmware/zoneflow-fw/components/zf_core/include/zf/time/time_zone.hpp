@@ -49,7 +49,11 @@ public:
         uint8_t week = 0;    // 1..5, 5 = last
         uint8_t weekday = 0; // 0 = Sunday
         int32_t timeSec = 7200;
+        bool operator==(const Rule &) const = default;
     };
+
+    // Same offsets and rules (the zone names are not kept).
+    bool operator==(const TimeZone &) const = default;
 
 private:
     struct Transitions {

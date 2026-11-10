@@ -104,7 +104,8 @@ hardware.
   flashed. This is meant to be enforced in hardware.
 - A hardware output-enable gates all output drivers. A stuck firmware loses it.
 - Firmware enforces a maximum run time per zone that no schedule or API call
-  can exceed.
+  can exceed. It counts back-to-back runs together; a zone that reaches the
+  limit stays closed for a rest time (30 minutes by default).
 - The board is meant to detect an open valve, a shorted valve and loss of 24 VAC.
 
 ## Radio

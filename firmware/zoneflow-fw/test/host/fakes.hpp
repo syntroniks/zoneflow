@@ -71,6 +71,15 @@ public:
         return n;
     }
     bool anyOn() const { return master || openCount() > 0; }
+
+    int tripClears = 0;
+    bool anyOnAtClear = false;
+    void clearOverCurrentTrip() override
+    {
+        ++tripClears;
+        anyOnAtClear = anyOnAtClear || anyOn();
+        log.push_back("clear");
+    }
 };
 
 class FakeSensors final : public ISensorHal {
@@ -163,6 +172,19 @@ struct SchedulerRecorder final : public ISchedulerListener {
     void onQueueChanged() override { ++queueChanges; }
     void onRainDelayChanged(UtcSeconds until) override { rainDelays.push_back(until); }
     void onPersistDirty() override { ++persistDirty; }
+
+    struct Dropped {
+        ZoneIndex zone;
+        uint16_t programId;
+        StartError reason;
+    };
+    std::vector<Dropped> dropped;
+    int pauseExpired = 0;
+    void onPauseExpired() override { ++pauseExpired; }
+    void onRunDropped(const RunEntry &e, StartError reason) override
+    {
+        dropped.push_back({e.zone, e.programId, reason});
+    }
 };
 
 inline Program makeProgram(uint16_t id, std::initializer_list<uint16_t> startMinutes,

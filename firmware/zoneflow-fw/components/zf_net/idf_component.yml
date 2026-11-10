@@ -1,0 +1,4 @@
+## Managed components for zf_net (ESP-IDF component manager).
+dependencies:
+  # mDNS left ESP-IDF core in v5.0. Pinned; 1.14.1 published 2026-10-23.
+  espressif/mdns: "==1.14.1"

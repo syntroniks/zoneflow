@@ -10,6 +10,7 @@
 #include <array>
 #include <cstdint>
 
+#include "zf/app/persist.hpp"
 #include "zf/config/config_store.hpp"
 #include "zf/diag/current_monitor.hpp"
 #include "zf/diag/sensors.hpp"
@@ -32,7 +33,9 @@ struct ControllerDeps {
     EventBus &events;
     StateStore &state;
     ConfigStore &config;
-    IBlobStorage *runtimeStorage; // may be null (no persistence)
+    // Read once in begin(). Writes go through persistMailbox() and a writer
+    // task, never from the control task. May be null (no persistence).
+    IBlobStorage *runtimeStorage;
 };
 
 class Controller final : private IZoneDriverListener, private ISchedulerListener {
@@ -41,6 +44,9 @@ public:
     static constexpr uint32_t kPersistMinIntervalMs = 2000;
     // A snapshot is published at least this often.
     static constexpr uint32_t kSnapshotIntervalMs = 1000;
+    // A hardware over-current latch that comes back after it was released
+    // is released again no more often than this.
+    static constexpr uint32_t kTripClearRetryMs = 1000;
 
     explicit Controller(const ControllerDeps &deps);
 
@@ -52,12 +58,15 @@ public:
 
     void setTimeStatus(TimeStatus status);
 
-    // Returns false if the command was rejected (reason is logged as an
-    // event where one applies).
+    // Returns false if the command was rejected. lastRunError() holds the
+    // reason and a CommandRejected event carries it to other modules.
     bool handle(const Command &cmd);
 
     // One control step. Call every 20..100 ms.
     void tick();
+
+    // Optional, before begin(): a zero-cross input for driver.zero_cross_switching.
+    void attachZeroCross(IZeroCrossHal *zc, int32_t offsetUs) { driver_.setZeroCross(zc, offsetUs); }
 
     // Any context: outputs off and OE tripped. For shutdown/OTA/panic paths.
     void emergencyOff() { driver_.emergencyOff(); }
@@ -65,6 +74,10 @@ public:
     // Control task: report a fault found outside the controller (config
     // rejected at boot, storage failure). Latched until ClearFaults.
     void reportFault(FaultCode code) { raiseFault(code, kNoZone); }
+
+    // Runtime state to store. The device drains it from a low-priority
+    // writer task (persistWriteOnce); host tests call that directly.
+    PersistMailbox &persistMailbox() { return persist_; }
 
     const ZoneDriver &driver() const { return driver_; }
     const Scheduler &scheduler() const { return scheduler_; }
@@ -83,10 +96,15 @@ private:
     void onQueueChanged() override;
     void onRainDelayChanged(UtcSeconds until) override;
     void onPersistDirty() override { persistDirty_ = true; }
+    void onRunDropped(const RunEntry &entry, StartError reason) override;
+    void onPauseExpired() override;
 
+    bool apply(const Command &cmd);
     void applyConfig(const Config &cfg);
     void updateInhibit();
     void handleCurrent(const CurrentVerdict &v);
+    void handleTrip(bool tripped, MonoMs now);
+    void recordMasterFault();
     void raiseFault(FaultCode code, ZoneIndex zone);
     void clearCondition(FaultCode code);
     void clearFaults();
@@ -114,7 +132,17 @@ private:
     MonoMs leakSinceMs_ = 0;
     bool leakTiming_ = false;
     RunError lastRunError_ = RunError::Ok;
+    // Master lockout: consecutive current faults attributed to the master.
+    // A master session (on to off) of at least settle time without such a
+    // fault resets the count.
+    uint8_t masterFaults_ = 0;
+    bool masterFaultInSession_ = false;
+    MonoMs masterOnSinceMs_ = 0;
+    // Hardware over-current latch.
+    bool tripSeen_ = false;
+    MonoMs nextTripClearMs_ = 0;
 
+    PersistMailbox persist_;
     bool persistDirty_ = false;
     MonoMs lastPersistMs_ = 0;
     bool stateDirty_ = true;

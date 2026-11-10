@@ -1,7 +1,7 @@
 # Standalone firmware
 
-!!! note "Phase 1 only, never run on hardware"
-    The firmware foundation exists in `firmware/zoneflow-fw/`: zone driver, scheduler, configuration, diagnostics logic, host tests and CI. Networking, web UI, MQTT, OTA and the OLED UI are not written yet. Nothing has run on a board. Work is tracked in [issue #6](https://github.com/syntroniks/zoneflow/issues/6); the design is in [firmware architecture](../design/firmware-architecture.md).
+!!! note "Phase 2, never run on hardware"
+    `firmware/zoneflow-fw/` has the zone driver, scheduler, configuration and diagnostics (phase 1), and WiFi with BLE and SoftAP provisioning, the [REST API](api.md) with a live event stream, and OTA with rollback (phase 2). The display interface is written and runs in a desktop simulator; see [display interface](../design/display-ui.md). MQTT and the browser UI are not written yet. Nothing has run on a board; the logic is unit-tested on a PC. Work is tracked in [issue #6](https://github.com/syntroniks/zoneflow/issues/6); the design is in [firmware architecture](../design/firmware-architecture.md) and [firmware security](../design/firmware-security.md).
 
 Planned scope, from the [specification](../design/system-spec.md):
 
