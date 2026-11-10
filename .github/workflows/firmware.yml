@@ -6,11 +6,13 @@ on:
     paths:
       - "firmware/**"
       - "docs/firmware/openapi.json"
+      - "docs/design/display-ui/**"
       - ".github/workflows/firmware.yml"
   pull_request:
     paths:
       - "firmware/**"
       - "docs/firmware/openapi.json"
+      - "docs/design/display-ui/**"
       - ".github/workflows/firmware.yml"
 
 permissions:
@@ -35,6 +37,37 @@ jobs:
           name: host-test-report
           path: firmware/zoneflow-fw/test/host/build/junit.xml
           if-no-files-found: ignore
+
+  display-sim:
+    name: Display simulator and screenshots
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache LVGL and cJSON sources
+        uses: actions/cache@v4
+        with:
+          path: firmware/zoneflow-fw/sim/build/_deps
+          key: sim-deps-${{ hashFiles('firmware/zoneflow-fw/sim/CMakeLists.txt') }}
+      - name: Build headless and draw every scene
+        env:
+          ZF_SIM_HEADLESS: "1"
+        run: |
+          firmware/zoneflow-fw/sim/run.sh --screenshots "$RUNNER_TEMP/screenshots"
+          firmware/zoneflow-fw/sim/run.sh --report
+      # Names only. Pixels are not compared: a reviewer looks at the pictures.
+      - name: Committed pictures match the scene list
+        run: |
+          diff <(ls "$RUNNER_TEMP/screenshots") <(ls docs/design/display-ui) || {
+            echo "::error::docs/design/display-ui is out of step with sim/scenes.cpp. Run firmware/zoneflow-fw/sim/run.sh --screenshots docs/design/display-ui and commit the result."
+            exit 1
+          }
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: display-screenshots-${{ github.sha }}
+          path: ${{ runner.temp }}/screenshots
+          if-no-files-found: error
 
   format:
     name: clang-format check
@@ -70,4 +103,30 @@ jobs:
             firmware/zoneflow-fw/build/ota_data_initial.bin
             firmware/zoneflow-fw/build/flasher_args.json
             firmware/zoneflow-fw/build/flash_args
+          if-no-files-found: error
+
+  # The default build does not start the display: the provisional pin map
+  # has no pins for it (components/zf_board, "pin budget"). This builds the
+  # configuration that gives it GPIO18, 47 and 48, so the panel, backlight
+  # and control drivers and LVGL stay compiled and linked.
+  build-display:
+    name: ESP-IDF build with the display (esp32s3)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: idf.py build, sdkconfig.display
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.5.6
+          target: esp32s3
+          path: firmware/zoneflow-fw
+          command: idf.py -B build-display -D SDKCONFIG=build-display/sdkconfig -D ZF_DISPLAY=1 build
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: zoneflow-fw-display-esp32s3-${{ github.sha }}
+          path: |
+            firmware/zoneflow-fw/build-display/zoneflow-fw.bin
+            firmware/zoneflow-fw/build-display/zoneflow-fw.elf
+            firmware/zoneflow-fw/build-display/zoneflow-fw.map
           if-no-files-found: error

@@ -9,6 +9,7 @@
 //   main          prio 1             status LED and a periodic state log
 #include <cinttypes>
 
+#include "display_ports.hpp"
 #include "driver/gpio.h"
 #include "esp_event.h"
 #include "esp_log.h"
@@ -150,7 +151,10 @@ extern "C" void app_main(void)
     ESP_ERROR_CHECK(web::start(services));
     ESP_ERROR_CHECK(mqtt::start(services));
     ESP_ERROR_CHECK(ota::start(services));
-    ESP_ERROR_CHECK(display::start(services, gI2c.handle()));
+    static DisplayNetworkPort displayNetwork;
+    display::StartOptions displayOptions;
+    displayOptions.network = &displayNetwork;
+    ESP_ERROR_CHECK(display::start(services, displayOptions));
 
     ESP_ERROR_CHECK(ota::markRunningAppValid());
 

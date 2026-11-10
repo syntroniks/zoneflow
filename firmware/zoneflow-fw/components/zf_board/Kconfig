@@ -50,4 +50,16 @@ menu "ZoneFlow board"
         range 10 200
         default 50
 
+    config ZF_DISPLAY_ON_SHARED_PINS
+        bool "Give GPIO18, 47 and 48 to the display (provisional pin map)"
+        default n
+        help
+            The provisional pin map has three pins fewer than the firmware
+            wants. GPIO18, 47 and 48 carry the hardware over-current trip
+            and the zero-cross input by default, and the display is then
+            not started. With this option they carry the display's SPI
+            clock, data and backlight instead, and the over-current trip
+            and zero-cross inputs are treated as not fitted.
+            This switch goes away when hardware/pinmap.yaml exists.
+
 endmenu

@@ -46,9 +46,10 @@ changed (findings F1 to F7); section 7 lists the risks that remain.
   32-symbol alphabet (no 0/O/1/I; 50 bits, 5 bits from each RNG byte) from
   the hardware RNG with WiFi started, and stores the code itself in NVS
   (the display needs it). The serial console prints it **only while
-  provisioning runs**. `net::setupInfo()` hands it to the display module,
-  which is not written yet; showing it only during setup is that module's
-  job. The API never returns it. A factory reset keeps it, so a printed label
+  provisioning runs**. The display shows it only inside the QR code, and
+  only while BLE provisioning runs (`DisplayNetworkPort` in
+  `main/display_ports.hpp`); during SoftAP setup the owner needs the serial
+  console or a printed label. The API never returns it. A factory reset keeps it, so a printed label
   stays valid.
 - **BLE: ESP-IDF unified provisioning, Security 2.** SRP6a with the setup
   code as password, salt and verifier from `esp_srp_gen_salt_verifier` at
