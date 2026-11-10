@@ -1,0 +1,126 @@
+* ZoneFlow keep-alive detector (docs/design/hardware-design.md section 8)
+*
+* KA (GPIO38) -> R29 -> C22 -> diode pump D7 -> C23 || R30 -> comparator U6A
+* with hysteresis (R31, R32) -> KA_OK. Reference from R34/R35.
+*
+* Run:  ngspice -b keepalive.cir
+* The control block re-runs the circuit with different KA stimuli and prints
+* one result line per case.
+*
+* Models are generic, not vendor models: a Schottky with BAT54-like forward
+* drop and leakage, an ideal open-collector comparator with the LM2901
+* worst-case input bias current (500 nA out of each input), a 30 ohm GPIO
+* output stage. The 3.3 V rail ramps from 0 V in 1 ms so that power-up
+* behaviour is included.
+
+.param fka=100 ton=1 tstop=2.5 vhi=3.3 vstuck=0 cr=10u cp=4.7u
+.param per={1/fka}
+
+* --- stimulus -------------------------------------------------------------
+* KA toggles from t = 50 ms until t = ton, then sits at vstuck (0 or 3.3 V).
+VKA   ka_src 0  PULSE(0 {vhi} 50m 1u 1u {per/2} {per})
+VEN   en     0  PWL(0 1 {ton} 1 {ton+1u} 0)
+BKA   ka_drv 0  V = V(ka_src)*V(en) + (1-V(en))*{vstuck}
+RGPIO ka_drv ka 30
+R33   ka 0 10k
+* --- pump -----------------------------------------------------------------
+R29   ka  n0  220
+C22   n0  n1  {cp}
+D7A   0   n1  SCH
+D7B   n1  n2  SCH
+C23   n2  0   {cr}
+R30   n2  0   56k
+* --- comparator U6A: (+) via R31 from n2, R32 feedback, (-) = reference ----
+R31   n2  inp 100k
+R32   inp ka_ok 510k
+C24   inp 0   10n
+R34   v3v3 ref 15k
+R35   ref 0   10k
+IB1   0 inp DC 500n
+IB2   0 ref DC 500n
+V3V3  v3v3 0 PWL(0 0 1m 3.3)
+R36   v3v3 ka_ok 10k
+* open-collector output: pulls low while (-) > (+)
+S1    ka_ok 0 ref inp CMP
+.model CMP SW(VT=0 VH=0.5m RON=50 ROFF=1G)
+.model SCH D(IS=2.2e-7 N=1.05 RS=2.5 CJO=10p BV=30 IBV=2u)
+
+.options method=gear reltol=1e-4
+.tran 50u {tstop} uic
+
+.control
+set noaskquit
+foreach f 10 20 100 1000
+  alterparam fka = $f
+  reset
+  run
+  meas tran t_on  when v(ka_ok)=1.65 rise=1
+  meas tran t_off when v(ka_ok)=1.65 fall=last
+  meas tran vn2max max v(n2)
+  meas tran ipk max i(VKA)
+  let delay_on = t_on - 0.05
+  let holdup = t_off - 1.0
+  echo "RESULT toggle $f Hz: KA_OK high {$&delay_on} s after first edge, low {$&holdup} s after last edge, V(n2) peak {$&vn2max} V"
+end
+* slow toggling, 2 Hz for 2.4 s: must never enable
+alterparam fka = 2
+reset
+alterparam ton = 2.4
+reset
+run
+meas tran vokmax max v(ka_ok)
+meas tran vn2max max v(n2)
+echo "RESULT toggle 2 Hz: max KA_OK {$&vokmax} V (must stay low), V(n2) peak {$&vn2max} V"
+* one rising edge at 50 ms, then stuck high
+alterparam fka = 100
+reset
+alterparam ton = 0.052
+reset
+alterparam vstuck = 3.3
+reset
+run
+meas tran vokmax max v(ka_ok)
+meas tran vn2max max v(n2)
+echo "RESULT one edge then stuck high: max KA_OK {$&vokmax} V (must stay low), V(n2) peak {$&vn2max} V"
+* stuck high from power-up (rises with the rail)
+alterparam ton = 0
+reset
+run
+meas tran vokmax max v(ka_ok)
+meas tran vn2max max v(n2)
+echo "RESULT stuck high from power-up: max KA_OK {$&vokmax} V (must stay low), V(n2) peak {$&vn2max} V"
+* stuck low from power-up
+alterparam vstuck = 0
+reset
+run
+meas tran vokmax max v(ka_ok)
+echo "RESULT stuck low from power-up: max KA_OK {$&vokmax} V (must stay low)"
+* toggling then stuck high instead of low
+alterparam ton = 1
+reset
+alterparam vstuck = 3.3
+reset
+run
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let holdup = t_off - 1.0
+echo "RESULT toggle 100 Hz then stuck high: low {$&holdup} s after last edge"
+alterparam vstuck = 0
+reset
+* tolerance corners on the reservoir capacitor
+alterparam cr = 7u
+reset
+run
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let holdup = t_off - 1.0
+echo "RESULT toggle 100 Hz, C23 -30 %: low {$&holdup} s after last edge"
+alterparam cr = 12u
+reset
+alterparam fka = 1000
+reset
+run
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let holdup = t_off - 1.0
+echo "RESULT toggle 1 kHz, C23 +20 %: low {$&holdup} s after last edge"
+quit
+.endc
+.end

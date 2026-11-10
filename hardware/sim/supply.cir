@@ -1,0 +1,51 @@
+* ZoneFlow half-wave input stage: ripple on VIN_DC
+* (docs/design/hardware-design.md section 4)
+*
+* Transformer (sine source + series resistance RT) -> D1 (M7) -> R1 (3.3 ohm)
+* -> C1 (470 uF bulk) -> constant-power load (the LM5164 buck input).
+*
+* Run:  ngspice -b supply.cir
+*
+* The transformer is modelled as an ideal source with a series resistance.
+* RT = 2.1 ohm corresponds to a 40 VA unit with about 13 % regulation; this
+* is an assumption, not a measured transformer.
+
+.param vrms=24 freq=50 rt=2.1 pload=1.75 cbulk=470u
+VAC  ac_l 0 SIN(0 {vrms*1.41421356} {freq})
+RT   ac_l ac_x {rt}
+D1   ac_x n1 M7
+R1   n1 n2 3.3
+VID  n2 vin DC 0
+C1   vin 0 {cbulk} IC={vrms*1.2}
+* constant-power load, clamped so the solver cannot divide by zero
+VIL  vin vld DC 0
+BL   vld 0 I = {pload}/max(V(vld), 3)
+.model M7 D(IS=5e-9 N=1.7 RS=0.04 BV=1000 CJO=15p)
+.options method=gear reltol=1e-4
+.tran 20u 0.5 0.3 20u uic
+
+.control
+set noaskquit
+foreach case 24:50:1.75 24:60:1.75 21.6:50:1.75 21.6:50:5.0 18:50:5.0 16:50:1.75 16:50:3.0 32:50:0.05 32:50:5.0
+  set v = `echo $case | cut -d: -f1`
+  set f = `echo $case | cut -d: -f2`
+  set p = `echo $case | cut -d: -f3`
+  alterparam vrms = $v
+  reset
+  alterparam freq = $f
+  reset
+  alterparam pload = $p
+  reset
+  run
+  meas tran vmax max v(vin) from=0.3 to=0.5
+  meas tran vmin min v(vin) from=0.3 to=0.5
+  meas tran idpk max i(VID) from=0.3 to=0.5
+  meas tran idrms rms i(VID) from=0.3 to=0.5
+  meas tran iload avg i(VIL) from=0.3 to=0.5
+  let icap = sqrt(idrms*idrms - iload*iload)
+  let pr1 = idrms*idrms*3.3
+  echo "RESULT $v VAC $f Hz, $p W: VIN_DC {$&vmin}..{$&vmax} V, diode peak {$&idpk} A, diode rms {$&idrms} A, capacitor ripple {$&icap} A rms, R1 loss {$&pr1} W"
+end
+quit
+.endc
+.end

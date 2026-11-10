@@ -105,3 +105,4 @@ nav:
       - Prior-art survey: design/prior-art.md
       - Firmware architecture: design/firmware-architecture.md
       - Hardware toolchain: design/hardware-toolchain.md
+      - Hardware design: design/hardware-design.md

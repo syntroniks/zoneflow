@@ -1,0 +1,417 @@
+# ZoneFlow rev A pin map.
+#
+# Source of truth for every ESP32-S3 GPIO, every I2C device and every I/O
+# expander bit. Firmware generates its board header from this file. The
+# circuit behind each signal is described in docs/design/hardware-design.md.
+#
+# Status: paper design. No board exists, nothing here has been measured.
+#
+# Conventions
+#   direction     in | out | bidir | analog_in
+#   active        high | low | n/a   (level that means "asserted")
+#   reset_state   state of the pin while the chip is in reset, from the
+#                 ESP32-S3 Series Datasheet v2.2, Table 2-1
+#   powerup_glitch from Table 2-2 of the same datasheet ("none" = not listed)
+#   pull          external resistor on the board, not the internal one
+#
+# Rules this map follows
+#   - Analogue inputs are on ADC1 only (GPIO1 to GPIO10). ADC2 shares
+#     hardware with WiFi and must not be used.
+#   - GPIO35, GPIO36 and GPIO37 are not listed: the N16R8 module uses them
+#     for the octal PSRAM.
+#   - GPIO26 to GPIO34 are not brought out by the module.
+#   - GPIO19 and GPIO20 are USB only.
+#   - No valve, relay or enable function is on a GPIO. Valve drive is on the
+#     I2C expander, which the keep-alive circuit holds in reset.
+#   - Strapping pins: GPIO0 is the boot button only. GPIO3 and GPIO46 carry
+#     functions that cannot disturb the strap (see notes). GPIO45 is unused.
+
+schema_version: 1
+board: zoneflow
+revision: A
+module: ESP32-S3-WROOM-1-N16R8
+adc:
+  unit: ADC1
+  attenuation_db: 6          # ATTEN2: 0 to 1600 mV, +/-10 mV total error (datasheet Table 5-6)
+  note: sample ISENSE_LO and ISENSE_HI in windows of 100 ms (5 cycles at 50 Hz, 6 at 60 Hz) at 2 kS/s or more
+
+gpio:
+  - gpio: 0
+    signal: BOOT
+    direction: in
+    active: low
+    pull: 10k up to 3V3 (R19)
+    reset_state: weak pull-up, input enabled
+    powerup_glitch: none
+    notes: Strapping pin. Button SW2 to GND. Also on debug header J8. Low at reset selects download mode.
+
+  - gpio: 1
+    signal: ISENSE_LO
+    direction: analog_in
+    active: n/a
+    adc_channel: ADC1_CH0
+    pull: none
+    reset_state: input enabled, floating
+    powerup_glitch: low level, 60 us
+    notes: >-
+      Total valve current, low gain. AC waveform centred on about 0.79 V.
+      Scale 133.3 mV per A (7.50 mA per mV). Linear to +/-5.8 A peak.
+      Hardware over-current trip at +/-4.6 A peak.
+
+  - gpio: 2
+    signal: ISENSE_HI
+    direction: analog_in
+    active: n/a
+    adc_channel: ADC1_CH1
+    pull: none
+    reset_state: input enabled, floating
+    powerup_glitch: low level, 60 us
+    notes: >-
+      Total valve current, high gain. AC waveform centred on about 0.79 V.
+      Scale 665.3 mV per A (1.503 mA per mV). Clips above +/-1.17 A peak;
+      use ISENSE_LO when the reading is above 0.7 A rms.
+
+  - gpio: 3
+    signal: VIN_MON
+    direction: analog_in
+    active: n/a
+    adc_channel: ADC1_CH2
+    pull: 10k to GND (R10, lower leg of the divider)
+    reset_state: input enabled, floating
+    powerup_glitch: low level, 60 us
+    notes: >-
+      Strapping pin (JTAG source), ignored unless eFuses are burned; the
+      divider holds it low at reset. Rectified supply VIN_DC divided by 31
+      (300k / 10k). 24 VAC gives about 1.0 V, 32 VAC about 1.43 V.
+
+  - gpio: 4
+    signal: SENS_RAIN
+    direction: in
+    active: low
+    adc_channel: ADC1_CH3
+    pull: 10k up to V5 at the terminal, Schottky-clamped to 3V3 (R74, R75, D15)
+    reset_state: high impedance
+    powerup_glitch: low level, 60 us
+    notes: Rain sensor, terminal RAIN. Contact closed reads low. RC filter about 0.3 ms.
+
+  - gpio: 5
+    signal: SENS_FLOW
+    direction: in
+    active: low
+    adc_channel: ADC1_CH4
+    pull: 10k up to V5 at the terminal, Schottky-clamped to 3V3 (R77, R78, D16)
+    reset_state: high impedance
+    powerup_glitch: low level, 60 us
+    notes: Flow meter pulses, terminal FLOW. Use PCNT. Passes 200 Hz; filter about 0.3 ms. Debounce reed meters in firmware.
+
+  - gpio: 6
+    signal: SENS_AUX
+    direction: in
+    active: low
+    adc_channel: ADC1_CH5
+    pull: 10k up to V5 at the terminal, Schottky-clamped to 3V3 (R80, R81, D17)
+    reset_state: high impedance
+    powerup_glitch: low level, 60 us
+    notes: Spare sensor input, terminal AUX. Digital, or analogue 0 to 3.3 V through 10k if the pull-up R80 is not fitted.
+
+  - gpio: 7
+    signal: SENS_PWR_EN
+    direction: out
+    active: high
+    pull: 100k to GND (R86)
+    reset_state: high impedance
+    powerup_glitch: low level, 60 us
+    notes: Enables the 5 V sensor supply switch U11. Off in reset.
+
+  - gpio: 8
+    signal: I2C0_SDA
+    direction: bidir
+    active: n/a
+    pull: 2.2k up to 3V3 (R21)
+    reset_state: high impedance
+    powerup_glitch: low level, 60 us
+    notes: Internal bus, 400 kHz. Devices listed under i2c.
+
+  - gpio: 9
+    signal: I2C0_SCL
+    direction: out
+    active: n/a
+    pull: 2.2k up to 3V3 (R22)
+    reset_state: high impedance
+    powerup_glitch: low level, 60 us
+    notes: Internal bus clock.
+
+  - gpio: 10
+    signal: TFT_CS
+    direction: out
+    active: low
+    pull: none
+    reset_state: high impedance
+    powerup_glitch: low level, 60 us
+    notes: SPI2 (FSPI) chip select, IO MUX pin FSPICS0.
+
+  - gpio: 11
+    signal: TFT_MOSI
+    direction: out
+    active: n/a
+    pull: none
+    reset_state: high impedance
+    powerup_glitch: low level, 60 us
+    notes: SPI2 data, IO MUX pin FSPID. The panel has no data output; there is no MISO.
+
+  - gpio: 12
+    signal: TFT_SCLK
+    direction: out
+    active: n/a
+    pull: none
+    reset_state: high impedance
+    powerup_glitch: low level, 60 us
+    notes: SPI2 clock, IO MUX pin FSPICLK. SPI mode 0.
+
+  - gpio: 13
+    signal: TFT_DC
+    direction: out
+    active: n/a
+    pull: none
+    reset_state: high impedance
+    powerup_glitch: low level, 60 us
+    notes: Display data (high) or command (low). Panel pin RS.
+
+  - gpio: 14
+    signal: TFT_RST
+    direction: out
+    active: low
+    pull: 10k up to 3V3 (R63)
+    reset_state: high impedance
+    powerup_glitch: low level, 60 us
+    notes: Display reset.
+
+  - gpio: 15
+    signal: ENC_A
+    direction: in
+    active: low
+    pull: 3.3k up to 3V3 (R64), 10k + 100 nF filter
+    reset_state: high impedance
+    powerup_glitch: low level, 60 us
+    notes: Rotary encoder phase A. Use PCNT. No 32 kHz crystal is fitted on this pin.
+
+  - gpio: 16
+    signal: ENC_B
+    direction: in
+    active: low
+    pull: 3.3k up to 3V3 (R65), 10k + 100 nF filter
+    reset_state: high impedance
+    powerup_glitch: low level, 60 us
+    notes: Rotary encoder phase B.
+
+  - gpio: 17
+    signal: ENC_SW
+    direction: in
+    active: low
+    pull: 3.3k up to 3V3 (R66), 10k + 100 nF filter
+    reset_state: high impedance
+    powerup_glitch: low level, 60 us
+    notes: Encoder push switch (select).
+
+  - gpio: 18
+    signal: BTN_BACK
+    direction: in
+    active: low
+    pull: 3.3k up to 3V3 (R67), 10k + 100 nF filter
+    reset_state: high impedance
+    powerup_glitch: low level then high level, 60 us each
+    notes: Back button SW4.
+
+  - gpio: 19
+    signal: USB_DM
+    direction: bidir
+    active: n/a
+    pull: none
+    reset_state: high impedance
+    powerup_glitch: low level, then two high-level pulses, 60 us each
+    notes: Native USB D-. Reserved.
+
+  - gpio: 20
+    signal: USB_DP
+    direction: bidir
+    active: n/a
+    pull: none
+    reset_state: USB pull-up
+    powerup_glitch: weak pull-down, then two high-level pulses, 60 us each
+    notes: Native USB D+. Reserved.
+
+  - gpio: 21
+    signal: TFT_BL
+    direction: out
+    active: high
+    pull: 100k to GND at the MOSFET gate (R62)
+    reset_state: high impedance
+    powerup_glitch: none
+    notes: Backlight PWM (LEDC), 1 kHz to 20 kHz. High = on. About 58 mA through the LEDs at 100 % duty.
+
+  - gpio: 38
+    signal: KEEPALIVE
+    direction: out
+    active: n/a
+    pull: 10k to GND (R33)
+    reset_state: high impedance
+    powerup_glitch: none
+    notes: >-
+      Must be toggled by supervised task code, never by LEDC, RMT, MCPWM or a
+      timer output. Accepted: square wave 10 Hz to 5 kHz (an edge at least
+      every 50 ms). Drive is enabled 8 to 105 ms after toggling starts and
+      removed 0.5 to 0.9 s after it stops low, at most 1.4 s if it stops high.
+      Stopping for longer than that also clears the over-current latch and
+      resets the I/O expander.
+
+  - gpio: 39
+    signal: BTN_HOME
+    direction: in
+    active: low
+    pull: 3.3k up to 3V3 (R68), 10k + 100 nF filter
+    reset_state: high impedance; weak pull-up after reset (MTCK)
+    powerup_glitch: none
+    notes: Manual/Home button SW5.
+
+  - gpio: 40
+    signal: OC_FAULT_N
+    direction: in
+    active: low
+    pull: none (driven push-pull by U7)
+    reset_state: high impedance
+    powerup_glitch: none
+    notes: >-
+      Low while the hardware over-current latch is set. The latch is set by
+      the comparators and cleared only by stopping KEEPALIVE.
+
+  - gpio: 41
+    signal: AC_ZC
+    direction: in
+    active: high
+    pull: 10k up to 3V3 (R58)
+    reset_state: high impedance
+    powerup_glitch: none
+    notes: >-
+      High during the half-cycle in which the COM leg is positive, low during
+      the other. Square wave at mains frequency. No edges for 50 ms means no
+      24 VAC. The rising edge is about 0.2 ms after the true zero crossing.
+
+  - gpio: 42
+    signal: SPARE_IO42
+    direction: in
+    active: n/a
+    pull: none
+    reset_state: high impedance
+    powerup_glitch: none
+    notes: Unused. Test pad TP24. Keep as input.
+
+  - gpio: 43
+    signal: UART0_TXD
+    direction: out
+    active: n/a
+    pull: none
+    reset_state: weak pull-up, input enabled
+    powerup_glitch: none
+    notes: Debug header J8. ROM boot log.
+
+  - gpio: 44
+    signal: UART0_RXD
+    direction: in
+    active: n/a
+    pull: none
+    reset_state: weak pull-up, input enabled
+    powerup_glitch: none
+    notes: Debug header J8.
+
+  - gpio: 45
+    signal: STRAP_VDD_SPI
+    direction: in
+    active: n/a
+    pull: none
+    reset_state: weak pull-down, input enabled
+    powerup_glitch: none
+    notes: Strapping pin, not connected. Test pad TP25. Never drive high during reset.
+
+  - gpio: 46
+    signal: STATUS_LED
+    direction: out
+    active: high
+    pull: LED D6 and 680R to GND
+    reset_state: weak pull-down, input enabled
+    powerup_glitch: none
+    notes: Strapping pin. The LED path only pulls it low, which is the required strap level.
+
+  - gpio: 47
+    signal: QWIIC_SDA
+    direction: bidir
+    active: n/a
+    pull: 4.7k up to 3V3 (R23)
+    reset_state: input enabled, floating
+    powerup_glitch: none
+    notes: Second I2C controller, expansion connector J6 only. 3.3 V on the N16R8 module.
+
+  - gpio: 48
+    signal: QWIIC_SCL
+    direction: out
+    active: n/a
+    pull: 4.7k up to 3V3 (R24)
+    reset_state: input enabled, floating
+    powerup_glitch: none
+    notes: Second I2C controller clock.
+
+enable_pin:
+  signal: EN
+  notes: Module pin 3. 10k up to 3V3 (R18), 1 uF to GND (C16), button SW1 to GND, debug header J8.
+
+i2c:
+  - bus: I2C0
+    sda_gpio: 8
+    scl_gpio: 9
+    speed_hz: 400000
+    devices:
+      - name: io_expander
+        part: TCA9539PWR
+        address: 0x74
+        notes: >-
+          A0 = A1 = GND. RESET pin is driven by DRV_EN: the device is held in
+          reset, with every pin an input, whenever KEEPALIVE is not running
+          or the over-current latch is set. It does not answer on the bus
+          while in reset.
+      - name: rtc
+        part: PCF8563T
+        address: 0x51
+        notes: Backed by a CR2032. INT pin is on test pad TP23 only.
+  - bus: I2C1
+    sda_gpio: 47
+    scl_gpio: 48
+    speed_hz: 100000
+    devices: []
+    notes: Qwiic / STEMMA QT connector J6. No device on the board.
+
+# TCA9539 bits. A valve output is ON when its bit is configured as an output
+# and driven LOW (the pin sinks the opto-triac LED). Power-on and reset state
+# is input, which is OFF. The relay bit is the opposite sense.
+io_expander:
+  device: io_expander
+  bits:
+    - {port: 0, bit: 0, signal: ZONE1,  direction: out, active: low,  notes: Valve output Z1}
+    - {port: 0, bit: 1, signal: ZONE2,  direction: out, active: low,  notes: Valve output Z2}
+    - {port: 0, bit: 2, signal: ZONE3,  direction: out, active: low,  notes: Valve output Z3}
+    - {port: 0, bit: 3, signal: ZONE4,  direction: out, active: low,  notes: Valve output Z4}
+    - {port: 0, bit: 4, signal: MASTER, direction: out, active: low,  notes: Master valve / pump start output MV}
+    - {port: 0, bit: 5, signal: COM_RELAY, direction: out, active: high, notes: "Closes the valve common relay K1. 100k pull-down. Close 20 ms before the first output, open 40 ms after the last."}
+    - {port: 0, bit: 6, signal: SPARE_P06, direction: in, active: n/a, notes: Test pad TP26}
+    - {port: 0, bit: 7, signal: SPARE_P07, direction: in, active: n/a, notes: Test pad TP27}
+    - {port: 1, bit: 0, signal: ZONE5,  direction: out, active: low,  notes: Valve output Z5. Not fitted on the 4-zone build.}
+    - {port: 1, bit: 1, signal: ZONE6,  direction: out, active: low,  notes: Valve output Z6. Not fitted on the 4-zone build.}
+    - {port: 1, bit: 2, signal: ZONE7,  direction: out, active: low,  notes: Valve output Z7. Not fitted on the 4-zone build.}
+    - {port: 1, bit: 3, signal: ZONE8,  direction: out, active: low,  notes: Valve output Z8. Not fitted on the 4-zone build.}
+    - {port: 1, bit: 4, signal: VARIANT_8ZONE_N, direction: in, active: low, notes: "Low = 8-zone build (R28 fitted). High = 4-zone build. 10k pull-up."}
+    - {port: 1, bit: 5, signal: SENS_PWR_FAULT_N, direction: in, active: low, notes: Sensor supply switch U11 reports over-current or over-temperature. 10k pull-up.}
+    - {port: 1, bit: 6, signal: SPARE_P16, direction: in, active: n/a, notes: Test pad TP28}
+    - {port: 1, bit: 7, signal: SPARE_P17, direction: in, active: n/a, notes: Test pad TP29}
+
+limits:
+  max_outputs_on: 3            # two zones plus master, system spec section 1
+  max_current_per_output_a: 0.5
+  hardware_overcurrent_trip_a_peak: 4.6

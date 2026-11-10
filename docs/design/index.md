@@ -8,6 +8,7 @@ one to change, change it in the same pull request. See
 - [Prior-art survey](prior-art.md): existing open irrigation controllers, their circuits, known field failures, and what ZoneFlow takes from them.
 - [Firmware architecture](firmware-architecture.md): standalone firmware modules, threading, safety design, interfaces for later modules, scheduler and missed-start policy, open questions for hardware.
 - [Hardware toolchain](hardware-toolchain.md): how a board goes from text to a KiCad 10 project and fabrication files with no GUI, what was checked, and the known limits.
+- [Hardware design](hardware-design.md): the rev A circuit, block by block, with part numbers, calculations, the net list, the risk register and the bring-up plan. A paper design. Nothing in it is measured.
 
 An independent design review before fabrication is tracked in
 [issue #11](https://github.com/syntroniks/zoneflow/issues/11).
