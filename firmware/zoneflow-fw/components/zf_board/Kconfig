@@ -1,0 +1,48 @@
+menu "ZoneFlow board"
+
+    choice ZF_BOARD
+        prompt "Board"
+        default ZF_BOARD_REV_A
+        help
+            Board definition header used for pins and board constants.
+
+        config ZF_BOARD_REV_A
+            bool "ZoneFlow rev A (provisional pin map)"
+    endchoice
+
+    choice ZF_OE_MODE
+        prompt "Output-enable signal type"
+        default ZF_OE_MODE_TOGGLE
+        help
+            How the hardware output-enable (OE) gate expects to be driven.
+            Toggle: a retriggerable monostable that needs edges (watchdog style).
+            Static: a plain enable level, held while outputs may be on.
+            Either way OE goes inactive when the control loop stops.
+
+        config ZF_OE_MODE_TOGGLE
+            bool "Toggle (retriggerable)"
+        config ZF_OE_MODE_STATIC
+            bool "Static level"
+    endchoice
+
+    config ZF_OE_TOGGLE_PERIOD_MS
+        int "Keep-alive period (ms)"
+        range 1 100
+        default 5
+        help
+            Period of the keep-alive task. In toggle mode, one edge per period.
+
+    config ZF_OE_HEARTBEAT_TIMEOUT_MS
+        int "Control-loop heartbeat timeout (ms)"
+        range 100 5000
+        default 500
+        help
+            The keep-alive task stops driving OE when the control loop has not
+            run for this long.
+
+    config ZF_CONTROL_PERIOD_MS
+        int "Control loop period (ms)"
+        range 10 200
+        default 50
+
+endmenu

@@ -1,0 +1,8 @@
+# ZoneFlow partition table, 8 MB flash (ESP32-S3-WROOM-1 N8 or larger).
+# Name,   Type, SubType,  Offset,   Size,     Flags
+nvs,      data, nvs,      0x9000,   0x15000,
+otadata,  data, ota,      0x1e000,  0x2000,
+ota_0,    app,  ota_0,    0x20000,  0x300000,
+ota_1,    app,  ota_1,    0x320000, 0x300000,
+www,      data, littlefs, 0x620000, 0x1d0000,
+coredump, data, coredump, 0x7f0000, 0x10000,
