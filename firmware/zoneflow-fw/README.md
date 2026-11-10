@@ -39,6 +39,15 @@ the display on the pins of the over-current trip and zero-cross inputs:
 idf.py -B build-display -D SDKCONFIG=build-display/sdkconfig -D ZF_DISPLAY=1 build
 ```
 
+## Release builds
+
+Releases are built by `.github/workflows/release.yml` from a `vX.Y.Z` tag. The firmware's
+version is the tag without the `v`: the workflow writes it to `version.txt` here (ignored by Git)
+before `idf.py build`, and ESP-IDF stores it in the application description. Without
+`version.txt`, ESP-IDF uses `git describe`. To try the packaging on your own build, see
+[`tools/zfrelease`](../../tools/zfrelease/README.md) and
+[Releases and updating](../../docs/firmware/releases.md).
+
 ## Run the display on a desktop
 
 ```sh
