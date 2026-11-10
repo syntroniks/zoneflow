@@ -1,6 +1,6 @@
 # ZoneFlow system specification
 
-Status: **v0.3 draft**. This file is the source of truth for hardware,
+Status: **v0.4 draft**. This file is the source of truth for hardware,
 firmware, enclosure and documentation work. Change it by pull request; do not
 let a subsystem drift from it silently.
 
@@ -36,11 +36,16 @@ keeps watering on schedule when the network is down.
 3. **A hardware output-enable** gates all output drivers. Firmware must keep
    toggling a keep-alive signal; when the toggling stops (crash, hang, reset,
    flashing), gate drive to every triac is removed within about one second,
-   with no firmware involved.
+   with no firmware involved. The same signal holds the output expander in
+   reset, so no output state survives a restart.
 4. **Maximum run time.** Firmware enforces a per-zone maximum run time that a
    schedule or API call cannot exceed.
 5. Only Class 2 (low voltage, power limited) circuits are on the board. No
    mains.
+6. **A hardware cut-off in the valve common.** A relay feeds the COM
+   terminals. It is closed only while the output-enable is active and firmware
+   has asked for it. It removes power from every valve when an output device
+   has failed short, which removing gate drive cannot do.
 
 ## 3. Hardware architecture
 
@@ -48,14 +53,15 @@ keeps watering on schedule when the network is down.
 
 | Block | Decision | Notes |
 |---|---|---|
-| MCU module | ESP32-S3-WROOM-1 (PCB antenna, at least 8 MB flash, with PSRAM for the display interface) | Enough GPIO without an expander, native USB, mature in ESP-IDF and ESPHome. |
-| Output stage | One triac per output, OpenSprinkler-style topology | One 24 VAC leg is circuit ground, the other is valve COM. Each valve sits between COM and its triac; all triac returns share one path to ground through the current shunt. Triac rated at least 1 A RMS with a high surge rating; no MAC97-class parts. Gate drive comes from ESP32 GPIO through the fail-safe gate of section 2, not from an unguarded pin. See `prior-art.md` for the evidence. |
-| Logic supply | Half-wave rectifier, bulk capacitor sized for half-wave ripple at peak WiFi load, buck converter rated at least 60 V input, 3.3 V rail | 32 VAC RMS gives about 45 V peak, and the 45 V regulators used by older designs have no margin. |
+| MCU module | ESP32-S3-WROOM-1-N16R8 (PCB antenna, 16 MB flash, 8 MB PSRAM for the display interface) | Native USB, mature in ESP-IDF and ESPHome. With the SPI display the module has too few GPIOs for nine direct valve outputs, so the valve outputs are on an I2C expander that the output-enable holds in reset. |
+| Output stage | One triac per output, OpenSprinkler-style topology | One 24 VAC leg is circuit ground, the other is valve COM. Each valve sits between COM and its triac; all triac returns share one path to ground through the current shunt. Triac rated at least 1 A RMS with a high surge rating; no MAC97-class parts. Each gate is fired from the triac's own T2 terminal through an opto-triac, because the well-rated triacs available are three-quadrant parts that positive logic drive cannot fire on both half-cycles. The opto-triac LEDs are powered through the fail-safe gate of section 2, not from an unguarded pin. See `prior-art.md` for the evidence and `hardware-design.md` section 6 for the analysis. |
+| Logic supply | Half-wave rectifier, bulk capacitor sized for half-wave ripple at peak WiFi load, buck converter rated at least 60 V input, 5 V bus shared with USB, linear regulator to the 3.3 V rail | 32 VAC RMS gives about 45 V peak, and the 45 V regulators used by older designs have no margin. |
 | USB | USB-C, native ESP32-S3 USB for flashing and logs | USB alone powers the logic so the board can be flashed on a desk. Valve outputs stay unpowered without 24 VAC. Logic ground is tied to one 24 VAC leg, so the design notes must state what happens when USB and 24 VAC are connected together and what the user must not do (for example earthing the other transformer leg). |
-| Protection | Fuse on AC input, surge clamp on AC input. Per output: RC snubber, bidirectional TVS, and a series element (PTC, fuse or resistor) that limits fault current. Clamp on every sensor terminal. PCB spark gaps on field terminals where layout allows | Valve wires run tens of metres outdoors. Blown triacs from shorted or surge-hit wiring are the most common field failure in existing designs. |
-| Current sense | One low-side shunt in the shared triac return, with a rectifying/averaging front end | Measures total current; firmware attributes it to zones at turn-on. The reading must not sit in the non-linear region of the ESP32 ADC near 0 V: bias it or use an external ADC. A fast hardware over-current path that removes gate drive without firmware is preferred. |
+| Protection | Fuse on AC input, in the leg that becomes circuit ground, surge clamp on AC input. Per output: RC snubber, bidirectional TVS, and a series element (PTC, fuse or resistor) that limits fault current. Clamp on every sensor terminal. PCB spark gaps on field terminals where layout allows | Valve wires run tens of metres outdoors. Blown triacs from shorted or surge-hit wiring are the most common field failure in existing designs. |
+| Current sense | One low-side shunt in the shared triac return, amplified around a bias voltage and sampled as a waveform by ADC1 | Measures total current; firmware computes RMS over whole mains cycles and attributes it to zones at turn-on. The bias keeps the signal out of the non-linear region of the ESP32 ADC near 0 V. A hardware comparator on the same signal latches and removes gate drive without firmware. |
 | AC presence | A signal that tells firmware 24 VAC is present | Lets firmware tell "USB only" from "valves powered". |
-| RTC | I2C RTC with backup | |
+| RTC | I2C RTC with coin-cell backup | |
+| Valve common | Relay in the feed to the COM terminals | Safety rule 6. |
 | Display | 2.0 to 2.4 inch colour IPS TFT, 320x240, ST7789-class controller on SPI, no touch, PWM-dimmable backlight | Chosen by the project owner: the small screens on existing controllers limit the local interface too much. |
 | Controls | Rotary encoder with push switch, plus Back and Manual/Home buttons | The display has no touch, so these are the only local inputs. |
 | Expansion | One I2C connector (Qwiic/STEMMA QT pinout) | Future soil sensors, displays. |
@@ -64,7 +70,7 @@ keeps watering on schedule when the network is down.
 
 ### 3.2 Pin map
 
-The pin map lives in `hardware/pinmap.yaml` once the schematic exists.
+The pin map lives in `hardware/pinmap.yaml`.
 Firmware reads pin numbers only from one board header generated from, or kept
 in step with, that file. Until then firmware uses a provisional map and must
 not scatter pin numbers through the code.
