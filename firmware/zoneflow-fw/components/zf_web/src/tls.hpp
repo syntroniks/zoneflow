@@ -17,6 +17,8 @@ struct TlsIdentity {
 // Loads the key and certificate from `store`, or creates them (EC P-256,
 // valid 2025-01-01 to 2049-12-31, CN and SAN "<hostname>.local" and
 // "<hostname>") and stores them. False if creation failed.
-bool loadOrCreateTls(IBlobStorage &store, const std::string &hostname, TlsIdentity &out);
+// `entropyReady` is called before a new key is drawn and may block; false
+// means no true random source is running, and no key is made.
+bool loadOrCreateTls(IBlobStorage &store, const std::string &hostname, TlsIdentity &out, bool (*entropyReady)());
 
 } // namespace zf::web

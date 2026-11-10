@@ -852,9 +852,24 @@ esp_err_t registerHandlers(httpd_handle_t h)
     return ESP_OK;
 }
 
+// The hardware RNG is a true random source only while WiFi or BT runs
+// (ESP-IDF "Random Number Generation"); otherwise it is a PRNG. zf_net
+// starts the radio on its own task and publishes a state other than Off once
+// esp_wifi_start() has returned. A new TLS key waits for that, up to 10 s.
+bool radioRunning()
+{
+    for (int i = 0; i < 100; ++i) {
+        if (net::status().state != net::NetState::Off) {
+            return true;
+        }
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+    return false;
+}
+
 esp_err_t startHttps()
 {
-    if (!loadOrCreateTls(gm->store, std::string(net::status().hostname.view()), gm->tls)) {
+    if (!loadOrCreateTls(gm->store, std::string(net::status().hostname.view()), gm->tls, &radioRunning)) {
         return ESP_FAIL;
     }
     httpd_ssl_config_t c = HTTPD_SSL_CONFIG_DEFAULT();
