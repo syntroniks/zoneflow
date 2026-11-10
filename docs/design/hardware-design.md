@@ -1858,15 +1858,16 @@ detail.
 
 ### 19.1 Rules
 
-1. **Keep-alive.** Toggle GPIO38 from supervised task code, an edge every 5 to 50 ms. Never from a timer peripheral. Toggle only while outputs are wanted.
-2. **Start-up self-test.** Before the first toggle, probe I2C address 0x74. An answer means the fail-safe circuit has failed. Refuse to run valves.
-3. **Expander.** A valve bit is on when it is an output and low. After drive is enabled, write the output register to all ones except COM_RELAY at zero, then set the direction register. Never more than three valve bits low.
+1. **Keep-alive.** Follow the contract in section 19.4. In short: GPIO38 is a plain GPIO output, every edge is decided by code that has checked the control-loop heartbeat, one edge every 5 ms while outputs are wanted, low otherwise.
+2. **Self-test before every run.** The four steps at the end of section 8.5. On a failure, write every expander pin back to input, raise a fault and refuse to run valves.
+3. **Expander.** A valve bit is on when it is an output and low. After drive is enabled, write the output register to all ones except COM_RELAY at zero, then set the direction register. Never more than three valve bits low. Read both registers back after every write and once per control tick. A mismatch, a missing acknowledge or a stuck bus means stop the keep-alive.
 4. **Relay sequencing.** COM_RELAY high 20 ms before the first valve, low 40 ms after the last.
-5. **Over-current latch.** GPIO40 low means the hardware has cut drive. Mark the last output switched on as faulted. Clear the latch by stopping the keep-alive for 1.5 s.
+5. **Over-current latch.** GPIO40 low means the hardware has cut drive. Mark the last output switched on as faulted. Clear the latch by holding the keep-alive low for 1.5 s. There is no release pin.
 6. **Unexpected current.** Current above the idle threshold with the relay closed and no valve bit low means a shorted output device. Open the relay and stop.
 7. **PSRAM ECC.** Enable it. It raises the module's ambient limit from 65 to 85 °C.
-8. **Flash writes.** Avoid them while a valve is on. A long erase can outlast the 0.5 s minimum hold-up and drop the outputs.
+8. **Flash.** A 4 kB sector erase stalls both cores for up to about 400 ms. The keep-alive interrupt runs through it; the control loop does not. Keep 64 kB block erases, which can take 2 s, away from watering.
 9. **Backlight.** PWM on GPIO21 between 1 and 20 kHz. Dim and time out.
+10. **Stagger starts.** Never switch two outputs on within 100 ms of each other. The hardware trip can be as low as 4.0 A peak, and two valves holding 0.5 A with a third drawing 1.5 A of inrush already reach 3.5 A peak.
 
 ### 19.2 Measuring current
 
@@ -1885,21 +1886,61 @@ subtract the window's mean, and take the root of the mean of the squares.
 
 ### 19.3 Answers to the firmware team's open questions
 
-The numbers refer to section 9 of the firmware architecture document.
+The numbers refer to section 9 of the firmware architecture document as it
+stands on `main` after the phase 2 firmware work, which has fourteen
+questions.
 
 | No. | Question | Answer |
 |---|---|---|
 | 1 | Pin map | `hardware/pinmap.yaml`. Valve outputs are expander bits, not GPIOs. |
-| 2 | Keep-alive edge rate and hold time | Minimum one edge per 50 ms. Hold-up 0.5 to 0.9 s. Flash erase time not confirmed, see rule 8. |
+| 2 | Keep-alive edge rate and hold time | Section 19.4. One edge at least every 20 ms; the firmware's 5 ms is right. Hold-up 0.45 to 0.9 s. Flash sector erase up to about 400 ms. |
 | 3 | Pull-downs on outputs and OE | There are no output GPIOs. `KA` has a 10 kohm pull-down. The expander resets to inputs. |
 | 4 | Current-sense front end | 0.1 ohm shunt, two AC-coupled-by-arithmetic channels biased at 0.79 V. Section 19.2. Trip flag on GPIO40. |
-| 5 | 24 VAC present | GPIO41, a mains-frequency square wave, not a level. No edge for 25 ms means no AC. |
+| 5 | 24 VAC present | GPIO41, a mains-frequency square wave, not a level. No edge of either polarity for 25 ms means no AC. |
 | 6 | Field input polarity | Contact closed reads low. External pull-ups fitted. Flow passes 200 Hz. |
 | 7 | RTC | PCF8563 at 0x51, as assumed. CR2032, about ten years. |
-| 8 | OLED address | No OLED. ST7789 TFT on SPI2, section 15. |
+| 8 | Display | HS20HS072RX, 240 x 320 portrait with the tail on a short edge; its position in the enclosure is not decided. Chip select is on GPIO10 and reset on GPIO14 with a 10 kohm pull-up. Neither is tied off on the board, so firmware drives both. Data/command GPIO13, clock GPIO12, data GPIO11. Backlight GPIO21, high is on, 1 to 20 kHz. Back is GPIO18 and Manual/Home GPIO39, both low when pressed. The encoder has 30 detents and 15 pulses per turn: two quadrature edges per detent. |
 | 9 | GPIO15 and 16 | No 32 kHz crystal on the module pins. They carry the encoder. I2C0 is on GPIO8 and 9. |
 | 10 | Current windows | 80 to 700 mA per output is consistent with the hardware. A 3000 mA rms short limit is close to the hardware trip of 4.6 A peak, which is 3.3 A rms for a sine. The hardware will usually act first. |
 | 11 | Output LEDs | They follow the real drive in hardware. Firmware drives only the status LED on GPIO46. |
+| 12 | Hardware over-current trip | Status on GPIO40, low when tripped, driven by a 74HC00 through 10 kohm: not open drain, no pull-up wanted. There is no release pin and no release pulse. The latch clears when the keep-alive has been low for 1.5 s. It trips at 4.6 A peak nominal, 4.0 to 5.4 A with every tolerance stacked, and removes drive from every output. |
+| 13 | Zero-cross detector | GPIO41. Not one pulse per crossing: a square wave at mains frequency, high while `AC_L` is above 2.3 V. At 24 VAC the rising edge is 0.30 ms after the upward zero crossing and the falling edge 0.09 ms before the downward one. Firmware needs both edges and a separate offset for each. |
+| 14 | Pin budget | Settled by the expander. The display has its own five pins, the trip and zero-cross inputs are on GPIO40 and GPIO41, and GPIO42 is spare. The shared-pin build option can go. |
+
+### 19.4 Keep-alive contract agreed with the firmware
+
+Review A1 compared section 8 with the merged firmware (`OutputEnableGuard`,
+firmware architecture section 3). The first draft of this document said the
+keep-alive must never come from a timer. The firmware makes its edges in a
+GPTimer alarm interrupt. The two are consistent, for this reason: the timer
+does not make the waveform. Its interrupt handler does, one edge at a time,
+and only while a heartbeat counter that the control loop increments has moved
+within the last 500 ms. A stuck control loop, a stopped timer and a halted
+CPU all end the edges. What the hardware rule forbids is a peripheral that
+keeps toggling the pin with no code deciding each edge.
+
+| Item | Agreed |
+|---|---|
+| Pin | GPIO38 as a plain GPIO output, idle low. No peripheral signal may be routed to it through the GPIO matrix. |
+| Who makes an edge | Code that has just checked the control-loop heartbeat. Today: the 5 ms GPTimer alarm interrupt calling `OutputEnableGuard::step()`. Forbidden: LEDC, RMT, MCPWM, a timer with a pin output, any other self-running source. |
+| Edge interval | 5 ms. The hardware needs an edge at least every 20 ms. |
+| When it runs | Only while an output is wanted and no fault is latched. It is low between runs. |
+| Enable delay | `DRV_EN` is high 14 to 41 ms after the first edge at 100 Hz. Firmware waits until the expander acknowledges, 110 ms at most, before it writes it. |
+| After every start | The expander has been in reset. Write the output register, then the direction register, then close the relay, wait 20 ms, then switch valves. |
+| Stopping | Firmware drives the pin low. Drive is gone 0.45 to 0.9 s after the last edge; 1.2 s if a fault leaves the pin high. |
+| From a dead control loop to no drive | Heartbeat timeout 500 ms, plus one 5 ms period, plus the hold-up: 1.4 s at most. The specification's "about one second" counts from the last edge and is met. |
+| Flash | A 4 kB sector erase, up to about 400 ms, plus one 50 ms control period stays inside the 500 ms heartbeat timeout by 50 ms. Do not lower the timeout. Do not run 64 kB block erases while a valve is on. |
+| Clearing the over-current latch | Hold the keep-alive low for 1.5 s. This also resets the expander. |
+| Self-test | Before every run, at start-up and after every run: section 8.5. |
+| What the circuit does not check | The rate. Any toggling from about 3 Hz to at least 1 MHz enables drive. Correct timing is the firmware's job. |
+
+### 19.5 Open points between hardware and firmware
+
+1. **A second detector.** Review A1 finding B1 proposes an independent keep-alive detector for the relay and a read-back of `DRV_EN` on GPIO42. If adopted, the self-test reads that pin instead of inferring `DRV_EN` from the expander's acknowledge.
+2. **Firmware still drives valves as GPIOs.** The merged firmware has no expander or relay driver, expects a release pulse for the over-current latch, expects one pulse per zero crossing, and averages the current reading. Sections 19.1 to 19.4 are the hardware side of each change. The board header must be regenerated from `hardware/pinmap.yaml`.
+3. **PSRAM ECC.** `sdkconfig.defaults` on `main` does not enable it. Rule 7.
+4. **Heartbeat timeout against erase time.** The 50 ms of margin in section 19.4 rests on one flash data sheet, and Espressif does not fix the flash part. Measure the longest control-loop stall on real modules.
+5. **Relay release.** Section 7.2 leaves open whether K1 should open at once or after a hold. Firmware sequencing is the same either way.
 
 ## 20. Design risk register
 
