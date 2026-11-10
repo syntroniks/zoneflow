@@ -13,6 +13,15 @@ FAB_RULES ?= $(HW_ROOT)rules/jlcpcb.toml
 ROTATIONS ?= $(HW_ROOT)rules/jlcpcb-cpl-rotations.csv
 CACHE     ?= $(HW_ROOT).cache
 GERBER_LAYERS ?= F.Cu,B.Cu,F.Paste,B.Paste,F.Silkscreen,B.Silkscreen,F.Mask,B.Mask,Edge.Cuts
+# Assembly variants (KiCad 10) to make a BOM for, besides the base design.
+VARIANTS  ?=
+# Set to 1 to fail the build when text or symbols collide on a schematic page.
+SCH_LINT  ?=
+# Set to 1 to replace the time of export in PDFs, SVGs and reports by the date
+# of the title block, so that a rebuild with no change leaves no diff.
+STABLE    ?=
+# The design netlist a board is drawn from, if it has one (netlist-driven capture).
+DESIGN_NETLIST ?=
 
 # Generation runs in the locked uv environment. The board steps need KiCad's
 # pcbnew module, which only the system interpreter has.
@@ -27,31 +36,51 @@ export PYTHONPATH := $(abspath $(HWFLOW))
 export PYTHONDONTWRITEBYTECODE := 1
 
 SCH := $(NAME).kicad_sch
+STABILISE = $(if $(STABLE),$(KICAD_PY) -m hwflow.stable $(SCH) $(OUT),@true)
+# With STABLE, a plot whose new version draws the same elements keeps its old
+# file: two builds of one KiCad release write a page's items in a different order.
+PLOTS_STASH = $(if $(STABLE),$(KICAD_PY) -m hwflow.plotcmp stash $(OUT) build/previous-plots,@true)
+PLOTS_KEEP = $(if $(STABLE),$(KICAD_PY) -m hwflow.plotcmp keep build/previous-plots $(OUT),@true)
 PCB := $(NAME).kicad_pcb
 # kicad-cli prints wxWidgets debug lines on stderr. They go to a log file so
 # that the exit code of kicad-cli still decides whether the step passed.
 LOG := 2>> build/kicad-cli.stderr
 
-.PHONY: all sch erc board route reroute finish drc outputs check
+.PHONY: all schematic footprints sch lint erc sch-outputs board route reroute finish drc outputs check committed
 .NOTPARALLEL:
 
 all: outputs
 	@echo "build complete: ERC and DRC passed, outputs are in $(OUT)/"
 
+# The schematic half only: generate, check, and export the schematic deliverables.
+schematic: sch-outputs
+	@echo "schematic complete: netlist check and ERC passed, outputs are in $(OUT)/"
+
 build:
 	@mkdir -p build/kicad-config $(OUT)/reports $(OUT)/gerbers
 
+# Project-local footprints, if the board has any: design/footprints.py writes
+# lib/<Library>.pretty through KiCad's pcbnew module.
+FOOTPRINT_LIB ?= lib/ZoneFlow.pretty
+footprints: | build
+	@if [ -f $(DESIGN)/footprints.py ]; then $(KICAD_PY) $(DESIGN)/footprints.py $(FOOTPRINT_LIB); fi
+
 # Circuit description -> schematic sheets, project file, library tables, DRC
 # rules. Fails if the netlist KiCad extracts differs from the description.
-sch: | build
+sch: footprints | build
 	$(UV_PY) -m hwflow sch $(DESIGN) . --fab-rules $(FAB_RULES)
 
+# Plot every page and fail on text or symbols that collide. ERC does not look for that.
+lint: sch
+	$(UV_PY) -m hwflow lint $(DESIGN) .
+
 # Errors and warnings both fail the build.
-erc: sch
+erc: sch $(if $(SCH_LINT),lint)
 	$(KICAD_CLI) sch erc --severity-error --severity-warning --format report \
 		-o $(OUT)/reports/erc.rpt $(SCH) $(LOG)
 	$(KICAD_CLI) sch erc --severity-error --severity-warning --exit-code-violations --format json \
 		-o $(OUT)/reports/erc.json $(SCH) $(LOG)
+	$(STABILISE)
 
 # Netlist + board.toml -> placed, pre-routed board and a Specctra DSN.
 board: erc
@@ -78,8 +107,28 @@ drc: finish
 	$(KICAD_CLI) pcb drc --schematic-parity --severity-error --severity-warning --exit-code-violations \
 		--format json -o $(OUT)/reports/drc.json $(PCB) $(LOG)
 
-outputs: drc
+BOM_EXPORT = $(KICAD_CLI) sch export bom --fields 'Value,Reference,Footprint,LCSC,$${QUANTITY}' \
+	--labels 'Value,Reference,Footprint,LCSC,Qty' --group-by 'Value,Footprint,LCSC' \
+	--ref-range-delimiter '' --exclude-dnp
+
+# Schematic deliverables: the PDF, one SVG per page, and a JLCPCB BOM for each build.
+sch-outputs: erc
+	$(PLOTS_STASH)
 	$(KICAD_CLI) sch export pdf -o $(OUT)/$(NAME)-schematic.pdf $(SCH) $(LOG)
+	$(KICAD_CLI) sch export svg -o $(OUT)/schematic-svg/ $(SCH) $(LOG)
+	$(BOM_EXPORT) -o build/$(NAME)-bom.csv $(SCH) $(LOG)
+	$(KICAD_PY) -m hwflow.fab bom build/$(NAME)-bom.csv $(OUT)/$(NAME)-bom-jlcpcb.csv
+	$(foreach v,$(VARIANTS),$(BOM_EXPORT) --variant $(v) -o build/$(NAME)-bom-$(v).csv $(SCH) $(LOG) && \
+		$(KICAD_PY) -m hwflow.fab bom build/$(NAME)-bom-$(v).csv $(OUT)/$(NAME)-bom-jlcpcb-$(v).csv &&) true
+	$(STABILISE)
+	$(PLOTS_KEEP)
+
+# The committed netlist and BOMs against the design netlist. Needs Python only,
+# no KiCad, and builds nothing: CI runs it on every pull request.
+committed:
+	$(UV_PY) -m hwflow committed . --netlist $(DESIGN_NETLIST)
+
+outputs: drc sch-outputs
 	# Gerbers, drill and placement all use the drill/place origin, which the
 	# board builder puts on the bottom-left corner of the outline.
 	$(KICAD_CLI) pcb export gerbers --layers "$(GERBER_LAYERS)" --subtract-soldermask --no-protel-ext \
@@ -89,10 +138,6 @@ outputs: drc
 	$(KICAD_CLI) pcb export pos --format csv --units mm --side both --exclude-dnp --use-drill-file-origin \
 		-o build/$(NAME)-pos.csv $(PCB) $(LOG)
 	$(KICAD_PY) -m hwflow.fab cpl build/$(NAME)-pos.csv $(OUT)/$(NAME)-cpl-jlcpcb.csv --rotations $(ROTATIONS)
-	$(KICAD_CLI) sch export bom --fields 'Value,Reference,Footprint,LCSC,$${QUANTITY}' \
-		--labels 'Value,Reference,Footprint,LCSC,Qty' --group-by 'Value,Footprint,LCSC' \
-		--ref-range-delimiter '' --exclude-dnp -o build/$(NAME)-bom.csv $(SCH) $(LOG)
-	$(KICAD_PY) -m hwflow.fab bom build/$(NAME)-bom.csv $(OUT)/$(NAME)-bom-jlcpcb.csv
 	$(KICAD_CLI) pcb export step --subst-models --force -o $(OUT)/$(NAME).step $(PCB) $(LOG)
 	$(KICAD_CLI) pcb render --side top --quality high --width 1600 --height 1200 \
 		-o $(OUT)/$(NAME)-top.png $(PCB) $(LOG)
@@ -103,7 +148,6 @@ outputs: drc
 		--exclude-drawing-sheet -o $(OUT)/$(NAME)-front.svg $(PCB) $(LOG)
 	$(KICAD_CLI) pcb export svg --layers "B.Cu,B.Silkscreen,Edge.Cuts" --mode-single --page-size-mode 2 \
 		--exclude-drawing-sheet -o $(OUT)/$(NAME)-back.svg $(PCB) $(LOG)
-	$(KICAD_CLI) sch export svg -o $(OUT)/schematic-svg/ $(SCH) $(LOG)
 	$(KICAD_PY) -m hwflow.report . $(OUT)
 
 # Unit tests, KiCad round-trip tests, and proof that ERC and DRC catch

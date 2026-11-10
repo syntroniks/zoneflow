@@ -77,11 +77,11 @@ components:
       "2": "VIN_DC"
   - ref: C1
     value: "470 uF 63 V aluminium electrolytic"
-    package: "SMD 16x16.5 mm"
-    lcsc: C249935
+    package: "THT 12.5x20 mm"
+    lcsc: C2940725
     block: "A power"
     variant: "all"
-    note: "Bulk capacitor"
+    note: "Bulk capacitor. Through-hole, on the bottom side, lying down"
     pins:
       "+": "VIN_DC"
       "-": "GND"

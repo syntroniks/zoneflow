@@ -53,7 +53,11 @@ def lib_tables(design: Design, out_dir: Path, footprints: set[str]) -> None:
     fp_libs = sorted({f.split(":")[0] for f in footprints if ":" in f})
     lines = ["(fp_lib_table", "\t(version 7)"]
     for lib in fp_libs:
-        uri = f"${{KICAD10_FOOTPRINT_DIR}}/{lib}.pretty"
+        local = [d for d in design.footprint_dirs if (Path(d) / f"{lib}.pretty").is_dir()]
+        if local:
+            uri = f"${{KIPRJMOD}}/{Path(local[0]).name}/{lib}.pretty"
+        else:
+            uri = f"${{KICAD10_FOOTPRINT_DIR}}/{lib}.pretty"
         lines.append(f'\t(lib (name "{lib}") (type "KiCad") (uri "{uri}") (options "") (descr ""))')
     lines.append(")")
     (out_dir / "fp-lib-table").write_text("\n".join(lines) + "\n", encoding="utf-8")

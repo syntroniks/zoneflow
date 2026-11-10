@@ -1,7 +1,9 @@
 # Hardware toolchain
 
-Status: **proven on a 40-part test board, 2026-11-10**. Nothing here has been
-built as hardware. Every result below names the command that produced it.
+Status: **proven on a 40-part test board, 2026-11-10**, and used for the
+schematic of the revision A board, 346 parts, on the same day (section 12).
+Nothing here has been built as hardware. Every result below names the command
+that produced it.
 
 This document describes how ZoneFlow hardware goes from text to a KiCad 10
 project and fabrication files with no GUI, and how to design the real board
@@ -13,8 +15,9 @@ ZoneFlow design and its part choices must not be reused.
 - **Source of truth.** Two text files per board. `design/circuit.py` holds the
   circuit as Python. `design/board.toml` holds the outline, placement, net
   classes, pours and pre-routed tracks.
-- **Generator.** `tools/hwflow`, a Python package in this repository with no
-  third-party runtime dependencies. It writes `.kicad_sch` files directly.
+- **Generator.** `tools/hwflow`, a Python package in this repository. Its one
+  third-party runtime dependency is PyYAML, to read the design netlist. It
+  writes `.kicad_sch` files directly.
 - **Everything after that is KiCad.** `kicad-cli` extracts the netlist, runs
   ERC and DRC, fills zones and exports the outputs. KiCad's `pcbnew` Python
   module builds the board. Freerouting 2.5.0 routes it.
@@ -64,6 +67,8 @@ Three checks make the generated files trustworthy.
 | `design/circuit.py` | Source | Yes |
 | `design/board.toml` | Source | Yes |
 | `design/rules.kicad_dru` | Source, board-specific DRC rules | Yes |
+| `design/parts.toml`, `design/symbols.py`, `design/footprints.py`, `design/footprints.md` | Source, on a board drawn from a design netlist (section 12) | Yes |
+| `lib/` | Generated project-local symbol and footprint libraries | No |
 | `../rules/jlcpcb.toml`, `../rules/jlcpcb.kicad_dru` | Source, fab limits | Yes, with a citation |
 | `../rules/jlcpcb-cpl-rotations.csv` | Source, rotation corrections | Yes |
 | `route/<name>.ses`, `.dsn.sha256`, `.freerouting.json` | Routing cache | No. `make reroute` replaces it |
@@ -116,6 +121,9 @@ Run these in a board directory such as `hardware/toolchain-test/`.
 |---|---|
 | `make` | Everything, from source to outputs. Fails on any ERC or DRC finding |
 | `make sch` | Schematic and project files only, with the netlist check |
+| `make lint` | Plot every page and fail on colliding text or symbols |
+| `make schematic` | Up to ERC, then the schematic PDF, SVGs and BOMs. No board is needed |
+| `make committed` | Compare the committed netlist and BOMs with the design netlist. Needs no KiCad |
 | `make erc` | Up to and including ERC |
 | `make drc` | Up to and including DRC. Use this while iterating on placement |
 | `make reroute` | Discard the stored routing, route again, then everything |
@@ -351,10 +359,9 @@ again before an order.
 ## 9. Known limits
 
 - **You place every schematic symbol by coordinate.** There is no automatic
-  schematic layout. The generator does not detect overlapping text. You find
-  it by reading the PDF.
-- **One unit per symbol.** Multi-unit parts such as a dual op-amp or a hex
-  buffer are not supported yet.
+  schematic layout. `make lint` finds text and symbols that collide
+  (section 12.4). It does not judge whether a page reads well; you still
+  read the PDF.
 - **No buses, no graphical net-class flags, no per-instance values.** Every
   instance of a reused sheet has the same values.
 - **KiCad names unlabelled nets.** A wire-only net shows up on the board as
@@ -385,10 +392,13 @@ again before an order.
   JLCPCB's placement preview. Bottom-side placement was not exercised.
 - **The CPL lists through-hole parts** such as terminal blocks. Remove them or
   order them as hand-soldered parts.
-- **Exports are not byte-stable.** Gerbers, drill files, reports, the PDF and
-  the SVGs carry a timestamp or a generated id. A rebuild from a clean
-  checkout changed 29 files under `output/` and nothing else. The STEP file renumbers its entities. The PNG renders
-  differ by a few hundred pixels. The BOM and CPL are stable.
+- **Board exports are not byte-stable.** Gerbers, drill files, reports, the
+  PDF and the SVGs carry a timestamp or a generated id. A rebuild of the test
+  board from a clean checkout changed 29 files under `output/` and nothing
+  else. The STEP file renumbers its entities. The PNG renders differ by a
+  few hundred pixels. The BOM and CPL are stable. For the schematic outputs
+  `STABLE := 1` in a board Makefile removes the timestamps and keeps a plot
+  that draws the same as before (section 12.5).
 - **No 3D model for the USB-C receptacle** in the stock library, so the render
   shows only its outline.
 - **An LCSC number is only as good as the lookup.** Of the 23 numbers I first
@@ -429,8 +439,8 @@ an origin. `[group.ac_channel.at]` gives the origin and rotation of each of
 the nine instances. Pre-routes and silkscreen moves inside the group repeat
 with it. Changing the channel layout is one edit.
 
-A 4-zone assembly variant needs `dnp=True` on parts by instance. That is not
-supported. Add it to `hwflow` when the variant is designed.
+A build that leaves instances out, such as the 4-zone board, is a KiCad 10
+assembly variant: `Design.variant(name, dnp={refs})` (section 12.3).
 
 ### 10.3 Order of work
 
@@ -459,7 +469,8 @@ Reviewers do not need KiCad.
   with clickable hierarchy links. `output/schematic-svg/` has the same pages
   for embedding in a pull request.
 - **Netlist.** The build prints the part and net count. `build/<name>.net` is
-  KiCad's own netlist if a reviewer wants to grep for a pin.
+  KiCad's own netlist if a reviewer wants to grep for a pin. A board drawn
+  from a design netlist commits it as `output/<name>.net`.
 - **Board.** `output/<name>-top.png` and `-bottom.png` for placement and
   silkscreen. `output/<name>-front.svg` and `-back.svg` for copper.
 - **Numbers.** `output/reports/build-summary.json` has routed widths per net
@@ -493,3 +504,185 @@ the board edge.
 
 My overall view is that the flow can produce the revision A board, and that
 routing will take more effort than every other step combined.
+
+## 12. Capture from a design netlist
+
+The revision A board, `hardware/zoneflow-a/`, was designed on paper first.
+`hardware/netlist.yaml` lists its 346 components, the part number of each and
+the net on every pin, and it was reviewed before any schematic existed. The
+schematic must therefore be that netlist, drawn. `hwflow.capture` makes it so.
+This section describes what was added to the flow for it and what was checked.
+
+### 12.1 Three inputs, one drawing
+
+| File | Says | Does not say |
+|---|---|---|
+| `hardware/netlist.yaml` | Reference, value, package, LCSC number, build variant, the net on every pin | Anything about KiCad |
+| `design/parts.toml` | For each part number: KiCad symbol, footprint, the short value shown on the page, and the pad for each netlist pin name where the name does not start with the number | Which components exist |
+| `design/circuit.py` | Which sheet a component is on, where it sits, how the wires run, the notes on the page | Values, part numbers, nets |
+
+`circuit.py` places a component by reference and draws wires between pins:
+
+```python
+def rtc(s):
+    u10 = s.place("U10", P(130, 72))          # symbol, value, footprint, LCSC: from the two tables
+    y1 = s.attach("Y1", 1, P(108, 69), DOWN)  # a two-terminal part: pin 1 on the point, body downwards
+    s.wire(u10["OSCI"], y1[1], route="hv")    # a wire between two pins of one net
+    s.label(P(100, 68), RIGHT)                # a label on that wire: its text is the wire's net
+```
+
+`P(x, y)` is a point in units of 1.27 mm. Pins that the function does not wire
+get a short stub and the net's label, port or power symbol when the sheet is
+finished, so no pin can be forgotten.
+
+A net name appears in the drawing code only where a wire touches no pin and
+no other wire.
+`s.wire()` takes the net from the pins at its ends and **refuses to join pins
+that the netlist puts on different nets**. A label always shows the net the
+netlist gives. So a drawing mistake is a build error, not a wrong circuit.
+
+A reused sheet is declared once: `cap.template("channel", {"Z1": 100, ...,
+"MV": 900}, first_refs)`. The build checks that every instance has the same
+parts and the same connections as the first before it draws one sheet for all
+nine.
+
+### 12.2 The parity check
+
+After KiCad has extracted the netlist of the generated files, `hwflow sch`
+compares it with `netlist.yaml` through `parts.toml`
+(`tools/hwflow/hwflow/parity.py`). The build fails unless all of this holds:
+
+- The same references on both sides, apart from the parts listed under
+  `[mechanical]` in `parts.toml` (the mounting holes, which have no pins).
+- For every component: the value and footprint of the part table, the LCSC
+  number of the netlist, and the netlist's own value text in the hidden field
+  `Spec`, word for word.
+- For every KiCad net: all its pads belong to one design net, and it carries
+  that net's name. A net local to a channel is compared with the channel
+  suffix: `/Z3/T2` stands for `T2_Z3`.
+- No design net is in two pieces. No pin that the netlist leaves open is
+  connected. No pad of a symbol is unaccounted for.
+- For each build, KiCad's BOM export lists exactly the parts that the
+  netlist's `variant` field fits, with the right part numbers.
+
+The test suite changes a small design seven ways (a pin moved to another net,
+a changed value, a changed part number, a part added, a part removed, a pin
+map the wrong way round, a renamed net) and checks that each one is
+reported: `tools/hwflow/tests/test_capture_parity.py`.
+
+Result on revision A, `make schematic`, 2026-11-10: "346 components and 198
+nets of the design netlist match KiCad's netlist pin for pin; fitted parts
+match in 2 build(s)".
+
+### 12.3 What else the generator learned
+
+- **Multi-unit parts.** `s.place("U6", at, unit=2)`. The units of one package
+  may be on different sheets. The power unit is a unit like any other.
+- **Assembly variants.** `Design.variant("4-zone", dnp={...})` writes KiCad 10
+  variants into every symbol instance. `kicad-cli sch export bom --variant`
+  then gives the BOM of that build. `VARIANTS := 4-zone` in the board Makefile
+  exports one BOM per variant.
+- **Project-local libraries.** `design/symbols.py` writes
+  `lib/<Name>.kicad_sym` with `hwflow.symgen`: new symbols as boxes with named
+  pin groups, or stock symbols with a changed pin map. `design/footprints.py`
+  writes `lib/<Name>.pretty` with `hwflow.fpgen`, through KiCad's `pcbnew`
+  module, from the dimensions of the maker's drawing. `design/footprints.md`
+  records what each footprint was compared with.
+- **Notes.** `s.note()`, `s.text()`, `s.line()` and `s.frame()` put the design
+  intent on the page. Title-block comment lines come from `Design.comments`.
+- **Power flags.** `s.flag()` places a `PWR_FLAG` where a rail enters through
+  a connector or a regulator output, each with a comment in `circuit.py`. No
+  ERC check is switched off for revision A.
+
+### 12.4 Page lint
+
+ERC does not look at how a page reads. `hwflow lint` (`make lint`, and part of
+`make erc` when `SCH_LINT := 1`) plots every page to SVG with `kicad-cli` and
+fails on:
+
+- two pieces of text whose boxes overlap,
+- a wire or a graphic line that crosses a piece of text,
+- text outside the page frame or inside the title block,
+- two symbol bodies that overlap, and a wire that passes through a symbol body.
+
+The text boxes are what KiCad plotted, so the check sees the page as a reader
+does. It is a geometric test. It finds collisions; it does not find a page
+that is merely ugly. Every sheet of revision A was also read as an image after
+each change.
+
+Result on revision A: "20 plotted pages, no text or symbol collides".
+
+### 12.5 Committed outputs and CI
+
+The generated files are committed, so a rebuild that changes nothing must
+leave no diff. Two things stood in the way.
+
+**The time of export.** KiCad stamps every PDF, SVG and report with the second
+it was written. With `STABLE := 1`, `hwflow.stable` replaces that stamp by the
+date of the title block. On one machine, two builds in a row then leave every
+file of the board directory byte-identical. Checked on 2026-11-10 by comparing
+SHA-256 sums before and after a second `make schematic`.
+
+**Two builds of the same KiCad release.** The files were made with the Arch
+package of KiCad 10.0.8. CI regenerates them in the KiCad project's own
+`kicad/kicad:10.0.8` container image. The first CI run showed what differs
+between the two builds, and I compared the files:
+
+| Files | Arch package against container image |
+|---|---|
+| All 12 `.kicad_sch`, `.kicad_pro`, `.kicad_dru`, both library tables, `lib/` | Byte-identical |
+| Both JLCPCB BOMs, both ERC reports | Byte-identical |
+| `output/zoneflow-a.net` | One line. The three multi-unit parts (U6, U7, U8) list the id of each unit, and for U7 the two builds give two of its five ids in the other order |
+| The 20 SVG plots | Different on nearly every line, and the same picture. Each page has exactly the same drawing elements, with the same coordinates, styles and text, written in a different order |
+| The PDF | Different bytes and size, as it holds the same 20 pages in the other order |
+
+So it is not a font, a library or a rounding difference. Where KiCad sorts the
+items of a page for plotting, items of equal rank end up in an order that
+depends on the build. Byte-identity of the plots across builds is therefore
+not something the flow can promise, and the comparison is by content:
+
+- `parity.normalise_netlist` sorts the unit ids of each part before the
+  netlist is committed. The committed netlist is then the same from both
+  builds.
+- `hwflow.plotcmp` reduces an SVG to the multiset of what it draws: every
+  drawing element with the style it inherits from its groups and its
+  attributes, and every text string. The time of export and the order of
+  drawing are left out and nothing else is. All 20 pages from the container
+  compare equal to the 20 pages from the Arch package.
+- With `STABLE := 1` the build sets the old plots aside, plots again, and
+  **keeps the old file of every page whose new plot draws the same**. A plot
+  changes in git only when the picture changes. The PDF holds all pages; it
+  keeps its old file only when no page was redrawn, added or removed. Its
+  content is not compared separately.
+
+What this does not cover: a different KiCad **release** may change the sheet
+files themselves. The CI image is pinned to the release the files were made
+with, and both must move together.
+
+Two CI jobs in `.github/workflows/hardware.yml` use this:
+
+- **design consistency**, with Python only. `make -C hardware design-check`
+  runs `tools/designsync` (netlist, design document, BOM, pin map) and then
+  `hwflow committed`: the committed `output/zoneflow-a.net` against
+  `netlist.yaml` pin for pin, and both committed JLCPCB BOMs against the
+  netlist's build variants. An edit to `netlist.yaml` or `parts.toml` without
+  a rebuild fails here.
+- **regenerate the rev A schematic**, in the `kicad/kicad:10.0.8` image. It
+  runs `make schematic` (parity, lint, ERC) and then `git diff --exit-code`
+  on the whole board directory. Sheets, project file, libraries, netlist,
+  BOMs and reports must be byte-identical to what is committed. A plot shows
+  up as changed only if it draws something else. An edit to `circuit.py`
+  without a rebuild, or a hand edit of a generated file, fails here. The job
+  uploads everything it generated, so a failure can be compared file by file.
+
+### 12.6 Limits found on revision A
+
+- **Coordinates are still by hand.** The 11 sheet functions of revision A are
+  about 1200 lines. Moving a block means changing its numbers.
+- **KiCad connects a power symbol or a pin only at a wire end.** The writer
+  splits wires at such points. A label may sit anywhere on a wire.
+- **The channel sheet shows the first instance's values.** All nine channels
+  have the same parts today; the template check fails the build if one ever
+  differs.
+- **3D models.** Four project footprints use a stand-in model and four have
+  none (`design/footprints.md`, section 5).

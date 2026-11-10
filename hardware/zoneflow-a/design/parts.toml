@@ -1,0 +1,645 @@
+# Part table for ZoneFlow rev A: what each part number is in KiCad.
+#
+# hardware/netlist.yaml names every component, its value, package and LCSC
+# number and the net on every pin. It does not name a KiCad symbol or
+# footprint. This table does, once per part number. The key is the LCSC
+# number, or "value|package" for the four kinds of part that have none.
+#
+#   value      what the schematic shows. The netlist's own text goes into the
+#              hidden field "Spec" and is checked word for word.
+#   package    must equal the netlist's package, so that a package change
+#              there cannot keep an old footprint here.
+#   pins       netlist pin key -> symbol pin number(s). Not needed where the
+#              key starts with the number ("3 EN/UVLO").
+#   unconnected  symbol pins that the netlist does not list and that stay open.
+#   in_bom, on_board  false for pads on the PCB and for the display panel.
+#
+# The footprint behind each name is checked against the maker's drawing in
+# footprints.md. The build fails if a netlist part is missing here, and the
+# netlist parity check fails if a symbol pin is not covered.
+
+# Builds: which netlist variants each one fits. "base" is the schematic as
+# drawn, the 8-zone board. Every other name is a KiCad variant.
+[builds]
+base = ["all", "8"]
+4-zone = ["all"]
+
+# Parts of the board that the design netlist does not list, because they
+# have no pins: the four mounting holes of hardware/mechanical.yaml. The
+# value is the hole's letter and position there. The footprint's courtyard
+# is the contract's component keep-out, 9 mm at A and B and 7 mm at C and D.
+[mechanical.H1]
+value = "A: 5.5, 105"
+symbol = "Mechanical:MountingHole"
+footprint = "ZoneFlow:MountingHole_3.4mm_M3_Keepout9mm"
+
+[mechanical.H2]
+value = "B: 75, 106"
+symbol = "Mechanical:MountingHole"
+footprint = "ZoneFlow:MountingHole_3.4mm_M3_Keepout9mm"
+
+[mechanical.H3]
+value = "C: 4.5, 12"
+symbol = "Mechanical:MountingHole"
+footprint = "ZoneFlow:MountingHole_3.4mm_M3_Keepout7mm"
+
+[mechanical.H4]
+value = "D: 109.5, 12"
+symbol = "Mechanical:MountingHole"
+footprint = "ZoneFlow:MountingHole_3.4mm_M3_Keepout7mm"
+
+[part.C441182]  # J1: Header 2-way 3.81 mm pluggable, right angle
+value = "24VAC"
+symbol = "Connector:Screw_Terminal_01x02"
+footprint = "ZoneFlow:KF2EDGR-3.81-2P"
+package = "THT"
+
+[part.C206913]  # F1: Fuse 3 A time-lag in SMD holder
+value = "3A T 0154003.DRT"
+symbol = "Device:Fuse"
+footprint = "Fuse:Fuseholder_Littelfuse_Nano2_154x"
+package = "SMD 9.7x5 mm"
+
+[part.C151287]  # D1: TVS 48 V bidirectional 1500 W
+value = "SMCJ48CA"
+symbol = "Device:D_TVS"
+footprint = "Diode_SMD:D_SMC"
+package = "SMC"
+
+[part.C95872]  # D2: Rectifier 1 A 1000 V
+value = "M7"
+symbol = "Device:D"
+footprint = "Diode_SMD:D_SMA"
+package = "SMA"
+pins = { "A" = "2", "K" = "1" }
+
+[part.C2936639]  # R1: 3R 5% 1 W, surge series
+value = "3R 1W surge"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_2512_6332Metric"
+package = "2512"
+
+[part.C2940725]  # C1: 470 uF 63 V aluminium electrolytic
+value = "470u 63V"
+symbol = "Device:C_Polarized"
+footprint = "ZoneFlow:CP_Radial_D12.5mm_L20mm_P5.00mm_LyingDown"
+package = "THT 12.5x20 mm"
+pins = { "+" = "1", "-" = "2" }
+
+[part.C55151]  # C2: 2.2 uF 100 V X7R
+value = "2.2u 100V"
+symbol = "Device:C"
+footprint = "Capacitor_SMD:C_1210_3225Metric"
+package = "1210"
+
+[part.C477928]  # U1: LM5164DDAR 100 V 1 A synchronous buck
+value = "LM5164DDAR"
+symbol = "Regulator_Switching:LM5164DDA"
+footprint = "Package_SO:TI_SO-PowerPAD-8"
+package = "SO-8 PowerPAD"
+pins = { "EP" = "9" }
+
+[part.C16033]  # C4: 2.2 nF 50 V X7R
+value = "2.2n"
+symbol = "Device:C"
+footprint = "Capacitor_SMD:C_0603_1608Metric"
+package = "0603"
+
+[part.C5151734]  # L1: 47 uH, Isat 2.0 A, 0.2R
+value = "47u SRN6045TA"
+symbol = "Device:L"
+footprint = "Inductor_SMD:L_Bourns_SRN6045TA"
+package = "6x6x4.5 mm"
+
+[part.C12891]  # C5: 22 uF 25 V X5R
+value = "22u"
+symbol = "Device:C"
+footprint = "Capacitor_SMD:C_1206_3216Metric"
+package = "1206"
+
+[part.C25819]  # R2: 47k 1%
+value = "47k"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C23137]  # R3: 330k 1%
+value = "330k"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C25804]  # R4: 10k 1%
+value = "10k"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C25803]  # R5: 100k 1%
+value = "100k"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C25811]  # R6: 200k 1%
+value = "200k"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C1613]  # C7: 3.3 nF 50 V X7R
+value = "3.3n"
+symbol = "Device:C"
+footprint = "Capacitor_SMD:C_0603_1608Metric"
+package = "0603"
+
+[part.C14858]  # C8: 100 pF 50 V C0G
+value = "100p C0G"
+symbol = "Device:C"
+footprint = "Capacitor_SMD:C_0603_1608Metric"
+package = "0603"
+
+[part.C22935]  # R7: 1M 1%
+value = "1M"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C23024]  # R9: 300k 1%
+value = "300k"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C14663]  # C9: 100 nF 50 V X7R
+value = "100n"
+symbol = "Device:C"
+footprint = "Capacitor_SMD:C_0603_1608Metric"
+package = "0603"
+
+[part.C8678]  # D3: SS34 Schottky 3 A 40 V
+value = "SS34"
+symbol = "Device:D_Schottky"
+footprint = "Diode_SMD:D_SMA"
+package = "SMA"
+pins = { "A" = "2", "K" = "1" }
+
+[part.C48746]  # K1: G5NB-1A-E DC5 relay SPST-NO 5 A, 5 V 125R coil
+value = "G5NB-1A-E 5V"
+symbol = "Relay:G5NB"
+footprint = "Relay_THT:Relay_SPST_Omron_G5NB"
+package = "THT 20.4x7 mm"
+pins = { "coil+" = "A1", "coil-" = "A2", "contact 1" = "13", "contact 2" = "14" }
+
+[part.C81598]  # D5: 1N4148W
+value = "1N4148W"
+symbol = "Diode:1N4148W"
+footprint = "Diode_SMD:D_SOD-123"
+package = "SOD-123"
+pins = { "A" = "2", "K" = "1" }
+
+[part.C20917]  # Q1: AO3400A N-MOSFET 30 V
+value = "AO3400A"
+symbol = "Transistor_FET:AO3400A"
+footprint = "Package_TO_SOT_SMD:SOT-23"
+package = "SOT-23"
+pins = { "G" = "1", "S" = "2", "D" = "3" }
+
+[part.C21190]  # R11: 1k 1%
+value = "1k"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C1779]  # C51: 4.7 uF 25 V X5R
+value = "4.7u"
+symbol = "Device:C"
+footprint = "Capacitor_SMD:C_0805_2012Metric"
+package = "0805"
+
+[part.C47546]  # D22: BAT54S dual Schottky, series
+value = "BAT54S"
+symbol = "Diode:BAT54S"
+footprint = "Package_TO_SOT_SMD:SOT-23"
+package = "SOT-23"
+
+[part.C15850]  # C50: 10 uF 25 V X5R
+value = "10u"
+symbol = "Device:C"
+footprint = "Capacitor_SMD:C_0805_2012Metric"
+package = "0805"
+
+[part.C22807]  # R95: 150k 1%
+value = "150k"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C151264]  # D23: TVS 48 V bidirectional 600 W
+value = "SMBJ48CA"
+symbol = "Device:D_TVS"
+footprint = "Diode_SMD:D_SMB"
+package = "SMB"
+
+[part."Solder jumper, open|PCB"]  # JP1: Solder jumper, open
+value = "open"
+symbol = "Jumper:SolderJumper_2_Open"
+footprint = "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm"
+package = "PCB"
+in_bom = false
+
+[part.C441187]  # J2: Header 7-way 3.81 mm pluggable, right angle
+value = "KF2EDGR-3.81-7P"
+symbol = "Connector:Screw_Terminal_01x07"
+footprint = "ZoneFlow:KF2EDGR-3.81-7P"
+package = "THT"
+
+[part.C441184]  # J3: Header 4-way 3.81 mm pluggable, right angle
+value = "KF2EDGR-3.81-4P"
+symbol = "Connector:Screw_Terminal_01x04"
+footprint = "ZoneFlow:KF2EDGR-3.81-4P"
+package = "THT"
+
+[part.C165948]  # J5: USB-C receptacle 16-pin, USB 2.0
+value = "USB-C 16P"
+symbol = "ZoneFlow:USB_C_Receptacle_16P"
+footprint = "Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12"
+package = "SMD"
+pins = { "VBUS (A4 A9 B4 B9)" = ["A4", "A9", "B4", "B9"], "GND (A1 A12 B1 B12)" = ["A1", "A12", "B1", "B12"], "CC1 (A5)" = "A5", "CC2 (B5)" = "B5", "D+ (A6 B6)" = ["A6", "B6"], "D- (A7 B7)" = ["A7", "B7"], "SBU1 SBU2" = ["A8", "B8"], "shell" = "SH" }
+
+[part.C23186]  # R15: 5.1k 1%
+value = "5.1k"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C7519]  # U2: USBLC6-2SC6 ESD array
+value = "USBLC6-2SC6"
+symbol = "Power_Protection:USBLC6-2SC6"
+footprint = "Package_TO_SOT_SMD:SOT-23-6"
+package = "SOT-23-6"
+
+[part.C21189]  # R97: 0R
+value = "0R"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part."Not fitted|0603"]  # C52: Not fitted
+value = "n.f."
+symbol = "Device:C"
+footprint = "Capacitor_SMD:C_0603_1608Metric"
+package = "0603"
+
+[part.C435835]  # U3: LDL1117S33R 3.3 V 1.2 A LDO
+value = "LDL1117S33R"
+symbol = "ZoneFlow:LDL1117S33R"
+footprint = "Package_TO_SOT_SMD:SOT-223-3_TabPin2"
+package = "SOT-223"
+pins = { "tab" = "2" }
+
+[part.C2913202]  # U4: ESP32-S3-WROOM-1-N16R8
+value = "ESP32-S3-WROOM-1-N16R8"
+symbol = "ZoneFlow:ESP32-S3-WROOM-1"
+footprint = "ZoneFlow:ESP32-S3-WROOM-1"
+package = "module 18x25.5 mm"
+
+[part.C15849]  # C16: 1 uF 50 V X5R
+value = "1u"
+symbol = "Device:C"
+footprint = "Capacitor_SMD:C_0603_1608Metric"
+package = "0603"
+
+[part.C5218924]  # U12: TLV803EA30DBZR supervisor 3.0 V, open drain, 200 ms
+value = "TLV803EA30"
+symbol = "ZoneFlow:TLV803EA30DBZ"
+footprint = "Package_TO_SOT_SMD:SOT-23"
+package = "SOT-23"
+
+[part.C318884]  # SW1: Tactile switch 5.1x5.1 mm, 1.5 mm high
+value = "TS-1187A"
+symbol = "Switch:SW_Push"
+footprint = "Button_Switch_SMD:SW_Push_1P1T_XKB_TS-1187A"
+package = "SMD"
+
+[part.C23228]  # R20: 680R 1%
+value = "680R"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C125094]  # D6: LED yellow-green
+value = "yel-grn"
+symbol = "Device:LED"
+footprint = "LED_SMD:LED_0603_1608Metric"
+package = "0603"
+pins = { "A" = "2", "K" = "1" }
+
+[part.C4190]  # R21: 2.2k 1%
+value = "2.2k"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C160404]  # J6: JST SH 4-way 1.0 mm, side entry
+value = "Qwiic SM04B-SRSS"
+symbol = "Connector_Generic_MountingPin:Conn_01x04_MountingPin"
+footprint = "Connector_JST:JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal"
+package = "SMD"
+unconnected = ["MP"]
+
+[part.C151160]  # F2: PTC 0.125 A hold, 30 V
+value = "PTC 0.125A"
+symbol = "Device:Polyfuse"
+footprint = "Fuse:Fuse_1206_3216Metric"
+package = "1206"
+
+[part.C23162]  # R23: 4.7k 1%
+value = "4.7k"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part."Header pads 1x6, 2.54 mm|PCB"]  # J8: Header pads 1x6, 2.54 mm
+value = "debug 1x6"
+symbol = "Connector_Generic:Conn_01x06"
+footprint = "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical"
+package = "PCB"
+in_bom = false
+
+[part.C131972]  # U5: TCA9539PWR 16-bit I2C expander with reset
+value = "TCA9539PWR"
+symbol = "ZoneFlow:TCA9539PWR"
+footprint = "Package_SO:TSSOP-24_4.4x7.8mm_P0.65mm"
+package = "TSSOP-24"
+
+[part.C1996]  # RN1: 100k x4 5% resistor array
+value = "100k x4"
+symbol = "Device:R_Pack04"
+footprint = "Resistor_SMD:R_Array_Convex_4x0603"
+package = "0603x4"
+
+[part.C7932]  # U6: LM2901DR quad comparator
+value = "LM2901DR"
+symbol = "ZoneFlow:LM2901"
+footprint = "Package_SO:SOIC-14_3.9x8.7mm_P1.27mm"
+package = "SOIC-14"
+
+[part.C5601]  # U7: 74HC132D quad NAND, Schmitt-trigger inputs
+value = "74HC132D"
+symbol = "ZoneFlow:74HC132"
+footprint = "Package_SO:SOIC-14_3.9x8.7mm_P1.27mm"
+package = "SOIC-14"
+
+[part.C15127]  # Q3: AO3401A P-MOSFET 30 V
+value = "AO3401A"
+symbol = "Transistor_FET:AO3401A"
+footprint = "Package_TO_SOT_SMD:SOT-23"
+package = "SOT-23"
+pins = { "G" = "1", "S" = "2", "D" = "3" }
+
+[part.C22962]  # R29: 220R 1%
+value = "220R"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C25805]  # R30: 110k 1%
+value = "110k"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C23192]  # R32: 510k 1%
+value = "510k"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C1589]  # C24: 10 nF 50 V X7R
+value = "10n"
+symbol = "Device:C"
+footprint = "Capacitor_SMD:C_0603_1608Metric"
+package = "0603"
+
+[part.C22809]  # R34: 15k 1%
+value = "15k"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C160587]  # R37: 0.1R 1% 2 W metal strip
+value = "0.1R 1% 2W"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_2512_6332Metric"
+package = "2512"
+
+[part.C7377]  # U8: MCP6002T-I/SN dual op-amp
+value = "MCP6002-I/SN"
+symbol = "Amplifier_Operational:MCP6002-xSN"
+footprint = "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
+package = "SOIC-8"
+
+[part.C23234]  # R38: 7.5k 1%
+value = "7.5k"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C1588]  # C26: 1 nF 50 V X7R
+value = "1n"
+symbol = "Device:C"
+footprint = "Capacitor_SMD:C_0603_1608Metric"
+package = "0603"
+
+[part.C23184]  # R43: 49.9k 1%
+value = "49.9k"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C27675]  # C28: 220 pF 50 V C0G
+value = "220p C0G"
+symbol = "Device:C"
+footprint = "Capacitor_SMD:C_0603_1608Metric"
+package = "0603"
+
+[part.C23138]  # R49: 330R 1%
+value = "330R"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C22775]  # R51: 100R 1%
+value = "100R"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C1621]  # C33: 4.7 nF 50 V X7R
+value = "4.7n"
+symbol = "Device:C"
+footprint = "Capacitor_SMD:C_0603_1608Metric"
+package = "0603"
+
+[part.C2286]  # D8: LED red
+value = "red"
+symbol = "Device:LED"
+footprint = "LED_SMD:LED_0603_1608Metric"
+package = "0603"
+pins = { "A" = "2", "K" = "1" }
+
+[part.C17900]  # R55: 100k 1% 200 V 0.25 W
+value = "100k 200V"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_1206_3216Metric"
+package = "1206"
+
+[part.C7440]  # U10: PCF8563T/5 real-time clock
+value = "PCF8563T"
+symbol = "ZoneFlow:PCF8563T"
+footprint = "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
+package = "SO-8"
+
+[part.C32346]  # Y1: Crystal 32.768 kHz, 12.5 pF, 20 ppm
+value = "32.768k 12.5p"
+symbol = "Device:Crystal"
+footprint = "Crystal:Crystal_SMD_3215-2Pin_3.2x1.5mm"
+package = "3215"
+
+[part.C1647]  # C36: 18 pF 50 V C0G
+value = "18p C0G"
+symbol = "Device:C"
+footprint = "Capacitor_SMD:C_0603_1608Metric"
+package = "0603"
+
+[part.C70377]  # BT1: CR2032 holder
+value = "CR2032 holder"
+symbol = "Device:Battery_Cell"
+footprint = "ZoneFlow:BatteryHolder_QJ_CR2032-BS-6-1"
+package = "SMD"
+pins = { "+" = "1", "-" = "2" }
+
+[part.C2856799]  # J7: FPC connector 12-way 0.5 mm, bottom contact, flip lock, 2.0 mm high
+value = "FPC 12P 0.5"
+symbol = "ZoneFlow:FPC_12_TFT"
+footprint = "ZoneFlow:FPC_XUNPU_FPC-05F-12PH20"
+package = "SMD"
+
+[part.C5329582]  # DS1: HS20HS072RX 2.0 inch 240x320 IPS TFT, ST7789, 12-way FPC
+value = "HS20HS072RX"
+symbol = "ZoneFlow:TFT_Panel_FPC12"
+footprint = ""
+package = "panel"
+on_board = false
+
+[part.C18005]  # R60: 33R 1% 0.25 W
+value = "33R 0.25W"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_1206_3216Metric"
+package = "1206"
+
+[part.C209762]  # SW3: EC11J1525402 encoder, 30 detents, 15 pulses, push switch
+value = "EC11J1525402"
+symbol = "Device:RotaryEncoder_Switch"
+footprint = "ZoneFlow:RotaryEncoder_Alps_EC11J15"
+package = "SMD"
+pins = { "A" = "A", "B" = "B", "C" = "C", "switch 1" = "S1", "switch 2" = "S2" }
+
+[part.C381050]  # SW4: Tactile switch 6x6 mm, 10 mm high
+value = "TS-1102S"
+symbol = "Switch:SW_Push"
+footprint = "ZoneFlow:SW_Push_XKB_TS-1102S"
+package = "SMD"
+
+[part.C22978]  # R64: 3.3k 1%
+value = "3.3k"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C17902]  # R74: 10k 1% 200 V 0.25 W
+value = "10k 200V"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_1206_3216Metric"
+package = "1206"
+
+[part.C21122]  # C44: 22 nF 50 V X7R
+value = "22n"
+symbol = "Device:C"
+footprint = "Capacitor_SMD:C_0603_1608Metric"
+package = "0603"
+
+[part.C55266]  # U11: TPS2553DBVR current-limited switch
+value = "TPS2553DBVR"
+symbol = "ZoneFlow:TPS2553DBV"
+footprint = "Package_TO_SOT_SMD:SOT-23-6"
+package = "SOT-23-6"
+
+[part.C14996]  # D19: SS210 Schottky 2 A 100 V
+value = "SS210"
+symbol = "Device:D_Schottky"
+footprint = "Diode_SMD:D_SMA"
+package = "SMA"
+pins = { "A" = "2", "K" = "1" }
+
+[part.C17937]  # R84: 4.7R 1% 0.25 W
+value = "4.7R 0.25W"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_1206_3216Metric"
+package = "1206"
+
+[part.C18741]  # C48: 10 nF 100 V X7R
+value = "10n 100V"
+symbol = "Device:C"
+footprint = "Capacitor_SMD:C_0805_2012Metric"
+package = "0805"
+
+[part.C315900]  # F3: PTC 0.2 A hold, 60 V
+value = "PTC 0.2A 60V"
+symbol = "Device:Polyfuse"
+footprint = "Fuse:Fuse_1812_4532Metric"
+package = "1812"
+
+[part.C3020148]  # F101: PTC 1.1 A hold, 60 V, 40 A maximum
+value = "PTC 1.1A 60V"
+symbol = "Device:Polyfuse"
+footprint = "Fuse:Fuse_2920_7451Metric"
+package = "2920"
+
+[part.C155588]  # Q101: T810-600B-TR triac 8 A 600 V, 3-quadrant
+value = "T810-600B"
+symbol = "ZoneFlow:T810-600B"
+footprint = "Package_TO_SOT_SMD:TO-252-2"
+package = "DPAK"
+
+[part.C17714]  # R105: 47R 1% 150 V
+value = "47R 150V"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0805_2012Metric"
+package = "0805"
+
+[part.C40701]  # U101: MOC3023SR2M random-phase opto-triac
+value = "MOC3023S"
+symbol = "Relay_SolidState:MOC3023M"
+footprint = "Package_DIP:SMDIP-6_W9.53mm"
+package = "SMD-6"
+
+[part.C22808]  # R101: 150R 1%
+value = "150R"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0603_1608Metric"
+package = "0603"
+
+[part.C17408]  # R103: 100R 1% 150 V
+value = "100R 150V"
+symbol = "Device:R"
+footprint = "Resistor_SMD:R_0805_2012Metric"
+package = "0805"
+
+[part."Test pad|PCB"]  # TP1: Test pad
+value = "TP"
+symbol = "Connector:TestPoint"
+footprint = "TestPoint:TestPoint_Pad_D1.5mm"
+package = "PCB"
+in_bom = false

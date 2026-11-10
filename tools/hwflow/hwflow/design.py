@@ -109,11 +109,15 @@ class PinRef:
 
 class Part:
     def __init__(self, sheet, ref, lib_id, at, rot, mirror, value, footprint, fields, dnp,
-                 ref_at, value_at, on_board, in_bom):
+                 ref_at, value_at, on_board, in_bom, unit=1, show_value=True):
         self.sheet = sheet
+        self.show_value = show_value
         self.ref = ref
         self.lib_id = lib_id
         self.sym = symlib.load(lib_id, sheet.design.symbol_dirs)
+        if unit not in self.sym.units:
+            raise DesignError(f"{ref} ({lib_id}) has no unit {unit}; it has {list(self.sym.units)}")
+        self.unit = unit
         self.at = (on_grid(at[0], f"{ref} x"), on_grid(at[1], f"{ref} y"))
         self.rot = rot % 360
         self.mirror = mirror
@@ -132,10 +136,12 @@ class Part:
         return self.ref.startswith("#")
 
     def pins(self, key) -> list[PinRef]:
-        found = self.sym.pins_named(str(key))
+        found = self.sym.pins_named(str(key), self.unit)
         if not found:
-            names = sorted({p.name for p in self.sym.pins} | {p.number for p in self.sym.pins})
-            raise DesignError(f"{self.ref} ({self.lib_id}) has no pin {key!r}; it has {names}")
+            own = self.sym.pins_of(self.unit)
+            names = sorted({p.name for p in own} | {p.number for p in own})
+            what = f"unit {self.unit} of {self.ref}" if len(self.sym.units) > 1 else self.ref
+            raise DesignError(f"{what} ({self.lib_id}) has no pin {key!r}; it has {names}")
         return [PinRef(self, p) for p in found]
 
     def __getitem__(self, key) -> PinRef:
@@ -149,11 +155,12 @@ class Part:
         return found[0]
 
     def all_pins(self) -> list[PinRef]:
-        return [PinRef(self, p) for p in self.sym.pins]
+        """Pins of the unit this part object places (a single-unit symbol has only unit 1)."""
+        return [PinRef(self, p) for p in self.sym.pins_of(self.unit)]
 
     def body_box(self) -> tuple[float, float, float, float]:
         """Body outline in sheet coordinates: x0, y0, x1, y1."""
-        x0, y0, x1, y1 = self.sym.bbox
+        x0, y0, x1, y1 = self.sym.bbox_of(self.unit)
         pts = [transform(x, y, self.rot, self.mirror) for x in (x0, x1) for y in (y0, y1)]
         xs = [self.at[0] + p[0] for p in pts]
         ys = [self.at[1] + p[1] for p in pts]
@@ -209,15 +216,16 @@ class Sheet:
         self.name = name
         self.title = title
         self.paper = paper
-        self.parts: dict[str, Part] = {}
+        self.parts: dict[tuple[str, int], Part] = {}  # (reference, unit) -> part
         self.nets: dict[tuple[str, str], Net] = {}
         self.attachments: list[Attachment] = []
         self.wires: list[Wire] = []
-        self.labels: list[tuple[Net, tuple[float, float], tuple[int, int]]] = []
+        self.labels: list[tuple] = []  # (net, point, direction, plain)
         self.no_connects: list[PinRef] = []
         self.instances: list[SheetInstance] = []
-        self.texts: list[tuple[str, tuple[float, float], float]] = []
+        self.texts: list[tuple] = []  # (text, at, size, justify, bold)
         self.frames: list[tuple[float, float, float, float, str]] = []
+        self.lines: list[tuple[list[tuple[float, float]], str]] = []  # (points, stroke type)
         self._anon = 0
 
     # ---- nets -------------------------------------------------------------
@@ -255,15 +263,17 @@ class Sheet:
     def part(self, ref: str, lib_id: str, at, rot: int = 0, mirror: str | None = None,
              value: str | None = None, footprint: str | None = None, lcsc: str | None = None,
              fields: dict | None = None, dnp: bool = False, ref_at=None, value_at=None,
-             on_board: bool = True, in_bom: bool = True) -> Part:
-        if ref in self.parts:
-            raise DesignError(f"sheet {self.name}: duplicate reference {ref}")
+             on_board: bool = True, in_bom: bool = True, unit: int = 1, show_value: bool = True) -> Part:
+        """Place a symbol. A multi-unit part is placed once per unit, with the same ``ref``."""
+        if (ref, unit) in self.parts:
+            raise DesignError(f"sheet {self.name}: duplicate reference {ref}"
+                              + (f" unit {unit}" if unit != 1 else ""))
         f = dict(fields or {})
         if lcsc is not None:
             f["LCSC"] = lcsc
         p = Part(self, ref, lib_id, at, rot, mirror, value, footprint, f, dnp, ref_at, value_at,
-                 on_board, in_bom)
-        self.parts[ref] = p
+                 on_board, in_bom, unit, show_value)
+        self.parts[(ref, unit)] = p
         return p
 
     # ---- connections ------------------------------------------------------
@@ -302,14 +312,18 @@ class Sheet:
         self.wires.append(Wire(pts, net, [x for x in (a, b) if isinstance(x, PinRef)]))
         return net
 
-    def label(self, net: Net, at, direction=RIGHT) -> None:
+    def label(self, net: Net, at, direction=RIGHT, plain: bool = False) -> None:
         """Put the label (or power symbol) of ``net`` at a point on a wire of that net.
 
         ``direction`` is where the text or power symbol extends from the point.
+        ``plain`` writes an ordinary net label for a net that is a sheet port:
+        KiCad joins it to the hierarchical label of the same name on the sheet.
+        Use it to name a second piece of the net; the port itself still needs
+        its hierarchical label somewhere.
         """
         if net.kind == "anon":
             raise DesignError("an unnamed wire cannot carry a label; pass net= to wire()")
-        self.labels.append((net, _point(at), direction))
+        self.labels.append((net, _point(at), direction, plain))
 
     def nc(self, *pins) -> None:
         """Mark pins as deliberately unconnected."""
@@ -341,8 +355,17 @@ class Sheet:
         self.instances.append(inst)
         return inst
 
-    def text(self, s: str, at, size: float = 1.27) -> None:
-        self.texts.append((s, (at[0], at[1]), size))
+    def text(self, s: str, at, size: float = 1.27, justify=("left", "bottom"), bold: bool = False) -> None:
+        """Free text. ``at`` is the anchor that ``justify`` names; a newline starts a new line."""
+        self.texts.append((s, (at[0], at[1]), size, tuple(justify), bold))
+
+    def note(self, s: str, at, size: float = 1.27, bold: bool = False) -> None:
+        """Multi-line text whose top-left corner is ``at``."""
+        self.text(s, at, size, ("left", "top"), bold)
+
+    def line(self, points, style: str = "dash") -> None:
+        """A graphic polyline (no electrical meaning). ``style``: solid, dash, dot."""
+        self.lines.append(([(p[0], p[1]) for p in points], style))
 
     def frame(self, x0, y0, x1, y1, title: str) -> None:
         """A dashed box with a title, to group a functional block."""
@@ -365,6 +388,14 @@ def _point(x) -> tuple[float, float]:
     return (on_grid(x[0], "wire x"), on_grid(x[1], "wire y"))
 
 
+def symbol_uuid(part: Part) -> str:
+    """UUID of a placed symbol. Unit 1 keeps the key used before units existed."""
+    key = [part.sheet.design.name, part.sheet.name, "sym", part.ref]
+    if part.unit != 1:
+        key.append(f"unit{part.unit}")
+    return stable_uuid(*key)
+
+
 _REF_RE = re.compile(r"^(#?[A-Za-z_]+)(\d+)$")
 
 
@@ -384,7 +415,7 @@ class FlatPart:
 
     @property
     def sym_uuid(self) -> str:
-        return stable_uuid(self.part.sheet.design.name, self.part.sheet.name, "sym", self.part.ref)
+        return symbol_uuid(self.part)
 
 
 @dataclass
@@ -405,16 +436,33 @@ class Flat:
 
 class Design:
     def __init__(self, name: str, title: str, rev: str = "0", date: str = "", company: str = "",
-                 symbol_dirs: tuple[str, ...] = ()):
+                 symbol_dirs: tuple[str, ...] = (), footprint_dirs: tuple[str, ...] = ()):
         self.name = name
         self.title = title
         self.rev = rev
         self.date = date
         self.company = company
         self.symbol_dirs = tuple(symbol_dirs)
+        # Directories that hold project-local "<Library>.pretty" footprint libraries.
+        self.footprint_dirs = tuple(footprint_dirs)
         self.sheets: dict[str, Sheet] = {}
         self.netclass_priority: list[str] = []
+        self.variants: dict[str, dict] = {}  # name -> {"description": str, "dnp": set of final references}
+        self.comments: dict[int, str] = {}  # title block comment lines 2..9 (line 1 is the design title)
+        self.capture = None  # set by hwflow.capture when the drawing is made from a design netlist
         self.root = self.sheet(name, title)
+
+    def variant(self, name: str, dnp, description: str = "", fitted=None) -> None:
+        """An assembly variant (KiCad 10): the references in ``dnp`` are not fitted in it.
+
+        The base design, with no variant selected, is the full build. ``fitted``
+        names the design-netlist variants this build fits, for the parity check.
+        """
+        if name in self.variants:
+            raise DesignError(f"duplicate variant {name}")
+        self.variants[name] = {"description": description, "dnp": set(dnp)}
+        if fitted is not None:
+            self.variants[name]["fitted"] = set(fitted)
 
     def sheet(self, name: str, title: str, paper: str = "A4",
               build: Callable[[Sheet], None] | None = None) -> Sheet:
@@ -500,10 +548,30 @@ class Design:
 
         walk(self.root, (), "/", 0, {})
 
-        refs = [p.ref for p in flat.parts]
-        dup = sorted({r for r in refs if refs.count(r) > 1})
+        by_ref: dict[str, list[FlatPart]] = {}
+        for fp in flat.parts:
+            by_ref.setdefault(fp.ref, []).append(fp)
+        dup = sorted(r for r, fps in by_ref.items()
+                     if len({fp.part.unit for fp in fps}) != len(fps))
         if dup:
             raise DesignError(f"duplicate references after applying sheet offsets: {dup}")
+        for ref, fps in by_ref.items():
+            first = fps[0].part
+            if first.virtual:
+                continue
+            for fp in fps[1:]:
+                p = fp.part
+                same = (p.lib_id, p.value, p.footprint, p.fields, p.dnp, p.on_board, p.in_bom)
+                if same != (first.lib_id, first.value, first.footprint, first.fields, first.dnp,
+                            first.on_board, first.in_bom):
+                    raise DesignError(f"the units of {ref} do not agree on symbol, value, footprint or fields")
+            unplaced = sorted(set(first.sym.units) - {fp.part.unit for fp in fps})
+            if unplaced:
+                raise DesignError(f"{ref} ({first.lib_id}): unit(s) {unplaced} are not placed")
+        for name, v in self.variants.items():
+            unknown = sorted(v["dnp"] - set(by_ref))
+            if unknown:
+                raise DesignError(f"variant {name} names references that do not exist: {unknown}")
 
         groups: dict = {}
         metas: dict = {}
@@ -534,7 +602,7 @@ class Design:
         for fp in flat.parts:
             if fp.part.virtual:
                 continue
-            for pin in fp.part.sym.pins:
+            for pin in fp.part.sym.pins_of(fp.part.unit):
                 node = (fp.ref, pin.number)
                 if node in connected and node in flat.no_connects:
                     raise DesignError(f"{fp.ref} pin {pin.number} is both connected and marked nc")

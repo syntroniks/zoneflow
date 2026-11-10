@@ -139,9 +139,12 @@ def test_drc_catches_a_short(tmp_path):
     pcb.write_text(head + short + sep + tail)
     rc, data = _drc(board_dir)
     assert rc != 0
-    # KiCad 10.0.8 reports this short as a crossing track plus a solder mask
-    # bridge between the two nets, not as "shorting_items".
-    assert {"tracks_crossing", "solder_mask_bridge"} <= {v["type"] for v in data["violations"]}
+    # KiCad 10.0.8 reports this short as a solder mask bridge between the two
+    # nets plus, on the build machine, a crossing track and, in the kicad/kicad
+    # container image of the same version, "shorting_items". Either names the short.
+    found = {v["type"] for v in data["violations"]}
+    assert "solder_mask_bridge" in found
+    assert found & {"tracks_crossing", "shorting_items"}
 
 
 def test_drc_catches_a_part_missing_from_the_board(tmp_path):

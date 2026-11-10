@@ -42,13 +42,23 @@ request and say so in the description.
 Boards are generated from text. Read `docs/design/hardware-toolchain.md`
 before touching anything under `hardware/`.
 
-- Edit only `design/circuit.py`, `design/board.toml` and
-  `design/rules.kicad_dru` in a board directory, and the files in
+- Edit only the files in `design/` in a board directory (`circuit.py`,
+  `board.toml`, `rules.kicad_dru` and, on the product board, `parts.toml`,
+  `symbols.py`, `footprints.py`, `footprints.md`), and the files in
   `hardware/rules/`. Run `make` there. It fails if ERC or DRC fail.
-- The `.kicad_sch`, `.kicad_pcb`, `.kicad_pro`, library tables, `route/` and
-  `output/` in a board directory are generated and committed, so that a
-  reviewer can open the project and see the outputs without the tools. Never
-  edit them by hand; the next `make` overwrites them.
+- The `.kicad_sch`, `.kicad_pcb`, `.kicad_pro`, library tables, `lib/`,
+  `route/` and `output/` in a board directory are generated and committed, so
+  that a reviewer can open the project and see the outputs without the tools.
+  Never edit them by hand; the next `make` overwrites them.
+- `hardware/zoneflow-a/` is the product board. Its connectivity is
+  `hardware/netlist.yaml`: `circuit.py` only places and draws, and the build
+  fails unless KiCad's netlist equals `netlist.yaml` pin for pin. To change
+  the circuit, change `netlist.yaml` (and `parts.toml` for a new part
+  number), run `make -C hardware design-sync`, then `make` in the board
+  directory, and commit the generated files with the change. CI regenerates
+  them and fails on a difference.
+- A new or changed footprint needs its row in `design/footprints.md`: the
+  maker's drawing you read and the dimensions you compared.
 - `hardware/toolchain-test/` is a test of the flow, not the product. Do not
   reuse its part choices.
 
