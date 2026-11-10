@@ -21,12 +21,24 @@ its one dependency, PyYAML, in its header, and `uv` fetches it. CI runs the
 check on every pull request that touches `hardware/`, the design document or
 this tool: `.github/workflows/hardware.yml`.
 
+## The schematic
+
+`make -C hardware design-check` has a second step, `hwflow committed`
+(`tools/hwflow/hwflow/committed.py`). It compares what KiCad extracted from
+the generated rev A schematic, committed under `hardware/zoneflow-a/output/`,
+with the netlist: every component, value, footprint, LCSC number and the net
+on every pin, and the parts each JLCPCB BOM lists for its build. It needs no
+KiCad. So the chain is closed in both directions: this tool ties the design
+document, the preliminary BOM and the pin map to the netlist, and that step
+ties the schematic and its BOMs to the same netlist.
+
 ## Changing the circuit
 
 1. Edit `hardware/netlist.yaml`.
 2. For a part number that is new to the design, add a line to the BOM by hand, with the LCSC number, maker, price and stock from a page you read. The tool refuses to invent one.
 3. Run `make -C hardware design-sync`, then `make -C hardware design-check`.
 4. Update the prose of the design document and, for a GPIO or expander change, `hardware/pinmap.yaml`.
+5. Run `make` in `hardware/zoneflow-a/` and commit the regenerated schematic. A part number that is new also needs an entry in `hardware/zoneflow-a/design/parts.toml`, and a new component a place in `design/circuit.py`.
 
 ## What is generated in the design document
 

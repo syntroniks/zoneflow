@@ -50,6 +50,10 @@ plugins:
   - search
   - swagger-ui-tag
 
+# Publishes the generated schematic of the rev A board from hardware/zoneflow-a/output.
+hooks:
+  - tools/mkdocs_hooks/hardware_outputs.py
+
 extra_css:
   - stylesheets/extra.css
 
