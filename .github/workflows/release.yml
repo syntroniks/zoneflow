@@ -20,6 +20,11 @@ on:
       - "firmware/zoneflow-fw/partitions.csv"
       - "firmware/zoneflow-fw/sdkconfig.defaults"
       - "firmware/zoneflow-fw/CMakeLists.txt"
+      # The board header is generated from the pin map in every firmware build,
+      # this one included (ESP-IDF's Python, which has PyYAML).
+      - "hardware/pinmap.yaml"
+      - "firmware/zoneflow-fw/tools/gen_board_header.py"
+      - "firmware/zoneflow-fw/components/zf_board/**"
       - ".github/workflows/release.yml"
       - ".github/workflows/docs.yml"
   workflow_dispatch:

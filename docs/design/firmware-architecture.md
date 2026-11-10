@@ -1103,9 +1103,11 @@ the display on shared pins; since section 20 that is the only build.
 | Code that ESP-IDF places in RAM, `DIRAM .text`, bytes | 98,499 | 98,499 | 107,403 | +8,904 |
 | Internal RAM left for heap and stacks, bytes | 170,137 | 170,025 | 156,061 | -14,076 |
 
-The display build leaves out the over-current trip and zero-cross inputs,
-whose code the linker then drops, so the true cost of the display is a
-little above the last column.
+The display build of that time left out the over-current trip and
+zero-cross inputs, whose code the linker then dropped, so the true cost of
+the display was a little above the last column. These figures are from
+before the rev A board; section 20 has the size of the current single
+build.
 
 Where the flash goes (`idf.py size-components`, display build): LVGL
 349,285 bytes, of which 173,843 are constant data, mostly the four fonts;
@@ -1508,6 +1510,7 @@ cycle or brownout loses the record, as it loses RAM.
 | `test/host/run.sh` (ASan, UBSan) | 587 tests pass, 79 of them new: `OutputStage` (28) and `SelfTestFailure` (20 injected faults: each detector stuck on, both pin-high faults, slow enable and release of each detector, an open bleed, wrong inputs, outputs, configuration and polarity, stuck bus, welded relay, shorted output, a detector stuck on after a run), `HardwareController` (8, the controller on the simulated board), `CurrentSense` (12), `Retained` (6), `ZeroCrossTracker` (5). |
 | Simulated board (`test/host/fake_board.hpp`) | The two detectors with their enable and hold times, the latch, a register-level TCA9539 in reset while `DRV_EN` is low, the relay, the valve current; faults injected per part. It is a model of the design's tables, not of the circuit. |
 | `idf.py build`, ESP-IDF v5.5.6 | No warnings. `zoneflow-fw.bin` 2,071,504 bytes (49 % of a 4 MB slot). The keep-alive and zero-cross interrupts are in IRAM; the keep-alive handler makes no call, the zero-cross handler only `esp_timer_get_time()` (in IRAM). |
+| Release dry run (`tools/zfrelease`: `package`, `assemble`, `verify`, as `release.yml` runs them, on a build with the web UI packed) | Every `verify` check passes. The application is 2,071,504 of the 4,194,304 bytes of an OTA slot: 2,122,800 bytes (50.6 %) left. `zfflash fetch`, the installer page test and `stage-site` pass on the same files. |
 | Display simulator | 69 scenes, four new ones on the simulated board. |
 | Web UI | Type check and 156 unit tests pass; API types regenerated from `openapi.json`. |
 
