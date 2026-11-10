@@ -59,8 +59,10 @@ bool PasswordRecord::verify(std::string_view password) const
 {
     Sha256Digest d{};
     pbkdf2Sha256(password, salt.data(), salt.size(), iterations, d.data(), d.size());
-    return constantTimeEqual(std::string_view(reinterpret_cast<const char *>(d.data()), d.size()),
-                             std::string_view(reinterpret_cast<const char *>(hash.data()), hash.size()));
+    const bool ok = constantTimeEqual(std::string_view(reinterpret_cast<const char *>(d.data()), d.size()),
+                                      std::string_view(reinterpret_cast<const char *>(hash.data()), hash.size()));
+    secureZero(d.data(), d.size());
+    return ok;
 }
 
 bool passwordAcceptable(std::string_view password)

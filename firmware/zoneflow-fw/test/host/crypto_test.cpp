@@ -91,3 +91,89 @@ TEST(ConstantTimeEqual, Basics)
     EXPECT_FALSE(constantTimeEqual("abc", "abcd"));
     EXPECT_TRUE(constantTimeEqual("", ""));
 }
+
+// ---- Security review: vectors beyond the original set ------------------------------
+// Each expected value is the published one (FIPS 180-2 appendix B.3 for the
+// 896-bit message, RFC 4231 cases 3, 4, 5 and 7, the PBKDF2-HMAC-SHA256
+// vectors in the RFC 6070 style used by many libraries) and was recomputed
+// with Python 3 hashlib/hmac. The remaining ones are Python-only and cover the
+// padding and key-length boundaries.
+
+TEST(Sha256, Fips896BitMessage)
+{
+    EXPECT_EQ(
+        sha("abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrst"
+            "nopqrstu"),
+        "cf5b16a778af8380036ce59e7b0492370b249b11e8f07a51afac45037afee9d1");
+}
+
+// Every message length from 0 to 200 bytes, so every padding case (55, 56,
+// 63, 64, 119, 120 bytes ...) is hit. Byte i of a message is (7 i + 3) mod 256;
+// the 201 digests are concatenated and hashed once more.
+TEST(Sha256, EveryLengthUpTo200Bytes)
+{
+    Sha256 all;
+    for (std::size_t n = 0; n <= 200; ++n) {
+        std::vector<uint8_t> m(n);
+        for (std::size_t i = 0; i < n; ++i) {
+            m[i] = static_cast<uint8_t>(i * 7 + 3);
+        }
+        const Sha256Digest d = Sha256::hash(m.data(), m.size());
+        all.update(d.data(), d.size());
+    }
+    EXPECT_EQ(hex(all.finish()), "3275febb4612d86d586eb9f11cd21e648a9fc7d95e0f6b8d362786e28c9c5b79");
+}
+
+TEST(HmacSha256, Rfc4231MoreCases)
+{
+    const std::string k3(20, '\xaa');
+    const std::string d3(50, '\xdd');
+    EXPECT_EQ(hex(HmacSha256::mac(k3.data(), k3.size(), d3.data(), d3.size())),
+              "773ea91e36800e46854db8ebd09181a72959098b3ef8c122d9635514ced565fe");
+    std::string k4;
+    for (int i = 1; i <= 25; ++i) {
+        k4.push_back(static_cast<char>(i));
+    }
+    const std::string d4(50, '\xcd');
+    EXPECT_EQ(hex(HmacSha256::mac(k4.data(), k4.size(), d4.data(), d4.size())),
+              "82558a389a443c0ea4cc819899f2083a85f0faa3e578f8077a2e3ff46729665b");
+    const std::string k5(20, '\x0c');
+    EXPECT_EQ(hex(HmacSha256::mac(k5.data(), k5.size(), "Test With Truncation", 20)).substr(0, 32),
+              "a3b6167473100ee06e0c796c2955552b");
+    const std::string k7(131, '\xaa');
+    const std::string d7 = "This is a test using a larger than block-size key and a larger than block-size data. The "
+                           "key needs to be hashed before being used by the HMAC algorithm.";
+    EXPECT_EQ(hex(HmacSha256::mac(k7.data(), k7.size(), d7.data(), d7.size())),
+              "9b09ffa71b942fcb27635fbcd5b0e944bfdc63644f0713938a7f51535c3a35e2");
+}
+
+// A key of exactly one block is used as is; one byte more is hashed first.
+TEST(HmacSha256, KeyLengthBoundary)
+{
+    std::string k;
+    for (int i = 0; i < 65; ++i) {
+        k.push_back(static_cast<char>(i));
+    }
+    const std::string d = "block-size key";
+    EXPECT_EQ(hex(HmacSha256::mac(k.data(), 64, d.data(), d.size())),
+              "1dad230598e011a4e4eabc6c8da8f55ef9a66a8881d1e16e23ea116ae28231ec");
+    EXPECT_EQ(hex(HmacSha256::mac(k.data(), 65, d.data(), d.size())),
+              "d0b754c1861695b26bca3bd3a8581ef73f46ba28ada969cf73dbdb39d991eb2d");
+}
+
+TEST(Pbkdf2Sha256, MorePublishedVectors)
+{
+    EXPECT_EQ(pbkdf2("password", "salt", 1, 32), "120fb6cffcf8b32c43e7225256c4f837a86548c92ccc35480805987cb70be17b");
+    EXPECT_EQ(pbkdf2("password", "salt", 2, 32), "ae4d0c95af6b46d32d0adff928f06dd02a303f8ef3c251dfd6e2d85a95474c43");
+    EXPECT_EQ(pbkdf2("passwordPASSWORDpassword", "saltSALTsaltSALTsaltSALTsaltSALTsalt", 4096, 40),
+              "348c89dbcbd32b2f32d814b8116e84cf2b17347ebc1800181c4e2a1fb8dd53e1c635518c7dac47e9");
+    EXPECT_EQ(pbkdf2(std::string_view("pass\0word", 9), std::string_view("sa\0lt", 5), 4096, 16),
+              "89b69d0516f829893c696226650a8687");
+}
+
+// A password longer than the SHA-256 block becomes a hashed HMAC key.
+TEST(Pbkdf2Sha256, LongPassword)
+{
+    EXPECT_EQ(pbkdf2(std::string(100, 'x'), "0123456789abcdef", 1000, 32),
+              "15d47c0768c0818b8f6d0160b7a5f0f697256000890573df3df8a6de1060fe51");
+}
