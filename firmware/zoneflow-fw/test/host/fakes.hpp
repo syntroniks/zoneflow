@@ -170,6 +170,8 @@ struct SchedulerRecorder final : public ISchedulerListener {
         StartError reason;
     };
     std::vector<Dropped> dropped;
+    int pauseExpired = 0;
+    void onPauseExpired() override { ++pauseExpired; }
     void onRunDropped(const RunEntry &e, StartError reason) override
     {
         dropped.push_back({e.zone, e.programId, reason});

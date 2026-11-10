@@ -82,6 +82,8 @@ const char *toString(EventType t)
         return "command_rejected";
     case EventType::RunDropped:
         return "run_dropped";
+    case EventType::PauseExpired:
+        return "pause_expired";
     case EventType::Count:
         break;
     }

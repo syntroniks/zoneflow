@@ -807,3 +807,43 @@ TEST_F(SchedulerTest, QueuedRunsOfOneZoneStopAtMaximumThenDrop)
     EXPECT_TRUE(out.zone[1]); // the queue moved on
     EXPECT_EQ(sched->runZone(0, 60), RunError::ZoneResting);
 }
+
+// A paused queue used to stay paused for ever, blocking later starts with no
+// fault. It now stops after the pause timeout (default 2 h).
+TEST_F(SchedulerTest, PausedQueueStopsAfterTimeout)
+{
+    EXPECT_EQ(cfg.schedule.pauseTimeoutMin, 120);
+    addProgram(makeProgram(1, {at(9, 0)}, {{0, 600}}));
+    apply();
+    begin(utcOf(2026, 6, 1, 6, 0));
+    ASSERT_EQ(sched->runZone(0, 600), RunError::Ok);
+    ASSERT_EQ(sched->runZone(1, 600), RunError::Ok);
+    runFor(10);
+    sched->pause();
+    sched->pause(); // a second pause does not restart the timeout
+    runFor(2 * 3600 - 1);
+    EXPECT_EQ(sched->queueState(), QueueState::Paused);
+    EXPECT_EQ(rec.pauseExpired, 0);
+    runFor(1);
+    EXPECT_EQ(sched->queueState(), QueueState::Idle);
+    EXPECT_EQ(sched->queueSize(), 0u);
+    EXPECT_EQ(rec.pauseExpired, 1);
+    EXPECT_FALSE(out.anyOn()); // stopped, not resumed
+    runUntil(utcOf(2026, 6, 1, 9, 0, 2));
+    EXPECT_EQ(rec.started.size(), 1u); // the schedule carries on
+    EXPECT_TRUE(out.zone[0]);
+}
+
+TEST_F(SchedulerTest, ResumeBeforeTimeoutKeepsRunning)
+{
+    cfg.schedule.pauseTimeoutMin = 1;
+    apply();
+    begin(utcOf(2026, 6, 1, 6, 0));
+    ASSERT_EQ(sched->runZone(0, 600), RunError::Ok);
+    sched->pause();
+    runFor(59);
+    sched->resume();
+    runFor(120);
+    EXPECT_EQ(rec.pauseExpired, 0);
+    EXPECT_TRUE(out.zone[0]);
+}

@@ -519,6 +519,12 @@ void Controller::onRunDropped(const RunEntry &entry, StartError reason)
     publish(e);
 }
 
+void Controller::onPauseExpired()
+{
+    publish(makeEvent(EventType::PauseExpired));
+    stateDirty_ = true;
+}
+
 void Controller::onRainDelayChanged(UtcSeconds until)
 {
     Event e = makeEvent(EventType::RainDelayChanged);

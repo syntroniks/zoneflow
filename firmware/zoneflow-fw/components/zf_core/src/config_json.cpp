@@ -443,6 +443,7 @@ void readConfig(Reader &rd, const cJSON *root, Config &c)
     if (const cJSON *s = rd.object(root, "schedule", top)) {
         rd.integer(s, "seasonal_percent", c.schedule.seasonalPercent, "schedule");
         rd.integer(s, "missed_start_grace_min", c.schedule.missedStartGraceMin, "schedule");
+        rd.integer(s, "pause_timeout_min", c.schedule.pauseTimeoutMin, "schedule");
         if (const cJSON *programs = rd.array(s, "programs", "schedule", kMaxPrograms)) {
             std::size_t i = 0;
             const cJSON *item = nullptr;
@@ -594,6 +595,7 @@ std::string configToJson(const Config &c, bool pretty)
     if (cJSON *s = cJSON_AddObjectToObject(r, "schedule")) {
         cJSON_AddNumberToObject(s, "seasonal_percent", c.schedule.seasonalPercent);
         cJSON_AddNumberToObject(s, "missed_start_grace_min", c.schedule.missedStartGraceMin);
+        cJSON_AddNumberToObject(s, "pause_timeout_min", c.schedule.pauseTimeoutMin);
         cJSON *programs = cJSON_AddArrayToObject(s, "programs");
         for (std::size_t i = 0; programs != nullptr && i < c.schedule.programCount; ++i) {
             const Program &p = c.schedule.programs[i];

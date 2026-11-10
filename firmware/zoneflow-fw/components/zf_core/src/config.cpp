@@ -109,6 +109,9 @@ ValidationResult validate(const Config &cfg)
     if (s.missedStartGraceMin > 720) {
         return VR::bad("schedule.missed_start_grace_min", "must be 0..720");
     }
+    if (s.pauseTimeoutMin < 1 || s.pauseTimeoutMin > 1440) {
+        return VR::bad("schedule.pause_timeout_min", "must be 1..1440");
+    }
     if (s.programCount > kMaxPrograms) {
         return VR::bad("schedule.programs", "at most " + std::to_string(kMaxPrograms) + " programs");
     }

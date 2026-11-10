@@ -54,6 +54,9 @@ void logEvent(const Event &e)
     case EventType::RunDropped:
         ESP_LOGW(kTag, "zone %u run dropped: %s", e.dropped.zone + 1u, toString(e.dropped.reason));
         break;
+    case EventType::PauseExpired:
+        ESP_LOGW(kTag, "queue paused too long: stopped");
+        break;
     case EventType::QueueChanged:
     case EventType::ConfigApplied:
     case EventType::Count:

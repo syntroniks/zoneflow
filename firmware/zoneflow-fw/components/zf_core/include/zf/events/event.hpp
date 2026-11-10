@@ -57,6 +57,7 @@ enum class EventType : uint8_t {
     MaintenanceChanged,
     CommandRejected, // Controller::handle() refused a command; data: rejected
     RunDropped,      // a queued run could not start and was dropped; data: dropped
+    PauseExpired,    // the queue stayed paused for schedule.pause_timeout_min and was stopped
     Count,
 };
 static_assert(static_cast<unsigned>(EventType::Count) <= 32, "event mask is 32 bits");

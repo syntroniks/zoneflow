@@ -44,6 +44,7 @@ struct ScheduleConfig {
     std::array<Program, kMaxPrograms> programs{};
     uint16_t seasonalPercent = 100;    // 0..250
     uint16_t missedStartGraceMin = 60; // see firmware-architecture.md, missed starts
+    uint16_t pauseTimeoutMin = 120;    // a paused queue stops after this long
 };
 
 } // namespace zf

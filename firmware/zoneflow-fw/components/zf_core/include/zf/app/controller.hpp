@@ -84,6 +84,7 @@ private:
     void onRainDelayChanged(UtcSeconds until) override;
     void onPersistDirty() override { persistDirty_ = true; }
     void onRunDropped(const RunEntry &entry, StartError reason) override;
+    void onPauseExpired() override;
 
     bool apply(const Command &cmd);
     void applyConfig(const Config &cfg);

@@ -542,3 +542,31 @@ TEST_F(MasterTest, MasterOverCurrentAfterSettleCounts)
     }
     EXPECT_TRUE(ctrl->driver().masterLockedOut());
 }
+
+TEST_F(ControllerTest, PauseTimeoutPublishesEvent)
+{
+    Config c = config.get();
+    c.schedule.pauseTimeoutMin = 1;
+    ASSERT_TRUE(config.update(c).ok);
+    start();
+    ASSERT_TRUE(ctrl->handle(Command::runZone(0, 600)));
+    tick();
+    ctrl->handle(Command::simple(CommandType::Pause));
+    runMs(61'000);
+    EXPECT_EQ(count(EventType::PauseExpired), 1);
+    EXPECT_EQ(state.snapshot().queue.state, QueueState::Idle);
+    EXPECT_STREQ(toString(EventType::PauseExpired), "pause_expired");
+}
+
+TEST(Config, PauseTimeout)
+{
+    Config c = Config::defaults();
+    c.schedule.pauseTimeoutMin = 30;
+    Config back;
+    ASSERT_TRUE(configFromJson(configToJson(c), back).ok());
+    EXPECT_EQ(back.schedule.pauseTimeoutMin, 30);
+    c.schedule.pauseTimeoutMin = 0;
+    EXPECT_EQ(validate(c).path, "schedule.pause_timeout_min");
+    c.schedule.pauseTimeoutMin = 1441;
+    EXPECT_EQ(validate(c).path, "schedule.pause_timeout_min");
+}

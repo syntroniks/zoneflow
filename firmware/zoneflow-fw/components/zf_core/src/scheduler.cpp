@@ -445,6 +445,10 @@ void Scheduler::stopFront()
 
 void Scheduler::pause()
 {
+    if (state_ == QueueState::Paused) {
+        return; // the timeout runs from the first pause
+    }
+    pausedAtMs_ = clock_.monoMs();
     if (state_ == QueueState::Running && count_ > 0) {
         RunEntry &front = queue_[0];
         front.remainingMs = actuator_.remainingMs(front.zone);
@@ -530,6 +534,16 @@ void Scheduler::processQueue()
 void Scheduler::tick()
 {
     const UtcSeconds now = clock_.nowUtc();
+    // Stop, do not resume: a person paused the watering on purpose, and
+    // watering that restarts by itself hours later could surprise them. The
+    // next scheduled start runs as usual.
+    if (state_ == QueueState::Paused &&
+        clock_.monoMs() - pausedAtMs_ >= static_cast<MonoMs>(cfg_.schedule.pauseTimeoutMin) * 60000u) {
+        stop();
+        if (listener_ != nullptr) {
+            listener_->onPauseExpired();
+        }
+    }
     // Retire finished entries first so a program that just ended does not
     // count as still queued when its next start is evaluated.
     processQueue();

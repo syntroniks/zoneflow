@@ -116,6 +116,8 @@ public:
         (void)entry;
         (void)reason;
     }
+    // The queue stayed paused for the pause timeout and was stopped.
+    virtual void onPauseExpired() {}
 };
 
 class Scheduler {
@@ -162,6 +164,8 @@ public:
     RunError runZone(ZoneIndex zone, uint32_t durationSec);
     RunError runProgram(uint16_t programId);
 
+    // A paused queue is stopped (not resumed) after
+    // schedule.pauseTimeoutMin; see firmware-architecture.md, run queue.
     void pause();
     void resume();
     void stop();
@@ -216,6 +220,7 @@ private:
     std::size_t count_ = 0;
     uint32_t nextId_ = 1;
     QueueState state_ = QueueState::Idle;
+    MonoMs pausedAtMs_ = 0;
 };
 
 } // namespace zf
