@@ -97,11 +97,13 @@ Scheduler::Scheduler(const IClock &clock, IZoneActuator &actuator) : clock_(cloc
     keys_.fill(kNoKey);
 }
 
-int64_t Scheduler::keyAt(UtcSeconds t) const
+int64_t Scheduler::keyIn(const TimeZone &tz, UtcSeconds t)
 {
-    const civil::LocalDateTime l = tz_.toLocal(t);
+    const civil::LocalDateTime l = tz.toLocal(t);
     return makeKey(l.daySerial, static_cast<uint16_t>(l.secondOfDay / 60));
 }
+
+int64_t Scheduler::keyAt(UtcSeconds t) const { return keyIn(tz_, t); }
 
 void Scheduler::configure(const SchedulerConfig &cfg, const TimeZone &tz)
 {
@@ -110,6 +112,20 @@ void Scheduler::configure(const SchedulerConfig &cfg, const TimeZone &tz)
     const std::size_t oldCount = configured_ ? cfg_.schedule.programCount : 0;
     for (std::size_t i = 0; i < oldCount; ++i) {
         oldIds[i] = cfg_.schedule.programs[i].id;
+    }
+
+    // Keys are local (day, minute) values. When the time zone changes, move
+    // each key to the same instant in the new zone; read in the new zone
+    // unchanged, a key can name a later local time than the start it stands
+    // for, and the next start would count as already run.
+    if (configured_ && !(tz == tz_)) {
+        for (std::size_t i = 0; i < oldCount; ++i) {
+            if (oldKeys[i] != kNoKey) {
+                const int64_t day = civil::floorDiv(oldKeys[i], 1440);
+                const auto minute = static_cast<int32_t>(oldKeys[i] - day * 1440);
+                oldKeys[i] = keyIn(tz, tz_.fromLocal(day, minute * 60));
+            }
+        }
     }
 
     cfg_ = cfg;

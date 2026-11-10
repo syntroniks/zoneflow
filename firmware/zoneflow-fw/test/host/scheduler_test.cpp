@@ -720,3 +720,58 @@ TEST_F(SchedulerTest, DuplicateStartTimesRunOnceAndAreNotReportedMissed)
     EXPECT_EQ(rec.started.size(), 2u);
     EXPECT_TRUE(rec.missed.empty());
 }
+
+// ---- phase 2 hardening ---------------------------------------------------------
+
+// Keys are local (day, minute) values. Moving the time zone west re-read the
+// last consumed key as a later local time than now, so the next day's start
+// was taken as already run.
+TEST_F(SchedulerTest, TimeZoneChangeWestDoesNotSkipNextStart)
+{
+    tz = *TimeZone::parse("<+10>-10");
+    addProgram(makeProgram(1, {at(6, 0)}, {{0, 60}}));
+    apply();
+    begin(utcOf(2026, 6, 1, 19, 59)); // 06-02 05:59 local
+    runUntil(utcOf(2026, 6, 1, 20, 1));
+    ASSERT_EQ(rec.startedAt, (std::vector<UtcSeconds>{utcOf(2026, 6, 1, 20)}));
+    tz = TimeZone::utc();
+    apply();
+    runUntil(utcOf(2026, 6, 2, 6, 1));
+    EXPECT_EQ(rec.startedAt, (std::vector<UtcSeconds>{utcOf(2026, 6, 1, 20), utcOf(2026, 6, 2, 6)}));
+    EXPECT_TRUE(rec.missed.empty());
+}
+
+// Moving east must not run a start that already ran, or catch up a past one.
+TEST_F(SchedulerTest, TimeZoneChangeEastDoesNotRepeatOrCatchUp)
+{
+    addProgram(makeProgram(1, {at(6, 0)}, {{0, 60}}));
+    apply();
+    begin(utcOf(2026, 6, 1, 5, 59));
+    runUntil(utcOf(2026, 6, 1, 6, 1));
+    ASSERT_EQ(rec.started.size(), 1u);
+    tz = *TimeZone::parse("<+10>-10"); // now 16:01 local
+    apply();
+    runUntil(utcOf(2026, 6, 1, 20, 1)); // 06-02 06:01 local
+    EXPECT_EQ(rec.startedAt, (std::vector<UtcSeconds>{utcOf(2026, 6, 1, 6), utcOf(2026, 6, 1, 20)}));
+    EXPECT_TRUE(rec.missed.empty());
+}
+
+// Reapplying the same zone leaves keys alone, also for a start in a DST gap
+// (02:30 does not exist on that day; converting the key through UTC would
+// turn it into 03:00). With the clock invalid, configure() does not advance
+// keys to now, so the key is compared as is.
+TEST_F(SchedulerTest, SameTimeZoneReappliedKeepsKeys)
+{
+    setBerlin();
+    addProgram(makeProgram(1, {at(2, 30)}, {{0, 60}}));
+    apply();
+    begin(utcOf(2026, 3, 29, 0, 59));
+    runUntil(utcOf(2026, 3, 29, 1, 1));
+    ASSERT_EQ(rec.started.size(), 1u);
+    const SchedulerPersist before = sched->persist();
+    sched->setTimeValid(false);
+    apply();
+    const SchedulerPersist after = sched->persist();
+    ASSERT_EQ(after.count, 1);
+    EXPECT_EQ(after.fired[0].key, before.fired[0].key);
+}

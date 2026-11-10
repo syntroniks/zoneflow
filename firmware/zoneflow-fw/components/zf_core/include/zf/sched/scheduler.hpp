@@ -127,7 +127,9 @@ public:
 
     // Applies configuration. Queued entries are kept unless their zone or
     // program no longer exists. After the first call, every program's key is
-    // advanced to now so an edit never triggers a past start.
+    // advanced to now so an edit never triggers a past start. A new time zone
+    // moves each key to the same instant in the new zone, so a change of
+    // zone neither skips nor repeats a start.
     void configure(const SchedulerConfig &cfg, const TimeZone &tz);
     void restore(const SchedulerPersist &state);
     SchedulerPersist persist() const;
@@ -176,6 +178,7 @@ private:
     void processQueue();
     void stopFront();
     int64_t keyAt(UtcSeconds t) const;
+    static int64_t keyIn(const TimeZone &tz, UtcSeconds t);
     void notifyQueue();
 
     const IClock &clock_;
