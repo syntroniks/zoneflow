@@ -12,8 +12,12 @@ CONFIG_ESP_COREDUMP_DATA_FORMAT_ELF=y
 # Logs and flashing over the native USB port.
 CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
 
-# 1 kHz tick so the 5 ms keep-alive period is exact.
+# 1 kHz tick: the 50 ms control period is exact.
 CONFIG_FREERTOS_HZ=1000
+
+# The OE keep-alive is a GPTimer interrupt that must keep running while the
+# flash cache is off (NVS writes, OTA): handler and driver objects in IRAM.
+CONFIG_GPTIMER_ISR_CACHE_SAFE=y
 
 # Watchdogs: the control task is subscribed to the task watchdog.
 CONFIG_ESP_TASK_WDT_EN=y

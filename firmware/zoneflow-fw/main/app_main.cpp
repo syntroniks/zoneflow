@@ -2,7 +2,7 @@
 // Wires the ZoneFlow core to the hardware and starts the tasks.
 //
 // Tasks (see docs/design/firmware-architecture.md, threading model):
-//   zf_keepalive  prio max-2, core 1  drives OE from OutputEnableGuard
+//   keep-alive    GPTimer ISR (IRAM)  drives OE from OutputEnableGuard::step()
 //   zf_control    prio 10,    core 1  commands -> Controller::tick(), TWDT
 //   zf_persist    prio 3,     core 0  stores runtime state (JSON, NVS)
 //   zf_evlog      prio 2,     core 0  logs events

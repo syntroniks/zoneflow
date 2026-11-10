@@ -72,7 +72,8 @@ private:
 // ---- output-enable keep-alive ------------------------------------------------------
 
 OutputEnableMode configuredOutputEnableMode();
-// Starts the high-priority keep-alive task (static allocation).
+// Starts the keep-alive: an IRAM-safe GPTimer interrupt that calls
+// guard.step() every CONFIG_ZF_OE_TOGGLE_PERIOD_MS and drives the OE pin.
 esp_err_t startKeepAlive(OutputEnableGuard &guard);
 
 // ---- sensors -----------------------------------------------------------------------

@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
-// Valve outputs, OE keep-alive task and the IRAM force-off path.
+// Valve outputs, OE keep-alive timer interrupt and the IRAM force-off path.
 #include <array>
 
 #include "freertos/FreeRTOS.h"
 
 #include "driver/gpio.h"
+#include "driver/gptimer.h"
 #include "esp_attr.h"
 #include "esp_log.h"
 #include "esp_rom_sys.h"
-#include "esp_timer.h"
-#include "freertos/task.h"
 #include "hal/gpio_ll.h"
 #include "sdkconfig.h"
 #include "soc/gpio_struct.h"
@@ -42,21 +41,22 @@ DRAM_ATTR const uint32_t sOeOffLevel = level(false, board::kOutputEnableActiveHi
 
 void setPin(int gpio, uint32_t lvl) { gpio_set_level(static_cast<gpio_num_t>(gpio), lvl); }
 
-// Keep-alive task: static allocation, no heap, no locks.
-StaticTask_t sKeepAliveTcb;
-StackType_t sKeepAliveStack[2048];
-OutputEnableGuard *sGuard = nullptr;
+// Keep-alive: a GPTimer alarm interrupt every CONFIG_ZF_OE_TOGGLE_PERIOD_MS.
+// With CONFIG_GPTIMER_ISR_CACHE_SAFE the interrupt is in IRAM and stays
+// enabled while the flash cache is off (NVS writes, OTA), so OE keeps its
+// edges through a flash erase. Everything it touches is in IRAM or DRAM:
+// OutputEnableGuard::step() is forced inline, the guard lives in .bss, and
+// the pin write is a register write. The guard stops the edges when the
+// control-loop heartbeat goes stale, so a dead control loop still drops OE.
+DRAM_ATTR OutputEnableGuard *sGuard = nullptr;
+DRAM_ATTR const uint32_t sOeOnLevel = level(true, board::kOutputEnableActiveHigh);
+gptimer_handle_t sKeepAliveTimer = nullptr;
 
-void keepAliveTask(void *)
+IRAM_ATTR bool onKeepAlive(gptimer_handle_t, const gptimer_alarm_event_data_t *, void *)
 {
-    const uint32_t active = level(true, board::kOutputEnableActiveHigh);
-    const uint32_t inactive = level(false, board::kOutputEnableActiveHigh);
-    TickType_t last = xTaskGetTickCount();
-    for (;;) {
-        const auto nowMs = static_cast<uint32_t>(esp_timer_get_time() / 1000);
-        setPin(board::kOutputEnableGpio, sGuard->nextLevel(nowMs) ? active : inactive);
-        vTaskDelayUntil(&last, pdMS_TO_TICKS(CONFIG_ZF_OE_TOGGLE_PERIOD_MS));
-    }
+    const bool on = sGuard->step(CONFIG_ZF_OE_TOGGLE_PERIOD_MS);
+    gpio_ll_set_level(&GPIO, static_cast<uint32_t>(board::kOutputEnableGpio), on ? sOeOnLevel : sOeOffLevel);
+    return false; // no task woken
 }
 
 } // namespace
@@ -158,12 +158,40 @@ OutputEnableMode configuredOutputEnableMode()
 
 esp_err_t startKeepAlive(OutputEnableGuard &guard)
 {
+#if !CONFIG_GPTIMER_ISR_CACHE_SAFE
+#error "The OE keep-alive must run while the flash cache is off: set CONFIG_GPTIMER_ISR_CACHE_SAFE"
+#endif
     sGuard = &guard;
-    // Highest application priority below the IDF system tasks, on the APP core.
-    const TaskHandle_t t =
-        xTaskCreateStaticPinnedToCore(&keepAliveTask, "zf_keepalive", sizeof sKeepAliveStack, nullptr,
-                                      configMAX_PRIORITIES - 2, sKeepAliveStack, &sKeepAliveTcb, 1);
-    return t != nullptr ? ESP_OK : ESP_FAIL;
+    const gptimer_config_t cfg = {
+        .clk_src = GPTIMER_CLK_SRC_DEFAULT,
+        .direction = GPTIMER_COUNT_UP,
+        .resolution_hz = 1000000, // 1 us
+        .intr_priority = 0,
+        .flags = {},
+    };
+    esp_err_t err = gptimer_new_timer(&cfg, &sKeepAliveTimer);
+    if (err != ESP_OK) {
+        return err;
+    }
+    const gptimer_event_callbacks_t cbs = {.on_alarm = &onKeepAlive};
+    gptimer_alarm_config_t alarm = {};
+    alarm.alarm_count = static_cast<uint64_t>(CONFIG_ZF_OE_TOGGLE_PERIOD_MS) * 1000u;
+    alarm.reload_count = 0;
+    alarm.flags.auto_reload_on_alarm = true;
+    err = gptimer_register_event_callbacks(sKeepAliveTimer, &cbs, nullptr);
+    if (err == ESP_OK) {
+        err = gptimer_set_alarm_action(sKeepAliveTimer, &alarm);
+    }
+    if (err == ESP_OK) {
+        err = gptimer_enable(sKeepAliveTimer);
+    }
+    if (err == ESP_OK) {
+        err = gptimer_start(sKeepAliveTimer);
+    }
+    if (err != ESP_OK) {
+        ESP_LOGE(kTag, "keep-alive timer failed: %s", esp_err_to_name(err));
+    }
+    return err;
 }
 
 } // namespace zf::platform
