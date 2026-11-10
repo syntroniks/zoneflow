@@ -380,9 +380,9 @@ zones:
      why: "Display carrier deck and arms. Underside at 7.65 now, 6.3 with a 2.4 inch panel."}
   - {id: T_FPC, side: top, rect: [58, 76.5, 72, 99.5], max_height: 0,
      why: "The display FPC folds through here. J7 only."}
-  - {id: T_BTN_BACK, side: top, rect: [11.5, 55, 32.5, 68], max_height: 7.0,
+  - {id: T_BTN_BACK, side: top, rect: [11.5, 55, 32.5, 67.5], max_height: 7.0,
      why: "Flange of the button cap, underside at 8.0, moves 0.25"}
-  - {id: T_BTN_HOME, side: top, rect: [37.5, 55, 58.5, 68], max_height: 7.0,
+  - {id: T_BTN_HOME, side: top, rect: [37.5, 55, 58.5, 67.5], max_height: 7.0,
      why: "Flange of the button cap"}
   - {id: T_LIGHTPIPE, side: top, rect: [9.3, 39.3, 104.7, 44.7], max_height: 1.0,
      why: "Light pipes end at z = 1.5 over each LED; their rail runs the length"}
@@ -396,6 +396,8 @@ zones:
      why: "Fascia lip overhangs the board edge from z = 0.6"}
   - {id: B_GENERAL, side: bottom, rect: [0, 0, 114, 110], max_height: 17.0,
      why: "18.0 mm to the back wall. Only through-hole parts go here."}
+  - {id: B_C1, side: bottom, rect: [9.5, 22.5, 38.5, 37.5], max_height: 0,
+     why: "C1 only. Two ribs in the base stand here, 13.3 below the board."}
   - {id: B_KEYHOLE_L, side: bottom, rect: [10.5, 80, 28.5, 104], max_height: 10.0,
      why: "Pocket for the wall screw head, top 11.3 below the board"}
   - {id: B_KEYHOLE_R, side: bottom, rect: [85.5, 80, 103.5, 104], max_height: 10.0,
@@ -441,7 +443,7 @@ display_options:
     aa_to_edge_opposite_fpc: 2.8       # src: display24
     aa_to_long_edge: 3.0               # src: display24
     thickness: 3.4                     # src: display24, with its touch panel
-    centre: [37.18, 89.6]              # active-area centre that clears A, B, E, F and the buttons
+    centre: [37.18, 89.9]              # active-area centre that clears A, B, E, F and the buttons
     fpc_root_y_from_origin: [9.0, 34.0]   # scaled from the drawing
     src: display24
     what_changes: >-
@@ -642,3 +644,4 @@ changes:
   - "K1 suggested position moves to (50, 22)."
   - "T_CARRIER is 5.0 mm, was 6.5, and now reaches x = 79.5."
   - "cover_inner_z is 12.5, was 13.0."
+  - "New zone B_C1 under C1. T_BTN_BACK and T_BTN_HOME end at y = 67.5."
