@@ -281,6 +281,9 @@ RunError Scheduler::runZone(ZoneIndex zone, uint32_t durationSec)
     if (durationSec == 0) {
         return RunError::ZeroDuration;
     }
+    // The driver clamps again to the zone's limit; this keeps the
+    // millisecond value below from wrapping.
+    durationSec = std::min(durationSec, kHardMaxRunSec);
     RunEntry e;
     e.zone = zone;
     e.durationSec = durationSec;

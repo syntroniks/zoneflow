@@ -695,3 +695,15 @@ TEST_F(SchedulerTest, KeysSlightlyAheadAreKeptAfterReboot)
     runFor(120);
     EXPECT_EQ(rec.started.size(), 1u);
 }
+
+// RunZone(z, s) multiplied s by 1000 in 32 bits: 4294968 s wrapped to 704 ms
+// and the zone ran for one second instead of its maximum run time.
+TEST_F(SchedulerTest, HugeManualDurationIsClampedNotWrapped)
+{
+    ASSERT_EQ(sched->runZone(0, 4'294'968u), RunError::Ok);
+    step();
+    ASSERT_TRUE(out.zone[0]);
+    runFor(5);
+    EXPECT_TRUE(out.zone[0]);
+    EXPECT_GT(drv.remainingMs(0), 3000u * 1000u);
+}
