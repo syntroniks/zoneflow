@@ -59,6 +59,29 @@ A pair passes below 0.5 mm3.
 | knob | lightpipe | 0.00 | pass |
 | buttons | lightpipe | 0.00 | pass |
 
+## Interference with the 2.4 inch panel option
+
+Fascia and display carrier rebuilt with `panel = "2.4"`. The board
+placeholder is not part of this: it is laid out for the fitted panel.
+The panel's folded cable is a guessed box.
+
+| A | B | Overlap, mm3 | Result |
+|---|---|---|---|
+| display | fascia | 0.00 | pass |
+| display | bridge | 0.00 | pass |
+| display | buttons | 0.00 | pass |
+| display | base | 0.00 | pass |
+| display | knob | 0.00 | pass |
+| display | lightpipe | 0.00 | pass |
+| fascia | bridge | 0.00 | pass |
+| fascia | buttons | 0.00 | pass |
+| bridge | buttons | 0.00 | pass |
+| bridge | base | 0.00 | pass |
+| bridge | knob | 0.00 | pass |
+| bridge | lightpipe | 0.00 | pass |
+| zones | fascia | 0.00 | pass |
+| zones | bridge | 0.00 | pass |
+
 ## Printed parts in print orientation
 
 Bed limit 220 x 220 mm. Mass is solid volume times
@@ -66,13 +89,13 @@ Bed limit 220 x 220 mm. Mass is solid volume times
 
 | Part | Quantity | Size x, y, z in mm | Volume, cm3 | Mass at 100 %, g | Fits bed |
 |---|---|---|---|---|---|
-| base | 1 | 120.2 x 162.0 x 32.7 | 70.7 | 90 | yes |
-| fascia | 1 | 120.2 x 116.2 x 17.1 | 29.8 | 38 | yes |
-| cover | 1 | 120.2 x 49.5 x 14.4 | 16.7 | 21 | yes |
-| bridge | 1 | 72.5 x 40.1 x 8.9 | 3.3 | 4 | yes |
-| knob | 1 | 30.0 x 30.0 x 12.0 | 3.7 | 5 | yes |
+| base | 1 | 120.2 x 172.0 x 32.2 | 71.5 | 91 | yes |
+| fascia | 1 | 120.2 x 131.7 x 27.5 | 41.5 | 53 | yes |
+| cover | 1 | 120.2 x 69.9 x 13.9 | 19.5 | 25 | yes |
+| bridge | 1 | 77.5 x 42.0 x 8.9 | 3.4 | 4 | yes |
+| knob | 1 | 34.0 x 34.0 x 12.0 | 5.3 | 7 | yes |
 | button_back | 1 | 20.0 x 12.0 x 5.1 | 0.7 | 1 | yes |
 | button_home | 1 | 20.0 x 12.0 x 5.1 | 0.7 | 1 | yes |
 | lightpipe | 1 | 92.4 x 11.0 x 2.4 | 1.0 | 1 | yes |
 
-Total at 100 % fill: 161 g.
+Total at 100 % fill: 182 g.
