@@ -2,8 +2,11 @@
 // Test doubles for the web, network and OTA modules.
 #pragma once
 
+#include <functional>
 #include <string>
 #include <vector>
+
+#include "fakes.hpp"
 
 #include "zf/events/command.hpp"
 #include "zf_ota/ota_logic.hpp"
@@ -94,6 +97,22 @@ public:
         return pullResult;
     }
     std::string tlsFingerprint() const override { return ""; }
+
+    // sleepMs() advances this clock and then runs onSleep, which plays the
+    // control task (publish a snapshot, a CommandRejected event, ...).
+    FakeClock *clock = nullptr;
+    std::function<void()> onSleep;
+    uint32_t sleptMs = 0;
+    void sleepMs(uint32_t ms) override
+    {
+        sleptMs += ms;
+        if (clock != nullptr) {
+            clock->advanceMs(ms);
+        }
+        if (onSleep) {
+            onSleep();
+        }
+    }
 };
 
 } // namespace zf::test

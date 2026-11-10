@@ -98,13 +98,17 @@ cJSON *zoneToJson(std::size_t index, const ZoneStatus &st, const ZoneConfig &cfg
     cJSON_AddStringToObject(o, "last_stop", toString(st.lastStop));
     cJSON_AddStringToObject(o, "fault", toString(st.fault));
     cJSON_AddBoolToObject(o, "locked_out", st.lockedOut);
+    // Spec section 2 rule 4: after its maximum run time a zone rests.
+    cJSON_AddBoolToObject(o, "resting", st.restRemainingSec > 0);
+    cJSON_AddNumberToObject(o, "rest_remaining_s", st.restRemainingSec);
     return o;
 }
 
-cJSON *queueToJson(const QueueStatus &q)
+cJSON *queueToJson(const QueueStatus &q, uint16_t pauseTimeoutMin)
 {
     cJSON *o = cJSON_CreateObject();
     cJSON_AddStringToObject(o, "state", toString(q.state));
+    cJSON_AddNumberToObject(o, "pause_timeout_min", pauseTimeoutMin);
     cJSON_AddNumberToObject(o, "length", q.length);
     cJSON_AddNumberToObject(o, "current_remaining_s", q.currentRemainingSec);
     cJSON *items = cJSON_AddArrayToObject(o, "items");
@@ -125,8 +129,9 @@ cJSON *queueToJson(const QueueStatus &q)
     return o;
 }
 
-cJSON *sensorsToJson(const SensorStatus &s)
+cJSON *sensorsToJson(const SystemState &st)
 {
+    const SensorStatus &s = st.sensors;
     cJSON *o = cJSON_CreateObject();
     cJSON *rain = cJSON_AddObjectToObject(o, "rain");
     cJSON_AddBoolToObject(rain, "enabled", s.rainEnabled);
@@ -144,6 +149,11 @@ cJSON *sensorsToJson(const SensorStatus &s)
     } else {
         cJSON_AddNumberToObject(o, "valve_current_ma", s.valveCurrentMa);
     }
+    const auto fault = [&](FaultCode c) { return (st.activeFaults & (1u << static_cast<unsigned>(c))) != 0; };
+    // Zones still run without readings; the fault says diagnostics are blind.
+    cJSON_AddBoolToObject(o, "current_sense_available", !fault(FaultCode::CurrentSenseUnavailable));
+    // Hardware comparator removed gate drive; latched until faults are cleared.
+    cJSON_AddBoolToObject(o, "over_current_tripped", fault(FaultCode::OverCurrentTrip));
     return o;
 }
 
@@ -197,13 +207,16 @@ cJSON *stateToJson(const SystemState &s, const Config &cfg)
     cJSON *master = cJSON_AddObjectToObject(o, "master");
     cJSON_AddBoolToObject(master, "enabled", s.masterEnabled);
     cJSON_AddBoolToObject(master, "on", s.masterOn);
-    cJSON_AddItemToObject(o, "queue", queueToJson(s.queue));
-    cJSON_AddItemToObject(o, "sensors", sensorsToJson(s.sensors));
+    cJSON_AddBoolToObject(master, "locked_out", s.masterLockedOut);
+    cJSON_AddNumberToObject(master, "fault_count", s.masterFaultCount);
+    cJSON_AddItemToObject(o, "queue", queueToJson(s.queue, cfg.schedule.pauseTimeoutMin));
+    cJSON_AddItemToObject(o, "sensors", sensorsToJson(s));
     cJSON_AddItemToObject(o, "rain_delay", rainDelayToJson(s));
     cJSON *inhibit = cJSON_AddObjectToObject(o, "inhibit");
     cJSON_AddBoolToObject(inhibit, "sensor", (s.inhibitFlags & kInhibitSensor) != 0);
     cJSON_AddBoolToObject(inhibit, "no_ac", (s.inhibitFlags & kInhibitNoAc) != 0);
     cJSON_AddBoolToObject(inhibit, "maintenance", (s.inhibitFlags & kInhibitMaintenance) != 0);
+    cJSON_AddBoolToObject(inhibit, "master_lockout", (s.inhibitFlags & kInhibitMasterLockout) != 0);
     cJSON_AddItemToObject(o, "faults", faultsToJson(s));
     cJSON_AddBoolToObject(o, "maintenance", s.maintenance);
     cJSON_AddNumberToObject(o, "config_revision", s.configRevision);

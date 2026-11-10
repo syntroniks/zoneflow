@@ -177,8 +177,18 @@ Api::Api(const AppServices &services, AuthService &auth, IPlatformPort &platform
 {
 }
 
+Api::~Api()
+{
+    if (watchHandle_ != EventBus::kInvalidHandle) {
+        services_.events.unsubscribe(watchHandle_);
+    }
+}
+
 void Api::begin()
 {
+    if (watchHandle_ == EventBus::kInvalidHandle) {
+        watchHandle_ = watch_.attach(services_.events);
+    }
     std::string stored;
     WebSettings s;
     if (settingsStore_.read(kSettingsKey, stored)) {
@@ -404,6 +414,102 @@ ApiResponse Api::post(const Command &cmd)
     return json(202, printJson(o.get()));
 }
 
+namespace {
+
+ApiResponse runErrorResponse(RunError e)
+{
+    switch (e) {
+    case RunError::InvalidZone:
+        return Api::error(404, toString(e), "no such zone");
+    case RunError::UnknownProgram:
+        return Api::error(404, toString(e), "no such program");
+    case RunError::ZeroDuration:
+        return Api::error(400, toString(e), "nothing to run: duration is zero");
+    case RunError::QueueFull:
+        return Api::error(409, toString(e), "the run queue is full (64 entries)");
+    case RunError::AlreadyQueued:
+        return Api::error(409, toString(e), "this program is already queued");
+    case RunError::Inhibited:
+        return Api::error(409, toString(e), "starts are blocked (no 24 VAC or maintenance)");
+    case RunError::NothingToRun:
+        return Api::error(409, toString(e), "the program has no enabled zone with a duration");
+    case RunError::LockedOut:
+        return Api::error(409, toString(e), "zone has a latched fault; clear faults first");
+    case RunError::ZoneResting:
+        return Api::error(409, toString(e), "zone reached its maximum run time and is resting");
+    case RunError::MasterLockedOut:
+        return Api::error(409, toString(e), "master valve locked out by repeated faults; clear faults first");
+    case RunError::Ok:
+        break;
+    }
+    return Api::error(500, "internal", "rejected without a reason");
+}
+
+} // namespace
+
+// Rule: arm a watch for (command, zone, program), post, then poll:
+//  - A matching CommandRejected arrives: answer with its error (409/404/400).
+//    handle() publishes it synchronously while draining the queue.
+//  - The state sequence advanced, and then either it advanced again or one
+//    more control period (kControlSettleMs) passed without a rejection: the
+//    command was accepted (202, "confirmed": true). The control task drains
+//    the queue at the start of each period and publishes a snapshot in every
+//    period that handled a command. The first advance may come from a period
+//    that was already running when the command was posted; the next drain is
+//    at most one period later, so waiting one more period covers it.
+//  - kConfirmWaitMs passed: 202 with "confirmed": false. The outcome then
+//    shows up only on the event stream (command_rejected). This happens when
+//    the command queue was backed up or the control loop is stalled.
+// One watch at a time (confirmMutex_), so concurrent requests never share a
+// key. A command with the same key posted by another module inside the
+// window would be attributed to this request; it carries the same verdict.
+ApiResponse Api::postConfirmed(const Command &cmd)
+{
+    std::lock_guard<std::mutex> lock(confirmMutex_);
+    watch_.arm(cmd);
+    const uint32_t seq0 = services_.state.sequence();
+    if (!services_.commands.post(cmd)) {
+        watch_.disarm();
+        ApiResponse r = error(503, "busy", "command queue full, try again");
+        r.headers.emplace_back("Retry-After", "1");
+        return r;
+    }
+    const MonoMs start = clock_.monoMs();
+    MonoMs firstAdvance = 0;
+    bool advanced = false;
+    bool confirmed = false;
+    std::optional<RunError> rejected;
+    for (;;) {
+        const uint32_t seq = services_.state.sequence();
+        rejected = watch_.rejected(); // read after the sequence: published before it
+        if (rejected.has_value()) {
+            break;
+        }
+        const MonoMs now = clock_.monoMs();
+        if (seq != seq0 && !advanced) {
+            advanced = true;
+            firstAdvance = now;
+        }
+        if (advanced && (seq - seq0 >= 2 || now - firstAdvance >= kControlSettleMs)) {
+            confirmed = true;
+            break;
+        }
+        if (now - start >= kConfirmWaitMs) {
+            break;
+        }
+        platform_.sleepMs(kConfirmPollMs);
+    }
+    watch_.disarm();
+    if (rejected.has_value()) {
+        return runErrorResponse(*rejected);
+    }
+    JsonPtr o(cJSON_CreateObject());
+    cJSON_AddBoolToObject(o.get(), "accepted", true);
+    cJSON_AddStringToObject(o.get(), "command", toString(cmd.type));
+    cJSON_AddBoolToObject(o.get(), "confirmed", confirmed);
+    return json(202, printJson(o.get()));
+}
+
 ApiResponse Api::applyConfigJson(const std::string &text, int okStatus, std::string okBody)
 {
     const ValidationResult v = services_.config.updateFromJson(text);
@@ -411,7 +517,9 @@ ApiResponse Api::applyConfigJson(const std::string &text, int okStatus, std::str
         if (v.path.empty() && v.message == "storage write failed") {
             return error(500, "storage_error", v.message);
         }
-        return error(400, "invalid_config", v.message, v.path);
+        // A document from newer firmware (core: path "schema") would lose
+        // every field this firmware does not know if it were stored.
+        return error(400, v.path == "schema" ? "unsupported_schema" : "invalid_config", v.message, v.path);
     }
     if (!services_.commands.post(Command::simple(CommandType::ReloadConfig))) {
         // Stored, but the controller has not picked it up yet. It re-reads on
@@ -606,6 +714,8 @@ ApiResponse Api::info()
     cJSON_AddNumberToObject(heap, "free", sys.freeHeap);
     cJSON_AddNumberToObject(heap, "min_free", sys.minFreeHeap);
     cJSON_AddNumberToObject(heap, "largest_block", sys.largestFreeBlock);
+    cJSON_AddNumberToObject(heap, "internal_free", sys.internalFree);
+    cJSON_AddNumberToObject(heap, "internal_min_free", sys.internalMinFree);
     cJSON_AddNumberToObject(o.get(), "http_stack_free_min", sys.httpStackFreeMin);
     return json(200, printJson(o.get()));
 }
@@ -717,14 +827,24 @@ ApiResponse Api::zoneRun(std::string_view id, const ApiRequest &req)
     if (!cfg->zones[z].enabled) {
         return error(409, "zone_disabled", "zone is disabled");
     }
+    // Known blockers are answered from the snapshot at once; anything the
+    // snapshot cannot show comes back from the controller (postConfirmed).
     const SystemState s = services_.state.snapshot();
     if (s.zones[z].lockedOut) {
-        return error(409, "zone_locked_out", "zone has a latched fault; clear faults first");
+        return runErrorResponse(RunError::LockedOut);
+    }
+    if (s.zones[z].restRemainingSec > 0) {
+        ApiResponse r = runErrorResponse(RunError::ZoneResting);
+        r.headers.emplace_back("Retry-After", std::to_string(s.zones[z].restRemainingSec));
+        return r;
+    }
+    if (s.masterEnabled && s.masterLockedOut) {
+        return runErrorResponse(RunError::MasterLockedOut);
     }
     if (s.maintenance || (s.inhibitFlags & kInhibitNoAc) != 0) {
         return error(409, "inhibited", s.maintenance ? "maintenance mode (update running)" : "no 24 VAC");
     }
-    ApiResponse r = post(Command::runZone(z, static_cast<uint32_t>(seconds)));
+    ApiResponse r = postConfirmed(Command::runZone(z, static_cast<uint32_t>(seconds)));
     if (r.status == 202) {
         JsonPtr o = parseJson(r.body);
         cJSON_AddNumberToObject(o.get(), "zone", z + 1);
@@ -886,10 +1006,13 @@ ApiResponse Api::programRun(std::string_view id)
         return error(404, "not_found", "no such program");
     }
     const SystemState s = services_.state.snapshot();
+    if (s.masterEnabled && s.masterLockedOut) {
+        return runErrorResponse(RunError::MasterLockedOut);
+    }
     if (s.maintenance || (s.inhibitFlags & kInhibitNoAc) != 0) {
         return error(409, "inhibited", s.maintenance ? "maintenance mode (update running)" : "no 24 VAC");
     }
-    return post(Command::runProgram(static_cast<uint16_t>(pid)));
+    return postConfirmed(Command::runProgram(static_cast<uint16_t>(pid)));
 }
 
 // ---- queue, rain delay, sensors, faults ---------------------------------------------------------------
@@ -897,7 +1020,7 @@ ApiResponse Api::programRun(std::string_view id)
 ApiResponse Api::queueGet()
 {
     const SystemState s = services_.state.snapshot();
-    return json(200, bodyOf(queueToJson(s.queue)));
+    return json(200, bodyOf(queueToJson(s.queue, services_.config.get().schedule.pauseTimeoutMin)));
 }
 
 ApiResponse Api::queueCommand(CommandType type) { return post(Command::simple(type)); }
@@ -951,7 +1074,7 @@ ApiResponse Api::rainDelayDelete() { return post(Command::rainDelay(0)); }
 ApiResponse Api::sensors()
 {
     const SystemState s = services_.state.snapshot();
-    return json(200, bodyOf(sensorsToJson(s.sensors)));
+    return json(200, bodyOf(sensorsToJson(s)));
 }
 
 ApiResponse Api::faultsList()

@@ -37,6 +37,7 @@ add_library(zf_ext STATIC
     ${ZF_COMPONENTS}/zf_ota/src/ota_logic.cpp
     ${ZF_COMPONENTS}/zf_web/src/api.cpp
     ${ZF_COMPONENTS}/zf_web/src/auth.cpp
+    ${ZF_COMPONENTS}/zf_web/src/command_watch.cpp
     ${ZF_COMPONENTS}/zf_web/src/crypto.cpp
     ${ZF_COMPONENTS}/zf_web/src/http_util.cpp
     ${ZF_COMPONENTS}/zf_web/src/json_map.cpp

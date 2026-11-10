@@ -642,7 +642,7 @@
             "cookieAuth": []
           }
         ],
-        "description": "Adds a manual run to the end of the queue. The zone driver clamps the time to the zone's `max_run_s` (the answer shows the clamped value). Refused (409) for a disabled or locked-out zone, without 24 VAC, and during maintenance (OTA).",
+        "description": "Adds a manual run to the end of the queue. The zone driver clamps the time to the zone's `max_run_s` (the answer shows the clamped value). Refused (409) for a disabled zone (zone_disabled), a locked-out zone (locked_out), a resting zone (zone_resting, with Retry-After), a locked-out master (master_locked_out), without 24 VAC and during maintenance (inhibited). The answer waits up to 250 ms for the control task: a rejection comes back as an error (see RunRejection), an accepted command as 202 with confirmed true. If no verdict arrives in time the answer is 202 with confirmed false and a rejection, if any, appears on the event stream as command_rejected.",
         "parameters": [
           {
             "name": "zone",
@@ -694,10 +694,24 @@
             "$ref": "#/components/responses/UnsupportedMediaType"
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "No such zone or program, or rejected with invalid_zone / unknown_program",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunRejection"
+                }
+              }
+            }
           },
           "409": {
-            "$ref": "#/components/responses/Conflict"
+            "description": "Rejected (RunRejection codes)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunRejection"
+                }
+              }
+            }
           },
           "503": {
             "$ref": "#/components/responses/Busy"
@@ -1059,7 +1073,7 @@
             "cookieAuth": []
           }
         ],
-        "description": "Queues every zone of the program (manual program run; seasonal adjustment applies).",
+        "description": "Queues every zone of the program (manual program run; seasonal adjustment applies). The answer waits up to 250 ms for the control task: a rejection comes back as an error (see RunRejection), an accepted command as 202 with confirmed true. If no verdict arrives in time the answer is 202 with confirmed false and a rejection, if any, appears on the event stream as command_rejected.",
         "parameters": [
           {
             "name": "id",
@@ -1097,13 +1111,30 @@
             "$ref": "#/components/responses/UnsupportedMediaType"
           },
           "404": {
-            "$ref": "#/components/responses/NotFound"
+            "description": "No such zone or program, or rejected with invalid_zone / unknown_program",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunRejection"
+                }
+              }
+            }
           },
           "409": {
-            "$ref": "#/components/responses/Conflict"
+            "description": "Rejected (RunRejection codes)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunRejection"
+                }
+              }
+            }
           },
           "503": {
             "$ref": "#/components/responses/Busy"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           }
         }
       }
@@ -1598,7 +1629,7 @@
             "cookieAuth": []
           }
         ],
-        "description": "Validated as a whole; nothing changes on error and `error.path` names the field. Missing fields take defaults, unknown fields are ignored. Nested deeper than 16 levels is rejected before parsing.",
+        "description": "Validated as a whole; nothing changes on error and `error.path` names the field. Missing fields take defaults, unknown fields are ignored. Nested deeper than 16 levels is rejected before parsing. A document from newer firmware is refused (400, error.code unsupported_schema, error.path schema, the core's message).",
         "requestBody": {
           "required": true,
           "x-max-body-bytes": 16384,
@@ -1752,7 +1783,8 @@
           "503": {
             "$ref": "#/components/responses/Busy"
           }
-        }
+        },
+        "description": " A document from newer firmware is refused (400, error.code unsupported_schema, error.path schema, the core's message)."
       }
     },
     "/time": {
@@ -2407,6 +2439,10 @@
           },
           "command": {
             "type": "string"
+          },
+          "confirmed": {
+            "type": "boolean",
+            "description": "Run commands only. true: the control task handled the command and did not reject it. false: no verdict within 250 ms; a rejection, if any, arrives on the event stream as command_rejected."
           }
         }
       },
@@ -2588,8 +2624,15 @@
               },
               "largest_block": {
                 "type": "integer"
+              },
+              "internal_free": {
+                "type": "integer"
+              },
+              "internal_min_free": {
+                "type": "integer"
               }
-            }
+            },
+            "description": "free, min_free and largest_block cover all 8-bit heap, PSRAM included; internal_* cover internal RAM only."
           },
           "http_stack_free_min": {
             "type": "integer"
@@ -2648,7 +2691,17 @@
             "type": "string"
           },
           "locked_out": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Latched fault on this zone; runs are refused until faults are cleared."
+          },
+          "resting": {
+            "type": "boolean",
+            "description": "The zone reached its maximum run time (summed across back-to-back runs) and must stay closed for driver.min_rest_s (spec section 2, rule 4)."
+          },
+          "rest_remaining_s": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Seconds of rest left; 0 when not resting."
           }
         }
       },
@@ -2936,6 +2989,10 @@
               "$ref": "#/components/schemas/QueueItem"
             },
             "description": "Head first; first 8."
+          },
+          "pause_timeout_min": {
+            "type": "integer",
+            "description": "schedule.pause_timeout_min: a queue paused this long is stopped (event pause_expired). The time already paused is not reported by the core."
           }
         }
       },
@@ -3033,6 +3090,14 @@
               "integer",
               "null"
             ]
+          },
+          "current_sense_available": {
+            "type": "boolean",
+            "description": "False while the valve-current readings are missing (fault current_sense_unavailable). Zones still run; open and short detection is blind."
+          },
+          "over_current_tripped": {
+            "type": "boolean",
+            "description": "The hardware over-current comparator removed gate drive (fault over_current_trip, latched until faults are cleared)."
           }
         }
       },
@@ -3052,7 +3117,10 @@
                 "flow_without_zones",
                 "config_invalid",
                 "time_invalid",
-                "storage_error"
+                "storage_error",
+                "master_locked_out",
+                "current_sense_unavailable",
+                "over_current_trip"
               ]
             }
           },
@@ -3109,6 +3177,15 @@
               },
               "on": {
                 "type": "boolean"
+              },
+              "locked_out": {
+                "type": "boolean",
+                "description": "Locked out after master.fault_lockout_count consecutive current faults on the master; every zone is blocked until faults are cleared."
+              },
+              "fault_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Consecutive current faults attributed to the master."
               }
             }
           },
@@ -3131,6 +3208,9 @@
                 "type": "boolean"
               },
               "maintenance": {
+                "type": "boolean"
+              },
+              "master_lockout": {
                 "type": "boolean"
               }
             }
@@ -3157,7 +3237,7 @@
         "required": [
           "schema"
         ],
-        "description": "The configuration document described in the firmware architecture, section 6. Missing fields take defaults; unknown fields are ignored.",
+        "description": "The configuration document described in the firmware architecture, section 6. Missing fields take defaults; unknown fields are ignored. A document whose schema is newer than the firmware is refused with error.code unsupported_schema and path schema.",
         "properties": {
           "schema": {
             "type": "integer",
@@ -3184,10 +3264,33 @@
             }
           },
           "master": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+              "fault_lockout_count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10,
+                "default": 3,
+                "description": "Consecutive current faults on the master that lock it out."
+              }
+            }
           },
           "driver": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+              "min_rest_s": {
+                "type": "integer",
+                "minimum": 60,
+                "maximum": 86400,
+                "default": 1800,
+                "description": "Closed time a zone needs after reaching its maximum run time."
+              },
+              "zero_cross_switching": {
+                "type": "boolean",
+                "default": false,
+                "description": "Turn outputs on at a mains zero crossing when the board has the signal."
+              }
+            }
           },
           "sensors": {
             "type": "object"
@@ -3214,6 +3317,13 @@
                 "items": {
                   "$ref": "#/components/schemas/Program"
                 }
+              },
+              "pause_timeout_min": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440,
+                "default": 120,
+                "description": "A paused queue is stopped after this long."
               }
             }
           }
@@ -3571,6 +3681,26 @@
             "default": false
           }
         }
+      },
+      "RunRejection": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Error"
+          }
+        ],
+        "description": "Error answer of a run command. error.code is the controller's RunError: invalid_zone, unknown_program, zero_duration, queue_full, already_queued, inhibited, nothing_to_run, locked_out, zone_resting, master_locked_out (or inhibited when maintenance or missing 24 VAC is known beforehand). zone_resting answers carry Retry-After with the seconds of rest left.",
+        "x-error-codes": [
+          "invalid_zone",
+          "unknown_program",
+          "zero_duration",
+          "queue_full",
+          "already_queued",
+          "inhibited",
+          "nothing_to_run",
+          "locked_out",
+          "zone_resting",
+          "master_locked_out"
+        ]
       }
     },
     "responses": {

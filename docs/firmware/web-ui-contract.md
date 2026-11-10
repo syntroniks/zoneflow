@@ -44,7 +44,15 @@ the firmware provides and expects. Nothing here has run on hardware yet.
   notifications. The device allows 3 streams in total, so open one per tab and
   close it when the tab is hidden for long.
 - Commands answer 202 and take effect within about 50 ms; show the result
-  from the next `state` message rather than from the 202.
+  from the next `state` message rather than from the 202. Run commands may
+  answer 409 with the controller's reason (`zone_resting`, `locked_out`,
+  `master_locked_out`, `already_queued`, ...); show it to the user. A 202 with
+  `"confirmed": false` means no verdict yet: watch for `command_rejected`.
+- Show the new safety state: a resting zone (`resting`, `rest_remaining_s`),
+  a locked-out master (`master.locked_out`), `current_sense_available: false`
+  (diagnostics blind, watering continues) and `over_current_tripped`. The
+  lockouts and the trip clear with "clear faults"; the current-sense fault
+  clears when readings return; a rest ends on its own.
 
 ## Authentication in the browser
 

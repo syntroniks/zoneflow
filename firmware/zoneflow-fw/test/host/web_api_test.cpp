@@ -9,7 +9,9 @@
 #include "cJSON.h"
 #include "fakes.hpp"
 #include "web_fakes.hpp"
+#include "zf/app/controller.hpp"
 #include "zf_web/api.hpp"
+#include "zf_web/command_watch.hpp"
 #include "zf_web/json_map.hpp"
 
 using namespace zf;
@@ -55,6 +57,7 @@ protected:
         ASSERT_TRUE(config.update(Config::defaults()).ok);
         ASSERT_TRUE(time.setManual(clock.utc));
         AppServices services{bus, state, sink, config, time};
+        platform.clock = &clock;
         api = std::make_unique<Api>(services, auth, platform, webStorage, clock);
         api->begin();
         publishState();
@@ -796,4 +799,288 @@ TEST(EventJson, EveryEventTypeHasAName)
 TEST(Sse, MessageFraming)
 {
     EXPECT_EQ(sseMessage("state", 7, R"({"a":1})"), "id: 7\nevent: state\ndata: {\"a\":1}\n\n");
+}
+
+// ---- command outcome (CommandRejected) -----------------------------------------------------
+
+namespace {
+
+Event rejection(CommandType type, ZoneIndex zone, uint16_t programId, RunError error)
+{
+    Event e{};
+    e.type = EventType::CommandRejected;
+    e.rejected = {type, zone, programId, error};
+    return e;
+}
+
+} // namespace
+
+TEST(CommandWatch, MatchesOnlyTheArmedCommand)
+{
+    EventBus bus;
+    CommandWatch w;
+    const EventBus::Handle h = w.attach(bus);
+    bus.publish(rejection(CommandType::RunZone, 1, 0, RunError::LockedOut));
+    EXPECT_FALSE(w.rejected().has_value()); // nothing armed
+    w.arm(Command::runZone(1, 60));
+    bus.publish(rejection(CommandType::RunZone, 2, 0, RunError::LockedOut));
+    bus.publish(rejection(CommandType::RunProgram, 1, 0, RunError::AlreadyQueued));
+    EXPECT_FALSE(w.rejected().has_value());
+    bus.publish(rejection(CommandType::RunZone, 1, 0, RunError::ZoneResting));
+    ASSERT_TRUE(w.rejected().has_value());
+    EXPECT_EQ(*w.rejected(), RunError::ZoneResting);
+    w.disarm();
+    w.arm(Command::runProgram(7));
+    EXPECT_FALSE(w.rejected().has_value()); // arm() clears the last verdict
+    bus.publish(rejection(CommandType::RunProgram, kNoZone, 7, RunError::MasterLockedOut));
+    EXPECT_EQ(*w.rejected(), RunError::MasterLockedOut);
+    bus.unsubscribe(h);
+}
+
+TEST_F(ApiTest, RunRejectedByControllerAnswers409)
+{
+    login();
+    platform.onSleep = [&] { bus.publish(rejection(CommandType::RunZone, 1, 0, RunError::LockedOut)); };
+    const ApiResponse r = admin("POST", "/api/v1/zones/2/run", R"({"duration_s":60})");
+    EXPECT_EQ(r.status, 409);
+    EXPECT_EQ(field(r, "code"), "locked_out");
+    EXPECT_LE(platform.sleptMs, Api::kConfirmPollMs);
+}
+
+TEST_F(ApiTest, RunConfirmedOnceTheControlLoopPublishes)
+{
+    login();
+    platform.onSleep = [&] { publishState(); };
+    const ApiResponse r = admin("POST", "/api/v1/zones/2/run", R"({"duration_s":60})");
+    ASSERT_EQ(r.status, 202) << r.body;
+    EXPECT_EQ(field(r, "confirmed"), "true");
+    EXPECT_LT(platform.sleptMs, Api::kConfirmWaitMs);
+}
+
+TEST_F(ApiTest, RunUnconfirmedWhenTheControlLoopIsSilent)
+{
+    login();
+    platform.onSleep = [&] { bus.publish(rejection(CommandType::RunZone, 5, 0, RunError::LockedOut)); }; // other zone
+    const ApiResponse r = admin("POST", "/api/v1/zones/2/run", R"({"duration_s":60})");
+    ASSERT_EQ(r.status, 202);
+    EXPECT_EQ(field(r, "confirmed"), "false");
+    EXPECT_EQ(platform.sleptMs, Api::kConfirmWaitMs);
+}
+
+TEST_F(ApiTest, ProgramRunRejectionMapsEveryRunError)
+{
+    login();
+    ASSERT_EQ(admin("POST", "/api/v1/programs", R"({"id":3,"name":"p","durations_s":[60]})").status, 201);
+    const std::pair<RunError, int> cases[] = {
+        {RunError::AlreadyQueued, 409}, {RunError::QueueFull, 409},      {RunError::Inhibited, 409},
+        {RunError::NothingToRun, 409},  {RunError::UnknownProgram, 404}, {RunError::MasterLockedOut, 409},
+        {RunError::LockedOut, 409},     {RunError::ZoneResting, 409},    {RunError::InvalidZone, 404},
+        {RunError::ZeroDuration, 400},
+    };
+    for (const auto &[err, status] : cases) {
+        platform.onSleep = [&, err = err] { bus.publish(rejection(CommandType::RunProgram, kNoZone, 3, err)); };
+        const ApiResponse r = admin("POST", "/api/v1/programs/3/run");
+        EXPECT_EQ(r.status, status) << toString(err);
+        EXPECT_EQ(field(r, "code"), toString(err));
+    }
+}
+
+TEST_F(ApiTest, KnownBlockersAnsweredFromTheSnapshot)
+{
+    login();
+    publishState([](SystemState &s) { s.zones[1].restRemainingSec = 1200; });
+    ApiResponse r = admin("POST", "/api/v1/zones/2/run", R"({"duration_s":60})");
+    EXPECT_EQ(r.status, 409);
+    EXPECT_EQ(field(r, "code"), "zone_resting");
+    EXPECT_EQ(header(r, "Retry-After"), "1200");
+    publishState([](SystemState &s) { s.zones[1].lockedOut = true; });
+    EXPECT_EQ(field(admin("POST", "/api/v1/zones/2/run", R"({"duration_s":60})"), "code"), "locked_out");
+    publishState([](SystemState &s) {
+        s.masterEnabled = true;
+        s.masterLockedOut = true;
+    });
+    EXPECT_EQ(field(admin("POST", "/api/v1/zones/2/run", R"({"duration_s":60})"), "code"), "master_locked_out");
+    ASSERT_EQ(admin("POST", "/api/v1/programs", R"({"id":3,"name":"p","durations_s":[60]})").status, 201);
+    EXPECT_EQ(field(admin("POST", "/api/v1/programs/3/run"), "code"), "master_locked_out");
+    EXPECT_EQ(sink.count(CommandType::RunZone) + sink.count(CommandType::RunProgram), 0);
+}
+
+// End to end with the real controller: the API posts into the real command
+// queue, and "sleeping" runs the control loop.
+TEST(ApiWithController, RejectionAndAcceptanceComeFromTheControlTask)
+{
+    FakeClock clock;
+    FakeOutputs out;
+    FakeSensors sensors;
+    OutputEnableGuard oe{OutputEnableMode::Toggle, 500};
+    EventBus bus;
+    StateStore state;
+    MemoryStorage storage;
+    MemoryStorage webStorage;
+    ConfigStore config{storage};
+    CommandQueue queue;
+    FakeSystemTime systemTime;
+    TimeService time{systemTime, nullptr};
+    SeqRandom rng;
+    AuthService auth{webStorage, rng, 2};
+    FakePlatform platform;
+    platform.clock = &clock;
+
+    Config c = Config::defaults();
+    c.master.enabled = false;
+    c.driver.interZoneDelayMs = 0;
+    c.schedule.programCount = 1;
+    c.schedule.programs[0] = makeProgram(4, {}, {{0, 600}, {1, 300}});
+    ASSERT_TRUE(config.update(c).ok);
+    ASSERT_TRUE(time.setManual(clock.utc));
+
+    Controller ctrl(ControllerDeps{clock, out, sensors, oe, bus, state, config, &storage});
+    ctrl.begin();
+    ctrl.setTimeStatus(TimeStatus::Synced);
+    for (int i = 0; i < 25; ++i) { // AC debounce
+        clock.advanceMs(50);
+        ctrl.tick();
+    }
+    // Every 50 ms of "sleep" is one control period: drain, then tick.
+    uint32_t sinceTick = 0;
+    platform.onSleep = [&] {
+        sinceTick += Api::kConfirmPollMs;
+        if (sinceTick < 50) {
+            return;
+        }
+        sinceTick = 0;
+        Command cmd;
+        while (queue.pop(cmd)) {
+            ctrl.handle(cmd);
+        }
+        ctrl.tick();
+    };
+
+    AppServices services{bus, state, queue, config, time};
+    Api api(services, auth, platform, webStorage, clock);
+    api.begin();
+    ASSERT_EQ(auth.setInitialPassword("admin pass"), AuthError::Ok);
+    const std::string bearer = "Bearer " + auth.login(1, "admin pass", 0).session.token;
+
+    ApiRequest req;
+    req.method = "POST";
+    req.path = "/api/v1/programs/4/run";
+    req.authorization = bearer;
+    ApiResponse r = api.handle(req);
+    ASSERT_EQ(r.status, 202) << r.body;
+    JsonPtr o = parseJson(r.body);
+    EXPECT_TRUE(cJSON_IsTrue(cJSON_GetObjectItem(o.get(), "confirmed")));
+
+    // The same program again: the scheduler refuses it.
+    r = api.handle(req);
+    EXPECT_EQ(r.status, 409) << r.body;
+    o = parseJson(r.body);
+    EXPECT_STREQ(cJSON_GetObjectItem(cJSON_GetObjectItem(o.get(), "error"), "code")->valuestring, "already_queued");
+}
+
+// ---- new core state in the API -----------------------------------------------------------------
+
+TEST_F(ApiTest, StatusShowsRestLockoutTripAndPauseTimeout)
+{
+    publishState([](SystemState &s) {
+        s.zones[0].restRemainingSec = 900;
+        s.masterEnabled = true;
+        s.masterLockedOut = true;
+        s.masterFaultCount = 3;
+        s.inhibitFlags = kInhibitMasterLockout;
+        s.activeFaults = (1u << static_cast<unsigned>(FaultCode::MasterLockedOut)) |
+                         (1u << static_cast<unsigned>(FaultCode::CurrentSenseUnavailable)) |
+                         (1u << static_cast<unsigned>(FaultCode::OverCurrentTrip));
+    });
+    JsonPtr o = parseJson(get("/api/v1/status").body);
+    const cJSON *z = cJSON_GetArrayItem(cJSON_GetObjectItem(o.get(), "zones"), 0);
+    EXPECT_TRUE(cJSON_IsTrue(cJSON_GetObjectItem(z, "resting")));
+    EXPECT_EQ(cJSON_GetObjectItem(z, "rest_remaining_s")->valueint, 900);
+    const cJSON *m = cJSON_GetObjectItem(o.get(), "master");
+    EXPECT_TRUE(cJSON_IsTrue(cJSON_GetObjectItem(m, "locked_out")));
+    EXPECT_EQ(cJSON_GetObjectItem(m, "fault_count")->valueint, 3);
+    EXPECT_TRUE(cJSON_IsTrue(cJSON_GetObjectItem(cJSON_GetObjectItem(o.get(), "inhibit"), "master_lockout")));
+    const cJSON *sensorsJson = cJSON_GetObjectItem(o.get(), "sensors");
+    EXPECT_TRUE(cJSON_IsFalse(cJSON_GetObjectItem(sensorsJson, "current_sense_available")));
+    EXPECT_TRUE(cJSON_IsTrue(cJSON_GetObjectItem(sensorsJson, "over_current_tripped")));
+    EXPECT_EQ(cJSON_GetObjectItem(cJSON_GetObjectItem(o.get(), "queue"), "pause_timeout_min")->valueint, 120);
+    const cJSON *active = cJSON_GetObjectItem(cJSON_GetObjectItem(o.get(), "faults"), "active");
+    std::vector<std::string> names;
+    const cJSON *it = nullptr;
+    cJSON_ArrayForEach(it, active) { names.emplace_back(it->valuestring); }
+    EXPECT_EQ(names, (std::vector<std::string>{"master_locked_out", "current_sense_unavailable", "over_current_trip"}));
+    // Same fields on the narrower routes.
+    JsonPtr sensorsRoute = parseJson(get("/api/v1/sensors").body);
+    EXPECT_TRUE(cJSON_IsTrue(cJSON_GetObjectItem(sensorsRoute.get(), "over_current_tripped")));
+    JsonPtr zone = parseJson(get("/api/v1/zones/1").body);
+    EXPECT_EQ(cJSON_GetObjectItem(zone.get(), "rest_remaining_s")->valueint, 900);
+}
+
+TEST_F(ApiTest, NewConfigFieldsRoundTripAndValidate)
+{
+    login();
+    JsonPtr doc = parseJson(get("/api/v1/config").body);
+    cJSON *driver = cJSON_GetObjectItem(doc.get(), "driver");
+    cJSON_ReplaceItemInObject(driver, "min_rest_s", cJSON_CreateNumber(600));
+    cJSON_ReplaceItemInObject(driver, "zero_cross_switching", cJSON_CreateTrue());
+    cJSON_ReplaceItemInObject(cJSON_GetObjectItem(doc.get(), "master"), "fault_lockout_count", cJSON_CreateNumber(5));
+    cJSON_ReplaceItemInObject(cJSON_GetObjectItem(doc.get(), "schedule"), "pause_timeout_min", cJSON_CreateNumber(30));
+    ASSERT_EQ(admin("PUT", "/api/v1/config", printJson(doc.get())).status, 200);
+    const Config c = config.get();
+    EXPECT_EQ(c.driver.minRestSec, 600u);
+    EXPECT_TRUE(c.driver.zeroCrossSwitching);
+    EXPECT_EQ(c.master.faultLockoutCount, 5);
+    EXPECT_EQ(c.schedule.pauseTimeoutMin, 30);
+    EXPECT_EQ(field(get("/api/v1/queue"), "pause_timeout_min"), "30");
+
+    cJSON_ReplaceItemInObject(driver, "min_rest_s", cJSON_CreateNumber(10));
+    const ApiResponse r = admin("PUT", "/api/v1/config", printJson(doc.get()));
+    EXPECT_EQ(r.status, 400);
+    EXPECT_EQ(field(r, "path"), "driver.min_rest_s");
+}
+
+TEST_F(ApiTest, RestoreOfANewerSchemaIsRefusedWithTheCorePath)
+{
+    login();
+    Config c = config.get();
+    c.deviceName.assign("before");
+    ASSERT_TRUE(config.update(c).ok);
+    JsonPtr doc = parseJson(get("/api/v1/config/backup").body);
+    cJSON *cfg = cJSON_GetObjectItem(doc.get(), "config");
+    cJSON_ReplaceItemInObject(cfg, "schema", cJSON_CreateNumber(kConfigSchemaVersion + 1));
+    cJSON_ReplaceItemInObject(cfg, "device_name", cJSON_CreateString("after"));
+    const ApiResponse r = admin("POST", "/api/v1/config/restore", printJson(doc.get()));
+    EXPECT_EQ(r.status, 400);
+    EXPECT_EQ(field(r, "code"), "unsupported_schema");
+    EXPECT_EQ(field(r, "path"), "schema");
+    EXPECT_NE(field(r, "message").find("newer than this firmware"), std::string::npos);
+    EXPECT_EQ(config.get().deviceName.view(), "before");
+}
+
+TEST(EventJson, NewEventTypesCarryTheirData)
+{
+    Event e{};
+    e.type = EventType::CommandRejected;
+    e.rejected = {CommandType::RunZone, 2, 0, RunError::ZoneResting};
+    JsonPtr o(eventToJson(e));
+    EXPECT_STREQ(cJSON_GetObjectItem(o.get(), "type")->valuestring, "command_rejected");
+    EXPECT_STREQ(cJSON_GetObjectItem(o.get(), "command")->valuestring, "run_zone");
+    EXPECT_EQ(cJSON_GetObjectItem(o.get(), "zone")->valueint, 3);
+    EXPECT_TRUE(cJSON_IsNull(cJSON_GetObjectItem(o.get(), "program_id")));
+    EXPECT_STREQ(cJSON_GetObjectItem(o.get(), "error")->valuestring, "zone_resting");
+
+    Event d{};
+    d.type = EventType::RunDropped;
+    d.dropped = {0, 9, RunSource::Schedule, StartError::Resting};
+    JsonPtr p(eventToJson(d));
+    EXPECT_STREQ(cJSON_GetObjectItem(p.get(), "type")->valuestring, "run_dropped");
+    EXPECT_EQ(cJSON_GetObjectItem(p.get(), "zone")->valueint, 1);
+    EXPECT_EQ(cJSON_GetObjectItem(p.get(), "program_id")->valueint, 9);
+    EXPECT_STREQ(cJSON_GetObjectItem(p.get(), "source")->valuestring, "schedule");
+    EXPECT_STREQ(cJSON_GetObjectItem(p.get(), "reason")->valuestring, "resting");
+
+    Event x{};
+    x.type = EventType::PauseExpired;
+    JsonPtr q(eventToJson(x));
+    EXPECT_STREQ(cJSON_GetObjectItem(q.get(), "type")->valuestring, "pause_expired");
 }

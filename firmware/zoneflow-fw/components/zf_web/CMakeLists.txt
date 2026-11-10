@@ -1,8 +1,9 @@
 # zf_web: local web UI, REST API (/api/v1) and live event stream (spec 4.1).
-# api.cpp, auth.cpp, crypto.cpp, http_util.cpp, json_map.cpp and routes.cpp
+# api.cpp, auth.cpp, command_watch.cpp, crypto.cpp, http_util.cpp, json_map.cpp and routes.cpp
 # are pure C++ and also built by test/host.
 idf_component_register(SRCS src/api.cpp
                             src/auth.cpp
+                            src/command_watch.cpp
                             src/crypto.cpp
                             src/http_util.cpp
                             src/json_map.cpp

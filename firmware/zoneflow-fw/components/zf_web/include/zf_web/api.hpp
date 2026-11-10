@@ -24,6 +24,7 @@
 #include "zf_net/net_logic.hpp"
 #include "zf_ota/ota_logic.hpp"
 #include "zf_web/auth.hpp"
+#include "zf_web/command_watch.hpp"
 #include "zf_web/routes.hpp"
 
 namespace zf::web {
@@ -83,6 +84,8 @@ struct SystemInfo {
     uint32_t freeHeap = 0;
     uint32_t minFreeHeap = 0;
     uint32_t largestFreeBlock = 0;
+    uint32_t internalFree = 0;     // internal RAM only (PSRAM excluded)
+    uint32_t internalMinFree = 0;  // low-water mark of internal RAM
     uint32_t httpStackFreeMin = 0; // bytes never used on the HTTP task stack
     std::string resetReason;
 };
@@ -116,6 +119,8 @@ public:
     virtual ota::OtaError startPull(std::string_view url, bool force) = 0;
     // SHA-256 of the TLS certificate (hex), empty when none exists yet.
     virtual std::string tlsFingerprint() const = 0;
+    // Blocks the calling (API) task; used while waiting for a command outcome.
+    virtual void sleepMs(uint32_t ms) = 0;
 };
 
 struct Admission {
@@ -128,9 +133,18 @@ struct Admission {
 class Api {
 public:
     static constexpr const char *kSettingsKey = "web";
+    // How long a run request waits for the control task to accept or reject
+    // it. The control loop drains commands every 50 ms.
+    static constexpr uint32_t kConfirmWaitMs = 250;
+    static constexpr uint32_t kConfirmPollMs = 10;
+    // One control period (CONFIG_ZF_CONTROL_PERIOD_MS, 50 ms) plus margin.
+    static constexpr uint32_t kControlSettleMs = 60;
 
     Api(const AppServices &services, AuthService &auth, IPlatformPort &platform, IBlobStorage &settingsStore,
         const IClock &clock);
+    ~Api();
+    Api(const Api &) = delete;
+    Api &operator=(const Api &) = delete;
 
     // Loads the web settings; call once before serving.
     void begin();
@@ -195,6 +209,10 @@ private:
     ApiResponse firmwarePull(const ApiRequest &req);
 
     ApiResponse post(const Command &cmd);
+    // Posts a command that the controller may reject (RunZone, RunProgram)
+    // and waits up to kConfirmWaitMs for the outcome. See postConfirmed() in
+    // api.cpp for the rule.
+    ApiResponse postConfirmed(const Command &cmd);
     // Writes a whole configuration document (JSON text) and reloads.
     ApiResponse applyConfigJson(const std::string &json, int okStatus, std::string okBody);
     ApiResponse sessionResponse(int status, const AuthOutcome &o, bool tls);
@@ -206,6 +224,9 @@ private:
     const IClock &clock_;
     mutable std::mutex settingsMutex_;
     WebSettings settings_{};
+    CommandWatch watch_;
+    EventBus::Handle watchHandle_ = EventBus::kInvalidHandle;
+    std::mutex confirmMutex_; // one armed watch at a time; never taken by the control task
 };
 
 } // namespace zf::web

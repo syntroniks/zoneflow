@@ -35,8 +35,10 @@ bool jsonDepthOk(std::string_view text, int maxDepth = kMaxJsonDepth);
 JsonPtr parseJson(std::string_view text);
 
 cJSON *zoneToJson(std::size_t index, const ZoneStatus &status, const ZoneConfig &config);
-cJSON *queueToJson(const QueueStatus &q);
-cJSON *sensorsToJson(const SensorStatus &s);
+// `pauseTimeoutMin`: schedule.pause_timeout_min, after which a paused queue stops.
+cJSON *queueToJson(const QueueStatus &q, uint16_t pauseTimeoutMin);
+// Sensor readings plus the current-sense and over-current-trip conditions.
+cJSON *sensorsToJson(const SystemState &s);
 cJSON *faultsToJson(const SystemState &s);
 cJSON *rainDelayToJson(const SystemState &s);
 // Everything a UI needs for its main screen. `cfg` supplies zone names.

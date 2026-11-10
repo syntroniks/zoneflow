@@ -34,7 +34,8 @@ document, or their security, body type or body limit differ.
 - Commands that change what the valves do (run, stop, pause, rain delay, ...)
   answer **202 Accepted**: the command is queued for the control task, which
   applies it within about 50 ms. Watch the event stream or `GET /status` for
-  the result.
+  the result. Run commands can be refused by the controller; see
+  [Run commands](#run-commands).
 - Errors have one shape:
 
     ```json
@@ -51,11 +52,42 @@ document, or their security, body type or body limit differ.
 | 403 | Host header not this device (`bad_host`), cross-origin write (`bad_origin`), missing CSRF header (`csrf`) |
 | 404 | No such route, zone or program |
 | 405 | Method not allowed; see the `Allow` header |
-| 409 | Refused in the current state: zone disabled or locked out, no 24 VAC, update running, too many programs |
+| 409 | Refused in the current state: zone disabled, locked out or resting, master locked out, no 24 VAC, update running, program already queued, too many programs |
 | 413 | Body larger than the route allows (checked before the body is read) |
 | 415 | Wrong `Content-Type` |
 | 429 | Too many failed password attempts; see `Retry-After` |
 | 503 | Command queue full; see `Retry-After` |
+
+## Run commands
+
+`POST /zones/{zone}/run` and `POST /programs/{id}/run` go through the
+controller's command queue, and the controller may refuse them (a zone with
+a latched fault, a zone resting after its maximum run time, a locked-out
+master, a program that is already queued). The core reports a refusal with a
+`command_rejected` event; commands carry no request id. The API handles it
+this way:
+
+1. Conditions visible in the state snapshot are answered at once, without
+   posting: `locked_out`, `zone_resting` (with `Retry-After` = seconds of rest
+   left), `master_locked_out`, `inhibited`, `zone_disabled`.
+2. Otherwise the command is posted and the request waits **at most 250 ms**
+   for the control task, which drains the queue every 50 ms:
+    - a matching `command_rejected` arrives: the answer is an error whose
+      `code` is the controller's reason (`already_queued`, `queue_full`,
+      `nothing_to_run`, `locked_out`, `zone_resting`, `master_locked_out`,
+      ... 409; `unknown_program`, `invalid_zone` 404; `zero_duration` 400);
+    - the control task handled it without a rejection: **202** with
+      `"confirmed": true`;
+    - no verdict in time (queue backed up, control loop stalled): **202**
+      with `"confirmed": false`. A rejection then shows only on the event
+      stream.
+
+A rejection is matched by command type, zone and program id, one request at
+a time. An identical command posted by the display or MQTT in the same
+quarter second would be attributed to the REST call; it carries the same
+verdict. Queued runs that later cannot start (for example a zone that
+started resting meanwhile) are dropped by the controller and reported as
+`run_dropped` events, not as errors.
 
 ## Authentication
 
@@ -142,6 +174,9 @@ Controller event types and their extra fields:
 | `config_applied` | |
 | `time_status_changed` | `status` (`unset`, `rtc`, `synced`) |
 | `maintenance_changed` | `on` |
+| `command_rejected` | `command` (`run_zone`, `run_program`, ...), `zone` (1-based or null), `program_id` (or null), `error` (controller reason, as in [Run commands](#run-commands)) |
+| `run_dropped` | `zone`, `program_id` (null for a manual zone run), `source`, `reason` (`resting`, `locked_out`, `disabled`, `inhibited`, `master_locked_out`, ...): a queued run reached the head of the queue and could not start, so it was dropped |
+| `pause_expired` | (the queue stayed paused for `schedule.pause_timeout_min` and was stopped) |
 
 The stream is fed from the controller's event bus through a queue of 32
 events; the bus handler never waits. If a slow client lets the queue fill,

@@ -109,6 +109,7 @@ public:
     }
     ota::OtaError startPull(std::string_view url, bool force) override { return ota::startPull(url, force); }
     std::string tlsFingerprint() const override;
+    void sleepMs(uint32_t ms) override { vTaskDelay(pdMS_TO_TICKS(ms) > 0 ? pdMS_TO_TICKS(ms) : 1); }
 };
 
 struct Module {
@@ -137,6 +138,8 @@ SystemInfo Platform::system() const
     s.freeHeap = static_cast<uint32_t>(heap_caps_get_free_size(MALLOC_CAP_8BIT));
     s.minFreeHeap = static_cast<uint32_t>(heap_caps_get_minimum_free_size(MALLOC_CAP_8BIT));
     s.largestFreeBlock = static_cast<uint32_t>(heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+    s.internalFree = static_cast<uint32_t>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+    s.internalMinFree = static_cast<uint32_t>(heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
     const uint32_t stack = gm->stackFreeMin.load();
     s.httpStackFreeMin = stack == UINT32_MAX ? 0 : stack;
     static constexpr const char *kReasons[] = {"unknown",  "poweron", "external",   "software",  "panic", "int_wdt",
