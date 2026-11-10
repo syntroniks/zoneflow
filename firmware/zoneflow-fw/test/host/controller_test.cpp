@@ -312,3 +312,57 @@ TEST_F(ControllerTest, RainDelayCommand)
     EXPECT_EQ(state.snapshot().rainDelayUntil, utcOf(2026, 6, 2));
     EXPECT_EQ(count(EventType::RainDelayChanged), 1);
 }
+
+// ---- review findings ---------------------------------------------------------
+
+// A shorted wire whose current straddles short_circuit_ma (3000 mA) reads
+// 3100, 2900, 3100, ... on successive ticks. The zone must still be shut off.
+TEST_F(ControllerTest, FaultCurrentAroundShortCircuitLimitShutsZoneOff)
+{
+    start();
+    ctrl->handle(Command::runZone(2, 600));
+    tick();
+    ASSERT_TRUE(out.zone[2]);
+    for (int i = 0; i < 40; ++i) {
+        sensors.sample.valveCurrentMa = (i % 2 == 0) ? 3100 : 2900;
+        tick();
+    }
+    EXPECT_FALSE(out.anyOn());
+    EXPECT_TRUE(hasFault(FaultCode::ShortCircuit) || hasFault(FaultCode::ZoneOverCurrent));
+    EXPECT_TRUE(ctrl->driver().lockedOut(2));
+}
+
+// Every config reload restarted the current monitor's confirmation count, so
+// a client writing the config every tick kept an over-current zone open.
+TEST_F(ControllerTest, ConfigChurnDoesNotDelayOverCurrentShutOff)
+{
+    start();
+    ctrl->handle(Command::runZone(0, 600));
+    tick();
+    ASSERT_TRUE(out.zone[0]);
+    runMs(600);                           // past the settle time
+    sensors.sample.valveCurrentMa = 1500; // window is 80..700 mA
+    Config c = config.get();
+    for (int i = 0; i < 20; ++i) {
+        c.deviceName.assign(i % 2 == 0 ? "a" : "b");
+        ASSERT_TRUE(config.update(c).ok);
+        ctrl->handle(Command::simple(CommandType::ReloadConfig));
+        tick();
+    }
+    EXPECT_FALSE(out.anyOn());
+    EXPECT_TRUE(hasFault(FaultCode::ZoneOverCurrent));
+}
+
+// Current with every output off means an output stage is stuck on. Clearing
+// the fault while the current still flows must not hide it.
+TEST_F(ControllerTest, ClearingIdleCurrentFaultWhileItPersistsRaisesItAgain)
+{
+    start();
+    sensors.sample.valveCurrentMa = 300;
+    runMs(1000);
+    ASSERT_TRUE(hasFault(FaultCode::CurrentWhileIdle));
+    ctrl->handle(Command::simple(CommandType::ClearFaults));
+    EXPECT_FALSE(hasFault(FaultCode::CurrentWhileIdle));
+    runMs(1000);
+    EXPECT_TRUE(hasFault(FaultCode::CurrentWhileIdle));
+}

@@ -229,3 +229,22 @@ TEST(CurrentMonitor, LearnsZoneShareWithMaster)
     EXPECT_EQ(m.observedMa(CurrentMonitor::kMasterBit), 200);
     EXPECT_EQ(m.observedMa(5), 250);
 }
+
+// Review finding: a fault current that straddles short_circuit_ma alternates
+// between "short circuit" and "over-current" from one sample to the next (for
+// example 50 Hz ripple sampled every 50 ms). Each change of condition used to
+// restart the confirmation count, so neither fault was ever declared.
+TEST(CurrentMonitor, ShortAndOverCurrentAlternatingStillTrips)
+{
+    CurrentMonitor m;
+    m.configure(currentCfg());
+    CurrentFault first = CurrentFault::None;
+    int samples = 0;
+    for (MonoMs t = 600; t < 2600 && first == CurrentFault::None; t += 50) {
+        const int32_t ma = (samples % 2 == 0) ? 3100 : 2900;
+        first = m.evaluate(ma, bit(2), 2, 0, t).fault;
+        ++samples;
+    }
+    EXPECT_TRUE(first == CurrentFault::ShortCircuit || first == CurrentFault::OverCurrent);
+    EXPECT_LE(samples, 3);
+}

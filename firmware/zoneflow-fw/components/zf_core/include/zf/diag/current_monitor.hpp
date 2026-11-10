@@ -53,9 +53,14 @@ public:
 
     void configure(const CurrentMonitorConfig &cfg);
 
+    // Lets a condition that is still present be reported again (after the
+    // user cleared the faults).
+    void rearm();
+
     // outputMask: bit z = zone z on, bit kMasterBit = master on.
     // Returns a fault once, when it is confirmed; later samples of the same
-    // condition return None until the output mask changes.
+    // condition return None until the output mask changes or rearm().
+    // Over-current and short-circuit samples count towards one confirmation.
     CurrentVerdict evaluate(int32_t measuredMa, uint16_t outputMask, uint8_t lastOpenedBit, MonoMs lastChangeMs,
                             MonoMs now);
 
