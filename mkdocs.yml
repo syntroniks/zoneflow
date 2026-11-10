@@ -111,4 +111,5 @@ nav:
       - Display interface: design/display-ui.md
       - Hardware toolchain: design/hardware-toolchain.md
       - Hardware design: design/hardware-design.md
+      - Mechanical design: design/mechanical.md
       - Hardware review A1: design/hardware-review-a1.md
