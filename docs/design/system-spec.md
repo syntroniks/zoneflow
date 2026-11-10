@@ -1,6 +1,6 @@
 # ZoneFlow system specification
 
-Status: **v0.4 draft**. This file is the source of truth for hardware,
+Status: **v0.5 draft**. This file is the source of truth for hardware,
 firmware, enclosure and documentation work. Change it by pull request; do not
 let a subsystem drift from it silently.
 
@@ -23,6 +23,7 @@ keeps watering on schedule when the network is down.
 | Local UI | One status LED per output, a power/status LED, a colour display large enough for a real menu interface (zone status, manual run, schedule viewing and editing, setup), and controls to drive it without a phone. |
 | Timekeeping | Battery-backed or supercap-backed RTC so schedules survive a power cut with no network. |
 | Install | Indoor or garage wall mount. Not weatherproof. |
+| Operating temperature | -20 to +50 °C ambient, non-condensing. The electronics must be rated for the temperature this gives inside the enclosure. |
 | Manufacture | Machine-assembled SMT (JLCPCB-class). Through-hole parts are limited to terminal blocks and parts with no SMT equivalent. |
 | Quantity | Tens of units per batch. |
 
@@ -37,7 +38,12 @@ keeps watering on schedule when the network is down.
    toggling a keep-alive signal; when the toggling stops (crash, hang, reset,
    flashing), gate drive to every triac is removed within about one second,
    with no firmware involved. The same signal holds the output expander in
-   reset, so no output state survives a restart.
+   reset, so no output state survives a restart. A second detector on the
+   same keep-alive signal, sharing no part with the first, releases the relay
+   of rule 6 in about the same time. No single component fault in either
+   detector, or in the logic behind them, may leave a valve on after the
+   keep-alive stops. Firmware tests both detectors before and after every
+   run.
 4. **Maximum run time.** Firmware enforces a per-zone maximum run time that a
    schedule or API call cannot exceed. The limit holds per zone, not per run:
    on-time adds up across back-to-back runs (several programs, repeated manual
@@ -48,9 +54,10 @@ keeps watering on schedule when the network is down.
 5. Only Class 2 (low voltage, power limited) circuits are on the board. No
    mains.
 6. **A hardware cut-off in the valve common.** A relay feeds the COM
-   terminals. It is closed only while the output-enable is active and firmware
-   has asked for it. It removes power from every valve when an output device
-   has failed short, which removing gate drive cannot do.
+   terminals. It is closed only while the output-enable is active, the
+   relay's own keep-alive detector is active and firmware has asked for it. It
+   removes power from every valve when an output device has failed short,
+   which removing gate drive cannot do.
 
 ## 3. Hardware architecture
 
@@ -62,11 +69,11 @@ keeps watering on schedule when the network is down.
 | Output stage | One triac per output, OpenSprinkler-style topology | One 24 VAC leg is circuit ground, the other is valve COM. Each valve sits between COM and its triac; all triac returns share one path to ground through the current shunt. Triac rated at least 1 A RMS with a high surge rating; no MAC97-class parts. Each gate is fired from the triac's own T2 terminal through an opto-triac, because the well-rated triacs available are three-quadrant parts that positive logic drive cannot fire on both half-cycles. The opto-triac LEDs are powered through the fail-safe gate of section 2, not from an unguarded pin. See `prior-art.md` for the evidence and `hardware-design.md` section 6 for the analysis. |
 | Logic supply | Half-wave rectifier, bulk capacitor sized for half-wave ripple at peak WiFi load, buck converter rated at least 60 V input, 5 V bus shared with USB, linear regulator to the 3.3 V rail | 32 VAC RMS gives about 45 V peak, and the 45 V regulators used by older designs have no margin. |
 | USB | USB-C, native ESP32-S3 USB for flashing and logs | USB alone powers the logic so the board can be flashed on a desk. Valve outputs stay unpowered without 24 VAC. Logic ground is tied to one 24 VAC leg, so the design notes must state what happens when USB and 24 VAC are connected together and what the user must not do (for example earthing the other transformer leg). |
-| Protection | Fuse on AC input, in the leg that becomes circuit ground, surge clamp on AC input. Per output: RC snubber, bidirectional TVS, and a series element (PTC, fuse or resistor) that limits fault current. Clamp on every sensor terminal. PCB spark gaps on field terminals where layout allows | Valve wires run tens of metres outdoors. Blown triacs from shorted or surge-hit wiring are the most common field failure in existing designs. |
+| Protection | A fuse in each leg of the AC input, surge clamp on AC input, surge clamp on the valve common. Per output: RC snubber, bidirectional TVS, and a series element (PTC, fuse or resistor) that limits fault current. Clamp on every sensor terminal. PCB spark gaps on field terminals where layout allows | Valve wires run tens of metres outdoors. Blown triacs from shorted or surge-hit wiring are the most common field failure in existing designs. |
 | Current sense | One low-side shunt in the shared triac return, amplified around a bias voltage and sampled as a waveform by ADC1 | Measures total current; firmware computes RMS over whole mains cycles and attributes it to zones at turn-on. The bias keeps the signal out of the non-linear region of the ESP32 ADC near 0 V. A hardware comparator on the same signal latches and removes gate drive without firmware. |
 | AC presence | A signal that tells firmware 24 VAC is present | Lets firmware tell "USB only" from "valves powered". |
 | RTC | I2C RTC with coin-cell backup | |
-| Valve common | Relay in the feed to the COM terminals | Safety rule 6. |
+| Valve common | Relay in the feed to the COM terminals, held by its own keep-alive detector | Safety rules 3 and 6. |
 | Display | 2.0 to 2.4 inch colour IPS TFT, 320x240, ST7789-class controller on SPI, no touch, PWM-dimmable backlight | Chosen by the project owner: the small screens on existing controllers limit the local interface too much. |
 | Controls | Rotary encoder with push switch, plus Back and Manual/Home buttons | The display has no touch, so these are the only local inputs. |
 | Expansion | One I2C connector (Qwiic/STEMMA QT pinout) | Future soil sensors, displays. |

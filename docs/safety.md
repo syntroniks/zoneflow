@@ -70,10 +70,10 @@ and the fault paths are in
 - The sensor GND terminals and the expansion connector's ground are the same
   net as one transformer wire. Do not join them to other equipment that has
   its own connection to the transformer.
-- The board has a fuse in its ground wire. It limits the damage in these
-  cases. It does not make them safe for the USB cable or the computer. A
-  second ground connection, through USB or a shared sensor cable, goes
-  around that fuse.
+- The board has a fuse in each of its two 24 VAC wires. They limit the
+  damage in these cases. They do not make them safe for the USB cable or the
+  computer: a 3 A fuse can take up to a minute to open at the current a
+  small transformer delivers into a short.
 
 ## Outdoor wiring and surges
 
