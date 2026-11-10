@@ -1,0 +1,16 @@
+# CI and local build of the 8-zone package from this checkout:
+#   uv run esphome compile examples/zoneflow-8zone.yaml
+substitutions:
+  name: zoneflow-8zone
+  friendly_name: ZoneFlow 8
+  zone_1_name: Front lawn
+  zone_2_name: Back lawn
+  zone_3_name: Vegetables
+  zone_4_name: Hedge
+
+packages:
+  zoneflow: !include ../zoneflow/package-8.yaml
+
+external_components:
+  - source: ../components
+    components: [zoneflow, zoneflow_schedule]

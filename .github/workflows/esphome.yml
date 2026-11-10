@@ -1,0 +1,96 @@
+name: esphome
+
+# The ESPHome package: host tests of its C++ logic, the pin substitutions
+# against the pin map, and `esphome config` + `esphome compile` of the 8-zone
+# and 4-zone examples and the factory image. Nothing is flashed: no board exists.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "firmware/esphome/**"
+      # Built into the ESPHome firmware from its one copy.
+      - "firmware/zoneflow-fw/components/zf_core/**"
+      # The host tests use the standalone firmware's board header and simulated board.
+      - "firmware/zoneflow-fw/components/zf_board/**"
+      - "firmware/zoneflow-fw/tools/gen_board_header.py"
+      - "firmware/zoneflow-fw/test/host/fake_board.hpp"
+      - "firmware/zoneflow-fw/test/host/fakes.hpp"
+      - "hardware/pinmap.yaml"
+      - ".github/workflows/esphome.yml"
+  pull_request:
+    paths:
+      - "firmware/esphome/**"
+      - "firmware/zoneflow-fw/components/zf_core/**"
+      - "firmware/zoneflow-fw/components/zf_board/**"
+      - "firmware/zoneflow-fw/tools/gen_board_header.py"
+      - "firmware/zoneflow-fw/test/host/fake_board.hpp"
+      - "firmware/zoneflow-fw/test/host/fakes.hpp"
+      - "hardware/pinmap.yaml"
+      - ".github/workflows/esphome.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: esphome-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: firmware/esphome
+
+jobs:
+  checks:
+    name: Host tests and lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10.3.3
+      - name: Pin substitutions match hardware/pinmap.yaml
+        run: uv run --script tools/gen_board_yaml.py --check
+      - name: Host tests of the supervisor and schedule logic (ASan + UBSan)
+        run: test/host/run.sh --output-junit junit.xml
+      - name: Python lint
+        run: |
+          uv run --locked ruff check components tools
+          uv run --locked ruff format --check components tools
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: esphome-host-test-report
+          path: firmware/esphome/test/host/build/junit.xml
+          if-no-files-found: ignore
+
+  build:
+    name: Compile ${{ matrix.config }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - examples/zoneflow-8zone.yaml
+          - examples/zoneflow-4zone.yaml
+          - factory.yaml
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10.3.3
+      - name: ESPHome toolchain cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/esphome
+          key: esphome-idf-${{ hashFiles('firmware/esphome/uv.lock') }}
+      - name: Install the pinned ESPHome
+        run: uv sync --locked
+      - name: esphome config
+        run: uv run esphome config ${{ matrix.config }} > /dev/null
+      - name: esphome compile
+        run: uv run esphome compile ${{ matrix.config }}
+      - name: Image sizes
+        run: |
+          {
+            echo '```'
+            find . -path '*/.esphome/build/*/build/firmware.*.bin' -exec ls -l {} +
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"

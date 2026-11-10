@@ -1,0 +1,15 @@
+# Everything of the ZoneFlow package for a 4-zone build, without the
+# external_components source. ../zoneflow-4zone.yaml adds the git source; the examples in
+# ../examples add a local one.
+substitutions:
+  zone_count: "4"
+
+packages:
+  base: !include base.yaml
+  zone_1: !include {file: zone.yaml, vars: {n: 1, zone_name: "${zone_1_name}"}}
+  zone_2: !include {file: zone.yaml, vars: {n: 2, zone_name: "${zone_2_name}"}}
+  zone_3: !include {file: zone.yaml, vars: {n: 3, zone_name: "${zone_3_name}"}}
+  zone_4: !include {file: zone.yaml, vars: {n: 4, zone_name: "${zone_4_name}"}}
+  sprinkler: !include sprinkler-4.yaml
+  schedule: !include schedule.yaml
+  display: !include display.yaml

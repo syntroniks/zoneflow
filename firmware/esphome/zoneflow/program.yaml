@@ -1,0 +1,116 @@
+# One schedule program's entities. Included with vars `p` (1, 2, 3) and
+# `label` (A, B, C). Everything is kept in flash on the device, so the
+# schedule runs with Home Assistant and the network down.
+switch:
+  - platform: template
+    id: zf_prog_${p}_start_2_enabled
+    name: Program ${label} start 2 enabled
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+  - platform: template
+    id: zf_prog_${p}_enabled
+    name: Program ${label} enabled
+    icon: mdi:calendar-check
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+  - platform: template
+    id: zf_prog_${p}_sun
+    name: Program ${label} Sunday
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+  - platform: template
+    id: zf_prog_${p}_mon
+    name: Program ${label} Monday
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+  - platform: template
+    id: zf_prog_${p}_tue
+    name: Program ${label} Tuesday
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+  - platform: template
+    id: zf_prog_${p}_wed
+    name: Program ${label} Wednesday
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+  - platform: template
+    id: zf_prog_${p}_thu
+    name: Program ${label} Thursday
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+  - platform: template
+    id: zf_prog_${p}_fri
+    name: Program ${label} Friday
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+  - platform: template
+    id: zf_prog_${p}_sat
+    name: Program ${label} Saturday
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+datetime:
+  - platform: template
+    id: zf_prog_${p}_start_1
+    type: time
+    name: Program ${label} start 1
+    optimistic: true
+    restore_value: true
+    initial_value: "06:00:00"
+  - platform: template
+    id: zf_prog_${p}_start_2
+    type: time
+    name: Program ${label} start 2
+    optimistic: true
+    restore_value: true
+    initial_value: "18:00:00"
+
+select:
+  - platform: template
+    id: zf_prog_${p}_days
+    name: Program ${label} days
+    icon: mdi:calendar-range
+    optimistic: true
+    restore_value: true
+    # The labels are matched in components/zoneflow_schedule/schedule_logic.cpp.
+    options: [Every day, Weekdays, Weekends, Odd days, Even days, Every 2 days, Every 3 days, Custom]
+    initial_option: Every day
+
+number:
+  - platform: template
+    id: zf_prog_${p}_scale
+    name: Program ${label} run time
+    icon: mdi:percent
+    unit_of_measurement: "%"
+    min_value: 10
+    max_value: 200
+    step: 5
+    initial_value: 100
+    optimistic: true
+    restore_value: true
+
+text:
+  - platform: template
+    id: zf_prog_${p}_zones
+    name: Program ${label} zones
+    mode: text
+    optimistic: true
+    restore_value: true
+    initial_value: all
+    max_length: 24
+
+button:
+  - platform: template
+    name: Program ${label} run now
+    icon: mdi:play
+    on_press:
+      - zoneflow_schedule.run_program:
+          program: ${p}

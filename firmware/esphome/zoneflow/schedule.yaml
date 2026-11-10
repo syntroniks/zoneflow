@@ -1,0 +1,54 @@
+# On-device scheduler: three programs (A, B, C), each with two start times
+# (start 2 has its own switch, off by default; a time listed twice runs once),
+# a day rule, a zone list and a run-time percentage on top of the seasonal
+# adjustment.
+packages:
+  program_a: !include {file: program.yaml, vars: {p: 1, label: A}}
+  program_b: !include {file: program.yaml, vars: {p: 2, label: B}}
+  program_c: !include {file: program.yaml, vars: {p: 3, label: C}}
+
+zoneflow_schedule:
+  id: zf_schedule
+  sprinkler_id: zf_sprinkler
+  time_id: zf_time
+  zoneflow_id: zf_hub
+  missed_start_grace: 60min
+  rain_sensor: zf_rain
+  rain_sensor_enabled: zf_rain_enabled
+  status: zf_schedule_status
+  next_run: zf_next_run
+  programs:
+    - name: Program A
+      enabled: zf_prog_1_enabled
+      start_times: [zf_prog_1_start_1, zf_prog_1_start_2]
+      start_enabled: [null, zf_prog_1_start_2_enabled]
+      days: zf_prog_1_days
+      weekdays: [zf_prog_1_sun, zf_prog_1_mon, zf_prog_1_tue, zf_prog_1_wed, zf_prog_1_thu, zf_prog_1_fri, zf_prog_1_sat]
+      scale: zf_prog_1_scale
+      zones: zf_prog_1_zones
+    - name: Program B
+      enabled: zf_prog_2_enabled
+      start_times: [zf_prog_2_start_1, zf_prog_2_start_2]
+      start_enabled: [null, zf_prog_2_start_2_enabled]
+      days: zf_prog_2_days
+      weekdays: [zf_prog_2_sun, zf_prog_2_mon, zf_prog_2_tue, zf_prog_2_wed, zf_prog_2_thu, zf_prog_2_fri, zf_prog_2_sat]
+      scale: zf_prog_2_scale
+      zones: zf_prog_2_zones
+    - name: Program C
+      enabled: zf_prog_3_enabled
+      start_times: [zf_prog_3_start_1, zf_prog_3_start_2]
+      start_enabled: [null, zf_prog_3_start_2_enabled]
+      days: zf_prog_3_days
+      weekdays: [zf_prog_3_sun, zf_prog_3_mon, zf_prog_3_tue, zf_prog_3_wed, zf_prog_3_thu, zf_prog_3_fri, zf_prog_3_sat]
+      scale: zf_prog_3_scale
+      zones: zf_prog_3_zones
+
+text_sensor:
+  - platform: template
+    id: zf_schedule_status
+    name: Schedule status
+    icon: mdi:calendar-clock
+  - platform: template
+    id: zf_next_run
+    name: Next scheduled run
+    icon: mdi:calendar-arrow-right

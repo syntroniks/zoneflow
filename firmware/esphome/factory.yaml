@@ -1,0 +1,21 @@
+# The image the release publishes and the web installer flashes
+# (.github/workflows/release.yml, flavour `esphome`). An 8-zone build: on a
+# 4-zone board the firmware reads the build strap and refuses zones 5 to 8.
+# After the flash: WiFi over Improv (USB or Bluetooth LE), then adopt it in the
+# ESPHome dashboard, which writes a device file that uses ../zoneflow.yaml.
+substitutions:
+  name: zoneflow
+  friendly_name: ZoneFlow
+  name_add_mac_suffix: "true"
+  zoneflow_ref: main   # the release workflow passes the tag with -s zoneflow_ref
+
+packages:
+  zoneflow: !include zoneflow/package-8.yaml
+
+external_components:
+  - source: components
+    components: [zoneflow, zoneflow_schedule]
+
+dashboard_import:
+  package_import_url: github://syntroniks/zoneflow/firmware/esphome/zoneflow.yaml@${zoneflow_ref}
+  import_full_config: false

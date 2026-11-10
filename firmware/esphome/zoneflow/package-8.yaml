@@ -1,0 +1,19 @@
+# Everything of the ZoneFlow package for a 8-zone build, without the
+# external_components source. ../zoneflow.yaml adds the git source; the examples in
+# ../examples add a local one.
+substitutions:
+  zone_count: "8"
+
+packages:
+  base: !include base.yaml
+  zone_1: !include {file: zone.yaml, vars: {n: 1, zone_name: "${zone_1_name}"}}
+  zone_2: !include {file: zone.yaml, vars: {n: 2, zone_name: "${zone_2_name}"}}
+  zone_3: !include {file: zone.yaml, vars: {n: 3, zone_name: "${zone_3_name}"}}
+  zone_4: !include {file: zone.yaml, vars: {n: 4, zone_name: "${zone_4_name}"}}
+  zone_5: !include {file: zone.yaml, vars: {n: 5, zone_name: "${zone_5_name}"}}
+  zone_6: !include {file: zone.yaml, vars: {n: 6, zone_name: "${zone_6_name}"}}
+  zone_7: !include {file: zone.yaml, vars: {n: 7, zone_name: "${zone_7_name}"}}
+  zone_8: !include {file: zone.yaml, vars: {n: 8, zone_name: "${zone_8_name}"}}
+  sprinkler: !include sprinkler-8.yaml
+  schedule: !include schedule.yaml
+  display: !include display.yaml

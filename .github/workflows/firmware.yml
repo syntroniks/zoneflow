@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "firmware/**"
+      # The ESPHome package has its own workflow (esphome.yml).
+      - "!firmware/esphome/**"
       - "hardware/pinmap.yaml"
       - "docs/firmware/openapi.json"
       - "docs/design/display-ui/**"
@@ -12,6 +14,8 @@ on:
   pull_request:
     paths:
       - "firmware/**"
+      # The ESPHome package has its own workflow (esphome.yml).
+      - "!firmware/esphome/**"
       - "hardware/pinmap.yaml"
       - "docs/firmware/openapi.json"
       - "docs/design/display-ui/**"
