@@ -1,4 +1,4 @@
-# Host unit tests for zf_core. No ESP-IDF needed:
+# Host unit tests for zf_core and the display logic. No ESP-IDF needed:
 #   ./test/host/run.sh
 cmake_minimum_required(VERSION 3.24)
 project(zoneflow_host_tests LANGUAGES C CXX)
@@ -28,6 +28,8 @@ add_library(cjson STATIC "${cjson_src_SOURCE_DIR}/cJSON.c")
 target_include_directories(cjson PUBLIC "${cjson_src_SOURCE_DIR}")
 
 add_subdirectory(../../components/zf_core zf_core)
+# Display logic (no LVGL): navigation, pickers, program editor, input decoding.
+add_subdirectory(../../components/zf_display zf_display)
 
 # Host-testable logic of the network, web and OTA modules. These sources
 # include no ESP-IDF headers; the device glue in the same components does.
@@ -61,6 +63,11 @@ add_executable(zf_host_tests
     scheduler_test.cpp
     time_service_test.cpp
     time_zone_test.cpp
+    ui_format_test.cpp
+    ui_input_test.cpp
+    ui_navigation_test.cpp
+    ui_picker_test.cpp
+    ui_program_edit_test.cpp
     zero_cross_test.cpp
     zone_driver_test.cpp
     crypto_test.cpp
@@ -74,7 +81,7 @@ add_executable(zf_host_tests
 target_compile_options(zf_host_tests PRIVATE -Wall -Wextra)
 target_compile_definitions(zf_host_tests PRIVATE
     ZF_OPENAPI_PATH="${CMAKE_CURRENT_LIST_DIR}/../../../../docs/firmware/openapi.json")
-target_link_libraries(zf_host_tests PRIVATE zf_core zf_ext cjson GTest::gtest_main)
+target_link_libraries(zf_host_tests PRIVATE zf_ui zf_core zf_ext cjson GTest::gtest_main)
 
 enable_testing()
 include(GoogleTest)
