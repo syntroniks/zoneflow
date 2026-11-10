@@ -1,0 +1,124 @@
+// SPDX-License-Identifier: Apache-2.0
+// Controller: owns the zone driver, scheduler, sensor and diagnostics logic,
+// and is the single writer of SystemState and the single publisher on the
+// EventBus. Pure C++; the device runs it from the control task, host tests
+// run it directly.
+//
+// Threads: every method except emergencyOff() runs on the control task.
+#pragma once
+
+#include <array>
+#include <cstdint>
+
+#include "zf/config/config_store.hpp"
+#include "zf/diag/current_monitor.hpp"
+#include "zf/diag/sensors.hpp"
+#include "zf/events/command.hpp"
+#include "zf/events/event_bus.hpp"
+#include "zf/events/state.hpp"
+#include "zf/hal.hpp"
+#include "zf/sched/scheduler.hpp"
+#include "zf/time/clock.hpp"
+#include "zf/zone/output_enable.hpp"
+#include "zf/zone/zone_driver.hpp"
+
+namespace zf {
+
+struct ControllerDeps {
+    const IClock &clock;
+    IOutputHal &outputs;
+    ISensorHal &sensors;
+    OutputEnableGuard &outputEnable;
+    EventBus &events;
+    StateStore &state;
+    ConfigStore &config;
+    IBlobStorage *runtimeStorage; // may be null (no persistence)
+};
+
+class Controller final : private IZoneDriverListener, private ISchedulerListener {
+public:
+    // Runtime state is written at most this often.
+    static constexpr uint32_t kPersistMinIntervalMs = 2000;
+    // A snapshot is published at least this often.
+    static constexpr uint32_t kSnapshotIntervalMs = 1000;
+
+    explicit Controller(const ControllerDeps &deps);
+
+    // Outputs off, runtime state restored, configuration applied.
+    void begin();
+
+    // Applies the ConfigStore's current configuration.
+    void reloadConfig();
+
+    void setTimeStatus(TimeStatus status);
+
+    // Returns false if the command was rejected (reason is logged as an
+    // event where one applies).
+    bool handle(const Command &cmd);
+
+    // One control step. Call every 20..100 ms.
+    void tick();
+
+    // Any context: outputs off and OE tripped. For shutdown/OTA/panic paths.
+    void emergencyOff() { driver_.emergencyOff(); }
+
+    // Control task: report a fault found outside the controller (config
+    // rejected at boot, storage failure). Latched until ClearFaults.
+    void reportFault(FaultCode code) { raiseFault(code, kNoZone); }
+
+    const ZoneDriver &driver() const { return driver_; }
+    const Scheduler &scheduler() const { return scheduler_; }
+    uint32_t activeFaults() const { return activeFaults_; }
+    bool maintenance() const { return maintenance_; }
+    RunError lastRunError() const { return lastRunError_; }
+
+private:
+    // IZoneDriverListener
+    void onZoneChanged(ZoneIndex zone, ValveState state, StopReason reason) override;
+    void onMasterChanged(bool on) override;
+    // ISchedulerListener
+    void onProgramStarted(uint16_t programId, RunSource source, bool late) override;
+    void onProgramSkipped(uint16_t programId, SkipReason reason) override;
+    void onProgramMissed(uint16_t programId, UtcSeconds scheduledAt) override;
+    void onQueueChanged() override;
+    void onRainDelayChanged(UtcSeconds until) override;
+    void onPersistDirty() override { persistDirty_ = true; }
+
+    void applyConfig(const Config &cfg);
+    void updateInhibit();
+    void handleCurrent(const CurrentVerdict &v);
+    void raiseFault(FaultCode code, ZoneIndex zone);
+    void clearCondition(FaultCode code);
+    void clearFaults();
+    void savePersist(MonoMs now);
+    void publishSnapshot(MonoMs now);
+    Event makeEvent(EventType type) const;
+    void publish(const Event &e);
+
+    ControllerDeps deps_;
+    ZoneDriver driver_;
+    Scheduler scheduler_;
+    ContactSensor rain_;
+    ContactSensor spare_;
+    AcMonitor ac_;
+    FlowMeter flow_;
+    CurrentMonitor current_;
+
+    Config config_{};
+    uint32_t configRevision_ = 0;
+    TimeStatus timeStatus_ = TimeStatus::Unset;
+    bool maintenance_ = false;
+    uint32_t activeFaults_ = 0;
+    std::array<FaultCode, kMaxZones> zoneFault_{};
+    int32_t lastCurrentMa_ = -1;
+    MonoMs leakSinceMs_ = 0;
+    bool leakTiming_ = false;
+    RunError lastRunError_ = RunError::Ok;
+
+    bool persistDirty_ = false;
+    MonoMs lastPersistMs_ = 0;
+    bool stateDirty_ = true;
+    MonoMs lastSnapshotMs_ = 0;
+};
+
+} // namespace zf
