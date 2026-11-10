@@ -1,0 +1,495 @@
+# Hardware toolchain
+
+Status: **proven on a 40-part test board, 2026-11-10**. Nothing here has been
+built as hardware. Every result below names the command that produced it.
+
+This document describes how ZoneFlow hardware goes from text to a KiCad 10
+project and fabrication files with no GUI, and how to design the real board
+with it. The test board is in `hardware/toolchain-test/`. It is not the
+ZoneFlow design and its part choices must not be reused.
+
+## 1. Summary
+
+- **Source of truth.** Two text files per board. `design/circuit.py` holds the
+  circuit as Python. `design/board.toml` holds the outline, placement, net
+  classes, pours and pre-routed tracks.
+- **Generator.** `tools/hwflow`, a Python package in this repository with no
+  third-party runtime dependencies. It writes `.kicad_sch` files directly.
+- **Everything after that is KiCad.** `kicad-cli` extracts the netlist, runs
+  ERC and DRC, fills zones and exports the outputs. KiCad's `pcbnew` Python
+  module builds the board. Freerouting 2.5.0 routes it.
+- **One command.** `make` in the board directory. It stops with a non-zero
+  exit code on any ERC or DRC error or warning.
+- **Result on the test board.** ERC 0 violations. DRC 0 violations, 0
+  unconnected items, 0 schematic parity issues. Freerouting routed 43 of 43
+  connections in 11.5 s.
+
+## 2. The flow
+
+```text
+design/circuit.py ──► hwflow sch ──► *.kicad_sch, .kicad_pro, lib tables, .kicad_dru
+                                          │
+                        kicad-cli sch export netlist ──► compared with the model
+                                          │
+                              kicad-cli sch erc  (gate)
+                                          │
+design/board.toml ──► hwflow.pcbbuild build ──► .kicad_pcb (placed, pre-routed) + .dsn
+                                          │
+                        Freerouting ──► route/<name>.ses  (cached by DSN hash)
+                                          │
+                        hwflow.pcbbuild finish ──► tracks imported, stubs removed
+                                          │
+                 kicad-cli pcb drc --refill-zones --save-board  (zone fill)
+                 kicad-cli pcb drc --schematic-parity           (gate)
+                                          │
+                 kicad-cli exports ──► PDF, Gerbers, drill, BOM, CPL, STEP, renders
+```
+
+Three checks make the generated files trustworthy.
+
+1. **Netlist check.** `hwflow` computes the netlist the circuit description
+   means. It then asks KiCad for the netlist of the files it wrote and
+   compares the two pin by pin. A wire that misses a pin, or touches the wrong
+   one, fails the build before ERC runs.
+2. **ERC.** `kicad-cli sch erc --severity-error --severity-warning
+   --exit-code-violations`.
+3. **DRC with schematic parity.** `kicad-cli pcb drc --schematic-parity
+   --severity-error --severity-warning --exit-code-violations`. Parity proves
+   the board has the same parts, footprints, fields and nets as the schematic.
+
+### What is source and what is generated
+
+| Path in a board directory | Kind | Edit by hand? |
+|---|---|---|
+| `design/circuit.py` | Source | Yes |
+| `design/board.toml` | Source | Yes |
+| `design/rules.kicad_dru` | Source, board-specific DRC rules | Yes |
+| `../rules/jlcpcb.toml`, `../rules/jlcpcb.kicad_dru` | Source, fab limits | Yes, with a citation |
+| `../rules/jlcpcb-cpl-rotations.csv` | Source, rotation corrections | Yes |
+| `route/<name>.ses`, `.dsn.sha256`, `.freerouting.json` | Routing cache | No. `make reroute` replaces it |
+| `*.kicad_sch`, `*.kicad_pcb`, `*.kicad_pro`, `*.kicad_dru`, `sym-lib-table`, `fp-lib-table` | Generated | No. The next `make` overwrites them |
+| `output/` | Generated | No |
+| `build/` | Scratch, not committed | No |
+
+A human can open the generated project in KiCad to look, measure or try an
+idea. A change made there is lost at the next build. Move it into `design/`.
+
+## 3. Why this flow, and what was rejected
+
+I gave each candidate a two-channel hierarchical example and loaded the result
+with KiCad 10.0.8. Each got about ten minutes, so these are findings on small
+cases, not full evaluations.
+
+| Candidate | Version tested | What happened | Verdict |
+|---|---|---|---|
+| Own S-expression writer, `tools/hwflow` | this repository | Writes format `20260306`. KiCad's netlist matches the model in all 12 rotation and mirror states. One sheet file used twice gets two instance paths and distinct references. | **Chosen** |
+| kicad-sch-api | 0.5.6, released 2025-11-19 | Writes the KiCad 9 format, which KiCad 10 loads. Flattens derived symbols correctly. `set_hierarchy_context` stores one instance path per sheet file, so one file cannot be used twice with different references. Writes no library tables. | Lost. Close, but reuse needs post-editing its output |
+| circuit-synth | 0.12.1, released 2026-01-09 | Two instances of one sheet came out with one instance path. KiCad's netlist listed `R1` and `U1` twice. ERC reported 6 `hier_label_mismatch`. Both sheet symbols were drawn at the same position. `generate_pcb=True` logged "PCB generation features are not included in this version". | Failed |
+| kiutils | 1.4.8, released 2024-02-02 | Reading and re-writing a KiCad 10 schematic dropped tokens without warning. `exclude_from_sim` went from 4 to 0, `do_not_autoplace` from 19 to 0, `dnp` from 3 to 1. | Failed. Lossy on KiCad 10 files |
+| SKiDL with schematizer | 3.0.0 and 0.2.0, released 2026-10-16 | Has a KiCad 10 backend and does draw a wired schematic. A 22-part circuit raised `RoutingFailure` with default options and worked with `auto_stub=True, retries=5`. It wrote one file per channel instance, put no pins on the sheet symbols, named nets `N$9`, and overlapped text. Placement is automatic and cannot be steered. | Lost on readability and control. Worth another look in a year |
+| atopile | 0.15.9, released 2026-09-12 | Its build targets include `update-pcb`, `bom`, `step` and `mfg-data`. None writes a `.kicad_sch`. | Fails the requirement for a readable schematic |
+| tscircuit | CLI 0.0.3139, needs `bun` | `tsci export --format kicad_sch` wrote one flat sheet. Two instances of a group became 5 parts in KiCad's netlist where 9 were expected, with annotation errors. Symbols are its own, such as `Device:boxresistor_right`. Footprints are `tscircuit:...`. No `LCSC` field. | Failed |
+
+Writing the files directly costs about 2,500 lines of Python that we now own.
+In return the generator copies library symbols byte for byte, so KiCad reports
+no library mismatch, and the page layout is under the designer's control.
+
+## 4. Using it
+
+### 4.1 What you need
+
+- **KiCad 10.** `kicad-cli` on the path, and the system Python that carries the
+  `pcbnew` module. Tested with 10.0.8 and Python 3.14.9.
+- **uv.** It creates the locked environment in `tools/hwflow/.venv`.
+- **Java.** Only when the routing cache is stale. Tested with OpenJDK 27.
+- **Network.** Only for the first routing run. `hwflow.route` downloads
+  `freerouting-2.5.0.jar`, 65 MB, into `hardware/.cache/`, checks its SHA-256
+  and writes progress to `hardware/.cache/download.log`.
+
+No system package was added to the build machine for this work.
+
+### 4.2 Commands
+
+Run these in a board directory such as `hardware/toolchain-test/`.
+
+| Command | What it does |
+|---|---|
+| `make` | Everything, from source to outputs. Fails on any ERC or DRC finding |
+| `make sch` | Schematic and project files only, with the netlist check |
+| `make erc` | Up to and including ERC |
+| `make drc` | Up to and including DRC. Use this while iterating on placement |
+| `make reroute` | Discard the stored routing, route again, then everything |
+| `make check` | Unit tests, KiCad round-trip tests, and deliberate ERC and DRC failures |
+
+A full `make` on the test board takes about 25 s with the routing cache and
+about 40 s when it has to route.
+
+### 4.3 Writing the circuit
+
+`design/circuit.py` defines `build()`, which returns a `Design`. Each sheet is
+a function that receives a `Sheet`. Read
+`hardware/toolchain-test/design/circuit.py` as the worked example.
+
+```python
+def ac_channel(s):
+    gnd = s.power("GND", netclass="Power")        # power symbol, global net
+    ctrl = s.port("CTRL", "input")                # hierarchical label, a sheet pin
+    out = s.net("OUT", netclass="AC24")           # local label
+    r1 = s.part("R1", "Device:R", at=(58.42, 73.66), rot=90, value="220R",
+                footprint="Resistor_SMD:R_0603_1608Metric", lcsc="C22962")
+    u1 = s.part("U1", "Relay_SolidState:MOC3023M", at=(76.2, 76.2), lcsc="C115469")
+    s.wire(r1[2], u1[1])                          # a real wire between two pins
+    s.connect(ctrl, r1[1])                        # short stub plus the net's label
+    s.nc(u1[3], u1[5])                            # no-connect flags
+```
+
+- **Positions.** Millimetres on the page, on the 1.27 mm grid. An off-grid
+  value is an error.
+- **Rotation and mirror.** `rot` is 0, 90, 180 or 270, counter-clockwise.
+  `mirror` is `"x"` or `"y"` as in the KiCad file format.
+- **Pins.** `part["EN"]` or `part[3]`. Use `part.pins("GND")` when a name
+  covers several pins. Pins a symbol stacks on one point count as one.
+- **Every pin must be accounted for.** A pin that is neither connected nor
+  marked with `s.nc()` or `s.nc_rest(part)` fails the build.
+- **Wires and labels.** `s.connect(net, pins)` draws a stub and a label, or a
+  power symbol for a power net. `s.wire(a, b, route="hv")` draws a wire.
+  `s.label(net, at, direction)` puts a label or power symbol on a wire end.
+- **Text placement.** `ref_at=` and `value_at=` override where a part's
+  reference and value appear. `s.frame()` draws a titled dashed box.
+- **Net classes.** Give `netclass=` on any net. The class follows the net
+  through the hierarchy and lands in the project file as an exact-name pattern.
+
+### 4.4 Describing the board
+
+`design/board.toml` is commented. Its tables are listed here.
+
+| Table | Content |
+|---|---|
+| `[netclass.NAME]` | Track width, clearance, via diameter and drill. Order sets priority |
+| `[board]` | Page origin, size, corner radius, copper layer count, thickness |
+| `[[zone]]` | Net, layers, clearance, optional outline polygon, pad connection style |
+| `[place]` | `REF = [x, y, rotation, side]` in board coordinates |
+| `[group.SHEET.parts]`, `[group.SHEET.at]` | One placement for every instance of a sheet |
+| `[[track]]`, `[[group.SHEET.track]]` | Pre-routed tracks through pads, points and vias |
+| `[silk]`, `[silk.move]`, `[group.SHEET.silk_move]` | Hide or move reference text |
+| `[[text]]` | Free text on any layer |
+| `[drc_severity]`, `[erc_severity]` | Changed check severities, each with its reason |
+| `[route]` | `outer_layers_only = true` keeps the autorouter off inner layers |
+
+A part with no placement fails the build and the message lists it. A placement
+for a part that is not in the schematic fails the build too.
+
+## 5. What was checked
+
+All on 2026-11-10, KiCad 10.0.8, on the test board unless stated.
+
+| Claim | Check | Result |
+|---|---|---|
+| Pin positions match KiCad in every orientation | `test_pin_positions_match_kicad_in_every_orientation`: 12 rotation and mirror states, netlist exported by `kicad-cli` and compared | Pass |
+| The netlist check catches a bad drawing | `test_netlist_check_catches_a_wire_that_misses_its_pin` | Pass. The mismatch names the part |
+| ERC is clean | `kicad-cli sch erc --severity-error --severity-warning --exit-code-violations` | 0 violations, exit 0 |
+| ERC catches an error | `test_erc_catches_an_undriven_power_input`: the same circuit without `PWR_FLAG` | `power_pin_not_driven`, non-zero exit |
+| DRC is clean | `kicad-cli pcb drc --schematic-parity --severity-error --severity-warning --exit-code-violations` | 0 violations, 0 unconnected, 0 parity, exit 0 |
+| DRC catches a short | `test_drc_catches_a_short`: a track added across R11's two pads | `tracks_crossing` and `solder_mask_bridge`, non-zero exit |
+| DRC catches board and schematic out of step | `test_drc_catches_a_part_missing_from_the_board`: R12 deleted from the board file | `missing_footprint`, non-zero exit |
+| Sheet reuse gives distinct parts | `test_reused_sheet_gets_distinct_references_and_nets`, and R101 and R201 in the BOM | Pass |
+| Net classes reach the board | `output/reports/build-summary.json`, read back from the board with `pcbnew` | AC24 1.0 mm and 0.5 mm clearance, Power 0.4 mm, Default 0.2 mm |
+| The project files are reproducible | Two `make` runs, SHA-256 of every file compared | `.kicad_sch`, `.kicad_pcb`, `.kicad_pro`, library tables, BOM and CPL are byte-identical |
+| A 4-layer board works | Scratch copy of the test board with `layers = 4`, pours on `In1.Cu` and `In2.Cu`, `outer_layers_only = true`, same commands | DRC 0 violations, 0 unconnected, exit 0. No track on an inner layer |
+
+`make check` runs the 16 automated tests. The 4-layer run is not automated and
+its files are not in the repository.
+
+**Not checked.** Nobody has opened the project in the KiCad GUI. I tried under
+`xvfb-run` and got a blank screen with no error, and did not pursue it. Every
+file was loaded and re-saved by `kicad-cli` and `pcbnew`, which use the same
+loaders as the GUI. Open it once by hand before relying on it.
+
+## 6. Results on the test board
+
+The circuit has an ESP32-S3-WROOM-1 with decoupling, reset and boot buttons, a
+USB-C receptacle with CC resistors and ESD protection, a 3.3 V regulator, an
+I2C header, two mounting holes, a 24 VAC input terminal, and two instances of
+one opto-triac output channel. It has 40 parts and 27 nets on an 80 x 60 mm
+2-layer board.
+
+The test circuit was drawn against v0.1 of the system specification. Version
+0.2 chose a different output stage, with one 24 VAC leg as circuit ground and
+no opto-triac. That does not change what the test proves about the flow, and
+it is one more reason not to copy the test circuit.
+
+### 6.1 Schematic
+
+Five pages from four files. `ac_channel.kicad_sch` appears twice.
+
+![Root sheet](hardware-toolchain/sch-root.svg)
+![USB-C and regulator](hardware-toolchain/sch-power.svg)
+![ESP32-S3 sheet](hardware-toolchain/sch-mcu.svg)
+![Output channel, instance CH1](hardware-toolchain/sch-channel.svg)
+
+The pictures in this document are copies of the build outputs of 2026-11-10,
+kept in `docs/design/hardware-toolchain/` because the documentation site can
+only serve files under `docs/`. The current outputs are in
+`hardware/toolchain-test/output/`.
+
+I read every page of `output/toolchain_test-schematic.pdf`. My judgement
+follows.
+
+- **Good.** The channel sheet reads like a hand-drawn schematic. The signal
+  flows left to right with real wires and junctions. The regulator and reset
+  blocks are clear. Framed blocks with titles help.
+- **Acceptable.** The MCU sheet uses a label on every used pin. It is easy to
+  check against a pin table and gives no sense of signal flow.
+- **Ugly.** Pin numbers of stacked pins print on top of each other on the
+  USB-C and ESP32 symbols. No-connect crosses crowd the ESP32 pin numbers.
+  Both come from the stock KiCad symbols. The root sheet is mostly empty.
+- **Manual work.** Four parts needed `ref_at` and `value_at` because the
+  default text position collided with a wire or with other text. Expect that
+  for about one part in ten.
+
+### 6.2 Board
+
+![Top render](hardware-toolchain/board-top.png)
+![Bottom render](hardware-toolchain/board-bottom.png)
+![Front copper and silkscreen](hardware-toolchain/copper-front.svg)
+![Back copper](hardware-toolchain/copper-back.svg)
+
+The back views are drawn as seen through the board from the front, not
+mirrored.
+
+### 6.3 Routing numbers
+
+From `output/reports/build-summary.json` and `route/toolchain_test.freerouting.json`.
+
+| Quantity | Value |
+|---|---|
+| Connections given to Freerouting | 43 |
+| Left unrouted by Freerouting | 0 |
+| Unconnected items in KiCad DRC after import and zone fill | 0 |
+| Freerouting passes, time | 7 passes, 11.5 s |
+| Track segments, vias, total length | 318, 23, 949 mm |
+| Pre-routed items kept through import | 7 of 7 |
+| Dangling stubs left by the router and removed | 3 |
+
+Completion was 100% on a board with a lot of free area. That says little about
+a dense board.
+
+| Net class | Class width | Narrowest routed | Length below class width |
+|---|---|---|---|
+| AC24 | 1.0 mm | 0.75 mm | 29.5 of 252.4 mm |
+| Power | 0.4 mm | 0.3 mm | 11.6 of 326.9 mm |
+| Default | 0.2 mm | 0.15 mm | 21.6 of 369.8 mm |
+
+Freerouting narrows a track to about 75% of its class width where it enters a
+pad. The board's `rules.kicad_dru` accepts 0.75 mm on AC24 and DRC enforces
+that floor.
+
+### 6.4 Routing quality
+
+- **Electrically complete and DRC-clean.**
+- **Not what a person would draw.** The BOOT switch track runs 1 mm inside the
+  left board edge for 30 mm. The 24 VAC feed crosses the board diagonally
+  between the two channels. Tracks around the triacs make odd shapes.
+- **No sense of return paths or current.** The router knows widths and
+  clearances and nothing else. 24 VAC tracks run 0.5 mm from the logic ground
+  pour because that is the class clearance, not because it is wise.
+- **Freerouting reported 8 "unfixable violations"** between VBUS and GND pads
+  inside the USB-C footprint. KiCad's DRC does not flag them. I did not find
+  out which tool is right. Check that footprint before using it for real.
+
+## 7. KiCad 10 Python findings
+
+The SWIG `pcbnew` module still ships in KiCad 10.0.8 and runs without a
+display. No step here needs `xvfb-run` or the IPC API. These are the problems
+I hit and how the flow avoids each.
+
+| Problem in 10.0.8 | Workaround in `hwflow` |
+|---|---|
+| `BOARD.Remove(item)` gives the object to Python. When the proxy is garbage-collected, `BOARD.Tracks()` starts returning a bare `SwigPyObject` and the interpreter segfaults on exit | Use `BOARD.Delete(item)` |
+| `NETINFO_ITEM.GetNetClass()` returns a bare `SwigPyObject` | `board.GetDesignSettings().m_NetSettings.GetEffectiveNetClass(name)` |
+| `FOOTPRINT.Points()` returns objects with no methods. Points are new in KiCad 10 | Their UUIDs are fixed in the saved file as text |
+| `BOARD.GetLayerID("F.SilkS")` returns -1. Only GUI names such as `F.Silkscreen` resolve. An item saved on layer -1 makes the board unloadable | A lookup table that accepts both spellings and rejects unknown names |
+| Every new item gets a random UUID and KiCad writes items sorted by UUID, so two builds differ in thousands of lines | `SetUuid` with a UUID derived from the item's content |
+| `pcbnew.NewBoard()` and `SaveBoard()` rewrite `.kicad_pro` in full | Accepted. They keep the net classes and rules the generator wrote, and the result is stable |
+| `kicad-cli` has no "update PCB from schematic" | The board is built from the exported netlist. Footprint paths use the schematic's UUIDs, so `--schematic-parity` passes |
+| No headless zone fill command | `kicad-cli pcb drc --refill-zones --save-board` |
+| KiCad reads the user's library tables, and a fresh account has none | The generator writes project-local `sym-lib-table` and `fp-lib-table`. `make` sets `KICAD_CONFIG_HOME` to a directory under `build/` |
+
+The SWIG module is deprecated. If a later KiCad removes it, `pcbbuild.py` is
+the one file to port, about 530 lines.
+
+## 8. JLCPCB rules
+
+I read <https://jlcpcb.com/capabilities/Capabilities> on 2026-11-10. The page
+has no revision date. The values are for 1 oz outer copper on standard FR-4.
+Where the 2-layer and multilayer figures differ, the rules use the stricter
+one so that one set covers both.
+
+| Limit | Value used | Page text |
+|---|---|---|
+| Track width and spacing | 0.10 mm | "0.10 / 0.10 mm (4 / 4 mil)" for 1 and 2 layers, 0.09 mm multilayer |
+| Via hole | 0.20 mm | "Preferred Min. Via hole size: 0.2mm". The absolute minimum is 0.15 mm |
+| Via diameter | 0.45 mm | A 0.2 mm hole "with via diameter less than 0.45mm, will cost more" |
+| PTH pad annular ring | 0.18 mm | 2-layer "absolute minimum 0.18 mm", multilayer 0.15 mm |
+| PTH hole to track | 0.28 mm | "0.35mm is recommended, minimum 0.28mm" |
+| Via hole to track, NPTH to track | 0.20 mm | "Via hole to Track 0.2mm", "NPTH to Track 0.2mm" |
+| Via hole to via hole | 0.20 mm | "Via Hole-to-Hole Spacing 0.2mm" |
+| Pad hole to pad hole | 0.45 mm | "Pad Hole-to-Hole Spacing 0.45mm" |
+| SMD pad to pad, different nets | 0.15 mm | "SMD pad to pad clearance (different nets) 0.15mm" |
+| Copper to routed board edge | 0.20 mm | "Copper clearance from routed board edges: ≧0.2 mm". V-cut edges need 0.4 mm |
+| Silkscreen text | 1.0 mm high, 0.15 mm line | "Minimum text height 40 mil (1.0mm)", "Minimum Line Width ≥0.15mm" |
+| Pad to silkscreen | 0.15 mm | "Pad To Silkscreen 0.15mm" |
+| Solder mask bridge | 0.10 mm | 0.10 mm for green, red, yellow, blue, purple. 0.13 mm for black or white |
+
+The numbers are in `hardware/rules/jlcpcb.toml`, which becomes the board-wide
+constraints in `.kicad_pro`. Limits that depend on the item type are rules in
+`hardware/rules/jlcpcb.kicad_dru`. Both are copied into every project.
+
+I read the page through a text extraction tool, not in a browser. Read it
+again before an order.
+
+## 9. Known limits
+
+- **You place every schematic symbol by coordinate.** There is no automatic
+  schematic layout. The generator does not detect overlapping text. You find
+  it by reading the PDF.
+- **One unit per symbol.** Multi-unit parts such as a dual op-amp or a hex
+  buffer are not supported yet.
+- **No buses, no graphical net-class flags, no per-instance values.** Every
+  instance of a reused sheet has the same values.
+- **KiCad names unlabelled nets.** A wire-only net shows up on the board as
+  `Net-(C101-Pad1)`. Add `s.label()` if the name matters for review.
+- **The autorouter narrows tracks at pads** to about 75% of class width. Set
+  the floor you accept as a DRC rule per class.
+- **The autorouter does not understand return paths or which areas of the
+  board should stay apart.** Pre-route what matters. Rule areas are
+  not in `board.toml` yet. Only the ones inside library footprints exist.
+- **On a 4-layer board Freerouting routes signals on the inner layers** unless
+  `[route] outer_layers_only = true`. With that option, plane nets are also
+  routed as outer-layer tracks, and the pours connect only where a via or
+  through-hole pad passes through. Marking the inner layers `(type power)` in
+  the DSN, or exporting the planes, did not keep Freerouting 2.5.0 off them.
+- **Routing changes completely when placement changes.** The cache keeps a
+  rebuild stable only while the DSN is byte-identical. A KiCad patch release
+  changes the DSN header and forces a new route.
+- **Freerouting may not be deterministic.** Its optimiser ran with 15 threads.
+  I did not test whether two runs on the same DSN agree.
+- **Reference text on the silkscreen needs attention.** DRC reported 6
+  silkscreen warnings from 3 parts on a 40-part board. Each fix is one line in
+  `board.toml`.
+- **`silk_edge_clearance` is ignored on the test board** because the antenna,
+  USB-C and terminal outlines cross the edge on purpose. That also hides
+  reference text that hangs over the edge. Look at the render.
+- **JLCPCB rotation corrections are unverified.** The table has four rows
+  copied from the Fabrication-Toolkit project. None was checked against
+  JLCPCB's placement preview. Bottom-side placement was not exercised.
+- **The CPL lists through-hole parts** such as terminal blocks. Remove them or
+  order them as hand-soldered parts.
+- **Exports are not byte-stable.** Gerbers, drill files, reports, the PDF and
+  the SVGs carry a timestamp or a generated id. A rebuild from a clean
+  checkout changed 29 files under `output/` and nothing else. The STEP file renumbers its entities. The PNG renders
+  differ by a few hundred pixels. The BOM and CPL are stable.
+- **No 3D model for the USB-C receptacle** in the stock library, so the render
+  shows only its outline.
+- **An LCSC number is only as good as the lookup.** Of the 23 numbers I first
+  typed from memory, 7 were wrong. All 23 were then checked against a listing
+  and are recorded in `hardware/toolchain-test/design/parts-sources.md`.
+
+## 10. Procedure for the real board
+
+The real board is about five times the size of the test: roughly 200 parts,
+nine output channels, a buck supply and more connectors.
+
+### 10.1 Set up
+
+1. Copy `hardware/toolchain-test/Makefile` to the new board directory and
+   change `NAME`.
+2. Write `design/circuit.py` with one function per functional block. Aim for
+   15 to 30 parts per sheet on A4, or use `paper="A3"` for the MCU sheet.
+3. Decide the reference scheme first. Give each sheet instance a
+   `ref_offset`. Use 100 to 900 for the nine channels so R305 is zone 3.
+4. Keep every part number in one table file beside the circuit, with the
+   listing or datasheet it came from. The honesty rules in `CLAUDE.md`
+   require the source.
+
+### 10.2 Repeated channels
+
+Write the channel once as a function and instantiate it nine times from the
+root sheet.
+
+```python
+chan = d.sheet("ac_channel", "24 VAC output", build=ac_channel)
+for n in range(1, 10):
+    r.instantiate(chan, f"Z{n}", at=(col(n), row(n)), ref_offset=100 * n,
+                  connect={"CTRL": r.net(f"Z{n}_CTRL"), "AC_HOT": hot, "AC_COM": com})
+```
+
+On the board, `[group.ac_channel.parts]` places the channel once, relative to
+an origin. `[group.ac_channel.at]` gives the origin and rotation of each of
+the nine instances. Pre-routes and silkscreen moves inside the group repeat
+with it. Changing the channel layout is one edit.
+
+A 4-zone assembly variant needs `dnp=True` on parts by instance. That is not
+supported. Add it to `hwflow` when the variant is designed.
+
+### 10.3 Order of work
+
+1. **Schematic first, sheet by sheet.** Run `make erc` after each sheet. Read
+   the PDF page. Fix text collisions with `ref_at` and `value_at`.
+2. **Board outline, connectors and mounting holes.** These are fixed by the
+   enclosure. Place them and nothing else. `make drc` will list every part
+   still unplaced, which is your to-do list.
+3. **Place by block.** Read each footprint's pad and courtyard extents with
+   `pcbnew` before choosing coordinates. Do not guess.
+4. **Pre-route what must be right.** The 24 VAC feed and returns, the buck
+   converter's switch node and input loop, USB D+ and D-, the current-sense
+   path. Use `[[track]]` with explicit widths.
+5. **Pours.** Ground on both outer layers, or inner planes on 4 layers with
+   `outer_layers_only = true`.
+6. **Autoroute the rest and read the result.** Expect several rounds of
+   moving parts to help the router.
+7. **Silkscreen last.** Hide references of small passives with `[silk] hide`
+   if the board is dense, and move the rest.
+
+### 10.4 Review from PDFs and renders
+
+Reviewers do not need KiCad.
+
+- **Schematic.** `output/<name>-schematic.pdf`, one page per sheet instance,
+  with clickable hierarchy links. `output/schematic-svg/` has the same pages
+  for embedding in a pull request.
+- **Netlist.** The build prints the part and net count. `build/<name>.net` is
+  KiCad's own netlist if a reviewer wants to grep for a pin.
+- **Board.** `output/<name>-top.png` and `-bottom.png` for placement and
+  silkscreen. `output/<name>-front.svg` and `-back.svg` for copper.
+- **Numbers.** `output/reports/build-summary.json` has routed widths per net
+  class, via count and the ERC and DRC counts. `drc.rpt` and `erc.rpt` are the
+  full reports.
+- **Diffs.** A change to `design/` is a small text diff. The generated files
+  change with it. Review the diff of `design/` and the pictures.
+
+An agent reviewing a board should read the PNG and PDF pages, as I did here.
+That found problems ERC and DRC did not: reference and value text printed on
+top of each other, a note running off the page, and reference text clipped at
+the board edge.
+
+## 11. Risk for the full board
+
+- **Schematic generation: low.** The mechanism is checked against KiCad's own
+  netlist on every build. The cost is labour. Expect a few hours of coordinate
+  work per sheet and several render-and-fix rounds.
+- **Board build, DRC, outputs: low to medium.** They work today. The risk is
+  the deprecated SWIG module and its wrapper faults. Four turned up in one
+  day on a 40-part board. A 200-part board will find more.
+- **Autorouting: medium to high.** 100% on a sparse 2-layer test predicts
+  little. I expect the real board to need 4 layers, heavy pre-routing of the
+  AC and power paths, and to finish with a handful of connections that need a
+  placement change or a hand-written track.
+- **Layout quality: high.** Nothing in this flow judges surge current paths,
+  heat in the triacs, EMC or antenna keep-out beyond the library footprint.
+  DRC passing means manufacturable, not good. Plan a human layout review in
+  KiCad before any order, and budget for that reviewer to move tracks. A
+  change made in the GUI has to be carried back into `board.toml` by hand.
+
+My overall view is that the flow can produce the revision A board, and that
+routing will take more effort than every other step combined.
