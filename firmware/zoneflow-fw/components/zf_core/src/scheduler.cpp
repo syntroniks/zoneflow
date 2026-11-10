@@ -90,6 +90,8 @@ const char *toString(RunError e)
         return "nothing_to_run";
     case RunError::LockedOut:
         return "locked_out";
+    case RunError::ZoneResting:
+        return "zone_resting";
     }
     return "?";
 }
@@ -302,8 +304,13 @@ RunError Scheduler::runZone(ZoneIndex zone, uint32_t durationSec)
     if (durationSec == 0) {
         return RunError::ZeroDuration;
     }
-    if (actuator_.startBlocker(zone) == StartError::LockedOut) {
+    switch (actuator_.startBlocker(zone)) {
+    case StartError::LockedOut:
         return RunError::LockedOut;
+    case StartError::Resting:
+        return RunError::ZoneResting;
+    default:
+        break;
     }
     // The driver clamps again to the zone's limit; this keeps the
     // millisecond value below from wrapping.
@@ -501,7 +508,11 @@ void Scheduler::processQueue()
         if (r.error == StartError::TooManyActive || r.error == StartError::AlreadyActive) {
             return; // retry on the next tick
         }
-        popFront(); // the zone cannot run (locked out, disabled, inhibited)
+        // The zone cannot run (locked out, resting, disabled, inhibited).
+        if (listener_ != nullptr) {
+            listener_->onRunDropped(front, r.error);
+        }
+        popFront();
         notifyQueue();
     }
 }

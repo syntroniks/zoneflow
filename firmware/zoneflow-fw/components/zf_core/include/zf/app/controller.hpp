@@ -83,6 +83,7 @@ private:
     void onQueueChanged() override;
     void onRainDelayChanged(UtcSeconds until) override;
     void onPersistDirty() override { persistDirty_ = true; }
+    void onRunDropped(const RunEntry &entry, StartError reason) override;
 
     bool apply(const Command &cmd);
     void applyConfig(const Config &cfg);

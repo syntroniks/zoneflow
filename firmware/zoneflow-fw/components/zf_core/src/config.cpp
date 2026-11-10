@@ -71,6 +71,9 @@ ValidationResult validate(const Config &cfg)
     if (cfg.driver.interZoneDelayMs > 600000) {
         return VR::bad("driver.inter_zone_delay_ms", "must be 0..600000");
     }
+    if (cfg.driver.minRestSec < 60 || cfg.driver.minRestSec > 86400) {
+        return VR::bad("driver.min_rest_s", "must be 60..86400");
+    }
     if (cfg.rain.debounceMs > 600000) {
         return VR::bad("sensors.rain.debounce_ms", "must be 0..600000");
     }

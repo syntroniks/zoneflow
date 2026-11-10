@@ -51,6 +51,9 @@ void logEvent(const Event &e)
     case EventType::CommandRejected:
         ESP_LOGW(kTag, "command %s rejected: %s", toString(e.rejected.command), toString(e.rejected.error));
         break;
+    case EventType::RunDropped:
+        ESP_LOGW(kTag, "zone %u run dropped: %s", e.dropped.zone + 1u, toString(e.dropped.reason));
+        break;
     case EventType::QueueChanged:
     case EventType::ConfigApplied:
     case EventType::Count:

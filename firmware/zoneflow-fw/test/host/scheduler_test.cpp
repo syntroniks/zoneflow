@@ -788,3 +788,22 @@ TEST_F(SchedulerTest, RunZoneOnLockedOutZoneIsRefused)
     drv.setLockout(2, false);
     EXPECT_EQ(sched->runZone(2, 60), RunError::Ok);
 }
+
+// Two programs sharing a zone used to keep it open for 2 x max run time. The
+// second run is cut at the zone's maximum, and a further queued run of the
+// resting zone is dropped with an event.
+TEST_F(SchedulerTest, QueuedRunsOfOneZoneStopAtMaximumThenDrop)
+{
+    begin(utcOf(2026, 6, 1, 0, 0));
+    ASSERT_EQ(sched->runZone(0, 3000), RunError::Ok);
+    ASSERT_EQ(sched->runZone(0, 3000), RunError::Ok);
+    ASSERT_EQ(sched->runZone(0, 3000), RunError::Ok);
+    ASSERT_EQ(sched->runZone(1, 60), RunError::Ok);
+    runFor(3000 + 600 + 5);
+    EXPECT_EQ(drv.lastStopReason(0), StopReason::MaxRunTime);
+    ASSERT_EQ(rec.dropped.size(), 1u);
+    EXPECT_EQ(rec.dropped[0].zone, 0);
+    EXPECT_EQ(rec.dropped[0].reason, StartError::Resting);
+    EXPECT_TRUE(out.zone[1]); // the queue moved on
+    EXPECT_EQ(sched->runZone(0, 60), RunError::ZoneResting);
+}

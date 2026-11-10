@@ -5,7 +5,10 @@
 // Guarantees:
 //  - All outputs off at init(), on reconfigure() and on every fault path.
 //  - A zone never stays open longer than min(zone max run time,
-//    kHardMaxRunSec), whatever the caller asked for.
+//    kHardMaxRunSec), whatever the caller asked for. The limit is per zone,
+//    not per run: on-time adds up over back-to-back runs until the zone has
+//    been closed for minRestSec. A zone that reached the limit refuses to
+//    start (StartError::Resting) until it has been closed for minRestSec.
 //  - At most maxConcurrent zones are open or waiting (ceiling
 //    kMaxConcurrentZonesLimit). The master output is extra.
 //  - Master valve opens masterPreOpenMs before the first zone and closes
@@ -34,6 +37,10 @@ struct ZoneDriverConfig {
     uint32_t masterPreOpenMs = 0;
     uint32_t masterPostCloseMs = 0;
     uint32_t interZoneDelayMs = 0;
+    // A zone that has been open for its maximum run time, counting every run
+    // with less than this much closed time in between, stays closed for this
+    // long (spec section 2 rule 4).
+    uint32_t minRestSec = 1800;
     std::array<bool, kMaxZones> zoneEnabled{};
     std::array<uint32_t, kMaxZones> maxRunSec{};
 };
@@ -63,6 +70,9 @@ public:
     ValveState state(ZoneIndex zone) const override;
     uint32_t remainingMs(ZoneIndex zone) const override;
     StartError startBlocker(ZoneIndex zone) const override;
+    // Time left before a zone that reached its maximum run time may open
+    // again; 0 when it is not resting.
+    uint32_t restRemainingMs(ZoneIndex zone) const;
 
     // Turns every output off at once, master included, skipping the master
     // post-close delay.
@@ -109,7 +119,19 @@ private:
         MonoMs openedAtMs = 0;
         StopReason lastStop = StopReason::None;
         bool lockedOut = false;
+        // On-time since the zone last had minRestSec of closed time.
+        MonoMs burstMs = 0;
+        MonoMs closedAtMs = 0;
     };
+
+    // Smallest run worth starting; a smaller remainder counts as exhausted.
+    static constexpr MonoMs kMinRunMs = 1000;
+
+    MonoMs maxRunMs(ZoneIndex zone) const { return static_cast<MonoMs>(effectiveMaxRunSec(zone)) * 1000u; }
+    // Clears the on-time of a zone that has rested; returns the run time
+    // still allowed now.
+    MonoMs budgetMs(ZoneIndex zone, MonoMs now);
+    MonoMs restLeftMs(ZoneIndex zone, MonoMs now) const;
 
     void applyConfig(const ZoneDriverConfig &cfg);
     void openZone(ZoneIndex z, MonoMs now);

@@ -163,6 +163,17 @@ struct SchedulerRecorder final : public ISchedulerListener {
     void onQueueChanged() override { ++queueChanges; }
     void onRainDelayChanged(UtcSeconds until) override { rainDelays.push_back(until); }
     void onPersistDirty() override { ++persistDirty; }
+
+    struct Dropped {
+        ZoneIndex zone;
+        uint16_t programId;
+        StartError reason;
+    };
+    std::vector<Dropped> dropped;
+    void onRunDropped(const RunEntry &e, StartError reason) override
+    {
+        dropped.push_back({e.zone, e.programId, reason});
+    }
 };
 
 inline Program makeProgram(uint16_t id, std::initializer_list<uint16_t> startMinutes,

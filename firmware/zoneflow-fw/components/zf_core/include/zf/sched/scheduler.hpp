@@ -54,7 +54,8 @@ enum class RunError : uint8_t {
     AlreadyQueued,
     Inhibited,
     NothingToRun,
-    LockedOut, // zone locked out by a latched fault (RunZone)
+    LockedOut,   // zone locked out by a latched fault (RunZone)
+    ZoneResting, // zone reached its maximum run time and is resting (RunZone)
 };
 
 // Inhibit flags (bitmask).
@@ -105,6 +106,13 @@ public:
     virtual void onRainDelayChanged(UtcSeconds until) = 0;
     // SchedulerPersist changed and should be saved.
     virtual void onPersistDirty() = 0;
+    // A queued entry reached the head of the queue and its zone refused to
+    // start (locked out, resting, disabled, inhibited); the entry is dropped.
+    virtual void onRunDropped(const RunEntry &entry, StartError reason)
+    {
+        (void)entry;
+        (void)reason;
+    }
 };
 
 class Scheduler {

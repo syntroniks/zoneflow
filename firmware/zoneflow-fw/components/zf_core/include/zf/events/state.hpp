@@ -20,6 +20,7 @@ struct ZoneStatus {
     FaultCode fault = FaultCode::None; // latched until ClearFaults
     bool enabled = false;
     bool lockedOut = false;
+    uint32_t restRemainingSec = 0; // > 0: reached its maximum run time, resting
 };
 
 struct QueueItem {

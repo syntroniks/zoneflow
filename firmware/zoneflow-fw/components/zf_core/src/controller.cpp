@@ -16,6 +16,7 @@ ZoneDriverConfig driverConfigFrom(const Config &c)
     d.masterPreOpenMs = c.master.preOpenMs;
     d.masterPostCloseMs = c.master.postCloseMs;
     d.interZoneDelayMs = c.driver.interZoneDelayMs;
+    d.minRestSec = c.driver.minRestSec;
     for (std::size_t i = 0; i < kMaxZones; ++i) {
         d.zoneEnabled[i] = i < c.zoneCount && c.zones[i].enabled;
         d.maxRunSec[i] = c.zones[i].maxRunSec;
@@ -27,7 +28,8 @@ bool sameDriverConfig(const ZoneDriverConfig &a, const ZoneDriverConfig &b)
 {
     return a.zoneCount == b.zoneCount && a.maxConcurrent == b.maxConcurrent && a.masterEnabled == b.masterEnabled &&
            a.masterPreOpenMs == b.masterPreOpenMs && a.masterPostCloseMs == b.masterPostCloseMs &&
-           a.interZoneDelayMs == b.interZoneDelayMs && a.zoneEnabled == b.zoneEnabled && a.maxRunSec == b.maxRunSec;
+           a.interZoneDelayMs == b.interZoneDelayMs && a.minRestSec == b.minRestSec && a.zoneEnabled == b.zoneEnabled &&
+           a.maxRunSec == b.maxRunSec;
 }
 
 constexpr uint32_t faultBit(FaultCode c) { return 1u << static_cast<unsigned>(c); }
@@ -383,6 +385,7 @@ void Controller::publishSnapshot(MonoMs now)
         zs.fault = zoneFault_[i];
         zs.enabled = driver_.config().zoneEnabled[i];
         zs.lockedOut = driver_.lockedOut(z);
+        zs.restRemainingSec = (driver_.restRemainingMs(z) + 999u) / 1000u;
     }
     st.masterEnabled = config_.master.enabled;
     st.masterOn = driver_.masterOn();
@@ -471,6 +474,13 @@ void Controller::onQueueChanged()
 {
     publish(makeEvent(EventType::QueueChanged));
     stateDirty_ = true;
+}
+
+void Controller::onRunDropped(const RunEntry &entry, StartError reason)
+{
+    Event e = makeEvent(EventType::RunDropped);
+    e.dropped = {entry.zone, entry.programId, entry.source, reason};
+    publish(e);
 }
 
 void Controller::onRainDelayChanged(UtcSeconds until)

@@ -342,3 +342,17 @@ TEST(ConfigStore, NewerSchemaThroughApiIsRejected)
     EXPECT_EQ(store.revision(), rev);
     EXPECT_EQ(store.get().deviceName.view(), "zoneflow");
 }
+
+TEST(Config, MinimumRestTime)
+{
+    Config c = Config::defaults();
+    EXPECT_EQ(c.driver.minRestSec, 1800u);
+    c.driver.minRestSec = 900;
+    Config back;
+    ASSERT_TRUE(configFromJson(configToJson(c), back).ok());
+    EXPECT_EQ(back.driver.minRestSec, 900u);
+    c.driver.minRestSec = 59;
+    EXPECT_EQ(validate(c).path, "driver.min_rest_s");
+    c.driver.minRestSec = 86401;
+    EXPECT_EQ(validate(c).path, "driver.min_rest_s");
+}

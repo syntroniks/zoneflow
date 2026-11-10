@@ -78,6 +78,8 @@ const char *toString(EventType t)
         return "maintenance_changed";
     case EventType::CommandRejected:
         return "command_rejected";
+    case EventType::RunDropped:
+        return "run_dropped";
     case EventType::Count:
         break;
     }

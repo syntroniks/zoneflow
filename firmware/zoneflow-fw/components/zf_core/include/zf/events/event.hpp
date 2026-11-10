@@ -55,6 +55,7 @@ enum class EventType : uint8_t {
     TimeStatusChanged,
     MaintenanceChanged,
     CommandRejected, // Controller::handle() refused a command; data: rejected
+    RunDropped,      // a queued run could not start and was dropped; data: dropped
     Count,
 };
 static_assert(static_cast<unsigned>(EventType::Count) <= 32, "event mask is 32 bits");
@@ -103,6 +104,12 @@ struct CommandRejectedData {
     uint16_t programId; // as in the command (RunProgram)
     RunError error;
 };
+struct RunDroppedData {
+    ZoneIndex zone;
+    uint16_t programId; // 0 for a manual zone run
+    RunSource source;
+    StartError reason;
+};
 
 struct Event {
     EventType type;
@@ -118,6 +125,7 @@ struct Event {
         TimeStatusData time;
         FlagData flag;
         CommandRejectedData rejected;
+        RunDroppedData dropped;
     };
 };
 static_assert(std::is_trivially_copyable_v<Event>, "events are copied with memcpy into RTOS queues");

@@ -36,6 +36,9 @@ struct MasterConfig {
 struct DriverSettings {
     uint8_t maxConcurrent = kMaxConcurrentZonesLimit;
     uint32_t interZoneDelayMs = 2000;
+    // Closed time a zone needs after reaching its maximum run time, and the
+    // closed time that ends a run of back-to-back runs (spec section 2 rule 4).
+    uint32_t minRestSec = 1800;
 };
 
 enum class SpareFunction : uint8_t {

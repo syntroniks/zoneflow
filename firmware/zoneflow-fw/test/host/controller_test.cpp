@@ -402,3 +402,23 @@ TEST_F(ControllerTest, RunZoneOnLockedOutZoneReturnsError)
     EXPECT_EQ(it->rejected.error, RunError::LockedOut);
     EXPECT_STREQ(toString(EventType::CommandRejected), "command_rejected");
 }
+
+TEST_F(ControllerTest, DroppedRunIsPublished)
+{
+    Config c = config.get();
+    c.zones[0].maxRunSec = 60;
+    ASSERT_TRUE(config.update(c).ok);
+    start();
+    ASSERT_TRUE(ctrl->handle(Command::runZone(0, 60)));
+    ASSERT_TRUE(ctrl->handle(Command::runZone(0, 60)));
+    runMs(61'000);
+    ASSERT_EQ(count(EventType::RunDropped), 1);
+    const auto it =
+        std::find_if(events.begin(), events.end(), [](const Event &e) { return e.type == EventType::RunDropped; });
+    EXPECT_EQ(it->dropped.zone, 0);
+    EXPECT_EQ(it->dropped.reason, StartError::Resting);
+    EXPECT_GE(state.snapshot().zones[0].restRemainingSec, 1798u);
+    EXPECT_LE(state.snapshot().zones[0].restRemainingSec, 1800u);
+    EXPECT_FALSE(ctrl->handle(Command::runZone(0, 60)));
+    EXPECT_EQ(ctrl->lastRunError(), RunError::ZoneResting);
+}

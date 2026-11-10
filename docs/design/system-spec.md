@@ -38,7 +38,12 @@ keeps watering on schedule when the network is down.
    flashing), gate drive to every triac is removed within about one second,
    with no firmware involved.
 4. **Maximum run time.** Firmware enforces a per-zone maximum run time that a
-   schedule or API call cannot exceed.
+   schedule or API call cannot exceed. The limit holds per zone, not per run:
+   on-time adds up across back-to-back runs (several programs, repeated manual
+   runs, pause and resume) until the zone has been closed for a minimum rest
+   time. A zone that has been open for its maximum then stays closed for that
+   rest time before it can open again. The rest time is configurable, with a
+   default of 30 minutes.
 5. Only Class 2 (low voltage, power limited) circuits are on the board. No
    mains.
 
