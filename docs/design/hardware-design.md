@@ -93,7 +93,7 @@ So R301 is the opto LED resistor of zone 3 and Q901 is the master valve triac.
 | Item | Value | Source |
 |---|---|---|
 | Ambient outside the enclosure | -20 to +50 °C, indoor or garage, non-condensing | Specification section 1, from v0.5 |
-| Air inside the enclosure | up to 70 °C | 50 °C plus the rise the enclosure concept estimates, 16 K at 3 W with vents (pull request 24, mechanical design section 10), rounded up. The first draft assumed 10 K. Bench test in section 20. |
+| Air inside the enclosure | up to 70 °C | 50 °C plus the rise the mechanical design estimates. Revision 1 of the contract said 16 K at 3 W with vents, and 70 °C was set from that. Revision 2 says 14 K at 3.5 W (mechanical design, section 11), which leaves about 6 K in hand. The first draft assumed 10 K. Bench test in section 20. |
 | Supply | 21.6 to 26.4 VAC at load, up to 32 VAC unloaded, 50 or 60 Hz | Specification section 1 |
 | Load | 0.5 A rms per output, 1.5 A rms inrush for 100 ms, two zones plus master | Specification section 1 |
 | Smallest load | 50 mA rms pump-start relay coil | Brief |
@@ -119,7 +119,7 @@ into `V_BUCK`, 5.28 V. Schottky D3 passes it to the 5 V bus.
 | D1 | TVS 48 V bidirectional 1500 W | SMC | C151287 | `AC_L` to `GND` | Input surge clamp |
 | D2 | Rectifier 1 A 1000 V | SMA | C95872 | A `AC_L`, K `VRECT` | Half-wave rectifier |
 | R1 | 3R 5% 1 W, surge series | 2512 | C2936639 | `VRECT` to `VIN_DC` | Limits charging and surge current. Pulse rating in section 4.4 |
-| C1 | 470 uF 63 V aluminium electrolytic | SMD 16x16.5 mm | C249935 | + `VIN_DC`, - `GND` | Bulk capacitor |
+| C1 | 470 uF 63 V aluminium electrolytic | THT 12.5x20 mm | C2940725 | + `VIN_DC`, - `GND` | Bulk capacitor. Through-hole, on the bottom side, lying down |
 | C2 | 2.2 uF 100 V X7R | 1210 | C55151 | `VIN_DC` to `GND` | At U1 pins |
 | C3 | 2.2 uF 100 V X7R | 1210 | C55151 | `VIN_DC` to `GND` | At U1 pins |
 | U1 | LM5164DDAR 100 V 1 A synchronous buck | SO-8 PowerPAD | C477928 | 1 GND `GND`, 2 VIN `VIN_DC`, 3 EN/UVLO `UVLO`, 4 RON `RON`, 5 FB `FB`, 6 PGOOD `PGOOD`, 7 BST `BST`, 8 SW `SW`, EP `GND` |  |
@@ -285,19 +285,72 @@ with every consumer at its limit. With no input at all, C1 holds the typical
 load from 29 V down to 9 V for 0.5 x 470 uF x (29² - 9²) / 1.75 W = 100 ms,
 five cycles.
 
-C1 is a Lelon VZH 470 uF 63 V in a 16 x 16.5 mm SMD can, 5000 h at 105 °C. Its
-steady voltage is at most 44.3 V, 70 % of rating. The Lelon table for 63 V
-gives this part 900 mA at 100 kHz and 105 °C and 0.082 ohm, with a multiplier
-of 0.6 at 50 and 60 Hz: 540 mA. The
-through-hole alternative, Rubycon 63PX470MEFC12.5X20, is rated 700 mA at
-120 Hz and 0.8 of that at 50 Hz, which is 560 mA. Both cover the 0.16 A typical
-and 0.48 A peak. The peak figure is 89 % of the Lelon rating, at an ambient
-far below 105 °C.
+C1 is a Rubycon 63ZLJ470M12.5X20: 470 uF, 63 V, a through-hole can of
+12.5 x 20 mm, LCSC C2940725, 3180 in stock at JLCPCB on 2026-11-10. Its
+steady voltage is at most 44.3 V, 70 % of rating.
 
-**Placement.** The Lelon can is 16.5 mm tall. The enclosure concept allows
-9 mm above the board and 17 mm below it, so C1 has to sit on the bottom
-side, and that needs a second assembly side for one part. Section 16.4 has
-the options.
+**Why the part changed.** The first draft used a surface-mount Lelon VZH can,
+16.5 mm tall. The enclosure allows 9 mm above the board and 17 mm below it,
+and revision 2 of the mechanical contract allows no surface-mount part on
+the bottom side, because one capacitor would need a second assembly side
+(mechanical design, section 6). So C1 is a through-hole part on the bottom,
+lying on its side. The contract named the Rubycon PX part that the BOM
+carried as the alternative. I read the three data sheets before switching:
+
+| | Lelon VZH471M1JTR-1616, first draft | Rubycon 63PX470MEFC12.5X20, named by the contract | Rubycon 63ZLJ470M12.5X20, fitted |
+|---|---|---|---|
+| Case | Surface-mount, 16 x 16.5 mm | Through-hole, 12.5 x 20 mm, 5.0 mm lead pitch, 0.6 mm leads | The same case, pitch and leads |
+| Largest size | 17.0 mm tall | 13.0 mm diameter, 21.5 mm long | 13.0 mm diameter, 22.0 mm long |
+| Endurance at 105 °C, rated voltage and rated ripple | 5000 h | 2000 h | 10,000 h |
+| Rated ripple at 105 °C | 900 mA at 100 kHz | 700 mA at 120 Hz | 2400 mA at 100 kHz, 1320 mA at 120 Hz |
+| The same at 50 and 60 Hz | 540 mA, multiplier 0.6 | 560 mA, multiplier 0.8 | Not given. About 1.05 A if the PX multiplier of 0.8 holds for it |
+| Dissipation factor at 120 Hz | not read | 0.10 | 0.09 |
+| The 0.48 A of the peak corner against the rating | 89 % | 86 % | 36 % of the 120 Hz figure |
+| Stock at JLCPCB on 2026-11-10 | 968 | 14,076 | 3180 |
+| Price at 100 pieces | 0.59 USD | 0.27 USD | 0.25 USD |
+
+All three cover the 0.16 A typical and 0.48 A peak ripple. The PX part has
+about the margin of the Lelon part and less than half its endurance, so I
+did not take it.
+The ZLJ part is from the same maker in the same case. Its sheet gives ripple
+multipliers from 120 Hz upward only, 0.55 at 120 Hz for 330 to 680 uF, and
+nothing for 50 or 60 Hz. The 1.05 A in the table borrows the PX sheet's
+ratio and is an estimate. Even against half that figure the peak corner is
+inside the rating.
+
+**Life.** C1 has voltage and ripple on it for as long as the controller is
+plugged in. The usual rule is that an aluminium electrolytic capacitor lasts
+twice as long for every 10 K below its rated temperature. That is general
+practice, not a Rubycon formula that I read, and it ignores the extra life
+that comes from running below the rated ripple.
+
+| Air around C1 | Factor on the 105 °C endurance | PX, 2000 h | Lelon VZH, 5000 h | ZLJ, 10,000 h |
+|---|---|---|---|---|
+| 70 °C, the design limit of section 3.3 | 2^3.5 = 11 | 2.6 years | 6.5 years | 13 years |
+| 55 °C | 2^5 = 32 | 7.3 years | 18 years | 37 years |
+| 40 °C, a 25 °C room | 2^6.5 = 91 | 21 years | 52 years | about 100 years |
+
+The figures are continuous operation at that temperature. Past about 15
+years other wear takes over and the arithmetic stops meaning anything. The
+point is the first row: a controller in a hot garage would wear out a
+2000 h part in a few summers.
+
+**Second sources.** The PX part, C88758, fits the same holes. Fit it only
+knowing its life. AISHI ERS1JM471K20OT, C106675, is listed with 10,000 h in
+a 13 x 20 mm case and had 85,615 in stock; LCSC has no data sheet link for
+it and I did not read one.
+
+**Placement and fitting.** The mechanical contract fixes C1 on the bottom
+side: can centred at (21, 30), axis along x, leads towards +x and bent
+through 90 degrees into pads at (36.0, 27.5) and (36.0, 32.5). It is soldered
+by hand after the surface-mount parts, in the same step as K1 and the
+terminal headers, and JLCPCB does not machine-fit it. Two ribs in the
+enclosure base carry its weight once the board is in. The contract was drawn
+for the PX can, 21.5 mm long at most. The ZLJ can may be 22.0 mm, and zone
+B_C1 has 0.75 mm beyond the can at the far end, so it fits; the enclosure
+owner should take the 0.5 mm into `hardware/mechanical.yaml`. Bend the leads
+no closer than 2 mm to the seal. That figure is common practice. I did not
+read Rubycon's handling notes.
 
 ### 4.6 Buck converter U1
 
@@ -842,9 +895,10 @@ copper island of 2 cm² or more, on both sides with vias if the top side lacks
 room. That is twice the area the calculation assumes. The
 other heat sources while watering are the shunt at 0.23 W, three PTCs at up to
 0.10 W each, the LDO at 0.27 W, the relay coil at 0.22 W, the backlight at 0.3 W
-and the module. The total is about 3.5 W in a closed box. The enclosure
-concept estimates a rise of 16 K at 3 W with vents, and the 70 °C air
-temperature of section 3.3 follows from that. The R8 module is rated to 65 °C
+and the module. The total is about 3.5 W in a closed box. The mechanical
+design estimates the rise with vents: 16 K at 3 W in revision 1 of the
+contract, from which the 70 °C air temperature of section 3.3 was set, and
+14 K at 3.5 W in revision 2. The R8 module is rated to 65 °C
 and to 85 °C only with PSRAM error correction enabled, so firmware must enable
 it: section 19.1, rule 7. See section 20.
 
@@ -2163,7 +2217,7 @@ stiffener in the same place. **So the contacts are on the same face as the
 screen.** With the screen facing away from the PCB, a tail that runs straight
 into a connector has its contacts facing away from the board and needs a
 top-contact connector. A tail folded back under the panel has them facing the
-board and suits J7 as chosen. The enclosure concept uses that fold. Section
+board and suits J7 as chosen. The mechanical contract uses that fold. Section
 16.4 fixes the contact side and the position of pin 1 from it, and corrects
 a statement about the fold that stood here after the review. **Still check with a
 sample before layout.** The drawing is the only evidence.
@@ -2369,22 +2423,23 @@ EMC work on the built board.
 
 <!-- designsync:end -->
 
-### 16.4 Agreement with the enclosure concept
+### 16.4 Agreement with the mechanical contract
 
-The enclosure work in pull request 24 fixes a mechanical contract in
-`hardware/mechanical.yaml` and `docs/design/mechanical.md`. That pull request
-is not merged; I read it at commit 2f7e375. This is how the circuit design
-stands against it.
+`hardware/mechanical.yaml` and the [mechanical design](mechanical.md) fix the
+board outline, the position of every part the enclosure touches and the
+height allowed over each region. This section follows **revision 2** of that
+contract, which is on `main`. An earlier version of this section quoted
+revision 1, where everything above y = 45 was 10 mm lower.
 
 **Display connector J7, resolved.** The contract mounts the panel on a
 carrier above the board, landscape, with its FPC edge towards +x. The tail
-makes a C-fold under the panel and enters J7 travelling in -x. J7 is at
-x = 60.5, y = 78.43, rotation 0, mouth at x = 63.0.
+makes a C-fold under the panel and enters J7 travelling in -x. J7's body
+centre is at x = 60.44, y = 88.43, rotation 0, with its mouth at x = 63.0.
 
 - **Contact side.** The panel's contacts are on the display face. After the fold that face looks at the board. J7 is the bottom-contact part, FPC-05F-12PH20, as chosen. Consistent.
-- **Pin 1.** The contract puts panel pin 1 at y = 75.68, the contact nearest the terminal-block edge, and pin 12 at y = 81.18. In the netlist J7 pin 1 is panel pin 1, `GND`. So the footprint's pad 1 is the pad at y = 75.68: **the left end of the connector when you look into its mouth with the board component side up.** The XUNPU drawing does not number the contacts on the connector body, so the footprint numbering is ours to set, and this sets it.
+- **Pin 1.** The contract puts panel pin 1 at y = 85.68, the contact nearest the terminal-block edge, and pin 12 at y = 91.18. In the netlist J7 pin 1 is panel pin 1, `GND`. So the footprint's pad 1 is the pad at y = 85.68: **the left end of the connector when you look into its mouth with the board component side up.** The XUNPU drawing does not number the contacts on the connector body, so the footprint numbering is ours to set, and this sets it.
 - **A correction to section 15.1 as the review left it.** It said the fold reverses the order of the pins as the board sees them. It does not. A fold about an axis parallel to the row of contacts leaves every contact at the same position along the row. What changes is the direction the connector's mouth faces, and so which end of the connector pin 1 is at.
-- **Body size.** The contract assumes a body of 5.0 x 9.6 mm. The XUNPU drawing gives (N - 1) x 0.5 + 4.9 = 10.4 mm along the contact row for 12 ways, 5.12 mm deep and 2.0 mm high. It is 0.8 mm longer than assumed and still inside the 9 x 23 mm cut-out in the carrier.
+- **Body size.** The XUNPU drawing gives (N - 1) x 0.5 + 4.9 = 10.4 mm along the contact row for 12 ways, 5.12 mm deep and 2.0 mm high. Revision 2 of the contract uses those figures. Revision 1 assumed 5.0 x 9.6 mm.
 
 Both points rest on the panel drawing. Check them on a sample panel before
 layout, as section 15.1 says.
@@ -2394,17 +2449,18 @@ J6. Sections 16.1 and 16.2 agree with it: the four terminal blocks are in
 the same order with the same pin order, and the contract adds the USB socket
 at the left end and the Qwiic socket at the right. No conflict.
 
-**Points the enclosure owner needs to know.**
+**Where the two documents meet.**
 
-| Item | Contract | Circuit design | What to do |
+| Item | Contract, revision 2 | Circuit design | Open |
 |---|---|---|---|
-| Fuse holders | One holder is assumed, under 9 mm, height not read | Two now, F1 and F4, 9.7 x 5 mm each. The Littelfuse sheet I have gives the pad layout, and I could not read a height from its text. | Both must be reachable with the wiring cover off, next to J1. Read the height from the drawing at capture. |
-| C1 | Bottom side, 16.5 mm against 17.0 mm allowed | An SMD can. On the bottom it is the only SMD part there. | Either pay for a second assembly side for one part, or fit C1 by hand. A through-hole capacitor does not help: a 12.5 x 16 mm one standing is 16 mm plus its length tolerance, which I did not read, and lying down it is 12.5 mm high, over the 9 mm allowed on top. |
-| K1 | Bottom side, 15.3 mm | Through-hole, so it is inserted from the bottom and soldered from the top, by hand or selectively, after the SMD parts. | Ask the assembler before layout. I found no relay of this rating under 9 mm. |
-| USB socket beside J1 | Flagged in the mechanical design as a problem | Electrically harmless. The shell is at `GND` through R17 and J1 pin 1 is at most 45 V away. | Keep 2 mm between the shell and the J1 pads. |
-| Fault LED D8 | No light pipe or opening | D8 shows the over-current latch and is a bring-up aid. Firmware reads the same latch on GPIO40 and shows it on the display. | None needed. |
-| Enclosure temperature | Estimates 6 K at 1 W, 11 K at 2 W and 16 K at 3 W with vents | This document now designs to 70 °C inside, section 3.3. | Keep the vents. A closed box would need the estimate redone. |
-| New parts since the contract was written | | F4, U12, D22 to D24, RN1 to RN3 and about twenty small passives. None is taller than 2.5 mm apart from F4. | Area only. |
+| Board | 114 x 110 mm, four layers, every surface-mount part on the top side | 346 components. Nothing in the circuit needs a second assembly side. | Nothing |
+| Fuse holders | F4 at (15.0, 12.6) and F1 at (27.0, 12.6), in a walled well behind J1 that opens under the wiring cover. Body 9.73 x 5.03 x 3.81 mm from the Littelfuse drawing. | F4 is in the leg of J1 pin 1 and F1 in the leg of pin 2, as the contract places them. Section 4.3 asks for both next to J1. | Nothing. The height that this document could not read is 3.81 mm. |
+| C1 | Through-hole, on the bottom side, lying down, fixed at (21, 30) with pads at (36.0, 27.5) and (36.0, 32.5). Named as the Rubycon PX part, 21.5 mm long at most. | Rubycon 63ZLJ470M12.5X20: the same case and lead pitch, five times the endurance. Section 4.5. | The ZLJ can may be 22.0 mm long. It stays inside zone B_C1. The contract's part name and length are for its owner to update. |
+| K1 | Through-hole, inserted from the bottom, soldered by hand on the top. Suggested at (50, 22). | Through-hole because no surface-mount relay meets the ratings, section 7.2. | Whether the assembler hand-solders parts on the side opposite the SMT has not been asked. If not, the builder solders K1 and C1. |
+| USB socket beside J1 | The shell ends at x = 12.47 and J1's first pin is at x = 17.8 | Electrically harmless. The shell is at `GND` through R17 and J1 pin 1 is at most 45 V away. This document asked for 2 mm. | Nothing |
+| Fault LED D8 | No light pipe or opening | D8 shows the over-current latch and is a bring-up aid. Firmware reads the same latch on GPIO40 and shows it on the display. | Nothing |
+| Enclosure temperature | Estimates 9 K at 2 W and 14 K at 3.5 W with vents | This document designs to 70 °C inside, section 3.3. | Keep the vents. A closed box would need the estimate redone. |
+| Soldering access | Keep 2.5 mm around the top-side pads of C1 and K1 free of parts taller than 1.5 mm | | A layout rule. |
 
 ## 17. The 4-zone variant
 
@@ -2449,8 +2505,8 @@ part type, shipping, duty, the coin cell and the enclosure.
 
 | Build | 10 boards | 100 boards |
 |---|---|---|
-| 8-zone | 40.65 USD | 31.84 USD |
-| 4-zone | 34.37 USD | 27.04 USD |
+| 8-zone | 40.35 USD | 31.50 USD |
+| 4-zone | 34.06 USD | 26.70 USD |
 
 Not in the totals, because the line has no price: CR2032 lithium coin cell, 3 V.
 
@@ -2474,9 +2530,9 @@ Lines with the least stock against a 100-board order of the 8-zone build:
 | HS20HS072RX | 460 | 100 |
 | KF2EDGR-3.81-7P | 1806 | 200 |
 | KF2EDGK-3.81-7P | 1827 | 200 |
-| VZH471M1JTR-1616 | 968 | 100 |
 | 0154003.DRT | 2514 | 200 |
 | EC11J1525402 | 1486 | 100 |
+| 1812L020/60DR | 1650 | 100 |
 
 <!-- designsync:end -->
 
@@ -2495,6 +2551,11 @@ breaks. So the changes add 1.49 USD to an 8-zone board at 100 boards:
 | Surge-rated R1 | +0.09 |
 | Second pump, read-back resistors, arrays, series footprints, D24 | +0.14 |
 | Nine 40 A PTCs in place of the 20 A parts | -0.63 |
+
+The totals at the top of this section are 0.34 USD lower than that sum
+gives. The through-hole bulk capacitor that replaced the surface-mount one
+after the mechanical contract (section 4.5) costs 0.25 USD at 100 pieces
+where the other cost 0.59 USD.
 
 The CR2032 cell is on the BOM as a line with no LCSC number, marked as not
 fitted by JLCPCB. Review A1 noted that the rule "an LCSC number on every
@@ -2744,7 +2805,7 @@ get its numbers.
 | 16 | Relay | Must-operate at 75 % of rated at 23 °C, which leaves 11 % with a hot coil on `V_BUCK`. Contacts do not break current in normal use. They break valve current when the keep-alive stops and the relay detector lets go first, and fault current after an over-current trip, section 7.2. | Operate at `V_BUCK` = 5.0 V after an hour energised at 70 °C. Open under a 1.5 A inductive load 1000 times. Open under the short-circuit current of 40 VA and 75 VA transformers 20 times each, and run the weld check after every one. |
 | 17 | Fuses and USB ground faults | 8 A fault, 28 AWG ground | Not a test to run on a good computer. Check fuse opening time at 8 A on the bench. |
 | 18 | Sensor miswire heating | 0.11 W in a 1206 | 32 VAC on each sensor terminal for an hour. Part temperatures. |
-| 19 | Bulk capacitor ripple and life | 63 V part has the ripple rating of the 50 V part | Capacitor case temperature at peak load and low line. |
+| 19 | Bulk capacitor ripple and life | The ZLJ sheet gives no ripple rating below 120 Hz; 0.8 of the 120 Hz figure is borrowed from the PX sheet. Life by the 10 K rule, section 4.5. The leads are bent through 90 degrees and the can lies on the board. | Capacitor case temperature at peak load and low line. Inspect the lead seal after forming, and after a vibration or drop test of the assembled unit. |
 | 20 | Output LED brightness | 1.6 mA is visible through a light pipe | Look at it in the enclosure. |
 | 21 | Regulator over-voltage | None. If the switch of U1 shorts, `V_BUCK` reaches `VIN_DC` and the logic is destroyed. Section 8.5 argues that K1 still opens and cannot prove it. | Decide whether revision A gets an over-voltage clamp or crowbar on `V_BUCK`. On a sacrificial board, short SW to VIN with a valve running and record what the valve does. |
 | 22 | Gate drive of Q2 | 2.09 V at the worst corner against a 1.59 V threshold. No on-resistance is guaranteed below 2.5 V. | Drain voltage of Q2 with K1 energised at -20 °C, with the keep-alive slowed to one edge per 20 ms. Under 50 mV. |
@@ -2785,7 +2846,7 @@ what it settled. The list after it is what is still open.
 | Item | Result | Source |
 |---|---|---|
 | T410 and T810 pin order | Confirmed: pin 1 T1, pin 2 and tab T2, pin 3 gate | ST DocID7699 rev 9 and DocID7472 rev 12, page 1 drawings |
-| Bulk capacitor ripple rating | 900 mA at 100 kHz, 540 mA at 50 and 60 Hz for the 63 V part | Lelon VZH table, 63 V column |
+| Bulk capacitor ripple rating | For the first draft's Lelon part: 900 mA at 100 kHz, 540 mA at 50 and 60 Hz. For the Rubycon ZLJ part now fitted: 2400 mA at 100 kHz, 1320 mA at 120 Hz, no figure below 120 Hz. | Lelon VZH table, 63 V column. Rubycon ZLJ sheet, standard size table and multiplier table. |
 | Relay must-operate voltage | 75 % of rated at a coil temperature of 23 °C. 11 % margin with a hot coil now that the coil is on `V_BUCK`, section 7.2 | Omron G5NB data sheet, English edition |
 | Display FPC contact side | Same face as the screen | Panel drawing, front and rear views |
 | Display viewing area | 33.6 x 43.94 mm is the likely window. The drawing does not label it. | Panel drawing, note 8 |
@@ -2812,7 +2873,7 @@ Still open:
 - **AO3400A threshold over temperature.** The data sheet gives 0.65 to 1.45 V at 25 °C. The -3 mV/K used in section 7.3 is an assumption.
 - **BAT54S leakage when hot.** The data sheet limits it at 25 °C only. Both detectors are sized so that it matters little, and risk 10 measures it.
 - **PTC trip time above 8 A.** One data sheet point, scaled. Section 6.6.
-- **Fuse holder height.** Not read. Section 16.4.
+- **Bulk capacitor ripple rating at 50 and 60 Hz, and Rubycon's rules for forming leads.** Section 4.5.
 - **Resistor array pin pairs.** The UNI-ROYAL data sheet shows the circuit as a picture. Pairs 1-8, 2-7, 3-6 and 4-5 are assumed from the usual numbering.
 - **Regulator over-voltage.** Section 8.5.
 - **Lifecycle status.** The JLCPCB listing does not give it. Only the LM5164DDAR is confirmed active, from the TI data sheet addendum.
@@ -2851,6 +2912,7 @@ is LCSC's copy of the maker's PDF for that LCSC number.
 | RLP25FEER100 | TA-I RLP series | <https://www.lcsc.com/datasheet/C160587.pdf> |
 | VZH471M1JTR-1616 | Lelon VZH series | <https://www.lcsc.com/datasheet/C249935.pdf> |
 | 63PX470MEFC12.5X20 | Rubycon PX series | <https://www.lcsc.com/datasheet/C88758.pdf> |
+| 63ZLJ470M12.5X20 | Rubycon ZLJ series | <https://www.lcsc.com/datasheet/C2940725.pdf> |
 | SRN6045TA-470M | Bourns SRN6045TA | <https://www.lcsc.com/datasheet/C5151734.pdf> |
 | HS20HS072RX | Hansheng datasheet v1.0, 2020-11-04 | <https://www.lcsc.com/datasheet/C5329582.pdf> |
 | EC11J1525402 | ALPS product sheet | <https://www.lcsc.com/datasheet/C209762.pdf> |
@@ -2907,9 +2969,16 @@ something other than what the reviewer proposed, with the reason.
 7. **A bridge from the keep-alive net to the zero-cross net.** Not in the review. I estimated by hand that it could not run either detector, simulated it and found that it can hold the relay detector on. It cannot enable the other. Section 8.5.
 8. **The operating temperature inside the enclosure** is 70 °C, from the enclosure concept's own estimate, not the 60 °C the first draft and the review used. PSRAM ECC becomes mandatory. Sections 3.3 and 6.7.
 
+**After revision 2 of the mechanical contract.** The contract was merged
+after this document, and two things here followed from it at schematic
+capture.
+
+1. **C1 is a through-hole part.** The contract allows no surface-mount part on the bottom side and fixes C1 there, lying down. It named the Rubycon PX part. Its data sheet gives 2000 h at 105 °C, against 5000 h for the Lelon part it would replace, so I chose the Rubycon ZLJ part in the same case instead: 10,000 h and about twice the ripple rating. Section 4.5 has the comparison. Netlist, BOM and the tables here changed with it.
+2. **Section 16.4 quotes revision 2 coordinates.** J7 is at (60.44, 88.43) with pad 1 at y = 85.68. The fuse holders, C1 and K1 have the positions and the assembly method the contract gives.
+
 **What I did not resolve.**
 
 - **Regulator over-voltage.** If U1's switch shorts, the fail-safe analysis has no proof. Section 8.5 and risk 21.
 - **Q3 shorted** is found by no self-test. Section 8.5.
-- **C1 and K1 on the bottom side.** A decision for the owner and the assembler. Section 16.4.
+- **Who solders C1 and K1.** The contract settles where they go. Whether the assembly house hand-solders parts on the side opposite the SMT has not been asked. Section 16.4.
 - **Everything in section 20.** No bench work has been done.
