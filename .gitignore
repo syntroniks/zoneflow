@@ -17,6 +17,9 @@ secrets.yaml
 # Hardware flow
 hardware/.cache/
 
+# Enclosure flow: downloaded OpenSCAD snapshot
+enclosure/.cache/
+
 # Python / Node
 .venv/
 __pycache__/
@@ -32,6 +35,3 @@ site/
 
 # ZoneFlow firmware: generated from sdkconfig.defaults
 firmware/zoneflow-fw/sdkconfig
-
-# Enclosure
-enclosure/.cache/
