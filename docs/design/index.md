@@ -6,6 +6,7 @@ one to change, change it in the same pull request. See
 
 - [System specification](system-spec.md): hardware, firmware, enclosure, documentation, licences and verification limits.
 - [Prior-art survey](prior-art.md): existing open irrigation controllers, their circuits, known field failures, and what ZoneFlow takes from them.
+- [Firmware architecture](firmware-architecture.md): standalone firmware modules, threading, safety design, interfaces for later modules, scheduler and missed-start policy, open questions for hardware.
 
 An independent design review before fabrication is tracked in
 [issue #11](https://github.com/syntroniks/zoneflow/issues/11).

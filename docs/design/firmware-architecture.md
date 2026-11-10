@@ -126,7 +126,7 @@ How the firmware implements spec section 2:
 |---|---|
 | 1. Outputs off by default | `GpioOutputs::init()` is the first call in `app_main`: it sets the output latch to off, then enables the drivers (pin goes from high impedance straight to driven off). `ZoneDriver::init()` forces all off again. Hardware pull-downs must hold outputs off before that (see open questions). |
 | 2. No strapping or glitching pins on outputs | `zf_board` `static_assert`s: no strapping (0, 3, 45, 46), USB (19, 20) or flash/PSRAM (26 to 37) pins, no output or OE on a pin with a high-level power-up glitch (18, 19, 20; ESP32-S3 datasheet v2.2 table 2-2), no duplicates. |
-| 3. Hardware output enable | `OutputEnableGuard` drives OE only while (a) an output is on or about to be, (b) the control loop heartbeat is younger than `CONFIG_ZF_OE_HEARTBEAT_TIMEOUT_MS` (500 ms), (c) it is not tripped. Toggle mode produces an edge every keep-alive period; static mode holds the level. A stuck control loop, a stuck keep-alive task or a halted CPU all stop OE. |
+| 3. Hardware output enable | Spec v0.2: firmware keeps toggling a keep-alive signal, and hardware removes gate drive within about 1 s after toggling stops. `OutputEnableGuard` toggles only while (a) an output is on or about to be, (b) the control loop heartbeat is younger than `CONFIG_ZF_OE_HEARTBEAT_TIMEOUT_MS` (500 ms), (c) it is not tripped. The keep-alive task produces an edge every 5 ms. A stuck control loop, a stuck keep-alive task or a halted CPU all stop the toggling. A static-level variant exists as a Kconfig option for other hardware; rev A uses toggle mode. |
 | 4. Maximum run time | `ZoneDriver::start()` clamps every request to min(zone `max_run_s`, 4 h). The driver times the run itself and closes the valve; a second independent check in `tick()` closes any zone open longer than its limit. Callers cannot pass a longer time through any path. |
 
 Other limits enforced in the zone driver:
@@ -320,7 +320,9 @@ the REST and backup format. Abbreviated example:
   filter). Litres = pulses / `pulses_per_litre`; rate over the last 5 s (one sample per second).
   Flow above `leak_threshold_lpm` for `leak_detect_s` with every valve shut
   raises `flow_without_zones`.
-- **Valve current.** One total current (spec 3.1). Expected window = sum of
+- **Valve current.** One total current from the low-side shunt (spec 3.1).
+  A shorted valve or wire shuts the zone off and is reported (spec 1).
+  Expected window = sum of
   the min/max of every output that is on. Comparisons start `settle_ms` after
   any output change; the short-circuit limit applies at all times. A fault
   is attributed to the output switched on most recently. Per-output current
@@ -350,19 +352,24 @@ the REST and backup format. Abbreviated example:
 1. **Pin map.** Everything in `zoneflow_rev_a.hpp` is provisional. Please
    publish `hardware/pinmap.yaml`; the board header will follow it. The
    `static_assert`s will flag any pin that breaks the rules above.
-2. **Output-enable circuit.** Toggle (retriggerable monostable) or static
-   level? Required edge rate and hold time? Firmware produces an edge every
-   5 ms. During NVS writes and erases the flash cache is disabled and both
-   cores stall, so the keep-alive task pauses for the flash chip's sector
-   erase time (from the module's flash datasheet, not measured here). The OE
-   hold time must be longer than that, or NVS writes will drop the valves.
+2. **Keep-alive circuit.** Spec v0.2 fixes toggle mode and a removal time
+   of about 1 s. Firmware produces an edge every 5 ms while an output is
+   wanted and stops toggling when everything is off. Needed: the minimum
+   edge rate the circuit accepts, and confirmation that the hold time is
+   longer than the module flash's sector-erase time. During NVS writes the
+   flash cache is disabled, both cores stall and the keep-alive task pauses
+   for that long (value from the flash datasheet, not measured here).
 3. **Pull-downs.** Firmware assumes external pull-downs on every output and
    on OE so outputs stay off in reset and while unpowered. Confirm.
-4. **Current-sense front end.** Firmware assumes a DC voltage proportional
-   to RMS current at an ADC1 pin, placeholder 1 mA per mV, 16 samples
-   averaged per 50 ms tick. Needed: sensor type, transfer function, full
-   scale, filter time constant, and whether firmware must compute RMS from
-   raw AC samples instead.
+4. **Current-sense front end.** Spec v0.2: low-side shunt in the shared
+   triac return, rectifying/averaging front end, biased away from the
+   non-linear ADC region near 0 V. Firmware reads it on ADC1 with a
+   placeholder scale of 1 mA per mV and a bias offset of 0 mV
+   (`kValveCurrentMaPerMv`, `kValveCurrentOffsetMv`), 16 samples averaged
+   per 50 ms tick. Needed: shunt value, gain, bias voltage, full scale and
+   filter time constant, or the external ADC if one is used. If a hardware
+   over-current path is added (spec: preferred), firmware should read its
+   trip flag on a GPIO; there is no pin for it in the provisional map.
 5. **24 VAC-present signal.** Assumed active low (optocoupler pulling down).
    Polarity and response time on loss?
 6. **Field input polarity.** Assumed: contact closed pulls the pin low,
@@ -373,9 +380,14 @@ the REST and backup format. Abbreviated example:
 8. **OLED address.** 0x3C assumed. SSD1306 or SH1106?
 9. **GPIO15/16 for I2C** assume no 32 kHz crystal on the module pins.
 10. **Valve current windows.** Defaults are 80 to 700 mA per output and
-    3000 mA short circuit. Please confirm against the triac/opto stage and
-    typical 24 VAC solenoids (spec: 0.5 A continuous, 1.5 A inrush for
-    100 ms per output).
+    3000 mA short circuit. The prior-art survey cites 200 to 400 mA for
+    typical solenoids and an OpenSprinkler default limit of 1200 mA. Please
+    confirm against the triac stage and the spec ratings (0.5 A continuous,
+    1.5 A inrush for 100 ms per output).
+11. **Per-output LEDs.** The spec asks for one LED per output. Firmware
+    assumes they follow the gate drive in hardware and only drives the
+    power/status LED. If they need their own GPIOs, the pin map has to
+    change.
 
 ## 10. Decisions made in phase 1
 
