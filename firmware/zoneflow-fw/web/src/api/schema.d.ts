@@ -639,7 +639,7 @@ export interface paths {
         };
         /**
          * Scan for WiFi networks
-         * @description Only while SoftAP provisioning runs (409 `not_provisioning` otherwise). The setup code is the WPA2 passphrase of that access point, so a client on it has already proven it knows the code.
+         * @description Only while SoftAP provisioning runs (409 `not_provisioning` otherwise), and only from a client joined to the setup access point (403 `setup_ap_only` from the home network, which the station joins before provisioning ends). The setup code is the WPA2 passphrase of that access point, so a client on it has already proven it knows the code.
          */
         get: operations["scanNetworks"];
         put?: never;
@@ -661,7 +661,7 @@ export interface paths {
         put?: never;
         /**
          * Send WiFi credentials
-         * @description Only while SoftAP provisioning runs. Optionally sets the first admin password.
+         * @description Only while SoftAP provisioning runs, and only from a client joined to the setup access point (403 `setup_ap_only` otherwise). Optionally sets the first admin password.
          */
         post: operations["provisionWifi"];
         delete?: never;
@@ -1222,7 +1222,7 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description Host not this device (`bad_host`), cross-origin write (`bad_origin`) or missing CSRF header (`csrf`) */
+        /** @description Host not this device (`bad_host`), cross-origin write (`bad_origin`), missing CSRF header (`csrf`), or a provisioning route from outside the setup access point (`setup_ap_only`) */
         Forbidden: {
             headers: {
                 [name: string]: unknown;
@@ -2401,6 +2401,7 @@ export interface operations {
                     "application/json": components["schemas"]["WifiNetwork"][];
                 };
             };
+            403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
         };
     };
