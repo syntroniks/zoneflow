@@ -15,6 +15,7 @@ export const SETTINGS_SECTIONS: { slug: string; key: StringKey; icon: IconName }
   { slug: 'watering', key: 'set_watering', icon: 'drop' },
   { slug: 'sensors', key: 'set_sensors', icon: 'rain' },
   { slug: 'network', key: 'set_network', icon: 'wifi' },
+  { slug: 'mqtt', key: 'set_mqtt', icon: 'flow' },
   { slug: 'security', key: 'set_security', icon: 'lock' },
   { slug: 'backup', key: 'set_backup', icon: 'download' },
   { slug: 'firmware', key: 'set_firmware', icon: 'upload' },
@@ -38,7 +39,7 @@ export function MoreScreen() {
       <Card>
         <div class="rows">
           <MenuRow href="/rain-delay" icon="rain" label={t('nav_rain_delay')} value={rd?.active ? t('on') : t('off')} />
-          <MenuRow href="/activity" icon="activity" label={t('nav_activity')} />
+          <MenuRow href="/history" icon="activity" label={t('nav_activity')} />
         </div>
       </Card>
       <Card title={t('settings_title')}>

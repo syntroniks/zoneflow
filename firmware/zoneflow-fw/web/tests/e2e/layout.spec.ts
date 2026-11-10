@@ -2,8 +2,8 @@
 import { expect, test } from '@playwright/test';
 import { go, mock, openSignedIn, reset } from './helpers.ts';
 
-const PATHS = ['/', '/run', '/zones', '/zones/4', '/programs', '/programs/new', '/programs/2', '/rain-delay', '/activity', '/more',
-  '/settings/device', '/settings/time', '/settings/watering', '/settings/sensors', '/settings/network', '/settings/security',
+const PATHS = ['/', '/run', '/zones', '/zones/4', '/programs', '/programs/new', '/programs/2', '/rain-delay', '/history', '/more',
+  '/settings/device', '/settings/time', '/settings/watering', '/settings/sensors', '/settings/network', '/settings/mqtt', '/settings/security',
   '/settings/backup', '/settings/firmware', '/settings/system', '/about'];
 
 test('no horizontal scrolling on any screen', async ({ page, request }) => {

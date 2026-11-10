@@ -8,7 +8,7 @@ import { loadConfig, refreshAuth } from './state/actions.ts';
 import { startLive } from './state/live.ts';
 import { auth, onboarding } from './state/store.ts';
 import { AboutScreen } from './screens/about.tsx';
-import { ActivityScreen } from './screens/activity.tsx';
+import { ActivityScreen } from './screens/history.tsx';
 import { HomeScreen } from './screens/home.tsx';
 import { MoreScreen } from './screens/more.tsx';
 import { ProgramEditScreen, ProgramsScreen } from './screens/programs.tsx';
@@ -29,7 +29,7 @@ function Routes() {
   if (p === '/programs/new') return <ProgramEditScreen key="new" id="new" />;
   if ((m = match('/programs/:id', p))) return <ProgramEditScreen key={m['id']} id={Number(m['id'])} />;
   if (p === '/rain-delay') return <RainScreen />;
-  if (p === '/activity') return <ActivityScreen />;
+  if (p === '/history') return <ActivityScreen />;
   if (p === '/more' || p === '/settings') return <MoreScreen />;
   if ((m = match('/settings/:section', p))) return <SettingsScreen key={m['section']} section={m['section'] ?? ''} />;
   if (p === '/about') return <AboutScreen />;
@@ -48,7 +48,7 @@ export function App() {
         setCsrf(a.csrf);
         auth.value = a;
       } catch {
-        auth.value = { password_set: true, authenticated: false };
+        auth.value = { password_set: true, authenticated: false, protect_reads: false, setup_complete: true };
       }
       void loadConfig();
       startLive();
@@ -57,7 +57,8 @@ export function App() {
 
   const a = auth.value;
   if (!a) return <div class="gate"><Spinner label={t('loading')} /></div>;
-  if (!a.password_set || onboarding.value) return <Welcome />;
+  // First run: no password yet, or signed in before the first-run steps were done.
+  if (!a.password_set || onboarding.value || (a.authenticated && !a.setup_complete)) return <Welcome />;
   if (a.protect_reads && !a.authenticated) return <LoginGate />;
   return (
     <Shell>

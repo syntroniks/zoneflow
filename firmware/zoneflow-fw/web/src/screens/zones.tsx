@@ -43,16 +43,23 @@ export function ZonesScreen() {
 export function ZoneDetailScreen({ id }: { id: number }) {
   const info = zones.value.find((z) => z.id === id);
   const z = status.value?.zones?.[id - 1];
-  const rest = (config.value?.driver as { min_rest_s?: number } | undefined)?.min_rest_s ?? 1800;
-  const [form, setForm] = useState({ name: '', enabled: true, maxMin: 60, minMa: 80, maxMa: 700 });
+  const rest = config.value?.driver.min_rest_s ?? 1800;
+  const [form, setForm] = useState({ name: '', enabled: true, maxMin: 60, defMin: 10, minMa: 80, maxMa: 700 });
   const [dirty, setDirty] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (info && !dirty)
-      setForm({ name: info.name, enabled: info.enabled, maxMin: Math.round(info.maxRunSec / 60), minMa: info.currentMinMa, maxMa: info.currentMaxMa });
-  }, [info?.name, info?.enabled, info?.maxRunSec, info?.currentMinMa, info?.currentMaxMa]);
+      setForm({
+        name: info.name,
+        enabled: info.enabled,
+        maxMin: Math.round(info.maxRunSec / 60),
+        defMin: Math.max(1, Math.round(info.defaultRunSec / 60)),
+        minMa: info.currentMinMa,
+        maxMa: info.currentMaxMa,
+      });
+  }, [info?.name, info?.enabled, info?.maxRunSec, info?.defaultRunSec, info?.currentMinMa, info?.currentMaxMa]);
 
   useEffect(() => {
     setNavigationGuard(dirty ? () => window.confirm(t('program_unsaved')) : null);
@@ -70,7 +77,14 @@ export function ZoneDetailScreen({ id }: { id: number }) {
     setBusy(true);
     setErrors({});
     try {
-      await patchZone(id, { name: form.name.trim(), enabled: form.enabled, max_run_s: form.maxMin * 60, current_min_ma: form.minMa, current_max_ma: form.maxMa });
+      await patchZone(id, {
+        name: form.name.trim(),
+        enabled: form.enabled,
+        max_run_s: form.maxMin * 60,
+        default_run_s: form.defMin * 60,
+        current_min_ma: form.minMa,
+        current_max_ma: form.maxMa,
+      });
       setDirty(false);
       toast(t('saved'), 'success');
     } catch (x) {
@@ -132,6 +146,7 @@ export function ZoneDetailScreen({ id }: { id: number }) {
       <form onSubmit={save} class="card stack" aria-label={t('edit')}>
         <TextField label={t('zone_name')} help={t('zone_name_help')} value={form.name} maxLength={23} onInput={(v) => set({ name: v })} error={errors['name']} placeholder={t('zone_n', { n: id })} disabled={!signedIn.value} />
         <Switch label={t('zone_enabled')} help={t('zone_enabled_help')} checked={form.enabled} onChange={(v) => set({ enabled: v })} disabled={!signedIn.value} />
+        <Stepper label={t('zone_default_run')} help={t('zone_default_run_help')} value={form.defMin} min={1} max={240} unit={t('minutes_short')} onChange={(v) => set({ defMin: v })} error={errors['default_run_s']} />
         <Stepper label={t('zone_max_run')} help={t('zone_max_run_help', { rest: formatDuration(rest) })} value={form.maxMin} min={1} max={240} step={5} unit={t('minutes_short')} onChange={(v) => set({ maxMin: v })} error={errors['max_run_s']} />
         <fieldset class="group">
           <legend>{t('zone_current_window')}</legend>
@@ -140,7 +155,25 @@ export function ZoneDetailScreen({ id }: { id: number }) {
             <Stepper label={t('zone_current_min')} value={form.minMa} min={0} max={3000} step={10} onChange={(v) => set({ minMa: v })} error={errors['current_min_ma']} />
             <Stepper label={t('zone_current_max')} value={form.maxMa} min={0} max={3000} step={10} onChange={(v) => set({ maxMa: v })} error={errors['current_max_ma']} />
           </div>
-          <p class="field-help">{t('zone_learned_absent')}</p>
+          {info.learnedMa !== null ? (
+            <div class="learned">
+              <p>
+                {t('zone_learned', { ma: info.learnedMa })}
+                {(info.learnedMa < form.minMa || info.learnedMa > form.maxMa) && <strong class="tone-warning"> {t('zone_learned_outside')}</strong>}
+              </p>
+              <Button
+                size="sm"
+                variant="tonal"
+                disabled={!signedIn.value}
+                onClick={() => set({ minMa: Math.round((info.learnedMa! * 0.5) / 10) * 10, maxMa: Math.round((info.learnedMa! * 1.6) / 10) * 10 })}
+              >
+                {t('zone_learned_apply')}
+              </Button>
+              <p class="field-help">{t('zone_learned_apply_help')}</p>
+            </div>
+          ) : (
+            <p class="field-help">{t('zone_learned_none')}</p>
+          )}
         </fieldset>
         <KeyValue items={[[t('zone_last_stop'), tk(`last_stop_${z?.last_stop ?? 'none'}`)]]} />
         <div class="form-actions">

@@ -54,8 +54,8 @@ for (const scheme of ['light', 'dark'] as const) {
         await mock(request, 'set', { rain: true });
         await page.waitForTimeout(700);
         await shot(page, 'home-faults', true);
-        await go(page, '/activity');
-        await shot(page, 'activity');
+        await go(page, '/history');
+        await shot(page, 'history', true);
 
         await go(page, '/run');
         await page.getByRole('radio', { name: /Back lawn/ }).check();
@@ -82,7 +82,7 @@ for (const scheme of ['light', 'dark'] as const) {
         await shot(page, 'rain-delay');
         await go(page, '/more');
         await shot(page, 'more', true);
-        for (const s of ['time', 'watering', 'network', 'security', 'backup', 'firmware', 'system']) {
+        for (const s of ['device', 'time', 'watering', 'network', 'mqtt', 'security', 'backup', 'firmware', 'system']) {
           await go(page, `/settings/${s}`);
           await page.waitForTimeout(200);
           await shot(page, `settings-${s}`, true);

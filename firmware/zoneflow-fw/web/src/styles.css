@@ -1656,6 +1656,7 @@ select.input {
 
 .editor {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 .editor-main,
@@ -1688,13 +1689,35 @@ select.input {
   border-top: 1px solid var(--line);
   box-shadow: var(--shadow-up);
 }
-/* Keep the save bar clear of the watering bar above the phone navigation. */
-.shell:has(.running-bar) .save-bar {
-  bottom: calc(var(--nav-h) + var(--safe-b) + 72px);
+/* Phones: a page with a Save bar shows Stop all in that bar instead of the
+   floating watering bar, so no strip of content shows between two bars. */
+.save-bar .bar-stop {
+  margin-right: auto;
+}
+/* Narrow phones: Stop keeps its icon; the label stays for screen readers. */
+@media (max-width: 379px) {
+  .save-bar .bar-stop {
+    padding: 0 14px;
+  }
+  .save-bar .bar-stop > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+@media (max-width: 759px) {
+  .shell:has(.save-bar) .running-bar {
+    display: none;
+  }
 }
 @media (min-width: 760px) {
-  .save-bar,
-  .shell:has(.running-bar) .save-bar {
+  .save-bar .bar-stop {
+    display: none;
+  }
+  .save-bar {
     bottom: 0;
     margin: 0;
     padding: 12px 16px;
@@ -1940,5 +1963,124 @@ select.input {
 @media (min-height: 760px) {
   .gate {
     padding-top: 8vh;
+  }
+}
+
+/* ---- time input, MQTT, history ---------------------------------------------- */
+
+.time-input {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.time-input .input {
+  width: auto;
+  min-width: 0;
+  flex: 0 1 84px;
+  padding-left: 12px;
+  padding-right: 30px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  background-position: calc(100% - 16px) 50%, calc(100% - 10px) 50%;
+}
+.time-sep {
+  font-weight: 700;
+  color: var(--muted);
+}
+.starts .field {
+  max-width: none;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.learned {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+.skip-setup {
+  align-self: center;
+}
+
+.hist-day > h2 {
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+.log-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.log-text small {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.log .tone-water .log-text > span {
+  color: var(--text);
+}
+.older {
+  align-self: center;
+}
+.usage {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.usage li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: center;
+}
+.usage-name {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.usage-value {
+  font-size: 0.875rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.usage-bar {
+  grid-column: 1 / -1;
+  height: 8px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--water) 15%, transparent);
+  overflow: hidden;
+}
+.usage-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--water);
+}
+.mqtt-state {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: 600;
+}
+.mqtt-state.tone-success {
+  color: var(--success);
+}
+.mqtt-state.tone-muted {
+  color: var(--muted);
+}
+.mqtt-state.tone-info {
+  color: var(--info);
+}
+@media (min-width: 480px) {
+  .host-port {
+    grid-template-columns: 1fr 120px;
   }
 }

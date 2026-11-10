@@ -12,7 +12,7 @@ import { onLinkClick } from '../router.ts';
 import { clearFaults, pauseQueue, resumeQueue, skipQueue, stopAll } from '../state/actions.ts';
 import { deriveAlerts } from '../state/alerts.ts';
 import { nextPlanned } from '../state/schedule.ts';
-import { config, conn, deviceNow, elapsedSec, pending, programs, status, timeZone, zoneLabel, zones, type ZoneInfo } from '../state/store.ts';
+import { conn, deviceNow, elapsedSec, pending, programs, status, timeZone, zoneLabel, zones, type ZoneInfo } from '../state/store.ts';
 
 type ZoneStatus = NonNullable<Status['zones']>[number];
 
@@ -81,7 +81,11 @@ function NowCard() {
         <span class="now-zone-name">{zoneLabel(zoneId)}</span>
       </p>
       {paused ? (
-        <p class="muted">{t('now_paused_detail', { time: formatDuration((q?.pause_timeout_min ?? 120) * 60) })}</p>
+        <p class="muted">
+          {t('now_paused_detail', {
+            time: formatDuration(Math.max(0, (q?.stop_in_s ?? (q?.pause_timeout_min ?? 120) * 60) - el)),
+          })}
+        </p>
       ) : (
         <>
           <p class="now-clock tabular" aria-live="off">
@@ -225,14 +229,13 @@ function ZonesCard() {
 
 function SensorsCard() {
   const s = status.value?.sensors;
-  const cfgSensors = (config.value?.sensors ?? {}) as Record<string, { enabled?: boolean } | undefined>;
   if (!s) return null;
   const master = status.value?.master;
   const rows: { icon: Parameters<typeof Icon>[0]['name']; label: string; value: string; tone?: string }[] = [
     {
       icon: 'rain',
       label: t('rain_sensor'),
-      value: s.rain?.enabled ?? cfgSensors['rain']?.enabled ? (s.rain?.active ? t('rain_wet') : t('rain_dry')) : t('not_fitted'),
+      value: s.rain.enabled ? (s.rain.active ? t('rain_wet') : t('rain_dry')) : t('not_fitted'),
       tone: s.rain?.active ? 'water' : undefined,
     },
     {

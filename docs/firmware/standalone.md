@@ -49,6 +49,10 @@ The first visit sets up the controller in three steps:
 
 ![First visit](img/webui/light-phone-setup.png){ width="300" }
 
+If you leave after setting the password, the time zone and zone steps come
+back on your next visit until you finish them or choose **Skip setup for
+now**.
+
 Anyone on your network can look at the status without signing in (turn on
 **Settings → Password and security → Require sign-in to view** to change
 that). Changing anything asks for the password. Every restart of the
@@ -115,8 +119,15 @@ program that starts while another runs waits for it.
 Each zone has a name, an on/off switch, a **maximum run time** and current
 limits. The controller never keeps a zone open longer than its maximum,
 counted across back-to-back runs; after reaching it the zone rests (30
-minutes by default). **Test run** opens the valve for 1, 2 or 5 minutes so
-you can check it in the garden.
+minutes by default). The **default run time** is preselected when you run
+the zone by hand, and used when Home Assistant opens it without a duration.
+**Test run** opens the valve for 1, 2 or 5 minutes so you can check it in
+the garden.
+
+Once a zone has run on its own, the page shows the current its valve drew
+(measured since the controller last started). **Set limits around the
+measurement** fills in the current limits from it: below the minimum counts
+as a broken wire, above the maximum as a shorted valve.
 
 ![Zones](img/webui/light-phone-zones.png){ width="300" }
 ![Zone detail](img/webui/light-phone-zone-detail.png){ width="300" }
@@ -128,29 +139,39 @@ Manual runs still work. Needs the clock to be set.
 
 ![Rain delay](img/webui/light-phone-rain-delay.png){ width="300" }
 
-### Activity
+### History
 
-**More → Activity** lists what happened since the page was opened (valves
-opening and closing, programs started or skipped, faults). The controller
-does not keep a history yet, so a reload starts the list again.
+**More → History** shows what the controller recorded, newest first and
+grouped by day: every watering run (how long it ran out of how long was
+planned, which program started it, the valve current and, with a flow meter,
+the water used), skipped and missed starts with the reason, faults, restarts
+with their cause, and firmware updates. A summary at the top adds up the
+watering time and water per zone over the last seven days. Choose a zone to
+see only its entries. New entries appear while the page is open.
 
-![Activity](img/webui/light-phone-activity.png){ width="300" }
+The controller keeps the latest 1200 entries in its flash memory and writes
+them at least once a minute (faults at once), so a power cut loses at most
+the last minute.
+
+![History](img/webui/light-phone-history.png){ width="300" }
 
 ### Settings
 
 | Section | What it does |
 |---|---|
-| Device | Controller name. |
+| Device | Controller name, and how this browser shows and enters times (automatic, 24-hour or 12-hour). |
 | Time | Controller time and its source, time zone, set the clock from the phone when there is no internet. |
 | Watering | Seasonal adjustment, zones in use, catch-up of missed starts, pause timeout, rest time, master valve. |
 | Sensors | Rain sensor and its contact type, flow meter, valve-current monitoring. |
-| Network | WiFi status and signal; change the WiFi network (restarts into setup). MQTT settings are not in this firmware yet. |
+| Network | WiFi status and signal; change the WiFi network (restarts into setup). |
+| MQTT and Home Assistant | Broker address and port, TLS with public certificate authorities or your own CA certificate, username and password (write-only: the page only says whether one is stored), base topic, Home Assistant discovery with zones shown as valves or switches, and the live connection state. See [MQTT](mqtt.md). |
 | Password and security | Change password, require sign-in to view, HTTPS with the certificate fingerprint, host-name check. |
 | Backup and restore | Download settings, zones and programs as a file; restore one. WiFi and the admin password are never in a backup. |
 | Firmware update | Install `zoneflow-fw.bin` from a file or URL, or a new web interface (`www.bin`). If watering is running you are warned that the update stops it. If the new firmware does not start properly, the controller goes back to the old one. |
 | Restart and reset | Restart, and factory reset (type RESET to confirm). |
 
 ![Time settings](img/webui/light-phone-settings-time.png){ width="300" }
+![MQTT settings](img/webui/light-phone-settings-mqtt.png){ width="300" }
 ![Firmware update](img/webui/dark-phone-settings-firmware.png){ width="300" }
 ![Factory reset confirmation](img/webui/light-phone-confirm-reset.png){ width="300" }
 

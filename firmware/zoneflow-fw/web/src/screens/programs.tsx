@@ -2,12 +2,14 @@
 // controller's own rules (lib/preview.ts), including the other programs, so
 // overlaps are visible before saving.
 import { useEffect, useMemo, useState } from 'preact/hooks';
-import { ApiError, call, type Program } from '../api/client.ts';
+import { ApiError, call, type Program, type ProgramInput } from '../api/client.ts';
 import { Icon } from '../components/icons.tsx';
+import { BarStopButton } from '../components/shell.tsx';
 import { Banner, Button, Card, Choice, Empty, Field, LinkButton, PageTitle, Stepper, Switch, TextField, confirmAction } from '../components/ui.tsx';
 import { t, tn } from '../i18n/index.ts';
-import { daysFromCivil, formatIsoDate } from '../lib/civil.ts';
-import { formatDayLabel, formatDuration, formatTime, formatWeekdayShort, formatWhen } from '../lib/format.ts';
+import { TimeInput } from '../components/time-input.tsx';
+import { daysFromCivil, formatIsoDate, parseClockTime } from '../lib/civil.ts';
+import { formatDayLabel, formatDuration, formatMinutes, formatTime, formatWeekdayShort, formatWhen } from '../lib/format.ts';
 import { WEEKDAY_KEYS, adjustedSeconds, type PlannedRun } from '../lib/preview.ts';
 import { navigate, onLinkClick, setNavigationGuard } from '../router.ts';
 import { ensureSignedIn, loadConfig, runProgram } from '../state/actions.ts';
@@ -62,7 +64,7 @@ export function ProgramsScreen() {
                     {p.enabled === false && <span class="badge tone-muted">{t('program_disabled')}</span>}
                   </span>
                   <span class="program-sub">
-                    {daysSummary(p.days)} · {(p.starts ?? []).join(', ') || '—'}
+                    {daysSummary(p.days)} · {p.starts.map((x) => formatMinutes(parseClockTime(x) ?? 0)).join(', ') || '—'}
                   </span>
                   <span class="program-sub">
                     {tn('program_zones', zoneCount)} · {formatDuration(programTotalSec(p))}
@@ -117,8 +119,8 @@ function toDraft(p: Program | undefined, nextId: number): Draft {
   };
 }
 
-function fromDraft(d: Draft): Program {
-  const days: NonNullable<Program['days']> = { type: d.dayType };
+function fromDraft(d: Draft): ProgramInput {
+  const days: Program['days'] = { type: d.dayType };
   if (d.dayType === 'weekdays') days.weekdays = WEEKDAY_KEYS.filter((k) => d.weekdays.includes(k));
   if (d.dayType === 'interval') {
     days.every = d.every;
@@ -136,7 +138,7 @@ function fromDraft(d: Draft): Program {
   };
 }
 
-function Preview({ draft }: { draft: Program }) {
+function Preview({ draft }: { draft: ProgramInput }) {
   const tz = timeZone.value;
   const now = deviceNow();
   const others = programs.value.filter((p) => p.id !== draft.id || draft.id === undefined);
@@ -273,25 +275,23 @@ export function ProgramEditScreen({ id }: { id: number | 'new' }) {
                 <li key={i}>
                   <Field label={<span class="sr-only">{`${t('program_starts')} ${i + 1}`}</span>} error={errors[`starts[${i}]`]}>
                     {({ id: fid, describedBy, invalid }) => (
-                      <input
+                      <TimeInput
                         id={fid}
-                        class="input time-input"
-                        type="time"
-                        required
+                        label={`${t('program_starts')} ${i + 1}`}
                         value={s}
                         disabled={ro}
-                        aria-describedby={describedBy}
-                        aria-invalid={invalid || undefined}
-                        onInput={(e) => {
+                        describedBy={describedBy}
+                        invalid={invalid}
+                        onChange={(value) => {
                           const v = [...draft.starts];
-                          v[i] = (e.currentTarget as HTMLInputElement).value;
+                          v[i] = value;
                           set({ starts: v });
                         }}
                       />
                     )}
                   </Field>
                   {draft.starts.length > 1 && (
-                    <button type="button" class="icon-btn" aria-label={t('program_remove_start', { time: s })} disabled={ro} onClick={() => set({ starts: draft.starts.filter((_, j) => j !== i) })}>
+                    <button type="button" class="icon-btn" aria-label={t('program_remove_start', { time: formatMinutes(parseClockTime(s) ?? 0) })} disabled={ro} onClick={() => set({ starts: draft.starts.filter((_, j) => j !== i) })}>
                       <Icon name="trash" size={20} />
                     </button>
                   )}
@@ -404,6 +404,7 @@ export function ProgramEditScreen({ id }: { id: number | 'new' }) {
           <Preview draft={program} />
         </div>
         <div class="save-bar">
+          <BarStopButton />
           <Button onClick={() => navigate('/programs')}>{t('cancel')}</Button>
           <Button variant="primary" type="submit" loading={busy} disabled={!dirty && id !== 'new'}>
             {t('save')}

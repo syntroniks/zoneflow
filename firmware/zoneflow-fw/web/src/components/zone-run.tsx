@@ -36,7 +36,8 @@ export function DurationPicker({ minutes, onChange }: { minutes: number; onChang
 }
 
 export function ZoneRunControls({ zone, onStarted }: { zone: ZoneInfo; onStarted?: () => void }) {
-  const [minutes, setMinutes] = useState(lastRunMinutes());
+  // The zone's own default run time first; the last manual choice otherwise.
+  const [minutes, setMinutes] = useState(() => (zone.defaultRunSec > 0 ? Math.max(1, Math.round(zone.defaultRunSec / 60)) : lastRunMinutes()));
   const [busy, setBusy] = useState(false);
   const capped = minutes * 60 > zone.maxRunSec;
   const busyQueue = status.value?.queue?.state && status.value.queue.state !== 'idle';

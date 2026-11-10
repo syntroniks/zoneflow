@@ -24,7 +24,7 @@ const NAV: { href: string; label: () => string; icon: IconName; match: (p: strin
     href: '/more',
     label: () => t('nav_more'),
     icon: 'settings',
-    match: (p) => ['/more', '/settings', '/rain-delay', '/activity', '/about'].some((x) => p.startsWith(x)),
+    match: (p) => ['/more', '/settings', '/rain-delay', '/history', '/about'].some((x) => p.startsWith(x)),
   },
 ];
 
@@ -95,6 +95,21 @@ function RunningBar() {
         {t('stop_all')}
       </Button>
     </div>
+  );
+}
+
+/**
+ * Stop button for a page's own bottom bar (the program editor's Save bar):
+ * on phones that bar replaces the floating watering bar, so Stop all stays
+ * one tap away without two bars stacked over the content.
+ */
+export function BarStopButton() {
+  const q = status.value?.queue;
+  if (!q || q.state === 'idle') return null;
+  return (
+    <Button variant="danger" icon="stop" class="bar-stop" onClick={() => void stopAll()}>
+      {t('stop_all')}
+    </Button>
   );
 }
 

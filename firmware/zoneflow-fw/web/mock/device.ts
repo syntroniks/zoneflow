@@ -12,6 +12,11 @@ const HARD_MAX_S = 4 * 3600;
 
 interface ZoneRt {
   state: 'off' | 'waiting' | 'open';
+  openedMs: number;
+  plannedS: number;
+  source: string;
+  programId: number;
+  learnedMa: number;
   remainingMs: number;
   lastStop: string;
   fault: string;
@@ -30,11 +35,11 @@ interface Entry {
 
 export function defaultConfig(): Json {
   return {
-    schema: 1,
+    schema: 2,
     device_name: 'zoneflow',
     timezone: 'UTC0',
     zone_count: 8,
-    zones: Array.from({ length: 8 }, () => ({ name: '', enabled: true, max_run_s: 3600, current_min_ma: 80, current_max_ma: 700 })),
+    zones: Array.from({ length: 8 }, () => ({ name: '', enabled: true, max_run_s: 3600, current_min_ma: 80, current_max_ma: 700, default_run_s: 600 })),
     master: { enabled: false, pre_open_ms: 1000, post_close_ms: 2000, fault_lockout_count: 3, current_min_ma: 80, current_max_ma: 700 },
     driver: { max_concurrent: 2, inter_zone_delay_ms: 2000, min_rest_s: 1800, zero_cross_switching: false },
     sensors: {
@@ -44,6 +49,10 @@ export function defaultConfig(): Json {
     },
     diagnostics: { current_enabled: true, settle_ms: 500, idle_max_ma: 60, short_circuit_ma: 3000, confirm_samples: 3 },
     schedule: { seasonal_percent: 100, missed_start_grace_min: 60, pause_timeout_min: 120, programs: [] },
+    mqtt: {
+      enabled: false, host: '', port: 1883, username: '', tls: false, ca: 'bundle', client_id: '', base_topic: '',
+      discovery: true, discovery_prefix: 'homeassistant', ha_zone_entity: 'valve',
+    },
   };
 }
 
@@ -53,7 +62,11 @@ export function demoConfig(): Json {
   c['device_name'] = 'Garden';
   c['timezone'] = 'CET-1CEST,M3.5.0,M10.5.0/3';
   c['zone_count'] = 6;
-  c['zones'] = Array.from({ length: 8 }, (_, i) => ({ name: names[i] ?? '', enabled: i !== 5, max_run_s: i === 4 ? 1800 : 3600, current_min_ma: 80, current_max_ma: 700 }));
+  c['zones'] = Array.from({ length: 8 }, (_, i) => ({
+    name: names[i] ?? '', enabled: i !== 5, max_run_s: i === 4 ? 1800 : 3600, current_min_ma: 80, current_max_ma: 700,
+    default_run_s: [900, 1200, 600, 600, 300, 600, 600, 600][i],
+  }));
+  c['mqtt'] = { ...(c['mqtt'] as Json), enabled: true, host: '192.168.1.10', username: 'zoneflow' };
   (c['master'] as Json)['enabled'] = true;
   c['sensors'] = {
     rain: { enabled: true, contact: 'nc', debounce_ms: 2000 },
@@ -129,7 +142,18 @@ export class Device {
     this.passwordHash = opts.scenario === 'demo' ? 'zoneflow' : null;
     this.sessions.clear();
     this.security = { protect_reads: false, https: false, check_host: true, restart_required: false };
-    this.zones = Array.from({ length: 8 }, () => ({ state: 'off', remainingMs: 0, lastStop: 'none', fault: 'none', lockedOut: false, onMs: 0, restMs: 0 }) as ZoneRt);
+    const demo = opts.scenario === 'demo';
+    this.zones = Array.from({ length: 8 }, (_, i) => ({
+      state: 'off', remainingMs: 0, lastStop: 'none', fault: 'none', lockedOut: false, onMs: 0, restMs: 0, openedMs: 0, plannedS: 0,
+      source: 'manual_zone', programId: 0, learnedMa: demo && i < 5 ? 240 + i * 15 : 0,
+    }));
+    this.setupComplete = demo;
+    this.mqttSecrets = { password: demo ? 'secret' : '', ca: '' };
+    this.mqttChangedMono = this.monoMs() - 3 * 3600 * 1000;
+    this.mqttCounters = { published: demo ? 1843 : 0, commands: demo ? 12 : 0 };
+    this.history = [];
+    this.historyId = 0;
+    if (demo) this.seedHistory();
     this.queue = [];
     this.queueState = 'idle';
     this.rainDelayUntil = 0;
@@ -147,6 +171,45 @@ export class Device {
     this.nextRunVerdict = null;
     this.streamMuted = false;
     this.changed();
+  }
+
+  // ---- MQTT (simulated client) ------------------------------------------------
+
+  setupComplete = false;
+  mqttSecrets = { password: '', ca: '' };
+  mqttChangedMono = 0;
+  mqttCounters = { published: 0, commands: 0 };
+
+  mqttJson(): Json {
+    const m = this.config['mqtt'] as Json;
+    const sinceMs = this.frozen ? 3 * 3600 * 1000 : this.monoMs() - this.mqttChangedMono;
+    const host = String(m['host'] ?? '');
+    const fail = host === '' || /fail|invalid/.test(host) || (m['tls'] === true && m['ca'] === 'custom' && !this.mqttSecrets.ca);
+    let state = 'disabled';
+    if (m['enabled'] === true) state = fail ? 'waiting_retry' : sinceMs < 2000 ? 'connecting' : 'connected';
+    const id = '240ac412ab12';
+    const root = String(m['base_topic'] || `zoneflow/${id}`);
+    return {
+      ...m,
+      password_set: this.mqttSecrets.password !== '',
+      ca_cert_set: this.mqttSecrets.ca !== '',
+      status: {
+        state,
+        broker: m['enabled'] ? `${m['tls'] ? 'mqtts' : 'mqtt'}://${host}:${String(m['port'])}` : '',
+        root_topic: root,
+        connected_for_s: state === 'connected' ? Math.floor((sinceMs - 2000) / 1000) : null,
+        connects: state === 'connected' ? 1 : 0,
+        reconnect_attempt: state === 'waiting_retry' ? 3 : 0,
+        retry_in_ms: state === 'waiting_retry' ? 8000 : 0,
+        last_error: state === 'waiting_retry' ? (host ? 'connection refused' : 'no broker address') : '',
+        published: state === 'connected' ? this.mqttCounters.published : 0,
+        publish_failed: 0,
+        commands_received: this.mqttCounters.commands,
+        commands_rejected: 0,
+        events_dropped: 0,
+        discovery_published: state === 'connected' && m['discovery'] === true,
+      },
+    };
   }
 
   // ---- time ------------------------------------------------------------
@@ -183,6 +246,117 @@ export class Device {
   emit(type: string, fields: Json = {}): void {
     const data = { type, utc: this.utc(), mono_ms: Math.floor(this.monoMs()), ...fields };
     for (const l of this.listeners) l('event', data);
+    this.record(type, data);
+  }
+
+  // ---- history (as zf_core historyFromEvent and zf_web historyRecordToJson) ----
+
+  history: Json[] = [];
+  private historyId = 0;
+  static readonly HISTORY_CAPACITY = 1200;
+
+  addHistory(rec: Json): void {
+    const utc = Number(rec['utc'] ?? this.utc());
+    this.history.push({ id: ++this.historyId, utc, time_valid: utc >= 1735689600, ...rec });
+    if (this.history.length > Device.HISTORY_CAPACITY) this.history.splice(0, 50); // a chunk at a time
+  }
+
+  private record(type: string, d: Json): void {
+    const pick = (...keys: string[]) => Object.fromEntries(keys.map((k) => [k, d[k] ?? null]));
+    const base = { utc: d['utc'] };
+    switch (type) {
+      case 'run_ended':
+        return this.addHistory({ ...base, type: 'run', ...pick('zone', 'program_id', 'source', 'end', 'planned_s', 'actual_s', 'current_ma', 'litres') });
+      case 'program_started':
+        return this.addHistory({ ...base, type, ...pick('program_id', 'source', 'late') });
+      case 'program_skipped':
+        return this.addHistory({ ...base, type, ...pick('program_id', 'reason') });
+      case 'program_missed':
+        return this.addHistory({ ...base, type, ...pick('program_id', 'scheduled_utc') });
+      case 'run_dropped':
+        return this.addHistory({ ...base, type, ...pick('zone', 'program_id', 'source', 'reason') });
+      case 'fault_raised':
+      case 'fault_cleared':
+        return this.addHistory({ ...base, type, ...pick('zone', 'code') });
+      case 'rain_delay_changed':
+        return this.addHistory({ ...base, type: 'rain_delay', until_utc: d['until_utc'] ?? null });
+      case 'sensor_changed':
+        return this.addHistory({ ...base, type: 'sensor', ...pick('sensor', 'active') });
+      case 'maintenance_changed':
+        return this.addHistory({ ...base, type: 'maintenance', on: d['on'] });
+      case 'pause_expired':
+        return this.addHistory({ ...base, type });
+      case 'config_applied':
+        return this.addHistory({ ...base, type: 'config_changed' });
+      case 'time_status_changed':
+        return this.addHistory({ ...base, type: 'time_set', status: d['status'] });
+    }
+  }
+
+  historyPage(q: { limit: number; before?: number; after?: number; since?: number; zone?: number }): Json {
+    const match = this.history.filter(
+      (r) =>
+        (q.before === undefined || Number(r['id']) < q.before) &&
+        (q.after === undefined || Number(r['id']) > q.after) &&
+        (q.since === undefined || Number(r['utc']) >= q.since) &&
+        (q.zone === undefined || r['zone'] === q.zone),
+    );
+    const records = match.slice(-q.limit).reverse();
+    const more = match.length > q.limit;
+    return {
+      records,
+      next_before: more ? (records[records.length - 1]?.['id'] ?? null) : null,
+      newest_id: this.history[this.history.length - 1]?.['id'] ?? null,
+      oldest_id: this.history[0]?.['id'] ?? null,
+      capacity: Device.HISTORY_CAPACITY,
+      unsaved: 0,
+    };
+  }
+
+  /** A believable week for the demo: daily runs, a rain skip, a fault, a restart after an update. */
+  private seedHistory(): void {
+    const tz = this.tz();
+    const now = this.utc();
+    const today = tz.localDay(now);
+    const at = (day: number, h: number, m: number) => tz.fromLocal(day, h * 3600 + m * 60);
+    const runs = (start: number, programId: number, zones: [number, number][]) => {
+      this.addHistory({ utc: start, type: 'program_started', program_id: programId, source: 'schedule', late: false });
+      let t0 = start;
+      for (const [zone, sec] of zones) {
+        const s = Math.round(sec * 0.8);
+        this.addHistory({
+          utc: t0 + s, type: 'run', zone, program_id: programId, source: 'schedule', end: 'completed', planned_s: s, actual_s: s,
+          current_ma: 240 + (zone - 1) * 15, litres: Math.round(((6 + (zone - 1) * 1.5) * s) / 6) / 10,
+        });
+        t0 += s + 2;
+      }
+    };
+    for (let d = 7; d >= 1; d--) {
+      const day = today - d;
+      const wd = (((day + 4) % 7) + 7) % 7;
+      if (d === 3) {
+        this.addHistory({ utc: at(day, 4, 10), type: 'ota', stage: 'started', source: 'upload', error: null });
+        this.addHistory({ utc: at(day, 4, 11), type: 'ota', stage: 'installed', source: 'upload', error: null });
+        this.addHistory({ utc: at(day, 4, 11) + 4, type: 'boot', reset_reason: 'software' });
+        this.addHistory({ utc: at(day, 4, 11) + 9, type: 'time_set', status: 'synced' });
+      }
+      if (d === 4) {
+        this.addHistory({ utc: at(day, 2, 40), type: 'sensor', sensor: 'rain', active: true });
+        this.addHistory({ utc: at(day, 5, 30), type: 'program_skipped', program_id: 1, reason: 'sensor_inhibit' });
+        this.addHistory({ utc: at(day, 11, 5), type: 'sensor', sensor: 'rain', active: false });
+        continue;
+      }
+      if ([0, 1, 3, 5].includes(wd)) runs(at(day, 5, 30), 1, [[1, 1200], [2, 1500]]);
+      if (d % 2 === 1) {
+        runs(at(day, 6, 15), 2, [[3, 900], [4, 600], [5, 300]]);
+        runs(at(day, 19, 30), 2, [[3, 900], [4, 600], [5, 300]]);
+      }
+      if (d === 2) {
+        this.addHistory({ utc: at(day, 18, 2), type: 'run', zone: 5, program_id: null, source: 'manual_zone', end: 'requested', planned_s: 600, actual_s: 214, current_ma: 300, litres: 4.1 });
+        this.addHistory({ utc: at(day, 19, 41), type: 'fault_raised', zone: 4, code: 'zone_open_circuit' });
+        this.addHistory({ utc: at(day, 20, 3), type: 'fault_cleared', zone: 4, code: 'zone_open_circuit' });
+      }
+    }
   }
   changed(): void {
     this.sequence++;
@@ -263,12 +437,31 @@ export class Device {
   private setZone(i: number, state: ZoneRt['state'], reason: string): void {
     const z = this.zones[i]!;
     if (z.state === state) return;
+    const wasOpen = z.state === 'open';
     z.state = state;
+    if (state === 'open') {
+      const head = this.queue.find((e) => e.zone === i);
+      z.openedMs = this.monoMs();
+      z.plannedS = Math.ceil(z.remainingMs / 1000);
+      z.source = head?.source ?? 'manual_zone';
+      z.programId = head?.programId ?? 0;
+    }
     if (state === 'off') {
       z.lastStop = reason;
       z.remainingMs = 0;
     }
     this.emit('zone_changed', { zone: i + 1, state, reason });
+    if (wasOpen && state === 'off') {
+      // As the firmware's RunEnded event (history and the stream).
+      const actual = Math.round((this.monoMs() - z.openedMs) / 1000);
+      const ma = 240 + i * 15;
+      z.learnedMa = ma;
+      const flow = (this.config['sensors'] as Record<string, Json>)['flow']?.['enabled'] === true;
+      this.emit('run_ended', {
+        zone: i + 1, program_id: z.programId || null, source: z.source, end: reason, planned_s: z.plannedS, actual_s: actual,
+        current_ma: ma, litres: flow ? Math.round(((6 + i * 1.5) * actual) / 6) / 10 : null,
+      });
+    }
     const anyOpen = this.zones.some((x) => x.state === 'open');
     const masterWanted = anyOpen && (this.config['master'] as Json)['enabled'] === true;
     if (masterWanted !== this.master.on) {
@@ -383,9 +576,10 @@ export class Device {
     }
     this.zones.forEach((z, i) => {
       if (z.lockedOut || z.fault !== 'none') {
+        const code = z.fault === 'none' ? 'zone_open_circuit' : z.fault;
         z.lockedOut = false;
         z.fault = 'none';
-        this.emit('fault_cleared', { code: 'zone', zone: i + 1 });
+        this.emit('fault_cleared', { code, zone: i + 1 });
       }
     });
     this.master.lockedOut = false;
@@ -487,6 +681,8 @@ export class Device {
       locked_out: z.lockedOut,
       resting: z.restMs > 0,
       rest_remaining_s: Math.ceil(z.restMs / 1000),
+      default_run_s: c['default_run_s'] ?? 600,
+      learned_current_ma: z.learnedMa > 0 ? z.learnedMa : null,
     };
   }
 
@@ -498,7 +694,15 @@ export class Device {
       length: this.queue.length,
       current_remaining_s: head ? Math.ceil((this.queueState === 'running' ? this.zones[head.zone]!.remainingMs : head.remainingMs) / 1000) : 0,
       items: this.queue.slice(0, 8).map((e) => ({ id: e.id, zone: e.zone + 1, duration_s: e.durationSec, source: e.source, program_id: e.programId || null })),
+      ...this.pauseJson(),
     };
+  }
+
+  private pauseJson(): { paused_s: number; stop_in_s: number | null } {
+    if (this.queueState !== 'paused') return { paused_s: 0, stop_in_s: null };
+    const paused = Math.floor((this.monoMs() - this.pausedAt) / 1000);
+    const limit = Number((this.config['schedule'] as Json)['pause_timeout_min'] ?? 120) * 60;
+    return { paused_s: paused, stop_in_s: Math.max(0, limit - paused) };
   }
 
   sensorsJson(): Json {

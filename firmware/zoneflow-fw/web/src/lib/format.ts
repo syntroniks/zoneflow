@@ -3,6 +3,7 @@
 // at 06:00 is 06:00 in the garden wherever the phone is.
 import { t } from '../i18n/index.ts';
 import { pad2 } from './civil.ts';
+import { clockFormat, uses24h } from './clock.ts';
 import type { TimeZone } from './tz.ts';
 
 /** Human duration: "45 s", "12 min", "7 min 30 s", "1 h 5 min", "2 d 3 h". */
@@ -40,7 +41,8 @@ function shifted(utc: number, tz: TimeZone): Date {
 
 const fmtCache = new Map<string, Intl.DateTimeFormat>();
 function fmt(opts: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
-  const key = JSON.stringify(opts);
+  if (opts.hour !== undefined) opts = { ...opts, hourCycle: uses24h() ? 'h23' : 'h12' };
+  const key = JSON.stringify(opts) + clockFormat.value;
   let f = fmtCache.get(key);
   if (!f) {
     f = new Intl.DateTimeFormat(locale(), { ...opts, timeZone: 'UTC' });
@@ -49,7 +51,7 @@ function fmt(opts: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
   return f;
 }
 
-/** Wall-clock time at the controller, in the phone's 12/24 h convention. */
+/** Wall-clock time at the controller, in the chosen 12/24 h convention (lib/clock.ts). */
 export function formatTime(utc: number, tz: TimeZone): string {
   return fmt({ hour: 'numeric', minute: '2-digit' }).format(shifted(utc, tz));
 }
@@ -73,6 +75,7 @@ export function formatDayLabel(utc: number, tz: TimeZone, nowUtc: number): strin
   const d = tz.localDay(utc) - tz.localDay(nowUtc);
   if (d === 0) return t('today');
   if (d === 1) return t('tomorrow');
+  if (d === -1) return t('yesterday');
   return formatDate(utc, tz);
 }
 
@@ -86,6 +89,11 @@ export function formatOffset(sec: number): string {
   const sign = sec < 0 ? '−' : '+';
   const a = Math.abs(sec);
   return `${sign}${pad2(Math.floor(a / 3600))}:${pad2(Math.floor((a % 3600) / 60))}`;
+}
+
+/** Minutes after midnight as the user reads times: "06:30" or "6:30 AM". */
+export function formatMinutes(minutes: number): string {
+  return fmt({ hour: 'numeric', minute: '2-digit' }).format(new Date(minutes * 60000));
 }
 
 export function formatNumber(n: number, digits = 0): string {

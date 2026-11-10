@@ -2,7 +2,7 @@
 // are reported the same way. Results are shown from the next `state`
 // message, not from the 202 answer (web-ui-contract.md).
 import { ApiError, call } from '../api/client.ts';
-import type { Config } from '../api/client.ts';
+import type { Config, ZoneUpdate } from '../api/client.ts';
 import { t } from '../i18n/index.ts';
 import { errorText } from './errors.ts';
 import { auth, clearPending, config, loginOpen, setPending, signedIn, toast, zoneLabel } from './store.ts';
@@ -104,7 +104,7 @@ export async function updateConfig(change: (c: Config) => void): Promise<boolean
 }
 
 /** Throws ApiError so forms can put `error.path` next to the field. */
-export async function patchZone(zone: number, body: { name?: string; enabled?: boolean; max_run_s?: number; current_min_ma?: number; current_max_ma?: number }) {
+export async function patchZone(zone: number, body: ZoneUpdate) {
   const z = await call('patch', '/zones/{zone}', { params: { zone }, body });
   await loadConfig();
   return z;

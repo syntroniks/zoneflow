@@ -9,15 +9,18 @@ declare const __UI_VERSION__: string;
 
 export function AboutScreen() {
   const [info, setInfo] = useState<Schemas['Info'] | null>(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
-    call('get', '/info').then(setInfo, () => setInfo({}));
+    call('get', '/info').then(setInfo, () => setFailed(true));
   }, []);
   return (
     <div class="page narrow">
       <PageTitle title={t('about_title')} back="/more" />
       <Banner severity="warning" title={t('about_untested')} />
       <Card>
-        {!info ? (
+        {failed ? (
+          <p class="muted">{t('error_network')}</p>
+        ) : !info ? (
           <Spinner label={t('loading')} />
         ) : (
           <KeyValue

@@ -2,7 +2,8 @@
 // programs) use it; the rest edit the configuration document (PUT /config),
 // which the controller validates as a whole.
 import { useEffect, useState } from 'preact/hooks';
-import { ApiError, call, restoreBackup, setCsrf, upload, type Schemas } from '../api/client.ts';
+import { ApiError, call, restoreBackup, setCsrf, upload, type Config, type Schemas } from '../api/client.ts';
+import { clockFormat, localeUses24h, setClockFormat } from '../lib/clock.ts';
 import { Icon } from '../components/icons.tsx';
 import { Banner, Button, Card, Choice, Field, KeyValue, PageTitle, PasswordField, Progress, Spinner, Stepper, Switch, TextField, confirmAction } from '../components/ui.tsx';
 import { t, tk } from '../i18n/index.ts';
@@ -14,10 +15,8 @@ import { ensureSignedIn, loadConfig, updateConfig } from '../state/actions.ts';
 import { errorText } from '../state/errors.ts';
 import { config, deviceNow, ota, signedIn, status, toast } from '../state/store.ts';
 import { SETTINGS_SECTIONS } from './more.tsx';
+import { MqttSection } from './mqtt.tsx';
 
-type Cfg = Schemas['Config'] & Record<string, unknown>;
-type Obj = Record<string, unknown>;
-const obj = (v: unknown): Obj => (v && typeof v === 'object' ? (v as Obj) : {});
 
 function useLoad<T>(fn: () => Promise<T>, deps: unknown[] = []): [T | null, () => void, string | null] {
   const [v, setV] = useState<T | null>(null);
@@ -47,8 +46,8 @@ function SaveRow({ busy, disabled }: { busy: boolean; disabled?: boolean }) {
 }
 
 /** A form over a few configuration fields; saves with PUT /config. */
-function ConfigForm<T extends Obj>({ read, write, children }: { read: (c: Cfg) => T; write: (c: Cfg, v: T) => void; children: (v: T, set: (p: Partial<T>) => void) => preact.ComponentChildren }) {
-  const c = config.value as Cfg | null;
+function ConfigForm<T extends object>({ read, write, children }: { read: (c: Config) => T; write: (c: Config, v: T) => void; children: (v: T, set: (p: Partial<T>) => void) => preact.ComponentChildren }) {
+  const c = config.value;
   const [v, setV] = useState<T | null>(c ? read(c) : null);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -62,7 +61,7 @@ function ConfigForm<T extends Obj>({ read, write, children }: { read: (c: Cfg) =
       onSubmit={async (e) => {
         e.preventDefault();
         setBusy(true);
-        if (await updateConfig((doc) => write(doc as Cfg, v))) setDirty(false);
+        if (await updateConfig((doc) => write(doc, v))) setDirty(false);
         setBusy(false);
       }}
     >
@@ -77,11 +76,27 @@ function ConfigForm<T extends Obj>({ read, write, children }: { read: (c: Cfg) =
 
 function DeviceSection() {
   return (
+    <>
     <Card>
-      <ConfigForm read={(c) => ({ name: c.device_name ?? '' })} write={(c, v) => (c.device_name = v.name.trim())}>
+      <ConfigForm read={(c) => ({ name: c.device_name })} write={(c, v) => (c.device_name = v.name.trim())}>
         {(v, set) => <TextField label={t('device_name')} help={t('device_name_help')} value={v.name} maxLength={31} onInput={(x) => set({ name: x })} disabled={!signedIn.value} />}
       </ConfigForm>
     </Card>
+    <Card>
+      <Choice
+        kind="chips"
+        label={t('clock_format')}
+        value={clockFormat.value}
+        onChange={setClockFormat}
+        options={[
+          { value: 'auto', label: t('clock_auto', { example: localeUses24h(navigator.language) ? '18:30' : '6:30 PM' }) },
+          { value: '24', label: t('clock_24') },
+          { value: '12', label: t('clock_12') },
+        ]}
+      />
+      <p class="field-help">{t('clock_format_help')}</p>
+    </Card>
+    </>
   );
 }
 
@@ -197,18 +212,20 @@ function WateringSection() {
     <Card>
       <ConfigForm
         read={(c) => ({
-          zones: c.zone_count ?? 8,
-          pct: c.schedule?.seasonal_percent ?? 100,
-          grace: c.schedule?.missed_start_grace_min ?? 60,
-          pause: c.schedule?.pause_timeout_min ?? 120,
-          rest: Math.round((c.driver?.min_rest_s ?? 1800) / 60),
-          master: obj(c.master)['enabled'] === true,
+          zones: c.zone_count,
+          pct: c.schedule.seasonal_percent,
+          grace: c.schedule.missed_start_grace_min,
+          pause: c.schedule.pause_timeout_min,
+          rest: Math.round(c.driver.min_rest_s / 60),
+          master: c.master.enabled,
         })}
         write={(c, v) => {
           c.zone_count = v.zones;
-          c.schedule = { ...c.schedule, seasonal_percent: v.pct, missed_start_grace_min: v.grace, pause_timeout_min: v.pause };
-          (c as Obj)['driver'] = { ...obj(c.driver), min_rest_s: v.rest * 60 };
-          (c as Obj)['master'] = { ...obj(c.master), enabled: v.master };
+          c.schedule.seasonal_percent = v.pct;
+          c.schedule.missed_start_grace_min = v.grace;
+          c.schedule.pause_timeout_min = v.pause;
+          c.driver.min_rest_s = v.rest * 60;
+          c.master.enabled = v.master;
         }}
       >
         {(v, set) => (
@@ -230,28 +247,21 @@ function SensorsSection() {
   return (
     <Card>
       <ConfigForm
-        read={(c) => {
-          const s = obj(c.sensors);
-          const rain = obj(s['rain']);
-          const flow = obj(s['flow']);
-          const d = obj(c.diagnostics);
-          return {
-            rain: rain['enabled'] === true,
-            contact: (rain['contact'] as string) === 'no' ? 'no' : 'nc',
-            flow: flow['enabled'] === true,
-            ppl: Number(flow['pulses_per_litre'] ?? 450),
-            leak: Number(flow['leak_threshold_lpm'] ?? 0.5),
-            current: d['current_enabled'] !== false,
-          };
-        }}
+        read={(c) => ({
+          rain: c.sensors.rain.enabled,
+          contact: c.sensors.rain.contact,
+          flow: c.sensors.flow.enabled,
+          ppl: c.sensors.flow.pulses_per_litre,
+          leak: c.sensors.flow.leak_threshold_lpm,
+          current: c.diagnostics.current_enabled,
+        })}
         write={(c, v) => {
-          const s = obj(c.sensors);
-          (c as Obj)['sensors'] = {
-            ...s,
-            rain: { ...obj(s['rain']), enabled: v.rain, contact: v.contact },
-            flow: { ...obj(s['flow']), enabled: v.flow, pulses_per_litre: v.ppl, leak_threshold_lpm: v.leak },
-          };
-          (c as Obj)['diagnostics'] = { ...obj(c.diagnostics), current_enabled: v.current };
+          c.sensors.rain.enabled = v.rain;
+          c.sensors.rain.contact = v.contact;
+          c.sensors.flow.enabled = v.flow;
+          c.sensors.flow.pulses_per_litre = v.ppl;
+          c.sensors.flow.leak_threshold_lpm = v.leak;
+          c.diagnostics.current_enabled = v.current;
         }}
       >
         {(v, set) => (
@@ -322,9 +332,6 @@ function NetworkSection() {
           <Button onClick={() => void reprov('ble')}>{t('net_reprovision_ble')}</Button>
           <Button onClick={() => void reprov('softap')}>{t('net_reprovision_softap')}</Button>
         </div>
-      </Card>
-      <Card title={t('set_mqtt')}>
-        <p class="muted">{t('set_mqtt_absent')}</p>
       </Card>
     </>
   );
@@ -662,6 +669,7 @@ export function SettingsScreen({ section }: { section: string }) {
     watering: WateringSection,
     sensors: SensorsSection,
     network: NetworkSection,
+    mqtt: MqttSection,
     security: SecuritySection,
     backup: BackupSection,
     firmware: FirmwareSection,

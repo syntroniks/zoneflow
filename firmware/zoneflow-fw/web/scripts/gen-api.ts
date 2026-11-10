@@ -11,7 +11,9 @@ const out = fileURLToPath(new URL('../src/api/schema.d.ts', import.meta.url));
 const header =
   '// GENERATED from docs/firmware/openapi.json by scripts/gen-api.ts. Do not edit.\n' +
   '// Regenerate with `npm run gen:api`; CI fails if this file is stale.\n\n';
-const ast = await openapiTS(JSON.parse(readFileSync(spec, 'utf8')));
+// defaultNonNullable: false, so a field with a default stays optional in
+// request bodies; responses mark what is always sent with `required`.
+const ast = await openapiTS(JSON.parse(readFileSync(spec, 'utf8')), { defaultNonNullable: false });
 const text = header + astToString(ast);
 
 if (process.argv.includes('--check')) {

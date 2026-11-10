@@ -4,8 +4,8 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 import { go, mock, openSignedIn, reset } from './helpers.ts';
 
-const PATHS = ['/', '/run', '/zones', '/zones/4', '/programs', '/programs/2', '/rain-delay', '/activity', '/more',
-  '/settings/time', '/settings/watering', '/settings/sensors', '/settings/network', '/settings/security',
+const PATHS = ['/', '/run', '/zones', '/zones/4', '/programs', '/programs/2', '/rain-delay', '/history', '/more',
+  '/settings/time', '/settings/watering', '/settings/sensors', '/settings/network', '/settings/mqtt', '/settings/device', '/settings/security',
   '/settings/backup', '/settings/firmware', '/settings/system', '/about'];
 
 for (const scheme of ['light', 'dark'] as const) {

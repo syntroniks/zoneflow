@@ -15,7 +15,13 @@ export type Config = Schemas['Config'];
 export type Network = Schemas['Network'];
 export type OtaStatus = Schemas['OtaStatus'];
 export type AuthStatus = Schemas['AuthStatus'];
-export type FaultCode = NonNullable<Schemas['Faults']['active']>[number];
+export type FaultCode = Schemas['Faults']['active'][number];
+export type ConfigInput = Schemas['ConfigInput'];
+export type ZoneUpdate = Schemas['ZoneUpdate'];
+export type Mqtt = Schemas['Mqtt'];
+export type MqttUpdate = Schemas['MqttUpdate'];
+export type HistoryRecord = Schemas['HistoryRecord'];
+export type HistoryPage = Schemas['HistoryPage'];
 
 type Method = 'get' | 'put' | 'post' | 'delete' | 'patch';
 type Json<C> = C extends { content: { 'application/json': infer T } } ? T : unknown;

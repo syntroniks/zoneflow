@@ -48,8 +48,11 @@ export interface ZoneInfo {
   name: string;
   enabled: boolean;
   maxRunSec: number;
+  defaultRunSec: number;
   currentMinMa: number;
   currentMaxMa: number;
+  /** Measured with this zone open alone since the controller started; null until then. */
+  learnedMa: number | null;
 }
 
 export const zoneCount = computed(() => config.value?.zone_count ?? status.value?.zones?.length ?? 8);
@@ -57,18 +60,22 @@ export const zoneCount = computed(() => config.value?.zone_count ?? status.value
 /** Zones in use (1..zone_count), merged from status and config. */
 export const zones = computed<ZoneInfo[]>(() => {
   const st = status.value?.zones ?? [];
-  const cz = (config.value?.zones ?? []) as Array<Record<string, unknown>>;
+  const cz = config.value?.zones ?? [];
   const out: ZoneInfo[] = [];
   for (let i = 0; i < zoneCount.value; i++) {
     const s = st[i];
-    const c = cz[i] ?? {};
+    const c = cz[i];
+    // Settings from the configuration (reloaded right after a save), else
+    // from the last state message.
     out.push({
       id: i + 1,
-      name: (s?.name ?? (c['name'] as string | undefined) ?? '').trim(),
-      enabled: s?.enabled ?? (c['enabled'] as boolean | undefined) ?? true,
-      maxRunSec: s?.max_run_s ?? (c['max_run_s'] as number | undefined) ?? 3600,
-      currentMinMa: s?.current_min_ma ?? (c['current_min_ma'] as number | undefined) ?? 80,
-      currentMaxMa: s?.current_max_ma ?? (c['current_max_ma'] as number | undefined) ?? 700,
+      name: (c?.name ?? s?.name ?? '').trim(),
+      enabled: c?.enabled ?? s?.enabled ?? true,
+      maxRunSec: c?.max_run_s ?? s?.max_run_s ?? 3600,
+      defaultRunSec: c?.default_run_s ?? s?.default_run_s ?? 600,
+      currentMinMa: c?.current_min_ma ?? s?.current_min_ma ?? 80,
+      currentMaxMa: c?.current_max_ma ?? s?.current_max_ma ?? 700,
+      learnedMa: s?.learned_current_ma ?? null,
     });
   }
   return out;

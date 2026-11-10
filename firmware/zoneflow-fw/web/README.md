@@ -56,11 +56,12 @@ The current build is 50 KB gzip in total (JavaScript 44 KB, CSS 6 KB, HTML
 
 | Path | Contents |
 |---|---|
-| `src/api/schema.d.ts` | Types generated from `docs/firmware/openapi.json` (`npm run gen:api`). CI fails if it is stale. |
+| `src/api/schema.d.ts` | Types generated from `docs/firmware/openapi.json` (`npm run gen:api`, with `defaultNonNullable: false` so request fields with a default stay optional). CI fails if it is stale. The document marks every field the firmware always sends as `required`, so the screens use the types without casts; `test/host/web_openapi_schema_test.cpp` checks the firmware's answers and `tests/unit/mock-contract.test.ts` the mock's against the same schemas. |
 | `src/api/client.ts` | Typed `call(method, path, {params, body})`, CSRF header, 401 handling, upload with progress. |
 | `src/state/` | Signals store, the event stream (`live.ts`), commands (`actions.ts`), plain-language errors and alerts. |
 | `src/lib/tz.ts`, `civil.ts` | Ports of the core's POSIX time zone and calendar code. |
 | `src/lib/preview.ts` | Next-seven-days preview with the scheduler's rules. |
+| `src/lib/clock.ts`, `src/components/time-input.tsx` | The one clock-format setting (automatic, 24-hour, 12-hour; per browser) that every shown and entered time follows. |
 | `src/i18n/en.ts` | Every user-visible string. |
 | `src/screens/`, `src/components/` | Screens and shared components. |
 | `mock/` | Mock controller (`device.ts` simulation, `server.ts` HTTP, SSE and test hooks under `/__mock/`). |
@@ -81,7 +82,13 @@ The current build is 50 KB gzip in total (JavaScript 44 KB, CSS 6 KB, HTML
   write; a 401 sends the user back to sign in. Reads work without signing in
   unless "protect reads" is on.
 - **Times are the controller's local time** (its POSIX TZ string through
-  `lib/tz.ts`), not the phone's.
+  `lib/tz.ts`), not the phone's, shown and entered in one format chosen in
+  Settings → Device. Start times use our own hour/minute selects, not
+  `<input type="time">`, whose format follows the browser and could
+  disagree with the rest of the page.
+- **One bar at the bottom.** The program editor's Save bar carries its own
+  Stop all on phones and the floating watering bar steps aside, so two bars
+  never stack over the content.
 - **Destructive actions ask first**: stop all is the exception, because
   stopping water must be one tap.
 - **Strings** come from `src/i18n/en.ts` through `t()`; a unit test fails on a

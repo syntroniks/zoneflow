@@ -64,15 +64,15 @@ test('read-only visitor sees status and is asked to sign in before a change', as
 test('manual run in three taps, then stop from another page', async ({ page }) => {
   const errs = watchErrors(page);
   await openSignedIn(page);
-  // 1: Run tab, 2: zone, 3: start (duration preselected).
+  // 1: Run tab, 2: zone, 3: start (the zone's default run time is preselected: 20 min in the demo).
   await page.getByRole('navigation').getByRole('link', { name: 'Run' }).click();
   await page.getByRole('radio', { name: /Back lawn/ }).check();
-  await page.getByRole('button', { name: /Start Back lawn for 10 min/ }).click();
+  await page.getByRole('button', { name: /Start Back lawn for 20 min/ }).click();
   await expect(page).toHaveURL(/\/$/);
   const now = page.locator('#now-card');
   await expect(now).toContainText('Back lawn');
   await expect(now).toContainText('Watering');
-  await expect(now.locator('.now-clock')).toContainText(/^(10:00|9:5\d)/);
+  await expect(now.locator('.now-clock')).toContainText(/^(20:00|19:5\d)/);
 
   // The stop button follows to every page.
   await page.getByRole('navigation').getByRole('link', { name: 'Programs' }).click();
@@ -92,6 +92,7 @@ test('pause, resume and skip the queue', async ({ page, request }) => {
   await expect(now).toContainText('Vegetable beds');
   await now.getByRole('button', { name: 'Pause' }).click();
   await expect(now).toContainText('Paused');
+  await expect(now).toContainText(/stops by itself in (2 h|1 h 59 min)/);
   await now.getByRole('button', { name: 'Resume' }).click();
   await expect(now).toContainText('Watering');
   await now.getByRole('button', { name: 'Skip to next' }).click();
@@ -139,7 +140,9 @@ test('program editor: create, preview, save, delete with confirmation', async ({
   await openSignedIn(page, '/programs');
   await page.getByRole('link', { name: 'New program' }).click();
   await page.getByLabel('Name').fill('Evening');
-  await page.getByLabel('Start times 1').fill('20:15');
+  // The start-time control follows the clock-format setting (24-hour for en-GB).
+  await page.getByLabel('Start times 1: hour').selectOption('20');
+  await page.getByLabel('Start times 1: minute').selectOption('15');
   // Weekdays: only Tuesday and Thursday.
   for (const d of ['Mon', 'Wed', 'Fri']) await page.locator('.weekdays label', { hasText: d }).click();
   await page.locator('.weekdays label', { hasText: 'Tue' }).click();
@@ -281,4 +284,102 @@ test('keyboard: skip link, navigation and dialogs', async ({ page, isMobile }) =
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toBeHidden();
   await signIn(page);
+});
+
+test('first-run steps resume on a later visit until finished or skipped', async ({ page, request }) => {
+  await reset(request, { scenario: 'fresh' });
+  await page.goto('/');
+  await page.getByLabel('Setup code').fill('K7Q2M9XW4R');
+  await page.getByLabel('New admin password', { exact: true }).fill('garden hose 42');
+  await page.getByLabel('Repeat the password').fill('garden hose 42');
+  await page.getByRole('button', { name: 'Set password' }).click();
+  await expect(page.getByRole('heading', { name: 'Where is the controller?' })).toBeVisible();
+  // Leave and come back: the controller says setup is not complete.
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Where is the controller?' })).toBeVisible();
+  await page.getByRole('button', { name: 'Skip setup for now' }).click();
+  await expect(page.locator('.conn-live')).toBeVisible();
+  await page.reload();
+  await expect(page.locator('.conn-live')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Where is the controller?' })).toHaveCount(0);
+  const auth = await (await request.get('/api/v1/auth')).json();
+  expect(auth.setup_complete).toBe(true);
+});
+
+test('history: grouped by day, summarised per zone, and live', async ({ page }) => {
+  const errs = watchErrors(page);
+  await openSignedIn(page, '/history');
+  await expect(page.getByRole('heading', { name: 'History', level: 1 })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Yesterday' })).toContainText('Vegetable beds watered');
+  await expect(page.getByText('Update installed; restarting')).toBeVisible();
+  const summary = page.locator('.usage');
+  await expect(summary).toContainText('Front lawn');
+  await expect(summary).toContainText(' L');
+  // Only one zone.
+  await page.getByLabel('Show').selectOption({ label: 'Drip: pots' });
+  await expect(page.locator('.hist-day li').first()).toContainText('Drip: pots');
+  await expect(page.locator('.usage li')).toHaveCount(1);
+  // A run that ends now appears without reloading.
+  await page.getByLabel('Show').selectOption({ label: 'All zones' });
+  await go(page, '/');
+  await page.locator('.tile', { hasText: 'Back lawn' }).click();
+  await page.getByRole('button', { name: /Start Back lawn/ }).click();
+  await page.getByRole('button', { name: 'Stop all' }).first().click();
+  await go(page, '/history');
+  await expect(page.getByRole('region', { name: 'Today' })).toContainText('Back lawn watered (stopped)');
+  errs.check();
+});
+
+test('MQTT: connection state, write-only password, Home Assistant entity type', async ({ page, request }) => {
+  const errs = watchErrors(page);
+  await openSignedIn(page, '/settings/mqtt');
+  await expect(page.getByRole('status').filter({ hasText: 'Connected' })).toBeVisible();
+  await expect(page.getByText('A password is stored and never shown.')).toBeVisible();
+  await expect(page.getByLabel('Password', { exact: true })).toHaveValue('');
+  await page.getByLabel('Broker address').fill('mqtt-fail.local');
+  await page.getByLabel('Password', { exact: true }).fill('new secret');
+  await page.getByRole('radio', { name: 'Switches' }).check();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Saved')).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Not connected; retrying' })).toBeVisible();
+  await expect(page.getByLabel('Password', { exact: true })).toHaveValue('');
+  const m = await (await request.get('/api/v1/mqtt')).json();
+  expect(m.host).toBe('mqtt-fail.local');
+  expect(m.ha_zone_entity).toBe('switch');
+  expect(m.password_set).toBe(true);
+  expect(JSON.stringify(m)).not.toContain('new secret');
+  // TLS with a custom CA: no CA stored yet is said plainly.
+  await page.getByRole('switch', { name: /Encrypt/ }).check();
+  await expect(page.getByRole('textbox', { name: 'Port' })).toHaveValue('8883');
+  await page.getByRole('radio', { name: 'My own CA certificate' }).check();
+  await expect(page.getByText('No CA certificate stored yet')).toBeVisible();
+  errs.check();
+});
+
+test('a zone default run time is preselected for manual runs', async ({ page, request }) => {
+  await openSignedIn(page, '/zones/2');
+  await expect(page.getByText(/Measured: 255 mA/)).toBeVisible();
+  await page.getByRole('textbox', { name: 'Default run time' }).fill('7');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Saved')).toBeVisible();
+  const z = await (await request.get('/api/v1/zones/2')).json();
+  expect(z.default_run_s).toBe(420);
+  await go(page, '/run');
+  await page.getByRole('radio', { name: /Back lawn/ }).check();
+  await expect(page.getByRole('button', { name: 'Start Back lawn for 7 min' })).toBeVisible();
+});
+
+test('one clock-format setting changes shown and entered times', async ({ page }) => {
+  await openSignedIn(page, '/settings/device');
+  await page.getByRole('radio', { name: '12-hour' }).check();
+  await go(page, '/programs');
+  await expect(page.locator('.program', { hasText: 'Lawns, early' })).toContainText(/5:30\sAM/i);
+  await go(page, '/programs/1');
+  await expect(page.getByLabel('Start times 1: AM or PM')).toHaveValue('am');
+  await expect(page.getByLabel('Start times 1: hour')).toHaveValue('5');
+  await go(page, '/settings/device');
+  await page.getByRole('radio', { name: '24-hour' }).check();
+  await go(page, '/programs/1');
+  await expect(page.getByLabel('Start times 1: AM or PM')).toHaveCount(0);
+  await expect(page.getByLabel('Start times 1: hour')).toHaveValue('5');
 });

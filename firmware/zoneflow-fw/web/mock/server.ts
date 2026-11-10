@@ -167,7 +167,7 @@ function validateProgram(p: Json): void {
 
 function validateConfig(c: Json): void {
   if (c['schema'] === undefined) throw bad('schema', 'required');
-  if (Number(c['schema']) > 1) throw new HttpError(400, 'unsupported_schema', `schema ${String(c['schema'])} is newer than this firmware supports (1)`, 'schema');
+  if (Number(c['schema']) > 2) throw new HttpError(400, 'unsupported_schema', `schema ${String(c['schema'])} is newer than this firmware supports (2)`, 'schema');
   const zc = Number(c['zone_count'] ?? 8);
   if (!Number.isInteger(zc) || zc < 1 || zc > 8) throw bad('zone_count', 'must be 1 to 8');
   if (c['timezone'] !== undefined && !TimeZone.parse(String(c['timezone']))) throw bad('timezone', 'not a valid POSIX TZ string');
@@ -194,7 +194,8 @@ function validateConfig(c: Json): void {
 function withDefaults(c: Json): Json {
   const base = new Device({ scenario: 'fresh' }).config;
   const out: Json = { ...base, ...c };
-  for (const k of ['master', 'driver', 'diagnostics', 'schedule', 'sensors']) out[k] = { ...(base[k] as Json), ...((c[k] as Json) ?? {}) };
+  out['schema'] = 2; // a schema 1 document is migrated, as the firmware does
+  for (const k of ['master', 'driver', 'diagnostics', 'schedule', 'sensors', 'mqtt']) out[k] = { ...(base[k] as Json), ...((c[k] as Json) ?? {}) };
   const zones = (c['zones'] ?? []) as Json[];
   out['zones'] = (base['zones'] as Json[]).map((z, i) => ({ ...z, ...(zones[i] ?? {}) }));
   return out;
@@ -258,7 +259,7 @@ const maintenanceGate = () => {
 
 route('GET', '/auth', 'public', (req, res) => {
   const s = session(req);
-  const body: Json = { password_set: dev.passwordHash !== null, authenticated: !!s.token, protect_reads: dev.security.protect_reads };
+  const body: Json = { password_set: dev.passwordHash !== null, authenticated: !!s.token, protect_reads: dev.security.protect_reads, setup_complete: dev.setupComplete };
   if (s.token && s.viaCookie) body['csrf'] = dev.sessions.get(s.token)!.csrf;
   send(res, 200, body);
 });
@@ -323,7 +324,9 @@ route('GET', '/zones/{zone}', 'read', (_q, res, p) => send(res, 200, dev.zoneJso
 route('PATCH', '/zones/{zone}', 'admin', async (req, res, p) => {
   const z = zoneParam(p);
   const b = await json(req);
-  for (const k of Object.keys(b)) if (!['name', 'enabled', 'max_run_s', 'current_min_ma', 'current_max_ma'].includes(k)) throw new HttpError(400, 'invalid_body', `unknown field ${k}`, k);
+  for (const k of Object.keys(b)) if (!['name', 'enabled', 'max_run_s', 'default_run_s', 'current_min_ma', 'current_max_ma'].includes(k)) throw new HttpError(400, 'invalid_body', `unknown field ${k}`, k);
+  const dr = b['default_run_s'];
+  if (dr !== undefined && (!Number.isInteger(dr) || (dr as number) < 1 || (dr as number) > 14400)) throw bad('default_run_s', 'must be 1 to 14400');
   if (typeof b['name'] === 'string' && b['name'].length > 23) throw bad('name', 'at most 23 characters');
   const m = b['max_run_s'];
   if (m !== undefined && (!Number.isInteger(m) || (m as number) < 1 || (m as number) > 14400)) throw bad('max_run_s', 'must be 1 to 14400');
@@ -488,6 +491,46 @@ route('POST', '/system/factory-reset', 'admin', async (req, res) => {
   }, 500);
 });
 route('GET', '/firmware', 'read', (_q, res) => send(res, 200, dev.firmwareJson()));
+route('PUT', '/setup', 'admin', async (req, res) => {
+  const b = await json(req);
+  if (typeof b['complete'] !== 'boolean' || Object.keys(b).length !== 1) throw new HttpError(400, 'invalid_body', 'send {"complete": true|false}', 'complete');
+  dev.setupComplete = b['complete'];
+  send(res, 200, { setup_complete: dev.setupComplete });
+});
+route('GET', '/history', 'read', (_q, res, _p, url) => {
+  const num = (k: string, min: number, max: number): number | undefined => {
+    const v = url.searchParams.get(k);
+    if (v === null) return undefined;
+    if (!/^\d+$/.test(v) || Number(v) < min || Number(v) > max) throw new HttpError(400, 'invalid_body', `bad ${k}`, k);
+    return Number(v);
+  };
+  send(res, 200, dev.historyPage({
+    limit: num('limit', 1, 100) ?? 50, before: num('before', 1, 2 ** 52), after: num('after', 0, 2 ** 52),
+    since: num('since', 0, 4102444800), zone: num('zone', 1, 8),
+  }));
+});
+const MQTT_FIELDS = ['enabled', 'host', 'port', 'username', 'tls', 'ca', 'client_id', 'base_topic', 'discovery', 'discovery_prefix', 'ha_zone_entity'];
+route('GET', '/mqtt', 'read', (_q, res) => send(res, 200, dev.mqttJson()));
+route('PUT', '/mqtt', 'admin', async (req, res) => {
+  const b = await json(req);
+  const next = { ...(dev.config['mqtt'] as Json) };
+  for (const [k, v] of Object.entries(b)) {
+    if (k === 'password' || k === 'ca_cert') continue;
+    if (!MQTT_FIELDS.includes(k)) throw new HttpError(400, 'invalid_body', 'unknown field', k);
+    next[k] = v;
+  }
+  const port = Number(next['port']);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw bad('port', 'must be 1 to 65535');
+  if (next['enabled'] === true && !String(next['host'] ?? '')) throw bad('host', 'required when enabled');
+  if (/[#+]|^\/|\/$/.test(String(next['base_topic'] ?? ''))) throw bad('base_topic', 'no wildcards, no leading or trailing /');
+  if (typeof b['ca_cert'] === 'string' && b['ca_cert'] && !String(b['ca_cert']).includes('-----BEGIN CERTIFICATE-----')) throw bad('ca_cert', 'not a PEM certificate');
+  if ('password' in b) dev.mqttSecrets.password = typeof b['password'] === 'string' ? b['password'] : '';
+  if ('ca_cert' in b) dev.mqttSecrets.ca = typeof b['ca_cert'] === 'string' ? b['ca_cert'] : '';
+  dev.config['mqtt'] = next;
+  dev.mqttChangedMono = dev.monoMs();
+  dev.emit('config_applied');
+  send(res, 200, dev.mqttJson());
+});
 
 async function receiveImage(req: IncomingMessage, res: ServerResponse, kind: 'fw' | 'ui', force: boolean): Promise<void> {
   if (String(req.headers['content-type']) !== 'application/octet-stream') throw new HttpError(415, 'unsupported_media_type', 'expected application/octet-stream');

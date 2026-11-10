@@ -787,6 +787,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mqtt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * MQTT settings and connection state
+         * @description The `mqtt` object of the configuration, whether a password and a custom CA certificate are stored (never their values), and the client's connection state. Topic tree and Home Assistant discovery: [MQTT guide](https://syntroniks.github.io/zoneflow/firmware/mqtt/).
+         */
+        get: operations["getMqtt"];
+        /**
+         * Change MQTT settings
+         * @description Partial update. Connection fields are validated by the core configuration (errors carry the field as `path`) and stored in the configuration; `password` and `ca_cert` are write-only and stored in NVS, outside the configuration and its backup. The client reconnects with the new settings within a second.
+         */
+        put: operations["putMqtt"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Event history
+         * @description Runs (zone, source, planned and actual duration, end reason, current, volume), skipped and missed starts, faults, and system events (boot with reset reason, clock, configuration, rain delay, sensors, updates), newest first. Kept in flash in a ring of 1200 records; written in batches (within 60 s, faults at once). Page back with `before`; fetch new records with `after`. No secrets are recorded.
+         */
+        get: operations["getHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Mark the first-run steps done
+         * @description Stores `setup_complete` (shown by GET /auth) in the web settings, outside the configuration and its backup. A factory reset clears it.
+         */
+        put: operations["putSetup"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -807,11 +871,13 @@ export interface components {
             confirmed?: boolean;
         };
         AuthStatus: {
-            password_set?: boolean;
-            authenticated?: boolean;
-            protect_reads?: boolean;
+            password_set: boolean;
+            authenticated: boolean;
+            protect_reads: boolean;
             /** @description Only for a valid cookie session. */
             csrf?: string;
+            /** @description The web UI’s first-run steps were finished or skipped (PUT /setup). A hint for clients; it gates nothing. */
+            setup_complete: boolean;
         };
         LoginRequest: {
             password: string;
@@ -826,19 +892,19 @@ export interface components {
         };
         Session: {
             /** @description Bearer token; the same value is in the cookie. */
-            token?: string;
+            token: string;
             /** @description Send as X-CSRF-Token on writes that use the cookie. */
-            csrf?: string;
-            idle_timeout_s?: number;
+            csrf: string;
+            idle_timeout_s: number;
         };
         Security: {
-            protect_reads?: boolean;
-            https?: boolean;
-            check_host?: boolean;
-            password_set?: boolean;
-            sessions?: number;
+            protect_reads: boolean;
+            https: boolean;
+            check_host: boolean;
+            password_set: boolean;
+            sessions: number;
             /** @description Of the self-signed certificate; empty if none. */
-            tls_fingerprint_sha256?: string;
+            tls_fingerprint_sha256: string;
             restart_required?: boolean;
         };
         SecurityUpdate: {
@@ -850,48 +916,55 @@ export interface components {
             check_host?: boolean;
         };
         Info: {
-            api_version?: string;
-            device_name?: string;
-            hostname?: string;
-            mac?: string;
-            board?: string;
-            firmware?: {
-                version?: string;
-                project?: string;
-                idf_version?: string;
-                build_date?: string;
+            api_version: string;
+            device_name: string;
+            hostname: string;
+            mac: string;
+            board: string;
+            firmware: {
+                version: string;
+                project: string;
+                idf_version: string;
+                build_date: string;
             };
-            uptime_s?: number;
-            reset_reason?: string;
+            uptime_s: number;
+            reset_reason: string;
             /** @description free, min_free and largest_block cover all 8-bit heap, PSRAM included; internal_* cover internal RAM only. */
-            heap?: {
-                free?: number;
-                min_free?: number;
-                largest_block?: number;
-                internal_free?: number;
-                internal_min_free?: number;
+            heap: {
+                free: number;
+                min_free: number;
+                largest_block: number;
+                internal_free: number;
+                internal_min_free: number;
             };
-            http_stack_free_min?: number;
+            http_stack_free_min: number;
         };
         Zone: {
-            id?: number;
-            name?: string;
-            enabled?: boolean;
-            max_run_s?: number;
-            current_min_ma?: number;
-            current_max_ma?: number;
+            id: number;
+            name: string;
+            enabled: boolean;
+            max_run_s: number;
+            current_min_ma: number;
+            current_max_ma: number;
             /** @enum {string} */
-            state?: "off" | "waiting" | "open";
-            remaining_s?: number;
+            state: "off" | "waiting" | "open";
+            remaining_s: number;
             /** @enum {string} */
-            last_stop?: "none" | "completed" | "requested" | "max_run_time" | "fault" | "ac_lost" | "shutdown" | "maintenance";
-            fault?: string;
+            last_stop: "none" | "completed" | "requested" | "max_run_time" | "fault" | "ac_lost" | "shutdown" | "maintenance";
+            fault: string;
             /** @description Latched fault on this zone; runs are refused until faults are cleared. */
-            locked_out?: boolean;
+            locked_out: boolean;
             /** @description The zone reached its maximum run time (summed across back-to-back runs) and must stay closed for driver.min_rest_s (spec section 2, rule 4). */
-            resting?: boolean;
+            resting: boolean;
             /** @description Seconds of rest left; 0 when not resting. */
-            rest_remaining_s?: number;
+            rest_remaining_s: number;
+            /**
+             * @description Duration of a run started without one (Home Assistant valve open, MQTT run with an empty payload). Clamped like any run.
+             * @default 600
+             */
+            default_run_s: number;
+            /** @description Mean current measured with this zone open alone (master share removed), since the last restart; null until it has run alone. Basis for setting current_min_ma and current_max_ma. */
+            learned_current_ma: number | null;
         };
         ZoneUpdate: {
             name?: string;
@@ -899,6 +972,11 @@ export interface components {
             max_run_s?: number;
             current_min_ma?: number;
             current_max_ma?: number;
+            /**
+             * @description Duration of a run started without one (Home Assistant valve open, MQTT run with an empty payload). Clamped like any run.
+             * @default 600
+             */
+            default_run_s?: number;
         };
         ZoneRun: {
             duration_s: number;
@@ -909,12 +987,12 @@ export interface components {
             duration_s?: number;
         };
         Program: {
-            id?: number;
-            name?: string;
-            enabled?: boolean;
+            id: number;
+            name: string;
+            enabled: boolean;
             /** @description Local start times HH:MM. */
-            starts?: string[];
-            days?: {
+            starts: string[];
+            days: {
                 /** @enum {string} */
                 type: "weekdays" | "interval" | "odd" | "even";
                 weekdays?: ("sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat")[];
@@ -927,11 +1005,11 @@ export interface components {
                 anchor?: string;
             };
             /** @description Seconds per zone; index 0 is zone 1. 0 leaves the zone out. */
-            durations_s?: number[];
+            durations_s: number[];
             /** @description Scale by schedule.seasonal_percent. */
-            seasonal?: boolean;
+            seasonal: boolean;
             /** @description Skip while the rain sensor is active. */
-            obey_sensor?: boolean;
+            obey_sensor: boolean;
         };
         /** @description Same as Program. `id` is optional on create and must match the path on replace. */
         ProgramInput: {
@@ -960,27 +1038,31 @@ export interface components {
             obey_sensor?: boolean;
         };
         QueueItem: {
-            id?: number;
-            zone?: number | null;
-            duration_s?: number;
+            id: number;
+            zone: number | null;
+            duration_s: number;
             /** @enum {string} */
-            source?: "schedule" | "manual_program" | "manual_zone";
-            program_id?: number | null;
+            source: "schedule" | "manual_program" | "manual_zone";
+            program_id: number | null;
         };
         Queue: {
             /** @enum {string} */
-            state?: "idle" | "running" | "paused";
-            length?: number;
-            current_remaining_s?: number;
+            state: "idle" | "running" | "paused";
+            length: number;
+            current_remaining_s: number;
             /** @description Head first; first 8. */
-            items?: components["schemas"]["QueueItem"][];
-            /** @description schedule.pause_timeout_min: a queue paused this long is stopped (event pause_expired). The time already paused is not reported by the core. */
-            pause_timeout_min?: number;
+            items: components["schemas"]["QueueItem"][];
+            /** @description schedule.pause_timeout_min: a queue paused this long is stopped (event pause_expired). */
+            pause_timeout_min: number;
+            /** @description Seconds since the first pause while paused, else 0. */
+            paused_s: number;
+            /** @description While paused: seconds until the queue is stopped (pause_timeout_min after the first pause). Null otherwise. */
+            stop_in_s: number | null;
         };
         RainDelay: {
-            active?: boolean;
-            until_utc?: number | null;
-            remaining_s?: number;
+            active: boolean;
+            until_utc: number | null;
+            remaining_s: number;
         };
         /** @description Exactly one of the two fields. */
         RainDelayRequest: {
@@ -992,124 +1074,103 @@ export interface components {
             until_utc?: number;
         };
         Sensors: {
-            rain?: {
-                enabled?: boolean;
-                active?: boolean;
+            rain: {
+                enabled: boolean;
+                active: boolean;
             };
-            spare?: {
-                enabled?: boolean;
-                active?: boolean;
+            spare: {
+                enabled: boolean;
+                active: boolean;
             };
-            flow?: {
-                enabled?: boolean;
-                rate_lpm?: number;
-                total_l?: number;
+            flow: {
+                enabled: boolean;
+                rate_lpm: number;
+                total_l: number;
             };
-            ac_present?: boolean;
-            valve_current_ma?: number | null;
+            ac_present: boolean;
+            valve_current_ma: number | null;
             /** @description False while the valve-current readings are missing (fault current_sense_unavailable). Zones still run; open and short detection is blind. */
-            current_sense_available?: boolean;
+            current_sense_available: boolean;
             /** @description The hardware over-current comparator removed gate drive (fault over_current_trip, latched until faults are cleared). */
-            over_current_tripped?: boolean;
+            over_current_tripped: boolean;
         };
         Faults: {
-            active?: ("zone_open_circuit" | "zone_over_current" | "short_circuit" | "current_while_idle" | "ac_lost" | "flow_without_zones" | "config_invalid" | "time_invalid" | "storage_error" | "master_locked_out" | "current_sense_unavailable" | "over_current_trip")[];
-            zones?: {
-                zone?: number;
-                fault?: string;
-                locked_out?: boolean;
+            active: ("zone_open_circuit" | "zone_over_current" | "short_circuit" | "current_while_idle" | "ac_lost" | "flow_without_zones" | "config_invalid" | "time_invalid" | "storage_error" | "master_locked_out" | "current_sense_unavailable" | "over_current_trip")[];
+            zones: {
+                zone: number;
+                fault: string;
+                locked_out: boolean;
             }[];
         };
         Status: {
-            sequence?: number;
-            utc?: number;
+            sequence: number;
+            utc: number;
             /** @enum {string} */
-            time_status?: "unset" | "rtc" | "synced";
-            uptime_s?: number;
-            zones?: components["schemas"]["Zone"][];
-            master?: {
-                enabled?: boolean;
-                on?: boolean;
+            time_status: "unset" | "rtc" | "synced";
+            uptime_s: number;
+            zones: components["schemas"]["Zone"][];
+            master: {
+                enabled: boolean;
+                on: boolean;
                 /** @description Locked out after master.fault_lockout_count consecutive current faults on the master; every zone is blocked until faults are cleared. */
-                locked_out?: boolean;
+                locked_out: boolean;
                 /** @description Consecutive current faults attributed to the master. */
-                fault_count?: number;
+                fault_count: number;
             };
-            queue?: components["schemas"]["Queue"];
-            sensors?: components["schemas"]["Sensors"];
-            rain_delay?: components["schemas"]["RainDelay"];
-            inhibit?: {
-                sensor?: boolean;
-                no_ac?: boolean;
-                maintenance?: boolean;
-                master_lockout?: boolean;
+            queue: components["schemas"]["Queue"];
+            sensors: components["schemas"]["Sensors"];
+            rain_delay: components["schemas"]["RainDelay"];
+            inhibit: {
+                sensor: boolean;
+                no_ac: boolean;
+                maintenance: boolean;
+                master_lockout: boolean;
             };
-            faults?: components["schemas"]["Faults"];
-            maintenance?: boolean;
-            config_revision?: number;
-            network?: components["schemas"]["Network"];
-            ota?: components["schemas"]["OtaStatus"];
+            faults: components["schemas"]["Faults"];
+            maintenance: boolean;
+            config_revision: number;
+            network: components["schemas"]["Network"];
+            ota: components["schemas"]["OtaStatus"];
         };
-        /** @description The configuration document described in the firmware architecture, section 6. Missing fields take defaults; unknown fields are ignored. A document whose schema is newer than the firmware is refused with error.code unsupported_schema and path schema. */
+        /** @description The configuration document as stored and returned (every field present). The configuration document described in the firmware architecture, section 6. Missing fields take defaults; unknown fields are ignored. A document whose schema is newer than the firmware is refused with error.code unsupported_schema and path schema. */
         Config: {
-            /** @constant */
-            schema: 1;
-            device_name?: string;
-            timezone?: string;
-            zone_count?: number;
-            zones?: Record<string, never>[];
-            master?: {
-                /**
-                 * @description Consecutive current faults on the master that lock it out.
-                 * @default 3
-                 */
-                fault_lockout_count: number;
-            };
-            driver?: {
-                /**
-                 * @description Closed time a zone needs after reaching its maximum run time.
-                 * @default 1800
-                 */
-                min_rest_s: number;
-                /**
-                 * @description Turn outputs on at a mains zero crossing when the board has the signal.
-                 * @default false
-                 */
-                zero_cross_switching: boolean;
-            };
-            sensors?: Record<string, never>;
-            diagnostics?: Record<string, never>;
-            schedule?: {
-                seasonal_percent?: number;
-                missed_start_grace_min?: number;
-                programs?: components["schemas"]["Program"][];
-                /**
-                 * @description A paused queue is stopped after this long.
-                 * @default 120
-                 */
-                pause_timeout_min: number;
-            };
+            /**
+             * @description Documents with schema 1 are accepted and migrated (adds `mqtt` and `zones[].default_run_s`).
+             * @constant
+             */
+            schema: 2;
+            device_name: string;
+            timezone: string;
+            zone_count: number;
+            /** @description Always 8 entries; zones above zone_count are kept but not used. */
+            zones: components["schemas"]["ConfigZone"][];
+            master: components["schemas"]["ConfigMaster"];
+            driver: components["schemas"]["ConfigDriver"];
+            sensors: components["schemas"]["ConfigSensors"];
+            diagnostics: components["schemas"]["ConfigDiagnostics"];
+            schedule: components["schemas"]["ConfigSchedule"];
+            mqtt: components["schemas"]["MqttSettings"];
         };
         Backup: {
             /** @constant */
             format: "zoneflow-backup";
             /** @constant */
-            format_version?: 1;
-            created_utc?: number;
-            firmware_version?: string;
-            hostname?: string;
+            format_version: 1;
+            created_utc: number;
+            firmware_version: string;
+            hostname: string;
             config: components["schemas"]["Config"];
         };
         Time: {
-            utc?: number;
+            utc: number;
             /** @enum {string} */
-            status?: "unset" | "rtc" | "synced";
-            rtc_present?: boolean;
-            timezone?: string;
+            status: "unset" | "rtc" | "synced";
+            rtc_present: boolean;
+            timezone: string;
             /** @description Local wall-clock time, ISO 8601 without offset. */
-            local?: string | null;
-            utc_offset_s?: number;
-            dst?: boolean;
+            local: string | null;
+            utc_offset_s: number;
+            dst: boolean;
         };
         TimeUpdate: {
             utc?: number;
@@ -1118,47 +1179,47 @@ export interface components {
         };
         Network: {
             /** @enum {string} */
-            state?: "off" | "provisioning" | "connecting" | "connected" | "waiting_retry";
-            provisioned?: boolean;
+            state: "off" | "provisioning" | "connecting" | "connected" | "waiting_retry";
+            provisioned: boolean;
             /** @enum {string} */
-            provisioning?: "none" | "ble" | "softap";
-            hostname?: string;
-            mac?: string;
-            ssid?: string;
-            bssid?: string;
-            channel?: number;
-            rssi?: number;
-            ip?: string;
-            netmask?: string;
-            gateway?: string;
-            reconnect_attempt?: number;
-            retry_in_ms?: number;
+            provisioning: "none" | "ble" | "softap";
+            hostname: string;
+            mac: string;
+            ssid: string;
+            bssid: string;
+            channel: number;
+            rssi: number;
+            ip: string;
+            netmask: string;
+            gateway: string;
+            reconnect_attempt: number;
+            retry_in_ms: number;
             /** @description ESP-IDF wifi_err_reason_t. */
-            last_disconnect_reason?: number;
-            disconnects?: number;
-            mdns?: boolean;
+            last_disconnect_reason: number;
+            disconnects: number;
+            mdns: boolean;
         };
         ReprovisionRequest: {
             /**
              * @default ble
              * @enum {string}
              */
-            transport: "ble" | "softap";
+            transport?: "ble" | "softap";
         };
         ProvisioningState: {
-            active?: boolean;
+            active: boolean;
             /** @enum {string} */
-            transport?: "none" | "ble" | "softap";
-            state?: string;
-            provisioned?: boolean;
-            password_set?: boolean;
-            hostname?: string;
-            ip?: string;
+            transport: "none" | "ble" | "softap";
+            state: string;
+            provisioned: boolean;
+            password_set: boolean;
+            hostname: string;
+            ip: string;
         };
         WifiNetwork: {
-            ssid?: string;
-            rssi?: number;
-            secure?: boolean;
+            ssid: string;
+            rssi: number;
+            secure: boolean;
         };
         ProvisionWifiRequest: {
             ssid: string;
@@ -1173,35 +1234,560 @@ export interface components {
         };
         OtaStatus: {
             /** @enum {string} */
-            phase?: "idle" | "preparing" | "receiving" | "verifying" | "rebooting" | "failed";
+            phase: "idle" | "preparing" | "receiving" | "verifying" | "rebooting" | "failed";
             /** @enum {string} */
-            error?: "none" | "busy" | "zones_active" | "outputs_not_off" | "bad_image" | "wrong_chip" | "wrong_project" | "too_large" | "truncated" | "flash_error" | "verify_failed" | "download_failed" | "bad_url" | "aborted";
+            error: "none" | "busy" | "zones_active" | "outputs_not_off" | "bad_image" | "wrong_chip" | "wrong_project" | "too_large" | "truncated" | "flash_error" | "verify_failed" | "download_failed" | "bad_url" | "aborted";
             /** @enum {string} */
-            source?: "none" | "upload" | "pull";
-            forced?: boolean;
-            received_bytes?: number;
-            total_bytes?: number;
-            new_version?: string;
+            source: "none" | "upload" | "pull";
+            forced: boolean;
+            received_bytes: number;
+            total_bytes: number;
+            new_version: string;
         };
         Firmware: {
-            version?: string;
-            idf_version?: string;
-            build_date?: string;
-            running_slot?: string;
+            version: string;
+            idf_version: string;
+            build_date: string;
+            running_slot: string;
             /** @enum {string} */
-            running_state?: "new" | "pending_verify" | "valid" | "invalid" | "aborted" | "undefined";
-            next_slot?: string;
-            other_slot_version?: string;
-            ota?: components["schemas"]["OtaStatus"];
+            running_state: "new" | "pending_verify" | "valid" | "invalid" | "aborted" | "undefined";
+            next_slot: string;
+            other_slot_version: string;
+            ota: components["schemas"]["OtaStatus"];
         };
         PullRequest: {
             /** Format: uri */
             url: string;
             /** @default false */
-            force: boolean;
+            force?: boolean;
         };
         /** @description Error answer of a run command. error.code is the controller's RunError: invalid_zone, unknown_program, zero_duration, queue_full, already_queued, inhibited, nothing_to_run, locked_out, zone_resting, master_locked_out (or inhibited when maintenance or missing 24 VAC is known beforehand). zone_resting answers carry Retry-After with the seconds of rest left. */
         RunRejection: components["schemas"]["Error"];
+        /** @description The `mqtt` object of the configuration document (schema 2). */
+        MqttSettings: {
+            /** @default false */
+            enabled: boolean;
+            /** @description Broker host name or IP address, without scheme or port. Required when enabled. */
+            host: string;
+            /** @default 1883 */
+            port: number;
+            username: string;
+            /**
+             * @description Connect with TLS (mqtts). Usually port 8883.
+             * @default false
+             */
+            tls: boolean;
+            /**
+             * @description With TLS: verify the broker against the ESP-IDF certificate bundle (public CAs) or against the CA certificate stored with `ca_cert`.
+             * @default bundle
+             * @enum {string}
+             */
+            ca: "bundle" | "custom";
+            /** @description Empty: `zoneflow-<device id>` (station MAC, 12 hex digits). */
+            client_id: string;
+            /** @description Root of every topic. Empty: `zoneflow/<device id>`. No wildcards, no leading or trailing `/`. */
+            base_topic: string;
+            /**
+             * @description Home Assistant MQTT discovery.
+             * @default true
+             */
+            discovery: boolean;
+            /** @default homeassistant */
+            discovery_prefix: string;
+            /**
+             * @description Home Assistant entity type for zones.
+             * @default valve
+             * @enum {string}
+             */
+            ha_zone_entity: "valve" | "switch";
+        };
+        MqttStatus: {
+            /** @enum {string} */
+            state: "disabled" | "waiting_network" | "connecting" | "connected" | "waiting_retry";
+            /** @example mqtt://192.168.1.10:1883 */
+            broker: string;
+            /** @example zoneflow/a1b2c3d4e5f6 */
+            root_topic: string;
+            connected_for_s: number | null;
+            /** @description Successful connections since boot. */
+            connects: number;
+            /** @description Attempts since the last successful connection. */
+            reconnect_attempt: number;
+            retry_in_ms: number;
+            last_error: string;
+            published: number;
+            publish_failed: number;
+            commands_received: number;
+            /** @description Invalid, retained, rate-limited or refused by the controller. */
+            commands_rejected: number;
+            events_dropped: number;
+            discovery_published: boolean;
+        };
+        Mqtt: components["schemas"]["MqttSettings"] & {
+            /** @description A password is stored. The password itself is never returned. */
+            password_set: boolean;
+            /** @description A custom CA certificate is stored. */
+            ca_cert_set: boolean;
+            status: components["schemas"]["MqttStatus"];
+        };
+        MqttUpdate: {
+            /** @default false */
+            enabled?: boolean;
+            /** @description Broker host name or IP address, without scheme or port. Required when enabled. */
+            host?: string;
+            /** @default 1883 */
+            port?: number;
+            username?: string;
+            /**
+             * @description Connect with TLS (mqtts). Usually port 8883.
+             * @default false
+             */
+            tls?: boolean;
+            /**
+             * @description With TLS: verify the broker against the ESP-IDF certificate bundle (public CAs) or against the CA certificate stored with `ca_cert`.
+             * @default bundle
+             * @enum {string}
+             */
+            ca?: "bundle" | "custom";
+            /** @description Empty: `zoneflow-<device id>` (station MAC, 12 hex digits). */
+            client_id?: string;
+            /** @description Root of every topic. Empty: `zoneflow/<device id>`. No wildcards, no leading or trailing `/`. */
+            base_topic?: string;
+            /**
+             * @description Home Assistant MQTT discovery.
+             * @default true
+             */
+            discovery?: boolean;
+            /** @default homeassistant */
+            discovery_prefix?: string;
+            /**
+             * @description Home Assistant entity type for zones.
+             * @default valve
+             * @enum {string}
+             */
+            ha_zone_entity?: "valve" | "switch";
+            /** @description Write-only. An empty string or null removes it. */
+            password?: string | null;
+            /** @description PEM CA certificate for `ca: custom`. Write-only. An empty string or null removes it. */
+            ca_cert?: string | null;
+        };
+        /** @description One entry of `zones` (index 0 is zone 1). */
+        ConfigZone: {
+            name: string;
+            /** @default true */
+            enabled: boolean;
+            /** @default 3600 */
+            max_run_s: number;
+            /** @default 80 */
+            current_min_ma: number;
+            /** @default 700 */
+            current_max_ma: number;
+            /**
+             * @description Duration of a run started without one (Home Assistant valve open, MQTT run with an empty payload).
+             * @default 600
+             */
+            default_run_s: number;
+        };
+        ConfigMaster: {
+            /** @default false */
+            enabled: boolean;
+            /** @default 1000 */
+            pre_open_ms: number;
+            /** @default 2000 */
+            post_close_ms: number;
+            /**
+             * @description Consecutive current faults on the master that lock it out.
+             * @default 3
+             */
+            fault_lockout_count: number;
+            /** @default 80 */
+            current_min_ma: number;
+            /** @default 700 */
+            current_max_ma: number;
+        };
+        ConfigDriver: {
+            /** @default 2 */
+            max_concurrent: number;
+            /** @default 2000 */
+            inter_zone_delay_ms: number;
+            /**
+             * @description Closed time a zone needs after reaching its maximum run time.
+             * @default 1800
+             */
+            min_rest_s: number;
+            /**
+             * @description Turn outputs on at a mains zero crossing when the board has the signal.
+             * @default false
+             */
+            zero_cross_switching: boolean;
+        };
+        ContactInput: {
+            enabled: boolean;
+            /**
+             * @description Normally open or normally closed.
+             * @enum {string}
+             */
+            contact: "no" | "nc";
+            debounce_ms: number;
+        };
+        SpareInput: components["schemas"]["ContactInput"] & {
+            /**
+             * @description `inhibit`: acts like the rain sensor.
+             * @enum {string}
+             */
+            function: "none" | "inhibit";
+        };
+        FlowMeter: {
+            /** @default false */
+            enabled: boolean;
+            /** @default 450 */
+            pulses_per_litre: number;
+            /** @default 0.5 */
+            leak_threshold_lpm: number;
+            /** @default 60 */
+            leak_detect_s: number;
+        };
+        ConfigSensors: {
+            rain: components["schemas"]["ContactInput"];
+            spare: components["schemas"]["SpareInput"];
+            flow: components["schemas"]["FlowMeter"];
+        };
+        ConfigDiagnostics: {
+            /** @default true */
+            current_enabled: boolean;
+            /** @default 500 */
+            settle_ms: number;
+            /** @default 60 */
+            idle_max_ma: number;
+            /** @default 3000 */
+            short_circuit_ma: number;
+            /** @default 3 */
+            confirm_samples: number;
+        };
+        ConfigSchedule: {
+            seasonal_percent: number;
+            missed_start_grace_min: number;
+            programs: components["schemas"]["Program"][];
+            /**
+             * @description A paused queue is stopped after this long.
+             * @default 120
+             */
+            pause_timeout_min: number;
+        };
+        /** @description A configuration document to write: `schema` is required; every other field may be left out and takes its default, also inside the objects (whose `required` lists describe what GET returns). The configuration document described in the firmware architecture, section 6. Missing fields take defaults; unknown fields are ignored. A document whose schema is newer than the firmware is refused with error.code unsupported_schema and path schema. */
+        ConfigInput: {
+            /**
+             * @description Documents with schema 1 are accepted and migrated (adds `mqtt` and `zones[].default_run_s`).
+             * @constant
+             */
+            schema: 2;
+            device_name?: string;
+            timezone?: string;
+            zone_count?: number;
+            /** @description Always 8 entries; zones above zone_count are kept but not used. */
+            zones?: components["schemas"]["ConfigZone"][];
+            master?: components["schemas"]["ConfigMaster"];
+            driver?: components["schemas"]["ConfigDriver"];
+            sensors?: components["schemas"]["ConfigSensors"];
+            diagnostics?: components["schemas"]["ConfigDiagnostics"];
+            schedule?: components["schemas"]["ConfigSchedule"];
+            mqtt?: components["schemas"]["MqttSettings"];
+        };
+        SetupUpdate: {
+            complete: boolean;
+        };
+        /** @description One opening of one zone. */
+        HistoryRun: {
+            /** @description Grows by one per record, also across restarts. */
+            id: number;
+            /** @description When it happened (Unix seconds). */
+            utc: number;
+            /** @description False if recorded while the clock was not set; utc is then wrong. */
+            time_valid: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "run";
+            /** @description Zone number, null when not zone-specific. */
+            zone: number | null;
+            /** @description Program id, null for a manual zone run. */
+            program_id: number | null;
+            /** @enum {string} */
+            source: "schedule" | "manual_program" | "manual_zone";
+            /**
+             * @description Why it closed. `requested`: stop, skip or pause (a resumed run is a new record).
+             * @enum {string}
+             */
+            end: "none" | "completed" | "requested" | "max_run_time" | "fault" | "ac_lost" | "shutdown" | "maintenance";
+            /** @description What was left to run when it opened (after seasonal adjustment and clamping). */
+            planned_s: number;
+            /** @description How long it was open. */
+            actual_s: number;
+            /** @description Mean valve current of this zone while it was open alone; null if not measured. */
+            current_ma: number | null;
+            /** @description Flow-meter volume while open (0.1 L steps); null without a flow meter. Two zones open together share the volume measured meanwhile. */
+            litres: number | null;
+        };
+        /** @description A program was queued. */
+        HistoryProgramStarted: {
+            /** @description Grows by one per record, also across restarts. */
+            id: number;
+            /** @description When it happened (Unix seconds). */
+            utc: number;
+            /** @description False if recorded while the clock was not set; utc is then wrong. */
+            time_valid: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "program_started";
+            /** @description Program id, null for a manual zone run. */
+            program_id: number | null;
+            /** @enum {string} */
+            source: "schedule" | "manual_program" | "manual_zone";
+            late: boolean;
+        };
+        /** @description A scheduled start did not run. */
+        HistoryProgramSkipped: {
+            /** @description Grows by one per record, also across restarts. */
+            id: number;
+            /** @description When it happened (Unix seconds). */
+            utc: number;
+            /** @description False if recorded while the clock was not set; utc is then wrong. */
+            time_valid: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "program_skipped";
+            /** @description Program id, null for a manual zone run. */
+            program_id: number | null;
+            /** @enum {string} */
+            reason: "rain_delay" | "sensor_inhibit" | "no_ac" | "maintenance" | "already_queued" | "queue_full" | "nothing_to_run" | "master_locked_out";
+        };
+        /** @description A start passed while the controller was off or its clock jumped. */
+        HistoryProgramMissed: {
+            /** @description Grows by one per record, also across restarts. */
+            id: number;
+            /** @description When it happened (Unix seconds). */
+            utc: number;
+            /** @description False if recorded while the clock was not set; utc is then wrong. */
+            time_valid: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "program_missed";
+            /** @description Program id, null for a manual zone run. */
+            program_id: number | null;
+            scheduled_utc: number;
+        };
+        /** @description A queued run could not start. */
+        HistoryRunDropped: {
+            /** @description Grows by one per record, also across restarts. */
+            id: number;
+            /** @description When it happened (Unix seconds). */
+            utc: number;
+            /** @description False if recorded while the clock was not set; utc is then wrong. */
+            time_valid: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "run_dropped";
+            /** @description Zone number, null when not zone-specific. */
+            zone: number | null;
+            /** @description Program id, null for a manual zone run. */
+            program_id: number | null;
+            /** @enum {string} */
+            source: "schedule" | "manual_program" | "manual_zone";
+            reason: string;
+        };
+        /** @description A fault was raised. */
+        HistoryFaultRaised: {
+            /** @description Grows by one per record, also across restarts. */
+            id: number;
+            /** @description When it happened (Unix seconds). */
+            utc: number;
+            /** @description False if recorded while the clock was not set; utc is then wrong. */
+            time_valid: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "fault_raised";
+            /** @description Zone number, null when not zone-specific. */
+            zone: number | null;
+            code: string;
+        };
+        /** @description A fault cleared (cleared by hand or its cause went away). */
+        HistoryFaultCleared: {
+            /** @description Grows by one per record, also across restarts. */
+            id: number;
+            /** @description When it happened (Unix seconds). */
+            utc: number;
+            /** @description False if recorded while the clock was not set; utc is then wrong. */
+            time_valid: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "fault_cleared";
+            /** @description Zone number, null when not zone-specific. */
+            zone: number | null;
+            code: string;
+        };
+        /** @description The controller started. */
+        HistoryBoot: {
+            /** @description Grows by one per record, also across restarts. */
+            id: number;
+            /** @description When it happened (Unix seconds). */
+            utc: number;
+            /** @description False if recorded while the clock was not set; utc is then wrong. */
+            time_valid: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "boot";
+            /** @enum {string} */
+            reset_reason: "unknown" | "power_on" | "software" | "panic" | "watchdog" | "brownout" | "external" | "deep_sleep";
+        };
+        /** @description The clock source changed. */
+        HistoryTimeSet: {
+            /** @description Grows by one per record, also across restarts. */
+            id: number;
+            /** @description When it happened (Unix seconds). */
+            utc: number;
+            /** @description False if recorded while the clock was not set; utc is then wrong. */
+            time_valid: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "time_set";
+            /** @enum {string} */
+            status: "unset" | "rtc" | "synced";
+        };
+        /** @description A configuration change was applied. */
+        HistoryConfigChanged: {
+            /** @description Grows by one per record, also across restarts. */
+            id: number;
+            /** @description When it happened (Unix seconds). */
+            utc: number;
+            /** @description False if recorded while the clock was not set; utc is then wrong. */
+            time_valid: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "config_changed";
+        };
+        /** @description A rain delay was set (until_utc) or ended (null). */
+        HistoryRainDelay: {
+            /** @description Grows by one per record, also across restarts. */
+            id: number;
+            /** @description When it happened (Unix seconds). */
+            utc: number;
+            /** @description False if recorded while the clock was not set; utc is then wrong. */
+            time_valid: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "rain_delay";
+            until_utc: number | null;
+        };
+        /** @description A sensor input changed. */
+        HistorySensor: {
+            /** @description Grows by one per record, also across restarts. */
+            id: number;
+            /** @description When it happened (Unix seconds). */
+            utc: number;
+            /** @description False if recorded while the clock was not set; utc is then wrong. */
+            time_valid: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "sensor";
+            /** @enum {string} */
+            sensor: "rain" | "spare" | "ac";
+            active: boolean;
+        };
+        /** @description Maintenance mode (updates, factory reset) began or ended. */
+        HistoryMaintenance: {
+            /** @description Grows by one per record, also across restarts. */
+            id: number;
+            /** @description When it happened (Unix seconds). */
+            utc: number;
+            /** @description False if recorded while the clock was not set; utc is then wrong. */
+            time_valid: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "maintenance";
+            on: boolean;
+        };
+        /** @description A paused queue was stopped after the pause timeout. */
+        HistoryPauseExpired: {
+            /** @description Grows by one per record, also across restarts. */
+            id: number;
+            /** @description When it happened (Unix seconds). */
+            utc: number;
+            /** @description False if recorded while the clock was not set; utc is then wrong. */
+            time_valid: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "pause_expired";
+        };
+        /** @description A firmware or web UI update. */
+        HistoryOta: {
+            /** @description Grows by one per record, also across restarts. */
+            id: number;
+            /** @description When it happened (Unix seconds). */
+            utc: number;
+            /** @description False if recorded while the clock was not set; utc is then wrong. */
+            time_valid: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "ota";
+            /** @enum {string} */
+            stage: "started" | "failed" | "installed";
+            /** @enum {string} */
+            source: "none" | "upload" | "pull";
+            error: string | null;
+        };
+        HistoryRecord: components["schemas"]["HistoryRun"] | components["schemas"]["HistoryProgramStarted"] | components["schemas"]["HistoryProgramSkipped"] | components["schemas"]["HistoryProgramMissed"] | components["schemas"]["HistoryRunDropped"] | components["schemas"]["HistoryFaultRaised"] | components["schemas"]["HistoryFaultCleared"] | components["schemas"]["HistoryBoot"] | components["schemas"]["HistoryTimeSet"] | components["schemas"]["HistoryConfigChanged"] | components["schemas"]["HistoryRainDelay"] | components["schemas"]["HistorySensor"] | components["schemas"]["HistoryMaintenance"] | components["schemas"]["HistoryPauseExpired"] | components["schemas"]["HistoryOta"];
+        HistoryPage: {
+            /** @description Newest first. */
+            records: components["schemas"]["HistoryRecord"][];
+            /** @description Pass as `before` for the next older page; null when there is none. */
+            next_before: number | null;
+            newest_id: number | null;
+            /** @description Oldest id still kept (approximately: a damaged chunk inside the range is skipped). */
+            oldest_id: number | null;
+            /** @description Records the log holds at most; older ones are overwritten. */
+            capacity: number;
+            /** @description Records not yet written to flash (lost on a power cut; written within 60 s, faults at once). */
+            unsaved: number;
+        };
+        BackupInput: {
+            /** @constant */
+            format: "zoneflow-backup";
+            /** @constant */
+            format_version?: 1;
+            created_utc?: number;
+            firmware_version?: string;
+            hostname?: string;
+            config: components["schemas"]["ConfigInput"];
+        };
     };
     responses: {
         /** @description Invalid body or parameter; `error.path` names the field */
@@ -2185,7 +2771,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Config"];
+                "application/json": components["schemas"]["ConfigInput"];
             };
         };
         responses: {
@@ -2239,7 +2825,7 @@ export interface operations {
         /** @description A backup file from GET /config/backup, or a bare configuration document. */
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Backup"] | components["schemas"]["Config"];
+                "application/json": components["schemas"]["BackupInput"] | components["schemas"]["ConfigInput"];
             };
         };
         responses: {
@@ -2593,6 +3179,132 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Accepted"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            413: components["responses"]["TooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            500: components["responses"]["ServerError"];
+        };
+    };
+    getMqtt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Mqtt"];
+                };
+            };
+        };
+    };
+    putMqtt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "enabled": true,
+                 *       "host": "192.168.1.10",
+                 *       "port": 1883,
+                 *       "username": "zoneflow",
+                 *       "password": "secret"
+                 *     }
+                 */
+                "application/json": components["schemas"]["MqttUpdate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Mqtt"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            413: components["responses"]["TooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            500: components["responses"]["ServerError"];
+            503: components["responses"]["Busy"];
+        };
+    };
+    getHistory: {
+        parameters: {
+            query?: {
+                limit?: number;
+                /** @description Only records with a smaller id. */
+                before?: number;
+                /** @description Only records with a larger id. */
+                after?: number;
+                /** @description Only records at or after this time (Unix seconds). */
+                since?: number;
+                /** @description Only records of this zone. */
+                zone?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            503: components["responses"]["Busy"];
+        };
+    };
+    putSetup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetupUpdate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        setup_complete: boolean;
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];

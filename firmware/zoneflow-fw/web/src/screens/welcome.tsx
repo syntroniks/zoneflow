@@ -27,6 +27,7 @@ function Frame({ step, total, title, intro, children }: { step?: number; total?:
         <h1 tabIndex={-1}>{title}</h1>
         {intro && <p class="muted">{intro}</p>}
         <Card>{children}</Card>
+        {step && step > 1 && <SkipSetup />}
       </div>
     </div>
   );
@@ -136,7 +137,7 @@ function ZonesStep({ onNext }: { onNext: () => void }) {
   const cfg = config.value;
   const [count, setCount] = useState(cfg?.zone_count ?? 8);
   const [names, setNames] = useState<string[]>(() =>
-    Array.from({ length: 8 }, (_, i) => String(((cfg?.zones ?? [])[i] as { name?: string } | undefined)?.name ?? '')),
+    Array.from({ length: 8 }, (_, i) => cfg?.zones[i]?.name ?? ''),
   );
   const [busy, setBusy] = useState(false);
   return (
@@ -149,11 +150,10 @@ function ZonesStep({ onNext }: { onNext: () => void }) {
           try {
             const doc = await call('get', '/config');
             doc.zone_count = count;
-            const zones = [...((doc.zones ?? []) as Record<string, unknown>[])];
-            for (let i = 0; i < 8; i++) zones[i] = { ...(zones[i] ?? {}), name: (names[i] ?? '').trim() };
-            (doc as Record<string, unknown>)["zones"] = zones;
+            doc.zones.forEach((z, i) => (z.name = (names[i] ?? '').trim()));
             await call('put', '/config', { body: doc });
             await loadConfig();
+            await markSetupComplete();
             onNext();
           } catch (x) {
             toast(errorText(x), 'error');
@@ -184,6 +184,32 @@ function ZonesStep({ onNext }: { onNext: () => void }) {
   );
 }
 
+/** Stores that the first-run steps are done, so they do not come back on the next visit. */
+async function markSetupComplete(): Promise<void> {
+  try {
+    await call('put', '/setup', { body: { complete: true } });
+    if (auth.value) auth.value = { ...auth.value, setup_complete: true };
+  } catch (x) {
+    toast(errorText(x), 'error');
+  }
+}
+
+function SkipSetup() {
+  return (
+    <button
+      type="button"
+      class="btn btn-ghost skip-setup"
+      onClick={async () => {
+        await markSetupComplete();
+        onboarding.value = false;
+        navigate('/', { replace: true });
+      }}
+    >
+      {t('setup_skip')}
+    </button>
+  );
+}
+
 function DoneStep() {
   const finish = (to: string) => {
     onboarding.value = false;
@@ -204,7 +230,10 @@ function DoneStep() {
   );
 }
 
-/** Password first; after it, the onboarding steps of the same visit. */
+/**
+ * Password first; then time zone and zones, until the controller records
+ * setup_complete (finished or skipped), also on a later visit.
+ */
 export function Welcome() {
   const [step, setStep] = useState(2);
   if (!auth.value?.password_set) return <PasswordStep />;
