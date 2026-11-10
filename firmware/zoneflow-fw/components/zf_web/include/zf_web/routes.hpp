@@ -64,6 +64,8 @@ enum class RouteId : uint8_t {
     FirmwareUpload,
     FirmwarePull,
     FirmwareAssets,
+    MqttGet,
+    MqttPut,
 };
 
 enum class Access : uint8_t {

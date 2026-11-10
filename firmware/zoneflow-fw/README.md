@@ -4,7 +4,7 @@ Standalone firmware for the ZoneFlow irrigation controller, system spec
 section 4.1. Target: ESP32-S3-WROOM-1-N16R8 (16 MB flash, 8 MB octal PSRAM),
 ESP-IDF v5.5.6.
 
-> **Status: phase 2, never run on hardware.** No board exists yet. What has
+> **Status: phase 3 (MQTT), never run on hardware.** No board exists yet. What has
 > been checked is listed under "What is verified" below. Everything else,
 > including every pin number, is provisional.
 
@@ -103,12 +103,13 @@ CI checks formatting with the same clang-format version.
 | `components/zf_web/` | HTTP(S) server, REST API under `/api/v1`, Server-Sent Events stream, admin authentication, static files from LittleFS, built-in fallback and setup pages. |
 | `components/zf_ota/` | Firmware upload and HTTPS pull, web UI image upload, post-boot self-test and rollback. |
 | `components/zf_display/` | The local interface. `src/ui`: display logic, no LVGL, host-tested. `src/view`: LVGL drawing. `src/port`: ST7789 over SPI, backlight, encoder, buttons, the UI task. |
-| `components/zf_mqtt` | Stub with the planned work written in its header. |
+| `components/zf_mqtt/` | MQTT client (esp-mqtt), topic tree, commands, Home Assistant discovery. Logic in `mqtt_logic.cpp` (host-tested). |
 | `sim/` | Desktop simulator of the display and the screenshot generator. |
 | `main/app_main.cpp` | Wires everything together and starts the tasks. |
 | `test/host/` | GoogleTest suites and fakes for the core and the display logic. |
 | `test/vectors/` | Schedule cases shared by the C++ scheduler test and the web UI's preview. |
 | `web/` | Browser UI (Preact, TypeScript), mock controller and its tests. |
+| `test/broker/` | Optional broker test: the MQTT logic and the core against a local Mosquitto (`run.sh`; not in CI). |
 | `partitions.csv` | 16 MB layout: NVS, two 4 MB OTA slots, 7.75 MB LittleFS `www` for web and display assets, 128 KB core dump. |
 
 ## What is verified
@@ -123,10 +124,14 @@ CI checks formatting with the same clang-format version.
   phone, a 320 px and a desktop viewport, all against the mock controller in
   `web/mock/`, not against firmware. The schedule preview and the C++
   scheduler agree on the shared vectors in `test/vectors/`.
+- Broker test: `test/broker/run.sh` builds Mosquitto 2.1.2 and runs the
+  MQTT logic with the real core against it; all checks pass. It does not
+  run the ESP-IDF MQTT glue. See
+  [`docs/firmware/mqtt.md`](../../docs/firmware/mqtt.md#what-has-been-tested).
 - Nothing has run on an ESP32-S3. Pin assignments, the output-enable
   timing, the current-sense scaling and the PCF8563 driver are untested
   against hardware. So are WiFi, provisioning with a phone, mDNS, the HTTP
-  server, HTTPS, the event stream and OTA: only their logic is unit-tested,
+  server, HTTPS, the event stream, OTA and the MQTT client: only their logic is unit-tested,
   the ESP-IDF glue is compiled but has never executed. The same holds for
   every part of the display that touches hardware: panel, backlight,
   encoder, buttons, PSRAM.

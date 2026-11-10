@@ -38,6 +38,7 @@
 #include "lwip/sockets.h"
 #include "tls.hpp"
 #include "zf_board/board.hpp"
+#include "zf_mqtt/mqtt.hpp"
 #include "zf_net/net.hpp"
 #include "zf_net/nvs_store.hpp"
 #include "zf_ota/ota.hpp"
@@ -118,6 +119,16 @@ public:
     ota::OtaError startPull(std::string_view url, bool force) override { return ota::startPull(url, force); }
     std::string tlsFingerprint() const override;
     void sleepMs(uint32_t ms) override { vTaskDelay(pdMS_TO_TICKS(ms) > 0 ? pdMS_TO_TICKS(ms) : 1); }
+    mqtt::MqttStatus mqttStatus() const override { return mqtt::status(); }
+    MqttSecretsInfo mqttSecrets() const override
+    {
+        const mqtt::SecretsInfo s = mqtt::secrets();
+        return {s.passwordSet, s.caCertSet};
+    }
+    bool setMqttSecrets(std::optional<std::string_view> password, std::optional<std::string_view> caPem) override
+    {
+        return mqtt::setSecrets(password, caPem);
+    }
 };
 
 struct Module {
