@@ -13,11 +13,11 @@ orientation. Put each one on the bed as it is.
 
 | File | Quantity | Size on the bed, mm | Volume, cm³ | Filament | Face on the bed |
 |---|---|---|---|---|---|
-| `zoneflow-base` | 1 | 120.2 x 162.0 x 32.7 | 70.7 | Body colour | The back |
-| `zoneflow-fascia` | 1 | 120.2 x 116.2 x 17.1 | 29.8 | Front colour | The front face |
-| `zoneflow-cover` | 1 | 120.2 x 49.5 x 14.4 | 16.7 | Front colour | The front face |
-| `zoneflow-bridge` | 1 | 72.5 x 40.1 x 8.9 | 3.3 | Any | The deck, legs up |
-| `zoneflow-knob` | 1 | 30.0 x 30.0 x 12.0 | 3.7 | Body colour | The top |
+| `zoneflow-base` | 1 | 120.2 x 172.0 x 32.2 | 71.5 | Body colour | The back |
+| `zoneflow-fascia` | 1 | 120.2 x 131.7 x 27.5 | 41.5 | Front colour | The front face |
+| `zoneflow-cover` | 1 | 120.2 x 69.9 x 13.9 | 19.5 | Front colour | The front face |
+| `zoneflow-bridge` | 1 | 77.5 x 42.0 x 8.9 | 3.4 | Any | The deck, legs up |
+| `zoneflow-knob` | 1 | 34.0 x 34.0 x 12.0 | 5.3 | Body colour | The top |
 | `zoneflow-button-back` | 1 | 20.0 x 12.0 x 5.1 | 0.7 | Body colour | The flange |
 | `zoneflow-button-home` | 1 | 20.0 x 12.0 x 5.1 | 0.7 | Body colour | The flange |
 | `zoneflow-lightpipe` | 1 | 92.4 x 11.0 x 2.4 | 1.0 | Clear | Its side |
@@ -54,17 +54,17 @@ and the 10 mm³/s column for a current fast printer.
 
 | Part | Mass, g | Hours at 5 mm³/s | Hours at 10 mm³/s |
 |---|---|---|---|
-| Base | 90 | 3.9 | 2.0 |
-| Fascia | 38 | 1.7 | 0.8 |
-| Wiring cover | 21 | 0.9 | 0.5 |
+| Base | 91 | 4.0 | 2.0 |
+| Fascia | 53 | 2.3 | 1.2 |
+| Wiring cover | 25 | 1.1 | 0.5 |
 | Display carrier | 4 | 0.2 | 0.1 |
-| Knob | 5 | 0.2 | 0.1 |
+| Knob | 7 | 0.3 | 0.1 |
 | Button caps, both | 2 | 0.1 | 0.1 |
 | Light-pipe comb | 1 | 0.3, printed slow | 0.3 |
-| **Total** | **161** | **7.3** | **3.9** |
+| **Total** | **182** | **8.3** | **4.3** |
 
-The base is the long one. Its back wall is 1.6 mm thick to keep it under four
-hours on a slow printer.
+The base is the long one, at four hours on a slow printer. Its back wall is
+1.6 mm thick to keep it there.
 
 ## Features to watch on the first print
 
@@ -72,13 +72,16 @@ None of these needs support. Each is a place where a printer that is out of
 tune will show it.
 
 - **Keyhole pockets in the base.** Their roofs bridge 12 mm.
-- **Slits in the side walls.** 2 mm wide in the wall, closed at the top by a 2 mm bridge.
+- **Slits.** All are 1.4 mm wide and closed at one end by a 2 mm bridge: 24 slanted ones in each side wall, 22 in the top wall, 28 in the partition, 8 in the bottom wall.
+- **The roof on the fascia.** With the fascia face down, the roof is a wall 27.5 mm tall, 2 mm thick and 104 mm long, tied to the rest by two bosses. If it wobbles or strings, slow the outer wall down.
+- **Fuse well.** Four thin walls 10 mm tall standing on the fascia's inside.
 - **Cable-tie tunnels.** 4 mm bridges.
 - **Knock-out skins.** 0.5 mm in the bottom entries, 0.4 mm on the back. If they print with holes, raise `entry_web` or `rear_ko_skin`.
 - **Fascia hooks and cover toes.** Their catches are 45 degree overhangs.
 - **The lip of the fascia and cover.** It widens into the wall at 45 degrees.
-- **Engraving on the fascia.** It is on the bed, 0.4 mm deep, with 3.6 mm digits. A smooth sheet prints it best.
-- **Screw holes that lie horizontal:** two in the top wall of the base and two in the fascia pillars.
+- **Engraving.** It is on the bed, 0.4 mm deep: numbers, name and fuse rating on the fascia, a ring on the knob. A smooth sheet prints it best.
+- **The knob's scallops** fade out above its foot over 2 mm, an overhang of under 30 degrees.
+- **Screw holes that lie horizontal:** two through the top wall of the base and two through the fascia's roof into its pillars.
 
 ## Clearances
 
@@ -112,7 +115,7 @@ The model has one parameter, `fastener`, with two values.
 |---|---|---|
 | Board to base, lower corners | 2 | 2 x M3x6 pan head |
 | Display carrier and board to base | 2 | 2 x M3x16 countersunk |
-| Fascia, through the top wall | 2 | 2 x M3x8 countersunk |
+| Fascia, through the roof and the top wall | 2 | 2 x M3x12 countersunk |
 | Wiring cover | 1 | 1 x M3x8 countersunk |
 
 The 4.0 mm hole size is the common figure for this insert. I took it from a
@@ -121,9 +124,9 @@ opened. Check it against the inserts you buy. It is `insert_d`.
 
 ## Finishing
 
-- **Fill the engraving.** Wipe white acrylic paint or a paint marker over the numbers and the two button symbols, then wipe the surface clean. Without it the numbers are dark on dark.
+- **Fill the engraving.** Wipe white acrylic paint or a paint marker over the numbers, the name and the two button symbols, then wipe the surface clean. Without it they are dark on dark.
 - **Cable entries.** Leave the skins in. Cut out only the ones you use, at installation.
-- **Label.** A 28 x 89 mm or 29 x 90 mm address label fits the recess. Write the zone names on it.
+- **Label.** A 28 x 89 mm or 29 x 90 mm address label fits the recess on the wiring cover. Write the zone names on it.
 
 ## Building the files yourself
 
@@ -132,6 +135,10 @@ cd enclosure
 make openscad   # once: fetches the OpenSCAD snapshot the files were built with
 make
 ```
+
+To build the fascia and carrier for the 2.4 inch panel option, set
+`panel = "2.4"` in `params.scad` first. The board is not laid out for that
+panel; see the [mechanical design](../design/mechanical.md#73-a-24-inch-panel-later).
 
 `make` needs OpenSCAD with the Manifold backend, which means a 2024 or later
 build. The 2021.01 release does not have it. It also needs `uv` and Python 3.

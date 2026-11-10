@@ -12,8 +12,8 @@ display panel, light-pipe comb and button caps, fascia and wiring cover, knob.
 ## What you need
 
 - **Printed parts**: the eight in the [printing guide](printing.md).
-- **Assembled board** with the display panel and its CR2032 cell loose.
-- **Screws**: 2 x M3x6 pan head, 2 x M3x16 countersunk, 3 x M3x8 countersunk.
+- **Assembled board** with the display panel and its CR2032 cell loose. If the assembler did not fit the relay K1 and the capacitor C1, you also have those two parts to solder.
+- **Screws**: 2 x M3x6 pan head, 2 x M3x16 countersunk, 2 x M3x12 countersunk, 1 x M3x8 countersunk.
 - **Inserts**: 7 x M3 heat-set, unless you printed the self-tapping version.
 - **Tape**: thin double-sided tape, about 0.1 mm, for the display.
 - **For the wall**: three screws up to 4.5 mm with heads up to 9 mm, wall plugs to suit, 2.5 mm cable ties, a 28 x 89 mm label.
@@ -26,9 +26,10 @@ display panel, light-pipe comb and button caps, fascia and wiring cover, knob.
 
 ## 2. Board into the base
 
-1. Fit the cell into its holder.
-2. Lower the board into the base, terminal headers towards the wiring compartment. The headers overhang the board edge and rest above the partition.
-3. Fit the two M3x6 screws in the lower corners. Leave them a turn loose.
+1. If K1 and C1 are not fitted: push K1 in from the bottom side and solder it on the top. Bend C1's leads at 90 degrees 3 mm from the can, check its polarity against the silkscreen, put a dot of neutral-cure silicone on the board inside the outline, lay the can on it and solder the leads on the top side.
+2. Fit the cell into its holder.
+3. Lower the board into the base, terminal headers towards the wiring compartment. The headers overhang the board edge and rest above the partition.
+4. Fit the two M3x6 screws in the lower corners. Leave them a turn loose. C1 now sits just above two ribs in the base.
 
 ## 3. Display
 
@@ -46,7 +47,7 @@ carrier deck, the folded cable in orange and the connector on the board.
 !!! note "The cable is short"
     The tail is 20.7 mm long. If it will not reach, or reaches only with the
     cable pulled tight, stop. That is one of the unconfirmed dimensions in
-    the [mechanical design](../design/mechanical.md#9-what-is-not-confirmed).
+    the [mechanical design](../design/mechanical.md#10-what-is-not-confirmed).
 
 ## 4. Fascia
 
@@ -54,7 +55,7 @@ carrier deck, the folded cable in orange and the connector on the board.
 2. Hold the fascia with its top edge lifted about 20 degrees. Lower its bottom edge first, so that the two hooks go down behind the partition, between the terminal blocks.
 3. Swing the top down. The encoder shaft passes through the large hole and the buttons come up through theirs. Guide the buttons with a fingertip if they catch.
 4. Check that the display sits square in the window. If not, lift the fascia and move the panel.
-5. Fit the two M3x8 countersunk screws down through the top wall of the base.
+5. Fit the two M3x12 countersunk screws down through the fascia's roof and the top wall of the base.
 6. Push the knob onto the shaft, flat to flat.
 
 Both buttons should click and the knob should turn and press without
@@ -79,15 +80,17 @@ mechanical part:
 2. Lay each cable into its entry from the front. Strip the outer jacket from just above the cradle.
 3. Put a cable tie round the jacket and through the tunnel in the cradle. Pull it snug.
 4. Push the plugs back on. The 24 VAC plug is the two-way one on the left.
-5. Stick the label in its recess and write the zone names on it.
+5. Check that both fuses are seated in the well above the 24 VAC plug.
 
 ## 7. Wiring cover
 
 1. Hook the cover's two toes into the slots at the bottom edge of the fascia, with the cover's bottom edge lifted.
-2. Swing it shut. Its top edge laps over the fascia.
+2. Swing it shut. Its flap lies on the fascia and closes the fuse well.
 3. Fit the M3x8 countersunk screw.
+4. Stick the label in the recess on the cover and write the zone names on it.
 
 ## Later
 
-- **Changing the cell.** Take off the wiring cover, pull the knob off, remove the two screws in the top wall, swing the fascia up from the top and lift it away. The cell is in the open on the right. The board stays where it is.
+- **Changing a fuse.** Take off the wiring cover. Pull the 24 VAC plug. The two fuses are in the well above it, marked "2 x 3 A T". Lift the blown one out with tweezers or small pliers and press a new 3 A time-lag fuse of the same size in. Either fuse can open on a fault, so check both.
+- **Changing the cell.** Take off the wiring cover, pull the knob off, remove the two screws in the roof, swing the fascia up from the top and lift it away. The cell is in the open on the right. The board stays where it is.
 - **Connecting USB.** Take off the wiring cover. The socket is at the left end of the terminal row. Read the USB warning in [safety](../safety.md) first, and pull the 24 VAC plug unless you know your transformer's output is not earthed.
