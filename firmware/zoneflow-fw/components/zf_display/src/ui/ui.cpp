@@ -524,6 +524,8 @@ void Ui::handleEvent(const Event &e, MonoMs now)
     case EventType::PauseExpired:
         toast(tr(Str::ToastPauseExpired), Tone::Warn, Icon::Stop);
         break;
+    case EventType::RunEnded:
+        break; // for the history log; the zone change already updated the screen
     case EventType::FaultRaised:
         if (!faultClearsItself(e.fault.code)) {
             // A new latched fault lights the screen so it gets seen.

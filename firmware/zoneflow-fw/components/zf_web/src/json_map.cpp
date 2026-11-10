@@ -106,6 +106,11 @@ cJSON *zoneToJson(std::size_t index, const ZoneStatus &st, const ZoneConfig &cfg
     // Spec section 2 rule 4: after its maximum run time a zone rests.
     cJSON_AddBoolToObject(o, "resting", st.restRemainingSec > 0);
     cJSON_AddNumberToObject(o, "rest_remaining_s", st.restRemainingSec);
+    if (st.learnedCurrentMa > 0) {
+        cJSON_AddNumberToObject(o, "learned_current_ma", st.learnedCurrentMa);
+    } else {
+        cJSON_AddNullToObject(o, "learned_current_ma");
+    }
     return o;
 }
 
@@ -116,6 +121,15 @@ cJSON *queueToJson(const QueueStatus &q, uint16_t pauseTimeoutMin)
     cJSON_AddNumberToObject(o, "pause_timeout_min", pauseTimeoutMin);
     cJSON_AddNumberToObject(o, "length", q.length);
     cJSON_AddNumberToObject(o, "current_remaining_s", q.currentRemainingSec);
+    // A paused queue is stopped after pause_timeout_min, counted from the first pause.
+    const bool paused = q.state == QueueState::Paused;
+    cJSON_AddNumberToObject(o, "paused_s", paused ? q.pausedForSec : 0);
+    if (paused) {
+        const uint32_t limit = static_cast<uint32_t>(pauseTimeoutMin) * 60u;
+        cJSON_AddNumberToObject(o, "stop_in_s", limit > q.pausedForSec ? limit - q.pausedForSec : 0);
+    } else {
+        cJSON_AddNullToObject(o, "stop_in_s");
+    }
     cJSON *items = cJSON_AddArrayToObject(o, "items");
     for (std::size_t i = 0; items != nullptr && i < q.shownCount && i < q.items.size(); ++i) {
         const QueueItem &it = q.items[i];
@@ -298,12 +312,202 @@ cJSON *eventToJson(const Event &e)
         cJSON_AddStringToObject(o, "source", toString(e.dropped.source));
         cJSON_AddStringToObject(o, "reason", toString(e.dropped.reason));
         break;
+    case EventType::RunEnded:
+        addZoneNumber(o, "zone", e.run.zone);
+        if (e.run.programId != 0) {
+            cJSON_AddNumberToObject(o, "program_id", e.run.programId);
+        } else {
+            cJSON_AddNullToObject(o, "program_id");
+        }
+        cJSON_AddStringToObject(o, "source", toString(e.run.source));
+        cJSON_AddStringToObject(o, "end", toString(e.run.reason));
+        cJSON_AddNumberToObject(o, "planned_s", e.run.plannedSec);
+        cJSON_AddNumberToObject(o, "actual_s", e.run.actualSec);
+        if (e.run.currentMa > 0) {
+            cJSON_AddNumberToObject(o, "current_ma", e.run.currentMa);
+        } else {
+            cJSON_AddNullToObject(o, "current_ma");
+        }
+        if (e.run.centilitres >= 0) {
+            cJSON_AddNumberToObject(o, "litres", e.run.centilitres / 100.0);
+        } else {
+            cJSON_AddNullToObject(o, "litres");
+        }
+        break;
     case EventType::QueueChanged:
     case EventType::ConfigApplied:
     case EventType::PauseExpired:
     case EventType::Count:
         break;
     }
+    return o;
+}
+
+namespace {
+
+void addProgram(cJSON *o, uint16_t id)
+{
+    if (id != 0) {
+        cJSON_AddNumberToObject(o, "program_id", id);
+    } else {
+        cJSON_AddNullToObject(o, "program_id");
+    }
+}
+
+void addHistoryZone(cJSON *o, uint8_t zone)
+{
+    if (zone < kMaxZones) {
+        cJSON_AddNumberToObject(o, "zone", zone + 1);
+    } else {
+        cJSON_AddNullToObject(o, "zone");
+    }
+}
+
+template <typename E> const char *enumName(uint8_t v, E count)
+{
+    return v < static_cast<uint8_t>(count) ? toString(static_cast<E>(v)) : "unknown";
+}
+
+} // namespace
+
+cJSON *historyRecordToJson(uint64_t id, const HistoryRecord &r)
+{
+    cJSON *o = cJSON_CreateObject();
+    cJSON_AddNumberToObject(o, "id", static_cast<double>(id));
+    cJSON_AddNumberToObject(o, "utc", static_cast<double>(r.utc));
+    // Recorded while the clock was not set (before 2025-01-01): the time is wrong.
+    cJSON_AddBoolToObject(o, "time_valid", r.utc >= 1735689600);
+    cJSON_AddStringToObject(o, "type", toString(r.kind));
+    switch (r.kind) {
+    case HistoryKind::Run: {
+        addHistoryZone(o, r.zone);
+        addProgram(o, r.programId);
+        cJSON_AddStringToObject(
+            o, "source",
+            r.a <= static_cast<uint8_t>(RunSource::ManualZone) ? toString(static_cast<RunSource>(r.a)) : "unknown");
+        cJSON_AddStringToObject(
+            o, "end",
+            r.b <= static_cast<uint8_t>(StopReason::Maintenance) ? toString(static_cast<StopReason>(r.b)) : "unknown");
+        cJSON_AddNumberToObject(o, "planned_s", r.c);
+        cJSON_AddNumberToObject(o, "actual_s", r.d);
+        const uint16_t ma = static_cast<uint16_t>(r.e & 0xFFFFu);
+        const uint16_t dl = static_cast<uint16_t>(r.e >> 16);
+        if (ma > 0) {
+            cJSON_AddNumberToObject(o, "current_ma", ma);
+        } else {
+            cJSON_AddNullToObject(o, "current_ma");
+        }
+        if (dl != kHistoryNoVolume) {
+            cJSON_AddNumberToObject(o, "litres", dl / 10.0);
+        } else {
+            cJSON_AddNullToObject(o, "litres");
+        }
+        break;
+    }
+    case HistoryKind::ProgramStarted:
+        addProgram(o, r.programId);
+        cJSON_AddStringToObject(
+            o, "source",
+            r.a <= static_cast<uint8_t>(RunSource::ManualZone) ? toString(static_cast<RunSource>(r.a)) : "unknown");
+        cJSON_AddBoolToObject(o, "late", r.b != 0);
+        break;
+    case HistoryKind::ProgramSkipped:
+        addProgram(o, r.programId);
+        cJSON_AddStringToObject(o, "reason",
+                                r.a <= static_cast<uint8_t>(SkipReason::MasterLockedOut)
+                                    ? toString(static_cast<SkipReason>(r.a))
+                                    : "unknown");
+        break;
+    case HistoryKind::ProgramMissed:
+        addProgram(o, r.programId);
+        cJSON_AddNumberToObject(o, "scheduled_utc", r.d);
+        break;
+    case HistoryKind::RunDropped:
+        addHistoryZone(o, r.zone);
+        addProgram(o, r.programId);
+        cJSON_AddStringToObject(
+            o, "source",
+            r.a <= static_cast<uint8_t>(RunSource::ManualZone) ? toString(static_cast<RunSource>(r.a)) : "unknown");
+        cJSON_AddStringToObject(o, "reason", toString(static_cast<StartError>(r.b)));
+        break;
+    case HistoryKind::FaultRaised:
+    case HistoryKind::FaultCleared:
+        addHistoryZone(o, r.zone);
+        cJSON_AddStringToObject(o, "code", enumName(r.a, FaultCode::Count));
+        break;
+    case HistoryKind::Boot:
+        cJSON_AddStringToObject(o, "reset_reason",
+                                r.a <= static_cast<uint8_t>(HistoryResetReason::DeepSleep)
+                                    ? toString(static_cast<HistoryResetReason>(r.a))
+                                    : "unknown");
+        break;
+    case HistoryKind::TimeSet:
+        cJSON_AddStringToObject(o, "status",
+                                r.a <= static_cast<uint8_t>(TimeStatus::Synced) ? toString(static_cast<TimeStatus>(r.a))
+                                                                                : "unknown");
+        break;
+    case HistoryKind::ConfigChanged:
+        break;
+    case HistoryKind::RainDelay:
+        if (r.d != 0) {
+            cJSON_AddNumberToObject(o, "until_utc", r.d);
+        } else {
+            cJSON_AddNullToObject(o, "until_utc");
+        }
+        break;
+    case HistoryKind::Sensor:
+        cJSON_AddStringToObject(
+            o, "sensor",
+            r.a <= static_cast<uint8_t>(SensorId::AcPresent) ? sensorName(static_cast<SensorId>(r.a)) : "unknown");
+        cJSON_AddBoolToObject(o, "active", r.b != 0);
+        break;
+    case HistoryKind::Maintenance:
+        cJSON_AddBoolToObject(o, "on", r.b != 0);
+        break;
+    case HistoryKind::PauseExpired:
+        break;
+    case HistoryKind::Ota: {
+        static constexpr const char *kSources[] = {"none", "upload", "pull"};
+        cJSON_AddStringToObject(o, "stage",
+                                r.a <= static_cast<uint8_t>(HistoryOtaStage::Installed)
+                                    ? toString(static_cast<HistoryOtaStage>(r.a))
+                                    : "unknown");
+        cJSON_AddStringToObject(o, "source", r.b < 3 ? kSources[r.b] : "none");
+        if (r.c != 0) {
+            cJSON_AddStringToObject(o, "error", toString(static_cast<ota::OtaError>(r.c)));
+        } else {
+            cJSON_AddNullToObject(o, "error");
+        }
+        break;
+    }
+    case HistoryKind::None:
+    case HistoryKind::Count:
+        break;
+    }
+    return o;
+}
+
+cJSON *historyPageToJson(const HistoryPage &page, std::size_t capacity)
+{
+    cJSON *o = cJSON_CreateObject();
+    cJSON *a = cJSON_AddArrayToObject(o, "records");
+    for (const HistoryEntry &e : page.entries) {
+        cJSON_AddItemToArray(a, historyRecordToJson(e.id, e.record));
+    }
+    if (page.more && !page.entries.empty()) {
+        cJSON_AddNumberToObject(o, "next_before", static_cast<double>(page.entries.back().id));
+    } else {
+        cJSON_AddNullToObject(o, "next_before");
+    }
+    if (page.newestId > 0) {
+        cJSON_AddNumberToObject(o, "newest_id", static_cast<double>(page.newestId));
+        cJSON_AddNumberToObject(o, "oldest_id", static_cast<double>(page.oldestId));
+    } else {
+        cJSON_AddNullToObject(o, "newest_id");
+        cJSON_AddNullToObject(o, "oldest_id");
+    }
+    cJSON_AddNumberToObject(o, "capacity", static_cast<double>(capacity));
+    cJSON_AddNumberToObject(o, "unsaved", static_cast<double>(page.unflushed));
     return o;
 }
 

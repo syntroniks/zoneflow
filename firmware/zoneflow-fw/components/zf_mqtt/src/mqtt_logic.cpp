@@ -594,6 +594,7 @@ std::string eventPayload(const Event &e)
     case EventType::QueueChanged:
     case EventType::ConfigApplied:
     case EventType::PauseExpired:
+    case EventType::RunEnded: // the zone's state topic already covers it
     case EventType::Count:
         break;
     }

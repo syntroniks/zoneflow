@@ -61,6 +61,10 @@
     },
     {
       "name": "MQTT"
+    },
+    {
+      "name": "History",
+      "description": "Persistent event history."
     }
   ],
   "paths": {
@@ -1639,7 +1643,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Config"
+                "$ref": "#/components/schemas/ConfigInput"
               }
             }
           }
@@ -1738,10 +1742,10 @@
               "schema": {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/Backup"
+                    "$ref": "#/components/schemas/BackupInput"
                   },
                   {
-                    "$ref": "#/components/schemas/Config"
+                    "$ref": "#/components/schemas/ConfigInput"
                   }
                 ]
               }
@@ -2490,6 +2494,170 @@
           }
         }
       }
+    },
+    "/history": {
+      "get": {
+        "operationId": "getHistory",
+        "summary": "Event history",
+        "tags": [
+          "History"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Runs (zone, source, planned and actual duration, end reason, current, volume), skipped and missed starts, faults, and system events (boot with reset reason, clock, configuration, rain delay, sensors, updates), newest first. Kept in flash in a ring of 1200 records; written in batches (within 60 s, faults at once). Page back with `before`; fetch new records with `after`. No secrets are recorded.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "description": "Only records with a smaller id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "description": "Only records with a larger id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "description": "Only records at or after this time (Unix seconds).",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "zone",
+            "in": "query",
+            "required": false,
+            "description": "Only records of this zone.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
+    },
+    "/setup": {
+      "put": {
+        "operationId": "putSetup",
+        "summary": "Mark the first-run steps done",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Stores `setup_complete` (shown by GET /auth) in the web settings, outside the configuration and its backup. A factory reset clears it.",
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 64,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetupUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "setup_complete"
+                  ],
+                  "properties": {
+                    "setup_complete": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2565,8 +2733,18 @@
           "csrf": {
             "type": "string",
             "description": "Only for a valid cookie session."
+          },
+          "setup_complete": {
+            "type": "boolean",
+            "description": "The web UI’s first-run steps were finished or skipped (PUT /setup). A hint for clients; it gates nothing."
           }
-        }
+        },
+        "required": [
+          "password_set",
+          "authenticated",
+          "protect_reads",
+          "setup_complete"
+        ]
       },
       "LoginRequest": {
         "type": "object",
@@ -2629,7 +2807,12 @@
           "idle_timeout_s": {
             "type": "integer"
           }
-        }
+        },
+        "required": [
+          "token",
+          "csrf",
+          "idle_timeout_s"
+        ]
       },
       "Security": {
         "type": "object",
@@ -2656,7 +2839,15 @@
           "restart_required": {
             "type": "boolean"
           }
-        }
+        },
+        "required": [
+          "protect_reads",
+          "https",
+          "check_host",
+          "password_set",
+          "sessions",
+          "tls_fingerprint_sha256"
+        ]
       },
       "SecurityUpdate": {
         "type": "object",
@@ -2709,7 +2900,13 @@
               "build_date": {
                 "type": "string"
               }
-            }
+            },
+            "required": [
+              "version",
+              "project",
+              "idf_version",
+              "build_date"
+            ]
           },
           "uptime_s": {
             "type": "integer"
@@ -2736,12 +2933,31 @@
                 "type": "integer"
               }
             },
-            "description": "free, min_free and largest_block cover all 8-bit heap, PSRAM included; internal_* cover internal RAM only."
+            "description": "free, min_free and largest_block cover all 8-bit heap, PSRAM included; internal_* cover internal RAM only.",
+            "required": [
+              "free",
+              "min_free",
+              "largest_block",
+              "internal_free",
+              "internal_min_free"
+            ]
           },
           "http_stack_free_min": {
             "type": "integer"
           }
-        }
+        },
+        "required": [
+          "api_version",
+          "device_name",
+          "hostname",
+          "mac",
+          "board",
+          "firmware",
+          "uptime_s",
+          "reset_reason",
+          "heap",
+          "http_stack_free_min"
+        ]
       },
       "Zone": {
         "type": "object",
@@ -2813,8 +3029,33 @@
             "maximum": 14400,
             "default": 600,
             "description": "Duration of a run started without one (Home Assistant valve open, MQTT run with an empty payload). Clamped like any run."
+          },
+          "learned_current_ma": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Mean current measured with this zone open alone (master share removed), since the last restart; null until it has run alone. Basis for setting current_min_ma and current_max_ma."
           }
-        }
+        },
+        "required": [
+          "id",
+          "name",
+          "enabled",
+          "max_run_s",
+          "current_min_ma",
+          "current_max_ma",
+          "state",
+          "remaining_s",
+          "last_stop",
+          "fault",
+          "locked_out",
+          "resting",
+          "rest_remaining_s",
+          "default_run_s",
+          "learned_current_ma"
+        ]
       },
       "ZoneUpdate": {
         "type": "object",
@@ -2963,7 +3204,17 @@
             "type": "boolean",
             "description": "Skip while the rain sensor is active."
           }
-        }
+        },
+        "required": [
+          "id",
+          "name",
+          "enabled",
+          "starts",
+          "days",
+          "durations_s",
+          "seasonal",
+          "obey_sensor"
+        ]
       },
       "ProgramInput": {
         "type": "object",
@@ -3081,7 +3332,14 @@
               "null"
             ]
           }
-        }
+        },
+        "required": [
+          "id",
+          "zone",
+          "duration_s",
+          "source",
+          "program_id"
+        ]
       },
       "Queue": {
         "type": "object",
@@ -3110,9 +3368,31 @@
           },
           "pause_timeout_min": {
             "type": "integer",
-            "description": "schedule.pause_timeout_min: a queue paused this long is stopped (event pause_expired). The time already paused is not reported by the core."
+            "description": "schedule.pause_timeout_min: a queue paused this long is stopped (event pause_expired)."
+          },
+          "paused_s": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Seconds since the first pause while paused, else 0."
+          },
+          "stop_in_s": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "While paused: seconds until the queue is stopped (pause_timeout_min after the first pause). Null otherwise."
           }
-        }
+        },
+        "required": [
+          "state",
+          "length",
+          "current_remaining_s",
+          "items",
+          "pause_timeout_min",
+          "paused_s",
+          "stop_in_s"
+        ]
       },
       "RainDelay": {
         "type": "object",
@@ -3129,7 +3409,12 @@
           "remaining_s": {
             "type": "integer"
           }
-        }
+        },
+        "required": [
+          "active",
+          "until_utc",
+          "remaining_s"
+        ]
       },
       "RainDelayRequest": {
         "type": "object",
@@ -3173,7 +3458,11 @@
               "active": {
                 "type": "boolean"
               }
-            }
+            },
+            "required": [
+              "enabled",
+              "active"
+            ]
           },
           "spare": {
             "type": "object",
@@ -3184,7 +3473,11 @@
               "active": {
                 "type": "boolean"
               }
-            }
+            },
+            "required": [
+              "enabled",
+              "active"
+            ]
           },
           "flow": {
             "type": "object",
@@ -3198,7 +3491,12 @@
               "total_l": {
                 "type": "number"
               }
-            }
+            },
+            "required": [
+              "enabled",
+              "rate_lpm",
+              "total_l"
+            ]
           },
           "ac_present": {
             "type": "boolean"
@@ -3217,7 +3515,16 @@
             "type": "boolean",
             "description": "The hardware over-current comparator removed gate drive (fault over_current_trip, latched until faults are cleared)."
           }
-        }
+        },
+        "required": [
+          "rain",
+          "spare",
+          "flow",
+          "ac_present",
+          "valve_current_ma",
+          "current_sense_available",
+          "over_current_tripped"
+        ]
       },
       "Faults": {
         "type": "object",
@@ -3256,10 +3563,19 @@
                 "locked_out": {
                   "type": "boolean"
                 }
-              }
+              },
+              "required": [
+                "zone",
+                "fault",
+                "locked_out"
+              ]
             }
           }
-        }
+        },
+        "required": [
+          "active",
+          "zones"
+        ]
       },
       "Status": {
         "type": "object",
@@ -3305,7 +3621,13 @@
                 "minimum": 0,
                 "description": "Consecutive current faults attributed to the master."
               }
-            }
+            },
+            "required": [
+              "enabled",
+              "on",
+              "locked_out",
+              "fault_count"
+            ]
           },
           "queue": {
             "$ref": "#/components/schemas/Queue"
@@ -3331,7 +3653,13 @@
               "master_lockout": {
                 "type": "boolean"
               }
-            }
+            },
+            "required": [
+              "sensor",
+              "no_ac",
+              "maintenance",
+              "master_lockout"
+            ]
           },
           "faults": {
             "$ref": "#/components/schemas/Faults"
@@ -3348,14 +3676,41 @@
           "ota": {
             "$ref": "#/components/schemas/OtaStatus"
           }
-        }
+        },
+        "required": [
+          "sequence",
+          "utc",
+          "time_status",
+          "uptime_s",
+          "zones",
+          "master",
+          "queue",
+          "sensors",
+          "rain_delay",
+          "inhibit",
+          "faults",
+          "maintenance",
+          "config_revision",
+          "network",
+          "ota"
+        ]
       },
       "Config": {
         "type": "object",
         "required": [
-          "schema"
+          "schema",
+          "device_name",
+          "timezone",
+          "zone_count",
+          "zones",
+          "master",
+          "driver",
+          "sensors",
+          "diagnostics",
+          "schedule",
+          "mqtt"
         ],
-        "description": "The configuration document described in the firmware architecture, section 6. Missing fields take defaults; unknown fields are ignored. A document whose schema is newer than the firmware is refused with error.code unsupported_schema and path schema.",
+        "description": "The configuration document as stored and returned (every field present). The configuration document described in the firmware architecture, section 6. Missing fields take defaults; unknown fields are ignored. A document whose schema is newer than the firmware is refused with error.code unsupported_schema and path schema.",
         "properties": {
           "schema": {
             "type": "integer",
@@ -3379,72 +3734,24 @@
             "type": "array",
             "maxItems": 8,
             "items": {
-              "type": "object"
-            }
+              "$ref": "#/components/schemas/ConfigZone"
+            },
+            "description": "Always 8 entries; zones above zone_count are kept but not used."
           },
           "master": {
-            "type": "object",
-            "properties": {
-              "fault_lockout_count": {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 10,
-                "default": 3,
-                "description": "Consecutive current faults on the master that lock it out."
-              }
-            }
+            "$ref": "#/components/schemas/ConfigMaster"
           },
           "driver": {
-            "type": "object",
-            "properties": {
-              "min_rest_s": {
-                "type": "integer",
-                "minimum": 60,
-                "maximum": 86400,
-                "default": 1800,
-                "description": "Closed time a zone needs after reaching its maximum run time."
-              },
-              "zero_cross_switching": {
-                "type": "boolean",
-                "default": false,
-                "description": "Turn outputs on at a mains zero crossing when the board has the signal."
-              }
-            }
+            "$ref": "#/components/schemas/ConfigDriver"
           },
           "sensors": {
-            "type": "object"
+            "$ref": "#/components/schemas/ConfigSensors"
           },
           "diagnostics": {
-            "type": "object"
+            "$ref": "#/components/schemas/ConfigDiagnostics"
           },
           "schedule": {
-            "type": "object",
-            "properties": {
-              "seasonal_percent": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 250
-              },
-              "missed_start_grace_min": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 720
-              },
-              "programs": {
-                "type": "array",
-                "maxItems": 16,
-                "items": {
-                  "$ref": "#/components/schemas/Program"
-                }
-              },
-              "pause_timeout_min": {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 1440,
-                "default": 120,
-                "description": "A paused queue is stopped after this long."
-              }
-            }
+            "$ref": "#/components/schemas/ConfigSchedule"
           },
           "mqtt": {
             "$ref": "#/components/schemas/MqttSettings"
@@ -3455,6 +3762,10 @@
         "type": "object",
         "required": [
           "format",
+          "format_version",
+          "created_utc",
+          "firmware_version",
+          "hostname",
           "config"
         ],
         "properties": {
@@ -3513,7 +3824,16 @@
           "dst": {
             "type": "boolean"
           }
-        }
+        },
+        "required": [
+          "utc",
+          "status",
+          "rtc_present",
+          "timezone",
+          "local",
+          "utc_offset_s",
+          "dst"
+        ]
       },
       "TimeUpdate": {
         "type": "object",
@@ -3599,7 +3919,26 @@
           "mdns": {
             "type": "boolean"
           }
-        }
+        },
+        "required": [
+          "state",
+          "provisioned",
+          "provisioning",
+          "hostname",
+          "mac",
+          "ssid",
+          "bssid",
+          "channel",
+          "rssi",
+          "ip",
+          "netmask",
+          "gateway",
+          "reconnect_attempt",
+          "retry_in_ms",
+          "last_disconnect_reason",
+          "disconnects",
+          "mdns"
+        ]
       },
       "ReprovisionRequest": {
         "type": "object",
@@ -3643,7 +3982,16 @@
           "ip": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "active",
+          "transport",
+          "state",
+          "provisioned",
+          "password_set",
+          "hostname",
+          "ip"
+        ]
       },
       "WifiNetwork": {
         "type": "object",
@@ -3657,7 +4005,12 @@
           "secure": {
             "type": "boolean"
           }
-        }
+        },
+        "required": [
+          "ssid",
+          "rssi",
+          "secure"
+        ]
       },
       "ProvisionWifiRequest": {
         "type": "object",
@@ -3747,7 +4100,16 @@
           "new_version": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "phase",
+          "error",
+          "source",
+          "forced",
+          "received_bytes",
+          "total_bytes",
+          "new_version"
+        ]
       },
       "Firmware": {
         "type": "object",
@@ -3784,7 +4146,17 @@
           "ota": {
             "$ref": "#/components/schemas/OtaStatus"
           }
-        }
+        },
+        "required": [
+          "version",
+          "idf_version",
+          "build_date",
+          "running_slot",
+          "running_state",
+          "next_slot",
+          "other_slot_version",
+          "ota"
+        ]
       },
       "PullRequest": {
         "type": "object",
@@ -3890,7 +4262,20 @@
             "default": "valve",
             "description": "Home Assistant entity type for zones."
           }
-        }
+        },
+        "required": [
+          "enabled",
+          "host",
+          "port",
+          "username",
+          "tls",
+          "ca",
+          "client_id",
+          "base_topic",
+          "discovery",
+          "discovery_prefix",
+          "ha_zone_entity"
+        ]
       },
       "MqttStatus": {
         "type": "object",
@@ -3956,7 +4341,23 @@
           "discovery_published": {
             "type": "boolean"
           }
-        }
+        },
+        "required": [
+          "state",
+          "broker",
+          "root_topic",
+          "connected_for_s",
+          "connects",
+          "reconnect_attempt",
+          "retry_in_ms",
+          "last_error",
+          "published",
+          "publish_failed",
+          "commands_received",
+          "commands_rejected",
+          "events_dropped",
+          "discovery_published"
+        ]
       },
       "Mqtt": {
         "allOf": [
@@ -3977,7 +4378,12 @@
               "status": {
                 "$ref": "#/components/schemas/MqttStatus"
               }
-            }
+            },
+            "required": [
+              "password_set",
+              "ca_cert_set",
+              "status"
+            ]
           }
         ]
       },
@@ -4064,6 +4470,1198 @@
             "maxLength": 6144,
             "writeOnly": true,
             "description": "PEM CA certificate for `ca: custom`. Write-only. An empty string or null removes it."
+          }
+        }
+      },
+      "ConfigZone": {
+        "type": "object",
+        "description": "One entry of `zones` (index 0 is zone 1).",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 23
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "max_run_s": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 14400,
+            "default": 3600
+          },
+          "current_min_ma": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 80
+          },
+          "current_max_ma": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 700
+          },
+          "default_run_s": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 14400,
+            "default": 600,
+            "description": "Duration of a run started without one (Home Assistant valve open, MQTT run with an empty payload)."
+          }
+        },
+        "required": [
+          "name",
+          "enabled",
+          "max_run_s",
+          "current_min_ma",
+          "current_max_ma",
+          "default_run_s"
+        ]
+      },
+      "ConfigMaster": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "pre_open_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 1000
+          },
+          "post_close_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 2000
+          },
+          "fault_lockout_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "default": 3,
+            "description": "Consecutive current faults on the master that lock it out."
+          },
+          "current_min_ma": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 80
+          },
+          "current_max_ma": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 700
+          }
+        },
+        "required": [
+          "enabled",
+          "pre_open_ms",
+          "post_close_ms",
+          "fault_lockout_count",
+          "current_min_ma",
+          "current_max_ma"
+        ]
+      },
+      "ConfigDriver": {
+        "type": "object",
+        "properties": {
+          "max_concurrent": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2,
+            "default": 2
+          },
+          "inter_zone_delay_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 2000
+          },
+          "min_rest_s": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 86400,
+            "default": 1800,
+            "description": "Closed time a zone needs after reaching its maximum run time."
+          },
+          "zero_cross_switching": {
+            "type": "boolean",
+            "default": false,
+            "description": "Turn outputs on at a mains zero crossing when the board has the signal."
+          }
+        },
+        "required": [
+          "max_concurrent",
+          "inter_zone_delay_ms",
+          "min_rest_s",
+          "zero_cross_switching"
+        ]
+      },
+      "ContactInput": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "contact": {
+            "type": "string",
+            "enum": [
+              "no",
+              "nc"
+            ],
+            "description": "Normally open or normally closed."
+          },
+          "debounce_ms": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "enabled",
+          "contact",
+          "debounce_ms"
+        ]
+      },
+      "SpareInput": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ContactInput"
+          },
+          {
+            "type": "object",
+            "required": [
+              "function"
+            ],
+            "properties": {
+              "function": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "inhibit"
+                ],
+                "description": "`inhibit`: acts like the rain sensor."
+              }
+            }
+          }
+        ]
+      },
+      "FlowMeter": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "pulses_per_litre": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "default": 450
+          },
+          "leak_threshold_lpm": {
+            "type": "number",
+            "minimum": 0,
+            "default": 0.5
+          },
+          "leak_detect_s": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 60
+          }
+        },
+        "required": [
+          "enabled",
+          "pulses_per_litre",
+          "leak_threshold_lpm",
+          "leak_detect_s"
+        ]
+      },
+      "ConfigSensors": {
+        "type": "object",
+        "properties": {
+          "rain": {
+            "$ref": "#/components/schemas/ContactInput"
+          },
+          "spare": {
+            "$ref": "#/components/schemas/SpareInput"
+          },
+          "flow": {
+            "$ref": "#/components/schemas/FlowMeter"
+          }
+        },
+        "required": [
+          "rain",
+          "spare",
+          "flow"
+        ]
+      },
+      "ConfigDiagnostics": {
+        "type": "object",
+        "properties": {
+          "current_enabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "settle_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 500
+          },
+          "idle_max_ma": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 60
+          },
+          "short_circuit_ma": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 3000
+          },
+          "confirm_samples": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 3
+          }
+        },
+        "required": [
+          "current_enabled",
+          "settle_ms",
+          "idle_max_ma",
+          "short_circuit_ma",
+          "confirm_samples"
+        ]
+      },
+      "ConfigSchedule": {
+        "type": "object",
+        "properties": {
+          "seasonal_percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 250
+          },
+          "missed_start_grace_min": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 720
+          },
+          "programs": {
+            "type": "array",
+            "maxItems": 16,
+            "items": {
+              "$ref": "#/components/schemas/Program"
+            }
+          },
+          "pause_timeout_min": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440,
+            "default": 120,
+            "description": "A paused queue is stopped after this long."
+          }
+        },
+        "required": [
+          "seasonal_percent",
+          "missed_start_grace_min",
+          "programs",
+          "pause_timeout_min"
+        ]
+      },
+      "ConfigInput": {
+        "type": "object",
+        "required": [
+          "schema"
+        ],
+        "description": "A configuration document to write: `schema` is required; every other field may be left out and takes its default, also inside the objects (whose `required` lists describe what GET returns). The configuration document described in the firmware architecture, section 6. Missing fields take defaults; unknown fields are ignored. A document whose schema is newer than the firmware is refused with error.code unsupported_schema and path schema.",
+        "properties": {
+          "schema": {
+            "type": "integer",
+            "const": 2,
+            "description": "Documents with schema 1 are accepted and migrated (adds `mqtt` and `zones[].default_run_s`)."
+          },
+          "device_name": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 63
+          },
+          "zone_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "zones": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "$ref": "#/components/schemas/ConfigZone"
+            },
+            "description": "Always 8 entries; zones above zone_count are kept but not used."
+          },
+          "master": {
+            "$ref": "#/components/schemas/ConfigMaster"
+          },
+          "driver": {
+            "$ref": "#/components/schemas/ConfigDriver"
+          },
+          "sensors": {
+            "$ref": "#/components/schemas/ConfigSensors"
+          },
+          "diagnostics": {
+            "$ref": "#/components/schemas/ConfigDiagnostics"
+          },
+          "schedule": {
+            "$ref": "#/components/schemas/ConfigSchedule"
+          },
+          "mqtt": {
+            "$ref": "#/components/schemas/MqttSettings"
+          }
+        }
+      },
+      "SetupUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "complete"
+        ],
+        "properties": {
+          "complete": {
+            "type": "boolean"
+          }
+        }
+      },
+      "HistoryRun": {
+        "type": "object",
+        "description": "One opening of one zone.",
+        "required": [
+          "id",
+          "utc",
+          "time_valid",
+          "type",
+          "zone",
+          "program_id",
+          "source",
+          "end",
+          "planned_s",
+          "actual_s",
+          "current_ma",
+          "litres"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Grows by one per record, also across restarts."
+          },
+          "utc": {
+            "type": "integer",
+            "description": "When it happened (Unix seconds)."
+          },
+          "time_valid": {
+            "type": "boolean",
+            "description": "False if recorded while the clock was not set; utc is then wrong."
+          },
+          "type": {
+            "type": "string",
+            "const": "run"
+          },
+          "zone": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 8,
+            "description": "Zone number, null when not zone-specific."
+          },
+          "program_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Program id, null for a manual zone run."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "schedule",
+              "manual_program",
+              "manual_zone"
+            ]
+          },
+          "end": {
+            "type": "string",
+            "enum": [
+              "none",
+              "completed",
+              "requested",
+              "max_run_time",
+              "fault",
+              "ac_lost",
+              "shutdown",
+              "maintenance"
+            ],
+            "description": "Why it closed. `requested`: stop, skip or pause (a resumed run is a new record)."
+          },
+          "planned_s": {
+            "type": "integer",
+            "description": "What was left to run when it opened (after seasonal adjustment and clamping)."
+          },
+          "actual_s": {
+            "type": "integer",
+            "description": "How long it was open."
+          },
+          "current_ma": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Mean valve current of this zone while it was open alone; null if not measured."
+          },
+          "litres": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Flow-meter volume while open (0.1 L steps); null without a flow meter. Two zones open together share the volume measured meanwhile."
+          }
+        }
+      },
+      "HistoryProgramStarted": {
+        "type": "object",
+        "description": "A program was queued.",
+        "required": [
+          "id",
+          "utc",
+          "time_valid",
+          "type",
+          "program_id",
+          "source",
+          "late"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Grows by one per record, also across restarts."
+          },
+          "utc": {
+            "type": "integer",
+            "description": "When it happened (Unix seconds)."
+          },
+          "time_valid": {
+            "type": "boolean",
+            "description": "False if recorded while the clock was not set; utc is then wrong."
+          },
+          "type": {
+            "type": "string",
+            "const": "program_started"
+          },
+          "program_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Program id, null for a manual zone run."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "schedule",
+              "manual_program",
+              "manual_zone"
+            ]
+          },
+          "late": {
+            "type": "boolean"
+          }
+        }
+      },
+      "HistoryProgramSkipped": {
+        "type": "object",
+        "description": "A scheduled start did not run.",
+        "required": [
+          "id",
+          "utc",
+          "time_valid",
+          "type",
+          "program_id",
+          "reason"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Grows by one per record, also across restarts."
+          },
+          "utc": {
+            "type": "integer",
+            "description": "When it happened (Unix seconds)."
+          },
+          "time_valid": {
+            "type": "boolean",
+            "description": "False if recorded while the clock was not set; utc is then wrong."
+          },
+          "type": {
+            "type": "string",
+            "const": "program_skipped"
+          },
+          "program_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Program id, null for a manual zone run."
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "rain_delay",
+              "sensor_inhibit",
+              "no_ac",
+              "maintenance",
+              "already_queued",
+              "queue_full",
+              "nothing_to_run",
+              "master_locked_out"
+            ]
+          }
+        }
+      },
+      "HistoryProgramMissed": {
+        "type": "object",
+        "description": "A start passed while the controller was off or its clock jumped.",
+        "required": [
+          "id",
+          "utc",
+          "time_valid",
+          "type",
+          "program_id",
+          "scheduled_utc"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Grows by one per record, also across restarts."
+          },
+          "utc": {
+            "type": "integer",
+            "description": "When it happened (Unix seconds)."
+          },
+          "time_valid": {
+            "type": "boolean",
+            "description": "False if recorded while the clock was not set; utc is then wrong."
+          },
+          "type": {
+            "type": "string",
+            "const": "program_missed"
+          },
+          "program_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Program id, null for a manual zone run."
+          },
+          "scheduled_utc": {
+            "type": "integer"
+          }
+        }
+      },
+      "HistoryRunDropped": {
+        "type": "object",
+        "description": "A queued run could not start.",
+        "required": [
+          "id",
+          "utc",
+          "time_valid",
+          "type",
+          "zone",
+          "program_id",
+          "source",
+          "reason"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Grows by one per record, also across restarts."
+          },
+          "utc": {
+            "type": "integer",
+            "description": "When it happened (Unix seconds)."
+          },
+          "time_valid": {
+            "type": "boolean",
+            "description": "False if recorded while the clock was not set; utc is then wrong."
+          },
+          "type": {
+            "type": "string",
+            "const": "run_dropped"
+          },
+          "zone": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 8,
+            "description": "Zone number, null when not zone-specific."
+          },
+          "program_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Program id, null for a manual zone run."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "schedule",
+              "manual_program",
+              "manual_zone"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "HistoryFaultRaised": {
+        "type": "object",
+        "description": "A fault was raised.",
+        "required": [
+          "id",
+          "utc",
+          "time_valid",
+          "type",
+          "zone",
+          "code"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Grows by one per record, also across restarts."
+          },
+          "utc": {
+            "type": "integer",
+            "description": "When it happened (Unix seconds)."
+          },
+          "time_valid": {
+            "type": "boolean",
+            "description": "False if recorded while the clock was not set; utc is then wrong."
+          },
+          "type": {
+            "type": "string",
+            "const": "fault_raised"
+          },
+          "zone": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 8,
+            "description": "Zone number, null when not zone-specific."
+          },
+          "code": {
+            "type": "string"
+          }
+        }
+      },
+      "HistoryFaultCleared": {
+        "type": "object",
+        "description": "A fault cleared (cleared by hand or its cause went away).",
+        "required": [
+          "id",
+          "utc",
+          "time_valid",
+          "type",
+          "zone",
+          "code"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Grows by one per record, also across restarts."
+          },
+          "utc": {
+            "type": "integer",
+            "description": "When it happened (Unix seconds)."
+          },
+          "time_valid": {
+            "type": "boolean",
+            "description": "False if recorded while the clock was not set; utc is then wrong."
+          },
+          "type": {
+            "type": "string",
+            "const": "fault_cleared"
+          },
+          "zone": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 8,
+            "description": "Zone number, null when not zone-specific."
+          },
+          "code": {
+            "type": "string"
+          }
+        }
+      },
+      "HistoryBoot": {
+        "type": "object",
+        "description": "The controller started.",
+        "required": [
+          "id",
+          "utc",
+          "time_valid",
+          "type",
+          "reset_reason"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Grows by one per record, also across restarts."
+          },
+          "utc": {
+            "type": "integer",
+            "description": "When it happened (Unix seconds)."
+          },
+          "time_valid": {
+            "type": "boolean",
+            "description": "False if recorded while the clock was not set; utc is then wrong."
+          },
+          "type": {
+            "type": "string",
+            "const": "boot"
+          },
+          "reset_reason": {
+            "type": "string",
+            "enum": [
+              "unknown",
+              "power_on",
+              "software",
+              "panic",
+              "watchdog",
+              "brownout",
+              "external",
+              "deep_sleep"
+            ]
+          }
+        }
+      },
+      "HistoryTimeSet": {
+        "type": "object",
+        "description": "The clock source changed.",
+        "required": [
+          "id",
+          "utc",
+          "time_valid",
+          "type",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Grows by one per record, also across restarts."
+          },
+          "utc": {
+            "type": "integer",
+            "description": "When it happened (Unix seconds)."
+          },
+          "time_valid": {
+            "type": "boolean",
+            "description": "False if recorded while the clock was not set; utc is then wrong."
+          },
+          "type": {
+            "type": "string",
+            "const": "time_set"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "unset",
+              "rtc",
+              "synced"
+            ]
+          }
+        }
+      },
+      "HistoryConfigChanged": {
+        "type": "object",
+        "description": "A configuration change was applied.",
+        "required": [
+          "id",
+          "utc",
+          "time_valid",
+          "type"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Grows by one per record, also across restarts."
+          },
+          "utc": {
+            "type": "integer",
+            "description": "When it happened (Unix seconds)."
+          },
+          "time_valid": {
+            "type": "boolean",
+            "description": "False if recorded while the clock was not set; utc is then wrong."
+          },
+          "type": {
+            "type": "string",
+            "const": "config_changed"
+          }
+        }
+      },
+      "HistoryRainDelay": {
+        "type": "object",
+        "description": "A rain delay was set (until_utc) or ended (null).",
+        "required": [
+          "id",
+          "utc",
+          "time_valid",
+          "type",
+          "until_utc"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Grows by one per record, also across restarts."
+          },
+          "utc": {
+            "type": "integer",
+            "description": "When it happened (Unix seconds)."
+          },
+          "time_valid": {
+            "type": "boolean",
+            "description": "False if recorded while the clock was not set; utc is then wrong."
+          },
+          "type": {
+            "type": "string",
+            "const": "rain_delay"
+          },
+          "until_utc": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      },
+      "HistorySensor": {
+        "type": "object",
+        "description": "A sensor input changed.",
+        "required": [
+          "id",
+          "utc",
+          "time_valid",
+          "type",
+          "sensor",
+          "active"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Grows by one per record, also across restarts."
+          },
+          "utc": {
+            "type": "integer",
+            "description": "When it happened (Unix seconds)."
+          },
+          "time_valid": {
+            "type": "boolean",
+            "description": "False if recorded while the clock was not set; utc is then wrong."
+          },
+          "type": {
+            "type": "string",
+            "const": "sensor"
+          },
+          "sensor": {
+            "type": "string",
+            "enum": [
+              "rain",
+              "spare",
+              "ac"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "HistoryMaintenance": {
+        "type": "object",
+        "description": "Maintenance mode (updates, factory reset) began or ended.",
+        "required": [
+          "id",
+          "utc",
+          "time_valid",
+          "type",
+          "on"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Grows by one per record, also across restarts."
+          },
+          "utc": {
+            "type": "integer",
+            "description": "When it happened (Unix seconds)."
+          },
+          "time_valid": {
+            "type": "boolean",
+            "description": "False if recorded while the clock was not set; utc is then wrong."
+          },
+          "type": {
+            "type": "string",
+            "const": "maintenance"
+          },
+          "on": {
+            "type": "boolean"
+          }
+        }
+      },
+      "HistoryPauseExpired": {
+        "type": "object",
+        "description": "A paused queue was stopped after the pause timeout.",
+        "required": [
+          "id",
+          "utc",
+          "time_valid",
+          "type"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Grows by one per record, also across restarts."
+          },
+          "utc": {
+            "type": "integer",
+            "description": "When it happened (Unix seconds)."
+          },
+          "time_valid": {
+            "type": "boolean",
+            "description": "False if recorded while the clock was not set; utc is then wrong."
+          },
+          "type": {
+            "type": "string",
+            "const": "pause_expired"
+          }
+        }
+      },
+      "HistoryOta": {
+        "type": "object",
+        "description": "A firmware or web UI update.",
+        "required": [
+          "id",
+          "utc",
+          "time_valid",
+          "type",
+          "stage",
+          "source",
+          "error"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Grows by one per record, also across restarts."
+          },
+          "utc": {
+            "type": "integer",
+            "description": "When it happened (Unix seconds)."
+          },
+          "time_valid": {
+            "type": "boolean",
+            "description": "False if recorded while the clock was not set; utc is then wrong."
+          },
+          "type": {
+            "type": "string",
+            "const": "ota"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "started",
+              "failed",
+              "installed"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "none",
+              "upload",
+              "pull"
+            ]
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "HistoryRecord": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HistoryRun"
+          },
+          {
+            "$ref": "#/components/schemas/HistoryProgramStarted"
+          },
+          {
+            "$ref": "#/components/schemas/HistoryProgramSkipped"
+          },
+          {
+            "$ref": "#/components/schemas/HistoryProgramMissed"
+          },
+          {
+            "$ref": "#/components/schemas/HistoryRunDropped"
+          },
+          {
+            "$ref": "#/components/schemas/HistoryFaultRaised"
+          },
+          {
+            "$ref": "#/components/schemas/HistoryFaultCleared"
+          },
+          {
+            "$ref": "#/components/schemas/HistoryBoot"
+          },
+          {
+            "$ref": "#/components/schemas/HistoryTimeSet"
+          },
+          {
+            "$ref": "#/components/schemas/HistoryConfigChanged"
+          },
+          {
+            "$ref": "#/components/schemas/HistoryRainDelay"
+          },
+          {
+            "$ref": "#/components/schemas/HistorySensor"
+          },
+          {
+            "$ref": "#/components/schemas/HistoryMaintenance"
+          },
+          {
+            "$ref": "#/components/schemas/HistoryPauseExpired"
+          },
+          {
+            "$ref": "#/components/schemas/HistoryOta"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "run": "#/components/schemas/HistoryRun",
+            "program_started": "#/components/schemas/HistoryProgramStarted",
+            "program_skipped": "#/components/schemas/HistoryProgramSkipped",
+            "program_missed": "#/components/schemas/HistoryProgramMissed",
+            "run_dropped": "#/components/schemas/HistoryRunDropped",
+            "fault_raised": "#/components/schemas/HistoryFaultRaised",
+            "fault_cleared": "#/components/schemas/HistoryFaultCleared",
+            "boot": "#/components/schemas/HistoryBoot",
+            "time_set": "#/components/schemas/HistoryTimeSet",
+            "config_changed": "#/components/schemas/HistoryConfigChanged",
+            "rain_delay": "#/components/schemas/HistoryRainDelay",
+            "sensor": "#/components/schemas/HistorySensor",
+            "maintenance": "#/components/schemas/HistoryMaintenance",
+            "pause_expired": "#/components/schemas/HistoryPauseExpired",
+            "ota": "#/components/schemas/HistoryOta"
+          }
+        }
+      },
+      "HistoryPage": {
+        "type": "object",
+        "required": [
+          "records",
+          "next_before",
+          "newest_id",
+          "oldest_id",
+          "capacity",
+          "unsaved"
+        ],
+        "properties": {
+          "records": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/HistoryRecord"
+            },
+            "description": "Newest first."
+          },
+          "next_before": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Pass as `before` for the next older page; null when there is none."
+          },
+          "newest_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "oldest_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Oldest id still kept (approximately: a damaged chunk inside the range is skipped)."
+          },
+          "capacity": {
+            "type": "integer",
+            "description": "Records the log holds at most; older ones are overwritten."
+          },
+          "unsaved": {
+            "type": "integer",
+            "description": "Records not yet written to flash (lost on a power cut; written within 60 s, faults at once)."
+          }
+        }
+      },
+      "BackupInput": {
+        "type": "object",
+        "required": [
+          "format",
+          "config"
+        ],
+        "properties": {
+          "format": {
+            "type": "string",
+            "const": "zoneflow-backup"
+          },
+          "format_version": {
+            "type": "integer",
+            "const": 1
+          },
+          "created_utc": {
+            "type": "integer"
+          },
+          "firmware_version": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "config": {
+            "$ref": "#/components/schemas/ConfigInput"
           }
         }
       }

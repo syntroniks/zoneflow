@@ -103,6 +103,7 @@ flowchart TB
 | `zf_control` | 10 | 1 | 50 ms (`CONFIG_ZF_CONTROL_PERIOD_MS`) | Drains the command queue, then `Controller::tick()`. Subscribed to the task watchdog (5 s, panics). |
 | `zf_persist` | 3 | 0 | 250 ms poll | Takes the latest runtime state from `PersistMailbox`, builds the JSON and writes NVS. Static stack (6 KB). |
 | `zf_evlog` | 2 | 0 | on event | Logs events from its own queue. |
+| `zf_history` | 2 | 0 | on event, at least every 500 ms, 6 KB static stack | Turns events from its own queue into history records and writes the open chunk to NVS in batches (section 19). |
 | `main` | 1 | any | 100 ms | Status LED, state log once a minute. |
 | lwIP / SNTP | IDF | 0 | on sync | `TimeService::onNetworkSync()` writes the RTC. The TCP/IP task (priority 18) is pinned to core 0 so network load never preempts the control task (security review F6). |
 | `zf_net` | 5 | 0 | 1 s or on message, 6 KB | WiFi, provisioning and mDNS calls. IDF event handlers only queue a message. |
@@ -299,8 +300,10 @@ Event types: `ZoneChanged`, `MasterChanged`, `QueueChanged`, `ProgramStarted`,
 `ProgramSkipped`, `ProgramMissed`, `SensorChanged`, `FaultRaised`,
 `FaultCleared`, `RainDelayChanged`, `ConfigApplied`, `TimeStatusChanged`,
 `MaintenanceChanged`, `CommandRejected`, `RunDropped` (a queued run whose
-zone refused to start: locked out, resting, master locked out) and
-`PauseExpired`. `toString()` gives stable lowercase names for APIs.
+zone refused to start: locked out, resting, master locked out),
+`PauseExpired` and `RunEnded` (one opening of one zone ended: source,
+program, planned and actual seconds, stop reason, mean current of the zone
+alone, flow-meter volume; for the history, section 19). `toString()` gives stable lowercase names for APIs.
 
 New enum values are appended, never inserted. ESP-IDF builds with
 `-Werror=switch`, so a `switch` over `EventType`, `FaultCode`, `RunError`,
@@ -1236,3 +1239,69 @@ install one. Firmware installs stay behind the admin login of the REST API
   With `-D ZF_DISPLAY=1`: 2,027,648 bytes, 58,432 more than the 1,969,216
   reported for `main` in pull request #23. No warnings in ZoneFlow code in
   either build.
+
+## 19. History
+
+A bounded, persistent log of what the controller did, for the web UI's
+History screen and `GET /api/v1/history`
+([API reference](../firmware/api.md#history)).
+
+### What is recorded
+
+| Record | From |
+|---|---|
+| Run: zone, source, program, planned and actual seconds, stop reason, mean current, volume | `RunEnded`, published by the controller when an open zone closes. The controller keeps, per zone, the open time, what was left to run, the queue entry's source and program, and the flow counter at opening; `CurrentMonitor` averages the samples it can attribute to that zone alone (`beginRun()`, `runMeanMa()`). With two zones open together, both get the volume measured meanwhile. |
+| Program started, skipped (with reason), missed; run dropped | The scheduler's events |
+| Fault raised and cleared | `FaultRaised`, `FaultCleared` |
+| Boot with reset reason | `app_main`, from `esp_reset_reason()` |
+| Clock source, configuration applied, rain delay, sensor change, maintenance, pause expired | The matching events |
+| Firmware or web UI update started, failed, installed | `zf_ota`, through `historyLog()` |
+
+Zone open/close, master, queue changes and refused commands are not
+stored: the run record summarises a run, and refusals reach the API caller.
+
+### Storage
+
+`HistoryLog` (`zf_core/include/zf/history/history.hpp`) is pure C++ over
+`IBlobStorage`, the same NVS namespace as the configuration:
+
+- 24 blobs `hist00`..`hist23` of up to 1012 bytes: a 12-byte header (magic,
+  version, record count, chunk sequence, CRC-32) and up to 50 records of 20
+  bytes. 1200 records in all; at a typical 20 to 40 records a day that is
+  one to two months.
+- The open chunk is the one with the highest valid sequence; slot =
+  sequence % 24, so a new chunk replaces the oldest. A record's id is
+  sequence × 50 + index + 1 and keeps growing across restarts.
+- **Wear.** Records are buffered in RAM. The open chunk is rewritten at most
+  once a minute, after 16 new records, when it fills, or at once for a
+  fault. At 30 records a day that is about 2 to 30 rewrites of 1 KB a day,
+  spread by NVS over its pages.
+- **Power loss.** An NVS blob write leaves the old or the new value. A chunk
+  that fails its magic, size or CRC is ignored on load and in queries, so a
+  damaged chunk costs only its own records. What was still buffered (at
+  most a minute; faults are written at once) is lost.
+- **Failures.** A failed write keeps the records buffered and is retried
+  after another interval; if the open chunk fills meanwhile, it waits as a
+  sealed chunk. The `storage_error` fault is not raised for history writes:
+  watering does not depend on them.
+
+### Threads
+
+The control task only publishes events. The `zf_history` task (priority 2,
+core 0) receives them through its own `EventQueueSubscriber` (32 entries;
+a full queue drops events and logs the count), converts them
+(`historyFromEvent()`), appends and flushes. `append()` and `query()` take a
+mutex held for a record or chunk copy, never across flash I/O, so the HTTP
+task reads older chunks from NVS while the recorder keeps appending; a chunk
+reused meanwhile fails its sequence check and is skipped.
+
+### Tests
+
+`history_test.cpp`: codec round trip and damage detection (flipped bytes, a
+torn blob), batching and urgent writes, ring wrap-around with paging over
+every page, restart after a simulated power cut, a damaged chunk in the
+middle and at the head, failing storage and retry, filters, event
+conversion, and `RunEnded` from the real controller (durations, current,
+volume, a paused program run). `web_api_test.cpp` covers the route, its
+parameters and `protect_reads`; `web_openapi_schema_test.cpp` checks every
+GET answer, history included, against `docs/firmware/openapi.json`.

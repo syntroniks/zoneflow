@@ -56,6 +56,15 @@ registry (`espressif/mdns` 1.14.1, `joltwallet/littlefs` 1.22.3) into
 Web UI files placed in `www/` (with an `index.html`) are packed into
 `build/www.bin` and flashed to the `www` partition; see
 [`docs/firmware/web-ui-contract.md`](../../docs/firmware/web-ui-contract.md).
+The web UI lives in [`web/`](web/README.md); build it into `www/` with
+Node 22.18 or newer before `idf.py build`:
+
+```sh
+cd firmware/zoneflow-fw/web && npm ci && npm run build
+```
+
+Without Node (no `www/index.html`) the firmware still builds and the device
+serves its built-in page.
 
 ## Run the host tests
 
@@ -98,6 +107,8 @@ CI checks formatting with the same clang-format version.
 | `sim/` | Desktop simulator of the display and the screenshot generator. |
 | `main/app_main.cpp` | Wires everything together and starts the tasks. |
 | `test/host/` | GoogleTest suites and fakes for the core and the display logic. |
+| `test/vectors/` | Schedule cases shared by the C++ scheduler test and the web UI's preview. |
+| `web/` | Browser UI (Preact, TypeScript), mock controller and its tests. |
 | `test/broker/` | Optional broker test: the MQTT logic and the core against a local Mosquitto (`run.sh`; not in CI). |
 | `partitions.csv` | 16 MB layout: NVS, two 4 MB OTA slots, 7.75 MB LittleFS `www` for web and display assets, 128 KB core dump. |
 
@@ -109,6 +120,13 @@ CI checks formatting with the same clang-format version.
 - `idf.py build` with ESP-IDF v5.5.6 for esp32s3 completes with no warnings
   in ZoneFlow code, in the default configuration and with `-D ZF_DISPLAY=1`.
   Image sizes are in the firmware architecture document.
+- Web UI (`web/`): unit tests (vitest) and Playwright end-to-end tests on a
+  phone, a 320 px and a desktop viewport, all against the mock controller in
+  `web/mock/`, not against firmware. The schedule preview and the C++
+  scheduler agree on the shared vectors in `test/vectors/`. The firmware's
+  GET answers (`web_openapi_schema_test.cpp`) and the mock's
+  (`web/tests/unit/mock-contract.test.ts`) are both checked against the
+  response schemas in `docs/firmware/openapi.json`.
 - Broker test: `test/broker/run.sh` builds Mosquitto 2.1.2 and runs the
   MQTT logic with the real core against it; all checks pass. It does not
   run the ESP-IDF MQTT glue. See

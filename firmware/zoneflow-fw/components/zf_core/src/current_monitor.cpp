@@ -136,10 +136,18 @@ void CurrentMonitor::learn(int32_t measuredMa, uint16_t mask)
     while ((zones & (1u << bit)) == 0) {
         ++bit;
     }
+    int32_t own = -1;
     if (!master) {
-        ema(observed_[bit], measuredMa);
+        own = measuredMa;
     } else if (observed_[kMasterBit] != 0) {
-        ema(observed_[bit], measuredMa - observed_[kMasterBit]);
+        own = measuredMa - observed_[kMasterBit];
+    }
+    if (own >= 0) {
+        ema(observed_[bit], own);
+        if (runCount_[bit] < 0xFFFFu) { // about an hour of 50 ms samples; enough for a mean
+            runSum_[bit] += static_cast<uint32_t>(std::clamp<int32_t>(own, 0, 0xFFFF));
+            ++runCount_[bit];
+        }
     }
 }
 

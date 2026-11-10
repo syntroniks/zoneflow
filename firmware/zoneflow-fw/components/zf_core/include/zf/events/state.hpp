@@ -21,6 +21,7 @@ struct ZoneStatus {
     bool enabled = false;
     bool lockedOut = false;
     uint32_t restRemainingSec = 0; // > 0: reached its maximum run time, resting
+    uint16_t learnedCurrentMa = 0; // mean current seen with this zone alone since boot; 0 = not yet
 };
 
 struct QueueItem {
@@ -36,6 +37,7 @@ struct QueueStatus {
     QueueState state = QueueState::Idle;
     uint8_t length = 0;
     uint32_t currentRemainingSec = 0; // head entry, when running
+    uint32_t pausedForSec = 0;        // since the first pause, while paused
     uint8_t shownCount = 0;
     std::array<QueueItem, kShown> items{}; // head first
 };

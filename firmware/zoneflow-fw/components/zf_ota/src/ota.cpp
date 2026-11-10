@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cinttypes>
+#include <ctime>
 #include <memory>
 #include <mutex>
 
@@ -20,6 +21,7 @@
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "zf/history/history.hpp"
 
 namespace zf::ota {
 namespace {
@@ -78,12 +80,34 @@ struct Module {
 
 Module m;
 
+// Firmware updates go into the persistent history (urgent: a restart follows).
+void noteHistory(HistoryOtaStage stage, OtaSource source, OtaError error)
+{
+    HistoryLog *log = historyLog();
+    if (log == nullptr) {
+        return;
+    }
+    HistoryRecord r;
+    r.utc = static_cast<UtcSeconds>(std::time(nullptr)); // as the controller stamps its events
+    r.kind = HistoryKind::Ota;
+    r.a = static_cast<uint8_t>(stage);
+    r.b = source == OtaSource::Upload ? 1 : source == OtaSource::Pull ? 2 : 0;
+    r.c = static_cast<uint16_t>(error);
+    log->append(r, static_cast<MonoMs>(esp_timer_get_time() / 1000), true);
+}
+
 void setStatus(OtaPhase phase, OtaError error = OtaError::None)
 {
     OtaStatus s = m.store.get();
+    const OtaPhase before = s.phase;
     s.phase = phase;
     s.error = error;
     m.store.set(s);
+    if (phase != before && phase == OtaPhase::Failed) {
+        noteHistory(HistoryOtaStage::Failed, s.source, error);
+    } else if (phase != before && phase == OtaPhase::Rebooting) {
+        noteHistory(HistoryOtaStage::Installed, s.source, OtaError::None);
+    }
 }
 
 void restartSoon()
@@ -111,6 +135,7 @@ OtaError prepare(bool force, OtaSource source, std::size_t total)
     s.forced = force;
     s.totalBytes = static_cast<uint32_t>(total);
     m.store.set(s);
+    noteHistory(HistoryOtaStage::Started, source, OtaError::None);
     // Maintenance closes every valve, clears the queue and blocks starts.
     m.services->commands.post(Command::simple(CommandType::StopAll));
     if (!m.services->commands.post(Command::maintenance(true))) {

@@ -79,6 +79,9 @@ add_executable(zf_host_tests
     web_auth_test.cpp
     web_http_test.cpp
     web_openapi_test.cpp
+    schedule_vectors_test.cpp
+    history_test.cpp
+    web_openapi_schema_test.cpp
     mqtt_config_test.cpp
     mqtt_logic_test.cpp
     mqtt_discovery_test.cpp
@@ -87,6 +90,7 @@ add_executable(zf_host_tests
 target_compile_options(zf_host_tests PRIVATE -Wall -Wextra)
 target_compile_definitions(zf_host_tests PRIVATE
     ZF_OPENAPI_PATH="${CMAKE_CURRENT_LIST_DIR}/../../../../docs/firmware/openapi.json"
+    ZF_SCHEDULE_VECTORS_PATH="${CMAKE_CURRENT_LIST_DIR}/../vectors/schedule_preview.json"
     ZF_HA_SCHEMA_PATH="${CMAKE_CURRENT_LIST_DIR}/data/ha_mqtt_discovery.json")
 target_link_libraries(zf_host_tests PRIVATE zf_ui zf_core zf_ext cjson GTest::gtest_main)
 

@@ -14,6 +14,7 @@
 #include "zf/config/config_store.hpp"
 #include "zf/events/event_bus.hpp"
 #include "zf/hal.hpp"
+#include "zf/history/history.hpp"
 #include "zf/time/clock.hpp"
 #include "zf/time/time_service.hpp"
 #include "zf/zone/output_enable.hpp"
@@ -163,5 +164,13 @@ private:
 
 // Logs every event (ESP_LOGI) from a low-priority task.
 esp_err_t startEventLogger(EventBus &bus);
+
+// ---- persistent history --------------------------------------------------------------------------
+
+// Records events into the history log and writes it in batches from a
+// low-priority task (static allocation, core 0). Call log.load() first.
+esp_err_t startHistoryRecorder(EventBus &bus, HistoryLog &log);
+// Why the chip last reset, for the boot record.
+HistoryResetReason historyResetReason();
 
 } // namespace zf::platform

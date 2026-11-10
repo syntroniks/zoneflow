@@ -180,6 +180,7 @@ Controller event types and their extra fields:
 | `command_rejected` | `command` (`run_zone`, `run_program`, ...), `zone` (1-based or null), `program_id` (or null), `error` (controller reason, as in [Run commands](#run-commands)) |
 | `run_dropped` | `zone`, `program_id` (null for a manual zone run), `source`, `reason` (`resting`, `locked_out`, `disabled`, `inhibited`, `master_locked_out`, ...): a queued run reached the head of the queue and could not start, so it was dropped |
 | `pause_expired` | (the queue stayed paused for `schedule.pause_timeout_min` and was stopped) |
+| `run_ended` | `zone`, `program_id` (null for a manual zone run), `source`, `end` (why it closed: `completed`, `requested`, `max_run_time`, `fault`, ...), `planned_s` (left to run when it opened), `actual_s`, `current_ma` (mean current of this zone alone, or null), `litres` (flow-meter volume, or null without a meter): one opening of one zone ended. A pause and resume gives two |
 
 With "protect reads" on, a stream ends when the session that opened it
 ends (logout, password change, expiry), checked about once a second; turning
@@ -204,6 +205,44 @@ state. `PUT /api/v1/mqtt` changes them; `password` and `ca_cert` are
 write-only and are stored outside the configuration, so a backup never
 contains them. Topics and Home Assistant discovery:
 [MQTT and Home Assistant](mqtt.md).
+
+## History
+
+`GET /api/v1/history` returns what the controller recorded, newest first:
+runs (zone, source, planned and actual duration, why it ended, valve
+current, water volume with a flow meter), started, skipped and missed
+programs, dropped runs, faults raised and cleared, and system events (start
+with the reset reason, clock source, configuration applied, rain delay,
+sensor changes, maintenance, firmware updates). Each record has a growing
+`id`; `time_valid` is false for records made while the clock was not set.
+
+```sh
+curl 'http://zoneflow-ab12.local/api/v1/history?limit=50'           # newest 50
+curl 'http://zoneflow-ab12.local/api/v1/history?before=1234'        # page back
+curl 'http://zoneflow-ab12.local/api/v1/history?after=1300&zone=3'  # new since, zone 3 only
+```
+
+The log holds 1200 records in flash (24 chunks of 50, stored as NVS blobs,
+each with a sequence number and a CRC). The newest chunk is rewritten at
+most once a minute, after 16 new records, or at once for a fault, so a power
+cut loses at most the last minute of records (`unsaved` in the answer says
+how many are still only in RAM). A chunk that fails its CRC is skipped
+without affecting the others; when the log is full the oldest chunk is
+overwritten. A factory reset erases it. Nothing secret is recorded.
+
+Learned current and pause time are in the live state as well:
+`zones[].learned_current_ma` (mean current with the zone open alone, since
+the last restart) and `queue.paused_s` / `queue.stop_in_s` (while paused:
+time since the first pause and time until the pause timeout stops the
+queue).
+
+## First-run state
+
+`GET /api/v1/auth` includes `setup_complete`, which `PUT /api/v1/setup`
+(`{"complete": true}`, admin) sets once the web UI's first-run steps (time
+zone, zones) are finished or skipped, so they resume on a later visit. It
+is stored with the web settings, not in the configuration or its backup,
+and gates nothing.
 
 ## Firmware updates
 
