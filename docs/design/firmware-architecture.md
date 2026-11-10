@@ -1,19 +1,21 @@
 # ZoneFlow firmware architecture
 
-Status: **phase 2** (core hardening, network, REST API, OTA). Covers the
-standalone ESP-IDF firmware of system spec section 4.1
+Status: **phase 2** (core hardening, network, REST API, OTA, display).
+Covers the standalone ESP-IDF firmware of system spec section 4.1
 (`firmware/zoneflow-fw/`). Nothing described here has run on a board.
-Checks done so far: host unit tests (GoogleTest, ASan and UBSan) and
-`idf.py build` with ESP-IDF v5.5.6. Section 11 lists what the phase 2
-core hardening changed.
+Checks done so far: host unit tests (GoogleTest, ASan and UBSan), the
+display simulator, and `idf.py build` with ESP-IDF v5.5.6. Section 11 lists
+what the phase 2 core hardening changed.
 
 Phase 1 delivered the structure, the safety-critical core and tests. Phase 2
 hardens the core (section 11) and adds WiFi and provisioning (`zf_net`,
 section 12), the REST API, event stream and static web serving (`zf_web`,
-section 13) and OTA with rollback (`zf_ota`, section 14). The network security design is in
-[firmware security](firmware-security.md). MQTT, the display UI and the web
-UI itself are later work. Every module plugs into the interfaces in
-section 4 and does not reach around them.
+section 13), OTA with rollback (`zf_ota`, section 14) and the local display
+interface (`zf_display`, section 17, and
+[display interface](display-ui.md)). The network security design is in
+[firmware security](firmware-security.md). MQTT and the web UI itself are
+later work. Every module plugs into the interfaces in section 4 and does
+not reach around them.
 
 ## 1. Modules
 
@@ -24,7 +26,7 @@ flowchart TB
         web[zf_web<br/>HTTP, REST, SSE stream]
         mqtt[zf_mqtt<br/>MQTT, HA discovery]
         ota[zf_ota<br/>OTA, rollback]
-        disp[zf_display<br/>OLED, encoder]
+        disp[zf_display<br/>TFT, encoder, buttons]
     end
 
     subgraph svc["AppServices (zf/app/services.hpp)"]
@@ -90,7 +92,8 @@ flowchart TB
 | `zf_net` | WiFi station, BLE and SoftAP provisioning, hostname and mDNS, captive DNS, factory reset. Logic in `net_logic.cpp` (host-tested). |
 | `zf_web` | HTTP(S) server, REST API, SSE stream, static files, admin authentication. Logic in `api.cpp`, `auth.cpp`, `crypto.cpp`, `routes.cpp`, `http_util.cpp`, `json_map.cpp` (host-tested). |
 | `zf_ota` | Firmware upload and pull, web UI image upload, post-boot self-test and rollback. Logic in `ota_logic.cpp` (host-tested). |
-| `zf_mqtt`, `zf_display` | Stubs here (the display is on another branch). Each header lists what the module must do. |
+| `zf_display` | The local interface: display logic (pure C++, host-tested), LVGL view, ESP-IDF drivers and the UI task. Section 17. |
+| `zf_mqtt` | Stub. Its header lists what the module must do. |
 
 ## 2. Threading model
 
@@ -108,6 +111,8 @@ flowchart TB
 | `zf_web_sse` | 3 | 0 | 250 ms or on event, 6 KB | Formats and sends event-stream messages from its own event queue. |
 | `zf_ota_pull` | 4 | any | while pulling, 8 KB | HTTPS download into the passive slot. |
 | `zf_ota_test` | 2 | any | 500 ms, at most 60 s after an update | Post-boot self-test, then confirm or roll back. |
+| `zf_ui` | 4 | 0 | on input, on event, at most 20 ms | Owns LVGL. Reads input and event queues, builds the frame, draws. Section 17. |
+| `esp_timer` (IDF) | IDF | IDF | 5 ms | Samples the encoder count and the buttons, decodes them, queues input events for `zf_ui`. |
 
 Rules:
 
@@ -588,7 +593,12 @@ the REST and backup format. Abbreviated example:
    must pass 200 Hz.
 7. **RTC choice and backup.** PCF8563 assumed at 0x51. Battery or supercap,
    and expected hold-up time?
-8. **OLED address.** 0x3C assumed. SSD1306 or SH1106?
+8. **Display.** Spec v0.3 replaced the OLED with a 320x240 ST7789-class
+   TFT on SPI and added a second button. Needed: the panel module and its
+   orientation in the enclosure, whether its CS and reset can stay undriven
+   (the firmware assumes CS tied low and reset tied to EN), backlight
+   driver polarity and PWM frequency, and the encoder's detents per
+   revolution and counts per detent. Its pins are question 14.
 9. **GPIO15/16 for I2C** assume no 32 kHz crystal on the module pins.
 10. **Valve current windows.** Defaults are 80 to 700 mA per output and
     3000 mA short circuit. The prior-art survey cites 200 to 400 mA for
@@ -610,13 +620,21 @@ the REST and backup format. Abbreviated example:
     (two per mains period) on GPIO48, rising edge at the crossing, offset
     0 us. Needed: the circuit, the edge that marks the crossing and the
     detector's lead or lag (`kZeroCrossOffsetUs`).
-14. **Pin budget.** The provisional map now uses every free GPIO of the
-    WROOM-1-N16R8 except UART0 (43, 44). The TFT (SPI: clock, data,
-    chip select, data/command, backlight PWM; spec v0.3) and a second
-    button need about six more. Options: an I2C GPIO expander for the
-    buttons and encoder, sharing the I2C pins, or moving the status LED
-    or AC-present input. The display owner and the hardware lead need to
-    settle this in `hardware/pinmap.yaml`.
+14. **Pin budget.** The firmware wants 30 signals and the pin rules of the
+    board header leave 27 GPIO (the count is in the header, "pin budget").
+    The display needs five that the map did not have: SPI clock, SPI data,
+    data/command, backlight PWM and the Manual/Home button, with the
+    panel's CS and reset already left undriven. Data/command and the
+    button take UART0 (43, 44). Nothing is left for clock, data and
+    backlight. Until `hardware/pinmap.yaml` settles it, a build option
+    decides: by default GPIO18, 47 and 48 carry the over-current trip and
+    the zero-cross input and the display is not started;
+    `CONFIG_ZF_DISPLAY_ON_SHARED_PINS` gives them to the display and treats
+    those two inputs as not fitted. CI builds both. Ways out: an I2C
+    expander for the switches and the LED; a module with quad PSRAM, if
+    GPIO35..37 are then free (to check in the module datasheet); or doing
+    without three signals. The spec's claim that the module has "enough
+    GPIO without an expander" (section 3.1) no longer holds for this list.
 
 ## 10. Decisions made in phase 1
 
@@ -867,3 +885,144 @@ must be measured on the first board: `GET /api/v1/info` reports `heap.free` and
 - **Managed components** `espressif/mdns` 1.14.1 and `joltwallet/littlefs`
   1.22.3, pinned exactly in each component's `idf_component.yml`. mDNS left
   ESP-IDF core in v5.0; LittleFS was never in it.
+
+## 17. Display
+
+What the interface shows and why is in [display interface](display-ui.md).
+This section is how it is built.
+
+In the default build `display::start()` logs that the pin map has no pins
+for the panel and returns; see open question 14. Everything below describes
+the build with `CONFIG_ZF_DISPLAY_ON_SHARED_PINS`, and the simulator.
+
+### Layers
+
+```mermaid
+flowchart LR
+    core[zf_core<br/>AppServices] --> ui
+    subgraph zf_display
+        ui[src/ui<br/>logic, no LVGL<br/>Frame] --> view[src/view<br/>LVGL objects]
+        port[src/port<br/>ST7789, LEDC, PCNT,<br/>NVS, UI task] --> ui
+        view --> port
+    end
+    sim[sim/<br/>framebuffer, SDL2] -.-> ui
+    sim -.-> view
+    tests[test/host] -.-> ui
+```
+
+| Layer | Depends on | Built by |
+|---|---|---|
+| `src/ui`, `include/zf_ui` | `zf_core` only. No LVGL, no ESP-IDF. | firmware, simulator, host tests |
+| `src/view`, `include/zf_view` | `src/ui` and LVGL | firmware, simulator |
+| `src/port` | ESP-IDF, `zf_board`, `zf_platform` | firmware |
+
+The logic turns the core's snapshot and the user's inputs into a `Frame`
+(`zf_ui/model.hpp`): a status bar, one of three screen kinds, and optionally
+a picker or a toast, all as plain strings, icons and tones. The view draws a
+`Frame` and holds no state beyond its LVGL objects. So the host tests assert
+on the same data the screen shows, without LVGL, and the simulator shows
+what the device will draw without hardware.
+
+A screen (`zf_ui/screen.hpp`) is one level of the navigation stack. It
+fills the frame from the snapshot every time something changes, and reacts
+to the row or button the user pressed by posting a command, updating the
+configuration, or pushing another screen. Screens keep no copy of zone or
+queue state.
+
+### Threading
+
+- **One task owns LVGL.** `zf_ui` (priority 4, core 0, 12 KB stack) is the
+  only task that calls LVGL, the view or the display logic. LVGL runs
+  without its OS layer and without a lock.
+- **Events in.** The display subscribes with `platform::EventQueueSubscriber`
+  (16 entries). The handler copies the event on the control task and
+  returns. `zf_ui` reads the queue, then takes a snapshot.
+- **State.** `zf_ui` polls `StateStore::sequence()` each pass, at least
+  every 20 ms, and copies the snapshot when it changed. No snapshot for 5 s
+  is shown as "no data", never as "off".
+- **Commands out.** `ICommandSink::post()`, non-blocking. A full queue shows
+  "Busy. Try again."
+- **Configuration.** Saving a program or a setting calls
+  `ConfigStore::update()` on `zf_ui`, which writes flash, then posts
+  `ReloadConfig`. The display freezes for the length of the NVS write. The
+  control task is not involved.
+- **Inputs.** The encoder's two phases feed one PCNT unit that counts every
+  edge (4 per cycle), so no step is lost while `zf_ui` draws. A 5 ms
+  `esp_timer` reads the count and the three switches, runs the decoders of
+  `zf_ui/input.hpp`, and queues finished events (32 entries). A turn or
+  press wakes `zf_ui` at once.
+- **Drawing.** LVGL renders the changed area in stripes of 320 x 24 pixels
+  into one of two buffers and hands each to `esp_lcd`, which sends it by
+  DMA while LVGL renders the next. Nothing is drawn while the backlight is
+  off.
+
+### Memory and size
+
+Measured with `idf.py size` (ESP-IDF v5.5.6, esp32s3, `-Os`). "Main" is
+the firmware before this module (`5c1a131`). "Default" is the default build
+with this module, in which the display has no pins and is not started, so
+the linker drops it. "Display" is the build with
+`CONFIG_ZF_DISPLAY_ON_SHARED_PINS` (`-D ZF_DISPLAY=1`).
+
+| | Main | Default | Display | Display minus main |
+|---|---|---|---|---|
+| `zoneflow-fw.bin`, bytes | 1,502,096 | 1,503,728 | 1,966,992 | +464,896 |
+| Share of a 4 MB OTA slot | 35.8 % | 35.9 % | 46.9 % | |
+| Static RAM, `.data` + `.bss`, bytes | 73,124 | 73,236 | 78,296 | +5,172 |
+| Code that ESP-IDF places in RAM, `DIRAM .text`, bytes | 98,499 | 98,499 | 107,403 | +8,904 |
+| Internal RAM left for heap and stacks, bytes | 170,137 | 170,025 | 156,061 | -14,076 |
+
+The display build leaves out the over-current trip and zero-cross inputs,
+whose code the linker then drops, so the true cost of the display is a
+little above the last column.
+
+Where the flash goes (`idf.py size-components`, display build): LVGL
+349,285 bytes, of which 173,843 are constant data, mostly the four fonts;
+`zf_display` 69,487 bytes. The rest of the increase is ESP-IDF code that
+the display pulls in: SPI master, `esp_lcd`, LEDC.
+
+RAM the display takes at run time:
+
+| What | Bytes | Where | How known |
+|---|---|---|---|
+| Draw buffers, 2 x 320 x 24 x 2 | 30,720 | internal, DMA-capable | computed |
+| `zf_ui` task stack | 12,288 | internal | set in code; peak use not measured |
+| Input queue, 32 x 6 bytes, and event queue, 16 events | under 2,000 | internal | computed from the item sizes |
+| LVGL heap: the view's objects, their styles and texts | 53,520 peak | PSRAM, internal if PSRAM is full | measured in the simulator over all 65 scenes on a 64-bit host; pointers are half that size on the ESP32-S3, so this is an upper bound |
+| `zf_display` and LVGL static data | 4,724 | internal | `idf.py size-components` |
+| SPI, PCNT, LEDC and timer driver state | not measured | internal | |
+
+About 50 KB of internal RAM at run time on top of the 14 KB the table
+above shows, and about 54 KB of PSRAM, plus driver state. Section 15 puts
+the free internal heap at about 166 KB before any task or driver
+allocates and names BLE provisioning as the tightest case. The display's
+64 KB come out of the same pool, so that case has to be measured with the
+display running. If it does not fit, the first thing to give up is the
+second draw buffer (15 KB): LVGL then waits for each stripe to be sent
+before it renders the next.
+
+The draw buffers are in internal RAM because the SPI driver sends them by
+DMA; a buffer in PSRAM would be copied for every stripe. LVGL's heap goes
+through `lv_malloc_core()` in `src/port/settings.cpp` to PSRAM first, and
+falls back to internal RAM if PSRAM has no room. The UI task logs its LVGL
+heap use at start; that number will replace the simulator's once a board
+exists.
+
+One stripe is 15,360 bytes, 3.1 ms on the wire at 40 MHz (15,360 x 8 / 40e6).
+A full redraw is ten stripes, 31 ms of transfer plus rendering time, which
+is not measured. A countdown tick redraws the digits and the progress bar,
+not the screen.
+
+### Configuration in two places
+
+The firmware configures LVGL through Kconfig (`CONFIG_LV_*` in
+`sdkconfig.defaults`), the simulator through `sim/lv_conf.h`. Colour format,
+fonts, theme and QR code support must agree. `zf_view/theme.hpp` stops
+either build if one of them is missing. The LVGL version is pinned to 9.6.0
+in `components/zf_display/idf_component.yml` and in `sim/CMakeLists.txt`.
+
+### Display settings
+
+Brightness, dim and off times, the wizard-done flag and the last manual run
+are the display's own and live in NVS namespace `zf_display`, apart from the
+core's configuration. A factory reset erases both.
