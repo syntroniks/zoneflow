@@ -1,0 +1,43 @@
+(version 1)
+
+# ---- from jlcpcb.kicad_dru ----
+
+# JLCPCB limits that KiCad's board-setup constraints cannot express.
+# Source: https://jlcpcb.com/capabilities/Capabilities, read 2026-11-10,
+# 1 oz outer copper. The numeric board-wide minimums are in jlcpcb.toml.
+
+# "PTH annular ring >=0.20mm"; 2-layer 1 oz: "absolute minimum 0.18 mm",
+# multilayer 1 oz: "absolute minimum 0.15 mm". 0.18 covers both.
+(rule "JLCPCB PTH pad annular ring"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint annular_width (min 0.18mm)))
+
+# "PTH to Track 0.28mm" ("0.35mm is recommended, minimum 0.28mm").
+(rule "JLCPCB PTH hole to copper"
+	(condition "A.Type == 'Pad' && A.Pad_Type == 'Through-hole'")
+	(constraint hole_clearance (min 0.28mm)))
+
+# "Pad Hole-to-Hole Spacing 0.45mm".
+(rule "JLCPCB pad hole to pad hole"
+	(condition "A.Type == 'Pad' && B.Type == 'Pad'")
+	(constraint hole_to_hole (min 0.45mm)))
+
+# "SMD pad to pad clearance (different nets) 0.15mm".
+(rule "JLCPCB SMD pad to pad"
+	(condition "A.Type == 'Pad' && B.Type == 'Pad' && A.Pad_Type == 'SMD' && B.Pad_Type == 'SMD'")
+	(constraint clearance (min 0.15mm)))
+
+# "Pad To Silkscreen 0.15mm".
+(rule "JLCPCB pad to silkscreen"
+	(condition "A.Type == 'Pad'")
+	(constraint silk_clearance (min 0.15mm)))
+
+# ---- from rules.kicad_dru ----
+
+# Rules that belong to this board, appended to the JLCPCB rules.
+
+# The autorouter narrows a track where it enters a pad. Accept that down to
+# 0.75 mm on the 24 VAC nets (net class width is 1.0 mm) and no further.
+(rule "AC24 minimum track width"
+	(condition "A.NetClass == 'AC24'")
+	(constraint track_width (min 0.75mm)))

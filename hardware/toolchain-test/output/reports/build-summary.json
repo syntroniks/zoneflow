@@ -1,0 +1,67 @@
+{
+ "board": {
+  "copper_layers": 2,
+  "footprints": 40,
+  "smd": 34,
+  "through_hole": 4,
+  "track_segments": 318,
+  "vias": 23,
+  "zones": 2
+ },
+ "drc": {
+  "schematic_parity": 0,
+  "unconnected_items": 0,
+  "violations": 0
+ },
+ "erc": {
+  "violations": 0
+ },
+ "kicad_version": "10.0.8",
+ "net_classes": {
+  "AC24": {
+   "class_clearance_mm": 0.5,
+   "class_track_width_mm": 1.0,
+   "length_mm": 252.4,
+   "routed_width_max_mm": 1.0,
+   "routed_width_min_mm": 0.75,
+   "segments": 70
+  },
+  "Default": {
+   "class_clearance_mm": 0.2,
+   "class_track_width_mm": 0.2,
+   "length_mm": 369.8,
+   "routed_width_max_mm": 0.2,
+   "routed_width_min_mm": 0.15,
+   "segments": 129
+  },
+  "Power": {
+   "class_clearance_mm": 0.2,
+   "class_track_width_mm": 0.4,
+   "length_mm": 326.9,
+   "routed_width_max_mm": 0.4,
+   "routed_width_min_mm": 0.3,
+   "segments": 119
+  }
+ },
+ "project": "toolchain_test",
+ "routing": {
+  "autoroute_passes": 7,
+  "connections_to_route": 43,
+  "dangling_stubs_removed": 3,
+  "freerouting_unrouted": 0,
+  "freerouting_version": "2.5.0",
+  "freerouting_violations": 8,
+  "items_after_session_import": 344,
+  "pre_routed_items": 7,
+  "seconds": 11.46,
+  "state": "COMPLETED",
+  "track_length_mm": 949.1,
+  "track_segments": 318,
+  "vias": 23,
+  "wall_seconds": 14.7
+ },
+ "schematic": {
+  "nets": 27,
+  "parts": 40
+ }
+}
