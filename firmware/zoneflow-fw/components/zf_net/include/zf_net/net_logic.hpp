@@ -136,6 +136,10 @@ struct ProvisioningTimeouts {
     // Re-provisioning a device that already has credentials: give up after
     // this long and go back to the stored network.
     MonoMs reprovisionWindowMs = 15ull * 60ull * 1000ull;
+    // A connected phone or browser holds the window open, but not for longer
+    // than this from the start of the window (security review F3). Does not
+    // end the SoftAP of an unprovisioned device, which has nothing else to do.
+    MonoMs heldWindowMaxMs = 30ull * 60ull * 1000ull;
 };
 
 enum class ProvAction : uint8_t {

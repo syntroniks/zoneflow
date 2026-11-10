@@ -204,6 +204,14 @@ WebSettings Api::settings() const
     return settings_;
 }
 
+bool Api::streamMayContinue(std::string_view cookie, std::string_view authorization) const
+{
+    if (!settings().protectReads) {
+        return true;
+    }
+    return auth_.sessionValid(cookieValue(cookie, kSessionCookie), bearerToken(authorization), clock_.monoMs());
+}
+
 ApiResponse Api::error(int status, std::string_view code, std::string_view message, std::string_view path)
 {
     JsonPtr o(cJSON_CreateObject());
@@ -269,6 +277,12 @@ Admission Api::admit(const ApiRequest &req)
     }
     if (route.access == Access::Provisioning && net.provisioning != net::ProvTransport::SoftAp) {
         a.error = error(409, "not_provisioning", "only available while the setup access point runs");
+        return a;
+    }
+    // The station joins the home network before SoftAP provisioning ends,
+    // so the state alone does not prove the client is on the setup AP.
+    if (route.access == Access::Provisioning && !req.viaSetupAp) {
+        a.error = error(403, "setup_ap_only", "only from a device joined to the setup access point");
         return a;
     }
 

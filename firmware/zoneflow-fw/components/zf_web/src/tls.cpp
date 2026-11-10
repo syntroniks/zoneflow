@@ -110,11 +110,15 @@ bool create(const std::string &hostname, TlsIdentity &out)
 
 } // namespace
 
-bool loadOrCreateTls(IBlobStorage &store, const std::string &hostname, TlsIdentity &out)
+bool loadOrCreateTls(IBlobStorage &store, const std::string &hostname, TlsIdentity &out, bool (*entropyReady)())
 {
     if (store.read(kKeyKey, out.keyPem) && store.read(kKeyCert, out.certPem) && store.read(kKeyFp, out.fingerprint) &&
         !out.keyPem.empty() && !out.certPem.empty()) {
         return true;
+    }
+    if (!entropyReady()) {
+        ESP_LOGE(kTag, "radio not running: no true random source for a new key");
+        return false;
     }
     ESP_LOGI(kTag, "creating a self-signed certificate for %s.local", hostname.c_str());
     if (!create(hostname, out)) {

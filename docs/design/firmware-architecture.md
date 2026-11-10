@@ -104,7 +104,7 @@ flowchart TB
 | `zf_persist` | 3 | 0 | 250 ms poll | Takes the latest runtime state from `PersistMailbox`, builds the JSON and writes NVS. Static stack (6 KB). |
 | `zf_evlog` | 2 | 0 | on event | Logs events from its own queue. |
 | `main` | 1 | any | 100 ms | Status LED, state log once a minute. |
-| lwIP / SNTP | IDF | IDF | on sync | `TimeService::onNetworkSync()` writes the RTC. |
+| lwIP / SNTP | IDF | 0 | on sync | `TimeService::onNetworkSync()` writes the RTC. The TCP/IP task (priority 18) is pinned to core 0 so network load never preempts the control task (security review F6). |
 | `zf_net` | 5 | 0 | 1 s or on message, 6 KB | WiFi, provisioning and mDNS calls. IDF event handlers only queue a message. |
 | `zf_dns` | 3 | 0 | on packet, 3 KB | Captive-portal DNS, only while the setup access point runs. |
 | `httpd` (port 80, and 443 with HTTPS) | 5 | 0 | per request, 12 KB | Every REST request, config writes included; static files; uploads. |
@@ -710,11 +710,11 @@ Pure logic in `net_logic.hpp` (host-tested), ESP-IDF glue in `net.cpp`.
 | Boot plan (`ProvisioningFsm::plan`) | Re-provision request stored → that transport. No credentials → BLE (SoftAP if BLE is not built in). Otherwise station, and the BT controller memory is released at once. |
 | BLE | ESP-IDF unified provisioning (`wifi_provisioning`), Security 2, device name `ZoneFlow-XXXX`, scheme handler `FREE_BTDM` so BT memory is released when provisioning ends. |
 | SoftAP | Same manager, SoftAP scheme, SSID `ZoneFlow-XXXX`, WPA2 with the setup code as passphrase. Shares `zf_web`'s HTTP server (`wifi_prov_scheme_softap_set_httpd_handle`), which serves the captive setup page at `/setup`; a DNS responder on 192.168.4.1:53 answers every A query with 192.168.4.1. |
-| Windows | Unprovisioned: BLE for 10 min, then SoftAP until provisioned (one-way: BLE memory is gone). Re-provisioning a configured device: 15 min, then back to the stored network without a restart. A connected phone or AP client holds the window open. |
+| Windows | Unprovisioned: BLE for 10 min, then SoftAP until provisioned (one-way: BLE memory is gone). Re-provisioning a configured device: 15 min, then back to the stored network without a restart. A phone that has completed the Security 2 handshake (`PROTOCOMM_SECURITY_SESSION_SETUP_OK`; a bare BLE connection does not count) or a client on the WPA2 access point holds the window open, for at most 30 min from its start (`heldWindowMaxMs`). |
 | Failures | Wrong password or AP not found: the manager's state machine is reset so the user can retry in the same session. |
 | QR payload | `{"ver":"v1","name":"ZoneFlow-XXXX","username":"wifiprov","pop":"<code>","transport":"ble"}`, the format of the ESP-IDF `wifi_prov_mgr` example and Espressif's apps. `net::setupInfo()` returns it for the display; nothing sends it over the network. |
 | Re-provision | `net::requestProvisioning(transport)` stores the request and restarts. The display module binds it to a long-press; the API has `POST /network/reprovision`. |
-| Factory reset | `net::factoryReset()`: maintenance on, wait until the snapshot shows every output off (5 s max), keep the identity in RAM, `nvs_flash_erase()`, write the identity back, restart. Power loss between erase and rewrite gives a new setup code. |
+| Factory reset | `net::factoryReset()`: maintenance on, wait until the snapshot shows every output off (5 s max), keep the identity in RAM, `nvs_flash_erase()`, erase the stored core dump (`esp_core_dump_image_erase()`), write the identity back, restart. Power loss between erase and rewrite gives a new setup code. |
 
 ### Status
 
@@ -733,8 +733,9 @@ every 30 s. See section 4 for why it is not in `SystemState` yet.
   access level (Public, Read, Admin, Provisioning), body type and body cap.
   `Api::admit()` applies, in order: Host check, route match (404/405), Origin
   check for writes, session, CSRF header for cookie sessions, provisioning
-  state, body size from `Content-Length`, content type. Only then is the body
-  read. The HTTP glue registers five wildcard handlers for `/api/v1/*`, three
+  state and a connection that arrived on the setup access point (the glue
+  compares the socket's local address with the SoftAP's), body size from
+  `Content-Length`, content type. Only then is the body read. The HTTP glue registers five wildcard handlers for `/api/v1/*`, three
   exact handlers (events, firmware upload, UI upload) and `/*` for files.
 - **OpenAPI.** `docs/firmware/openapi.json` (OpenAPI 3.1) documents every
   route. `web_openapi_test.cpp` checks both directions plus security, body
@@ -778,6 +779,9 @@ every 30 s. See section 4 for why it is not in `SystemState` yet.
   15 s. Each stream is an `httpd_req_async_handler_begin()` request owned by
   that task; at most 3. A send that fails ends the stream. Sends happen
   outside the stream lock, so a slow client delays only the stream task.
+  Once a second the task asks `Api::streamMayContinue()` with each stream's
+  Cookie and Authorization headers: with `protect_reads` on, a stream ends
+  with the session that opened it.
 - **Static files** from the `www` LittleFS partition (`joltwallet/littlefs`
   1.22.3), with gzip variants, immutable caching under `/assets/` and a
   client-side-routing fallback; a built-in page when the partition is empty.

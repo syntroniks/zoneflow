@@ -84,3 +84,14 @@ CONFIG_LV_USE_THEME_MONO=n
 CONFIG_LV_USE_QRCODE=y
 CONFIG_LV_BUILD_EXAMPLES=n
 CONFIG_LV_BUILD_DEMOS=n
+
+# Security review F6: network load must not reach the control task or reboot
+# the controller. Unpinned, lwIP's TCP/IP task (priority 18) runs on core 1
+# whenever core 0 is busy and preempts the control task (priority 10).
+# The HTTP(S) servers run on core 0 at priority 5; a LAN client that keeps
+# them busy (TLS handshakes, pipelined requests) can keep the core 0 idle
+# task from running for 5 s, which the task watchdog turns into a panic and
+# restart. The control task stays subscribed to the watchdog itself, and
+# the core 1 idle task stays watched.
+CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0=y
+CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU0=n
