@@ -2,7 +2,7 @@
 // Owner of the current configuration and its persistence.
 //
 // Threads: get(), revision() and toJson() from any task. update() and
-// updateFromJson() from any task except the control and keep-alive tasks:
+// updateFromJson() from any task except the control task:
 // they write flash. Writers are serialised by a writer-only mutex that is
 // held across the storage write; readers never take that mutex, so a slow
 // flash write cannot block the control task. After a successful update the
