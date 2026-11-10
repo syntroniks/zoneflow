@@ -1,10 +1,14 @@
 # ZoneFlow
 
+[![docs](https://github.com/syntroniks/zoneflow/actions/workflows/docs.yml/badge.svg)](https://github.com/syntroniks/zoneflow/actions/workflows/docs.yml)
+
 Open-source irrigation controller for 24 VAC sprinkler valves. Up to 8 zones
 plus a master valve, WiFi and Bluetooth LE, no cloud required.
 
 > **Status: early design.** Nothing here has been built or bench-tested yet.
 > Do not order boards from this repository until a release says otherwise.
+
+Documentation: <https://syntroniks.github.io/zoneflow/>
 
 ## What is planned
 
@@ -22,7 +26,8 @@ plus a master valve, WiFi and Bluetooth LE, no cloud required.
 
 | Path | Contents |
 |---|---|
-| `docs/` | Documentation site source and design documents |
+| `docs/` | Documentation site source (MkDocs) and design documents |
+| `mkdocs.yml`, `pyproject.toml`, `uv.lock` | Site configuration and pinned docs dependencies |
 | `docs/design/system-spec.md` | System specification, the source of truth |
 | `hardware/` | KiCad project, BOM, fabrication outputs |
 | `firmware/zoneflow-fw/` | Standalone firmware (ESP-IDF) |

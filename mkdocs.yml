@@ -1,0 +1,100 @@
+site_name: ZoneFlow
+site_description: Open-source 24 VAC irrigation controller. Early design, not yet built.
+site_url: https://syntroniks.github.io/zoneflow/
+repo_url: https://github.com/syntroniks/zoneflow
+repo_name: syntroniks/zoneflow
+edit_uri: edit/main/docs/
+copyright: Documentation licensed CC-BY-4.0. Hardware CERN-OHL-P-2.0. Firmware Apache-2.0.
+
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  custom_dir: overrides
+  logo: assets/logo.svg
+  favicon: assets/favicon.svg
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - content.action.edit
+    - content.action.view
+    - content.code.copy
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - search.suggest
+    - toc.follow
+
+plugins:
+  - search
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - getting-started/index.md
+      - Wiring: getting-started/wiring.md
+      - First power-up: getting-started/first-power-up.md
+      - Provisioning: getting-started/provisioning.md
+      - First schedule: getting-started/first-schedule.md
+  - Hardware:
+      - hardware/index.md
+      - Schematic: hardware/schematic.md
+      - Bill of materials: hardware/bom.md
+      - Ordering from a fab: hardware/ordering.md
+      - Design notes: hardware/design-notes.md
+  - Firmware:
+      - firmware/index.md
+      - Standalone firmware: firmware/standalone.md
+      - ESPHome: firmware/esphome.md
+      - Web installer: firmware/web-installer.md
+      - API reference: firmware/api.md
+  - Enclosure:
+      - enclosure/index.md
+      - Printing: enclosure/printing.md
+      - Assembly: enclosure/assembly.md
+  - Troubleshooting: troubleshooting.md
+  - Safety: safety.md
+  - Contributing: contributing.md
+  - Design documents:
+      - design/index.md
+      - System specification: design/system-spec.md

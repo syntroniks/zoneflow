@@ -1,0 +1,15 @@
+[project]
+name = "zoneflow-workspace"
+version = "0.0.0"
+description = "Tooling environment for the ZoneFlow repository. Not a published package."
+requires-python = ">=3.11"
+
+[tool.uv]
+package = false
+default-groups = ["docs"]
+
+[dependency-groups]
+docs = [
+    "mkdocs>=1.6,<2",
+    "mkdocs-material>=9.5,<10",
+]
