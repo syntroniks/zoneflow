@@ -739,6 +739,16 @@ bool factoryReset()
 
 void setHttpServer(void *httpdHandle) { m.httpd.store(httpdHandle); }
 
+bool isSetupApAddress(uint32_t ipv4)
+{
+    esp_netif_ip_info_t ap{};
+    if (ipv4 == 0 || m.ap == nullptr || esp_netif_get_ip_info(m.ap, &ap) != ESP_OK || ap.ip.addr != ipv4) {
+        return false;
+    }
+    esp_netif_ip_info_t sta{};
+    return m.sta == nullptr || esp_netif_get_ip_info(m.sta, &sta) != ESP_OK || sta.ip.addr != ipv4;
+}
+
 bool provisionWifi(std::string_view ssid, std::string_view password)
 {
     if (!m.provActive || ssid.empty() || ssid.size() > 32 || password.size() > 64) {

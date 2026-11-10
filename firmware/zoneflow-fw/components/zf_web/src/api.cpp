@@ -271,6 +271,12 @@ Admission Api::admit(const ApiRequest &req)
         a.error = error(409, "not_provisioning", "only available while the setup access point runs");
         return a;
     }
+    // The station joins the home network before SoftAP provisioning ends,
+    // so the state alone does not prove the client is on the setup AP.
+    if (route.access == Access::Provisioning && !req.viaSetupAp) {
+        a.error = error(403, "setup_ap_only", "only from a device joined to the setup access point");
+        return a;
+    }
 
     const std::size_t length = std::max(req.contentLength, req.body.size());
     if (length > route.maxBody) {

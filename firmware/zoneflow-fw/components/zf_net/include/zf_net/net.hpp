@@ -57,6 +57,13 @@ void setHttpServer(void *httpdHandle);
 // SoftAP setup page: pass credentials to the provisioning manager.
 bool provisionWifi(std::string_view ssid, std::string_view password);
 
+// True when `ipv4` (network byte order, as in sockaddr_in) is the setup
+// access point's own address and not the station's. zf_web passes the local
+// address of a connection to tell setup-AP clients from home-network ones:
+// SoftAP provisioning keeps running for a while after the station has joined
+// the home network.
+bool isSetupApAddress(uint32_t ipv4);
+
 struct ScanEntry {
     std::string ssid;
     int8_t rssi = 0;

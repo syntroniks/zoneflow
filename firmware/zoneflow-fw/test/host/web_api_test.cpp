@@ -32,6 +32,7 @@ struct Call {
     std::string csrf{};
     std::string peer = "192.168.1.50";
     std::size_t contentLength = 0;
+    bool viaSetupAp = false;
 };
 
 class ApiTest : public ::testing::Test {
@@ -92,6 +93,7 @@ protected:
         r.authorization = c.authorization;
         r.csrf = c.csrf;
         r.peer = c.peer;
+        r.viaSetupAp = c.viaSetupAp;
         return api->handle(r);
     }
 
@@ -664,21 +666,55 @@ TEST_F(ApiTest, ProvisioningRoutesOnlyDuringSoftAp)
 
     platform.net.provisioning = net::ProvTransport::SoftAp;
     platform.net.state = net::NetState::Provisioning;
-    JsonPtr nets = parseJson(get("/api/v1/provision/networks").body);
+    JsonPtr nets = parseJson(call({.path = "/api/v1/provision/networks", .viaSetupAp = true}).body);
     EXPECT_EQ(cJSON_GetArraySize(nets.get()), 2);
-    EXPECT_EQ(
-        call({.method = "POST", .path = "/api/v1/provision/wifi", .body = R"({"ssid":"home","password":"short"})"})
-            .status,
-        400);
+    EXPECT_EQ(call({.method = "POST",
+                    .path = "/api/v1/provision/wifi",
+                    .body = R"({"ssid":"home","password":"short"})",
+                    .viaSetupAp = true})
+                  .status,
+              400);
     r = call({.method = "POST",
               .path = "/api/v1/provision/wifi",
-              .body = R"({"ssid":"home","password":"secret123","admin_password":"admin pass"})"});
+              .body = R"({"ssid":"home","password":"secret123","admin_password":"admin pass"})",
+              .viaSetupAp = true});
     ASSERT_EQ(r.status, 202) << r.body;
     ASSERT_EQ(platform.provisioned.size(), 1u);
     EXPECT_EQ(platform.provisioned[0].first, "home");
     EXPECT_TRUE(auth.passwordSet());
     // An open network needs no passphrase.
-    EXPECT_EQ(call({.method = "POST", .path = "/api/v1/provision/wifi", .body = R"({"ssid":"cafe"})"}).status, 202);
+    EXPECT_EQ(
+        call({.method = "POST", .path = "/api/v1/provision/wifi", .body = R"({"ssid":"cafe"})", .viaSetupAp = true})
+            .status,
+        202);
+}
+
+// Security review F1. SoftAP provisioning does not end when the station
+// connects: the provisioning manager stops about 30 s later, and until then
+// the HTTP server answers on the home network too. A LAN device must not
+// reach the provisioning routes in that window: it could set the admin
+// password (when the owner left that field empty) or start WiFi scans.
+TEST_F(ApiTest, ProvisioningRoutesOnlyFromTheSetupAccessPoint)
+{
+    platform.net.provisioning = net::ProvTransport::SoftAp;
+    platform.net.state = net::NetState::Provisioning;
+    ApiResponse r = call({.method = "POST",
+                          .path = "/api/v1/provision/wifi",
+                          .body = R"({"ssid":"evil","password":"secret123","admin_password":"attacker pw"})",
+                          .peer = "192.168.1.66"});
+    EXPECT_EQ(r.status, 403) << r.body;
+    EXPECT_EQ(field(r, "code"), "setup_ap_only");
+    EXPECT_FALSE(auth.passwordSet());
+    EXPECT_TRUE(platform.provisioned.empty());
+    EXPECT_EQ(call({.path = "/api/v1/provision/networks", .peer = "192.168.1.66"}).status, 403);
+
+    r = call({.method = "POST",
+              .path = "/api/v1/provision/wifi",
+              .body = R"({"ssid":"home","password":"secret123","admin_password":"owner pass"})",
+              .peer = "192.168.4.2",
+              .viaSetupAp = true});
+    EXPECT_EQ(r.status, 202) << r.body;
+    EXPECT_TRUE(auth.passwordSet());
 }
 
 TEST_F(ApiTest, FirmwarePull)

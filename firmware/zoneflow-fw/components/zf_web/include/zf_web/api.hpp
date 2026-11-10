@@ -46,6 +46,9 @@ struct ApiRequest {
     std::string_view contentType;
     std::string_view peer; // client address, for rate limiting
     bool tls = false;
+    // The connection arrived on the setup access point (local address is the
+    // SoftAP's, not the station's). Provisioning routes need it.
+    bool viaSetupAp = false;
 };
 
 // Work the HTTP glue does after it has sent the response.

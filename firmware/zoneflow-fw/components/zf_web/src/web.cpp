@@ -17,6 +17,7 @@
 #include <atomic>
 #include <cinttypes>
 #include <cstdio>
+#include <cstring>
 #include <memory>
 #include <mutex>
 #include <sys/stat.h>
@@ -191,11 +192,38 @@ std::string peerAddress(httpd_req_t *req)
     return buf;
 }
 
+// True when the client reached this socket through the setup access point
+// (security review F1): the local address is the SoftAP's. IPv4 clients of
+// the dual-stack listener appear as IPv4-mapped IPv6 addresses.
+bool viaSetupAp(httpd_req_t *req)
+{
+    sockaddr_storage addr{};
+    socklen_t len = sizeof addr;
+    if (getsockname(httpd_req_to_sockfd(req), reinterpret_cast<sockaddr *>(&addr), &len) != 0) {
+        return false;
+    }
+    uint32_t v4 = 0;
+    if (addr.ss_family == AF_INET) {
+        v4 = reinterpret_cast<sockaddr_in *>(&addr)->sin_addr.s_addr;
+    } else if (addr.ss_family == AF_INET6) {
+        const uint8_t *b = reinterpret_cast<sockaddr_in6 *>(&addr)->sin6_addr.s6_addr;
+        static constexpr uint8_t kMapped[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff};
+        if (std::memcmp(b, kMapped, sizeof kMapped) != 0) {
+            return false;
+        }
+        std::memcpy(&v4, b + 12, sizeof v4);
+    } else {
+        return false;
+    }
+    return net::isSetupApAddress(v4);
+}
+
 // Owns the strings an ApiRequest points into.
 struct RawRequest {
     std::string method, path, query, host, origin, cookie, authorization, csrf, contentType, peer, body;
     std::size_t contentLength = 0;
     bool tls = false;
+    bool setupAp = false;
 
     explicit RawRequest(httpd_req_t *req)
     {
@@ -213,6 +241,7 @@ struct RawRequest {
         peer = peerAddress(req);
         contentLength = req->content_len;
         tls = req->handle == gm->https && gm->https != nullptr;
+        setupAp = viaSetupAp(req);
     }
 
     ApiRequest view() const
@@ -231,6 +260,7 @@ struct RawRequest {
         r.contentType = contentType;
         r.peer = peer;
         r.tls = tls;
+        r.viaSetupAp = setupAp;
         return r;
     }
 };
@@ -349,11 +379,11 @@ void runPostAction(const ApiResponse &r)
     }
 }
 
-// HTTPS on: port 80 only redirects, except while the setup access point runs
-// (phones reach the setup page over plain HTTP; the AP itself is WPA2).
+// HTTPS on: port 80 only redirects, except for clients of the setup access
+// point (phones reach the setup page over plain HTTP; the AP itself is WPA2).
 bool redirectToHttps(httpd_req_t *req)
 {
-    if (gm->https == nullptr || req->handle != gm->http || net::status().provisioning == net::ProvTransport::SoftAp) {
+    if (gm->https == nullptr || req->handle != gm->http || viaSetupAp(req)) {
         return false;
     }
     const std::string host(hostWithoutPort(header(req, "Host")));
@@ -679,7 +709,7 @@ esp_err_t staticHandler(httpd_req_t *req)
     const std::string host = header(req, "Host");
     const std::string_view uri(req->uri);
     const std::string_view path = uri.substr(0, uri.find('?'));
-    if (n.provisioning == net::ProvTransport::SoftAp) {
+    if (n.provisioning == net::ProvTransport::SoftAp && viaSetupAp(req)) {
         // Captive portal: any foreign host name (OS connectivity checks)
         // goes to the setup page.
         if (!hostAllowed(host, n.hostname.view())) {
