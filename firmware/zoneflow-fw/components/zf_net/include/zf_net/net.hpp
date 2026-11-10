@@ -47,7 +47,8 @@ SetupInfo setupInfo();
 bool requestProvisioning(ProvTransport transport);
 
 // Factory reset: stops watering (maintenance), waits until the outputs report
-// off, erases NVS except the device identity, restarts. Asynchronous.
+// off, erases NVS except the device identity and the stored core dump,
+// restarts. Asynchronous. The www and OTA partitions are kept.
 bool factoryReset();
 
 // zf_web hands over its HTTP server so SoftAP provisioning shares port 80

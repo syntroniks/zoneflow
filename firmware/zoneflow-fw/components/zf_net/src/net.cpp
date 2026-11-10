@@ -16,6 +16,7 @@
 #include <mutex>
 
 #include "esp_app_desc.h"
+#include "esp_core_dump.h"
 #include "esp_event.h"
 #include "esp_log.h"
 #include "esp_mac.h"
@@ -460,13 +461,20 @@ void doFactoryReset()
     // The restart below forces outputs off in any case (shutdown handler).
     const Identity keep = m.identity;
     nvs_flash_erase();
+#if CONFIG_ESP_COREDUMP_ENABLE_TO_FLASH
+    // A stored core dump holds the task stacks of the last crash, which can
+    // hold secrets that were in use (for example the password-keyed HMAC
+    // state during a login, or WiFi credentials during provisioning). It
+    // belongs to the previous owner (security review F4).
+    esp_core_dump_image_erase();
+#endif
     nvs_flash_init();
     NvsNamespace fresh("zf_net");
     if (fresh.open() == ESP_OK) {
         m.store = fresh;
         storeIdentity(keep);
     }
-    ESP_LOGW(kTag, "factory reset: NVS erased (setup code kept); restarting");
+    ESP_LOGW(kTag, "factory reset: NVS and core dump erased (setup code kept); restarting");
     vTaskDelay(pdMS_TO_TICKS(200));
     esp_restart();
 }

@@ -4,5 +4,5 @@ idf_component_register(SRCS src/net.cpp src/net_logic.cpp src/nvs_store.cpp
                        INCLUDE_DIRS include
                        REQUIRES zf_core esp_common
                        PRIV_REQUIRES esp_wifi esp_netif esp_event esp_timer esp_system esp_hw_support esp_app_format
-                                     nvs_flash wifi_provisioning protocomm bt lwip log)
+                                     nvs_flash wifi_provisioning protocomm bt lwip log espcoredump)
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wall -Wextra)
