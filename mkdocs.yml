@@ -48,6 +48,7 @@ theme:
 
 plugins:
   - search
+  - swagger-ui-tag
 
 extra_css:
   - stylesheets/extra.css
@@ -92,6 +93,7 @@ nav:
       - ESPHome: firmware/esphome.md
       - Web installer: firmware/web-installer.md
       - API reference: firmware/api.md
+      - Web UI contract: firmware/web-ui-contract.md
   - Enclosure:
       - enclosure/index.md
       - Printing: enclosure/printing.md
@@ -104,4 +106,5 @@ nav:
       - System specification: design/system-spec.md
       - Prior-art survey: design/prior-art.md
       - Firmware architecture: design/firmware-architecture.md
+      - Firmware security: design/firmware-security.md
       - Hardware toolchain: design/hardware-toolchain.md
