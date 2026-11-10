@@ -1,7 +1,7 @@
 # Standalone firmware
 
 !!! note "Phase 2, never run on hardware"
-    `firmware/zoneflow-fw/` has the zone driver, scheduler, configuration and diagnostics (phase 1), and WiFi with BLE and SoftAP provisioning, the [REST API](api.md) with a live event stream, and OTA with rollback (phase 2), and [MQTT with Home Assistant discovery](mqtt.md) (phase 3). The display UI and the browser UI are not written yet. Nothing has run on a board; the logic is unit-tested on a PC. Work is tracked in [issue #6](https://github.com/syntroniks/zoneflow/issues/6); the design is in [firmware architecture](../design/firmware-architecture.md) and [firmware security](../design/firmware-security.md).
+    `firmware/zoneflow-fw/` has the zone driver, scheduler, configuration and diagnostics (phase 1), and WiFi with BLE and SoftAP provisioning, the [REST API](api.md) with a live event stream, and OTA with rollback (phase 2), and [MQTT with Home Assistant discovery](mqtt.md) (phase 3). The display interface is written and runs in a desktop simulator; see [display interface](../design/display-ui.md). The browser UI is not written yet. Nothing has run on a board; the logic is unit-tested on a PC. Work is tracked in [issue #6](https://github.com/syntroniks/zoneflow/issues/6); the design is in [firmware architecture](../design/firmware-architecture.md) and [firmware security](../design/firmware-security.md).
 
 Planned scope, from the [specification](../design/system-spec.md):
 

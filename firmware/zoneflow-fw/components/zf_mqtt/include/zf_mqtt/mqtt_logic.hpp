@@ -5,7 +5,7 @@
 // (test/host/mqtt_*_test.cpp); the device glue (mqtt.cpp) only moves bytes.
 //
 // Topic tree and payloads: docs/firmware/mqtt.md. Design:
-// docs/design/firmware-architecture.md, section 17.
+// docs/design/firmware-architecture.md, section 18.
 #pragma once
 
 #include <array>

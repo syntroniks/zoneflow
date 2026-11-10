@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // zf_mqtt: MQTT client with Home Assistant discovery (spec 4.1).
-// Design: docs/design/firmware-architecture.md, section 17. User guide and
+// Design: docs/design/firmware-architecture.md, section 18. User guide and
 // topic reference: docs/firmware/mqtt.md.
 //
 //  - esp-mqtt client on its own task; the zf_mqtt task (prio 3, core 0)
