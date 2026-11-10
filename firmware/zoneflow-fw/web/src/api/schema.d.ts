@@ -482,9 +482,29 @@ export interface paths {
         put?: never;
         /**
          * Clear latched faults and lockouts
-         * @description A fault whose cause is still present is raised again on the next sample.
+         * @description A fault whose cause is still present is raised again on the next sample. Output-stage faults are acknowledged as well, except a keep-alive detector fault (faults.hardware.repair_needed), which needs POST /faults/acknowledge-repair. Trip counts are reset.
          */
         post: operations["clearFaults"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/faults/acknowledge-repair": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm that the board was repaired after a keep-alive detector fault
+         * @description A keep-alive detector fault (hardware design 19.7 steps 1, 2 and 9) means a safety circuit can no longer be relied on, so it is not cleared with one press. This is the second, deliberate action: the body must say repaired: true. 409 `no_repair_fault` when no such fault is active. The full self-test runs again before any valve opens.
+         */
+        post: operations["acknowledgeRepair"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1091,16 +1111,24 @@ export interface components {
             valve_current_ma: number | null;
             /** @description False while the valve-current readings are missing (fault current_sense_unavailable). Zones still run; open and short detection is blind. */
             current_sense_available: boolean;
-            /** @description The hardware over-current comparator removed gate drive (fault over_current_trip, latched until faults are cleared). */
+            /** @description The hardware over-current latch removed gate drive and released the relay (fault over_current_trip, latched until faults are cleared). The controller clears the latch itself by holding the keep-alive low for 1.5 s; the output switched on within 500 ms before is blamed, and after three trips in a day it stays off until faults are cleared. */
             over_current_tripped: boolean;
+            /** @description The 5 V sensor supply switch reports over-current or over-temperature (fault sensor_supply). Read from the I/O expander during runs and every 10 minutes between them. Sent by firmware with the rev A output stage; optional in this schema so that older firmware and the web UI's mock controller still validate. */
+            sensor_supply_fault?: boolean;
         };
         Faults: {
-            active: ("zone_open_circuit" | "zone_over_current" | "short_circuit" | "current_while_idle" | "ac_lost" | "flow_without_zones" | "config_invalid" | "time_invalid" | "storage_error" | "master_locked_out" | "current_sense_unavailable" | "over_current_trip")[];
+            active: ("zone_open_circuit" | "zone_over_current" | "short_circuit" | "current_while_idle" | "ac_lost" | "flow_without_zones" | "config_invalid" | "time_invalid" | "storage_error" | "master_locked_out" | "current_sense_unavailable" | "over_current_trip" | "keepalive_detector" | "output_expander" | "relay_welded" | "output_shorted" | "trip_latch_stuck" | "sensor_supply" | "zone_dc_current" | "mains_signal")[];
             zones: {
                 zone: number;
                 fault: string;
                 locked_out: boolean;
             }[];
+            /** @description The output stage's latched self-test failure (hardware design 19.7), or null. While it is set nothing runs. repair_needed: a keep-alive detector failed (steps 1, 2 or 9); POST /faults/clear leaves it, POST /faults/acknowledge-repair clears it. Sent by firmware with the rev A output stage; optional in this schema so that older firmware and the web UI's mock controller still validate. */
+            hardware?: {
+                check: string;
+                step: number;
+                repair_needed: boolean;
+            } | null;
         };
         Status: {
             sequence: number;
@@ -1125,12 +1153,15 @@ export interface components {
                 no_ac: boolean;
                 maintenance: boolean;
                 master_lockout: boolean;
+                /** @description An output-stage fault blocks every start until acknowledged. Sent by firmware with the rev A output stage; optional in this schema so that older firmware and the web UI's mock controller still validate. */
+                hardware?: boolean;
             };
             faults: components["schemas"]["Faults"];
             maintenance: boolean;
             config_revision: number;
             network: components["schemas"]["Network"];
             ota: components["schemas"]["OtaStatus"];
+            hardware?: components["schemas"]["Hardware"];
         };
         /** @description The configuration document as stored and returned (every field present). The configuration document described in the firmware architecture, section 6. Missing fields take defaults; unknown fields are ignored. A document whose schema is newer than the firmware is refused with error.code unsupported_schema and path schema. */
         Config: {
@@ -1261,7 +1292,7 @@ export interface components {
             /** @default false */
             force?: boolean;
         };
-        /** @description Error answer of a run command. error.code is the controller's RunError: invalid_zone, unknown_program, zero_duration, queue_full, already_queued, inhibited, nothing_to_run, locked_out, zone_resting, master_locked_out (or inhibited when maintenance or missing 24 VAC is known beforehand). zone_resting answers carry Retry-After with the seconds of rest left. */
+        /** @description Error answer of a run command. error.code is the controller's RunError: invalid_zone, unknown_program, zero_duration, queue_full, already_queued, inhibited, nothing_to_run, locked_out, zone_resting, master_locked_out, hardware_fault (or inhibited when maintenance or missing 24 VAC is known beforehand). zone_resting answers carry Retry-After with the seconds of rest left. */
         RunRejection: components["schemas"]["Error"];
         /** @description The `mqtt` object of the configuration document (schema 2). */
         MqttSettings: {
@@ -1564,7 +1595,7 @@ export interface components {
             /** @description Program id, null for a manual zone run. */
             program_id: number | null;
             /** @enum {string} */
-            reason: "rain_delay" | "sensor_inhibit" | "no_ac" | "maintenance" | "already_queued" | "queue_full" | "nothing_to_run" | "master_locked_out";
+            reason: "rain_delay" | "sensor_inhibit" | "no_ac" | "maintenance" | "already_queued" | "queue_full" | "nothing_to_run" | "master_locked_out" | "hardware_fault";
         };
         /** @description A start passed while the controller was off or its clock jumped. */
         HistoryProgramMissed: {
@@ -1787,6 +1818,58 @@ export interface components {
             firmware_version?: string;
             hostname?: string;
             config: components["schemas"]["ConfigInput"];
+        };
+        /** @description The rev A output stage (I/O expander, valve-common relay, two keep-alive detectors) and the current measurement. Hardware design section 19. Nothing here has been measured on a board. Sent by firmware with the rev A output stage; optional in this schema so that older firmware and the web UI's mock controller still validate. */
+        Hardware: {
+            /**
+             * @description none: a board without a sequenced stage. ready: the relay is closed and valves may switch. starting and stopping: the self-test before and after a run. polling: the 10-minute check between runs.
+             * @enum {string}
+             */
+            phase: "none" | "no_ac" | "startup_test" | "idle" | "starting" | "ready" | "stopping" | "polling" | "trip_clear" | "fault" | "halted";
+            /**
+             * @description From the board's variant strap, read in the start-up self-test; null before.
+             * @enum {integer|null}
+             */
+            zones_fitted: 4 | 8 | null;
+            relay_closed: boolean;
+            sensor_supply_on: boolean;
+            sensor_supply_fault: boolean;
+            /** @description The latched failed check, or null. */
+            check: string | null;
+            /** @description Self-test step of the check (19.7), 10 for the over-current latch (19.8), 0 for a firmware limit. */
+            step: number | null;
+            repair_needed: boolean;
+            /** @description Complete self-test sequences since start-up. */
+            self_tests_passed: number;
+            /** @description Last measured detector times, ms (0 = not measured). Pass limits: enable within 150 ms; release 300 to 1000 ms (drive) and 80 to 1000 ms (relay). */
+            detectors: {
+                enable_drive_ms: number;
+                enable_relay_ms: number;
+                release_drive_ms: number;
+                release_relay_ms: number;
+            };
+            /** @description From the zero-cross signal; null when unknown. */
+            mains_hz: number | null;
+            current: {
+                /**
+                 * @description Amplifier channel of the latest window: low when the high-gain channel clipped.
+                 * @enum {string}
+                 */
+                channel: "high" | "low" | "none";
+                /** @description Learned with the relay open; removed in quadrature. */
+                noise_floor_ma: number;
+                /** @description Mean shift of the latest window against the idle mean: a DC component (fault zone_dc_current). */
+                dc_ma: number;
+                /** @description Current window before the last over-current trip. */
+                last_trip_ma: number | null;
+            };
+        };
+        AcknowledgeRepairRequest: {
+            /**
+             * @description The person states the board was repaired.
+             * @constant
+             */
+            repaired: true;
         };
     };
     responses: {
@@ -2737,6 +2820,37 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            413: components["responses"]["TooLarge"];
+            415: components["responses"]["UnsupportedMediaType"];
+            503: components["responses"]["Busy"];
+        };
+    };
+    acknowledgeRepair: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcknowledgeRepairRequest"];
+            };
+        };
+        responses: {
+            /** @description Command queued for the control task */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Accepted"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
             413: components["responses"]["TooLarge"];
             415: components["responses"]["UnsupportedMediaType"];
             503: components["responses"]["Busy"];

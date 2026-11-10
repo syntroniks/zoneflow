@@ -173,6 +173,54 @@ cJSON *sensorsToJson(const SystemState &st)
     cJSON_AddBoolToObject(o, "current_sense_available", !fault(FaultCode::CurrentSenseUnavailable));
     // Hardware comparator removed gate drive; latched until faults are cleared.
     cJSON_AddBoolToObject(o, "over_current_tripped", fault(FaultCode::OverCurrentTrip));
+    // The 5 V sensor supply reports over-current or over-temperature.
+    cJSON_AddBoolToObject(o, "sensor_supply_fault", st.hardware.sensorSupplyFault);
+    return o;
+}
+
+cJSON *hardwareToJson(const HardwareStatus &h)
+{
+    cJSON *o = cJSON_CreateObject();
+    cJSON_AddStringToObject(o, "phase", toString(h.phase));
+    if (h.zonesFitted == 0) {
+        cJSON_AddNullToObject(o, "zones_fitted");
+    } else {
+        cJSON_AddNumberToObject(o, "zones_fitted", h.zonesFitted);
+    }
+    cJSON_AddBoolToObject(o, "relay_closed", h.relayClosed);
+    cJSON_AddBoolToObject(o, "sensor_supply_on", h.sensorSupplyOn);
+    cJSON_AddBoolToObject(o, "sensor_supply_fault", h.sensorSupplyFault);
+    if (h.check == HwCheck::None) {
+        cJSON_AddNullToObject(o, "check");
+        cJSON_AddNullToObject(o, "step");
+    } else {
+        cJSON_AddStringToObject(o, "check", toString(h.check));
+        cJSON_AddNumberToObject(o, "step", h.step);
+    }
+    cJSON_AddBoolToObject(o, "repair_needed", h.repairNeeded);
+    cJSON_AddNumberToObject(o, "self_tests_passed", h.selfTestsPassed);
+    cJSON *det = cJSON_AddObjectToObject(o, "detectors");
+    cJSON_AddNumberToObject(det, "enable_drive_ms", h.enableDriveMs);
+    cJSON_AddNumberToObject(det, "enable_relay_ms", h.enableRelayMs);
+    cJSON_AddNumberToObject(det, "release_drive_ms", h.releaseDriveMs);
+    cJSON_AddNumberToObject(det, "release_relay_ms", h.releaseRelayMs);
+    if (h.mainsMilliHz == 0) {
+        cJSON_AddNullToObject(o, "mains_hz");
+    } else {
+        cJSON_AddNumberToObject(o, "mains_hz", static_cast<double>(h.mainsMilliHz) / 1000.0);
+    }
+    cJSON *cur = cJSON_AddObjectToObject(o, "current");
+    cJSON_AddStringToObject(cur, "channel",
+                            h.currentChannel == CurrentChannel::High  ? "high"
+                            : h.currentChannel == CurrentChannel::Low ? "low"
+                                                                      : "none");
+    cJSON_AddNumberToObject(cur, "noise_floor_ma", h.noiseFloorMa);
+    cJSON_AddNumberToObject(cur, "dc_ma", h.currentDcMa);
+    if (h.lastTripCurrentMa < 0) {
+        cJSON_AddNullToObject(cur, "last_trip_ma");
+    } else {
+        cJSON_AddNumberToObject(cur, "last_trip_ma", h.lastTripCurrentMa);
+    }
     return o;
 }
 
@@ -194,6 +242,15 @@ cJSON *faultsToJson(const SystemState &s)
             cJSON_AddBoolToObject(e, "locked_out", s.zones[z].lockedOut);
             cJSON_AddItemToArray(zones, e);
         }
+    }
+    // The output stage's failed check (hardware design 19.7), while latched.
+    if (s.hardware.check == HwCheck::None) {
+        cJSON_AddNullToObject(o, "hardware");
+    } else {
+        cJSON *h = cJSON_AddObjectToObject(o, "hardware");
+        cJSON_AddStringToObject(h, "check", toString(s.hardware.check));
+        cJSON_AddNumberToObject(h, "step", s.hardware.step);
+        cJSON_AddBoolToObject(h, "repair_needed", s.hardware.repairNeeded);
     }
     return o;
 }
@@ -236,7 +293,9 @@ cJSON *stateToJson(const SystemState &s, const Config &cfg)
     cJSON_AddBoolToObject(inhibit, "no_ac", (s.inhibitFlags & kInhibitNoAc) != 0);
     cJSON_AddBoolToObject(inhibit, "maintenance", (s.inhibitFlags & kInhibitMaintenance) != 0);
     cJSON_AddBoolToObject(inhibit, "master_lockout", (s.inhibitFlags & kInhibitMasterLockout) != 0);
+    cJSON_AddBoolToObject(inhibit, "hardware", (s.inhibitFlags & kInhibitHardware) != 0);
     cJSON_AddItemToObject(o, "faults", faultsToJson(s));
+    cJSON_AddItemToObject(o, "hardware", hardwareToJson(s.hardware));
     cJSON_AddBoolToObject(o, "maintenance", s.maintenance);
     cJSON_AddNumberToObject(o, "config_revision", s.configRevision);
     return o;
@@ -278,6 +337,12 @@ cJSON *eventToJson(const Event &e)
     case EventType::FaultCleared:
         cJSON_AddStringToObject(o, "code", toString(e.fault.code));
         addZoneNumber(o, "zone", e.fault.zone);
+        if (e.type == EventType::FaultRaised && e.fault.detail != 0 &&
+            e.fault.detail < static_cast<uint8_t>(HwCheck::Count)) {
+            const auto check = static_cast<HwCheck>(e.fault.detail);
+            cJSON_AddStringToObject(o, "check", toString(check));
+            cJSON_AddNumberToObject(o, "step", hwCheckStep(check));
+        }
         break;
     case EventType::RainDelayChanged:
         if (e.rainDelay.until == 0) {
@@ -414,7 +479,7 @@ cJSON *historyRecordToJson(uint64_t id, const HistoryRecord &r)
     case HistoryKind::ProgramSkipped:
         addProgram(o, r.programId);
         cJSON_AddStringToObject(o, "reason",
-                                r.a <= static_cast<uint8_t>(SkipReason::MasterLockedOut)
+                                r.a <= static_cast<uint8_t>(SkipReason::HardwareFault)
                                     ? toString(static_cast<SkipReason>(r.a))
                                     : "unknown");
         break;

@@ -28,6 +28,8 @@ add_library(cjson STATIC "${cjson_src_SOURCE_DIR}/cJSON.c")
 target_include_directories(cjson PUBLIC "${cjson_src_SOURCE_DIR}")
 
 add_subdirectory(../../components/zf_core zf_core)
+# Board header, generated from hardware/pinmap.yaml (needs uv or PyYAML).
+add_subdirectory(../../components/zf_board zf_board)
 # Display logic (no LVGL): navigation, pickers, program editor, input decoding.
 add_subdirectory(../../components/zf_display zf_display)
 
@@ -61,6 +63,10 @@ add_executable(zf_host_tests
     diagnostics_test.cpp
     event_bus_test.cpp
     output_enable_test.cpp
+    output_stage_test.cpp
+    current_sense_test.cpp
+    retained_test.cpp
+    hardware_controller_test.cpp
     persist_test.cpp
     scheduler_test.cpp
     time_service_test.cpp
@@ -92,7 +98,7 @@ target_compile_definitions(zf_host_tests PRIVATE
     ZF_OPENAPI_PATH="${CMAKE_CURRENT_LIST_DIR}/../../../../docs/firmware/openapi.json"
     ZF_SCHEDULE_VECTORS_PATH="${CMAKE_CURRENT_LIST_DIR}/../vectors/schedule_preview.json"
     ZF_HA_SCHEMA_PATH="${CMAKE_CURRENT_LIST_DIR}/data/ha_mqtt_discovery.json")
-target_link_libraries(zf_host_tests PRIVATE zf_ui zf_core zf_ext cjson GTest::gtest_main)
+target_link_libraries(zf_host_tests PRIVATE zf_ui zf_core zf_ext zf_board cjson GTest::gtest_main)
 
 enable_testing()
 include(GoogleTest)

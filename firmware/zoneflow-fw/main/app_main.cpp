@@ -36,8 +36,10 @@ constexpr const char *kTag = "zoneflow";
 using namespace zf;
 
 // Everything lives in static storage: nothing in the control path allocates.
-platform::GpioOutputs gOutputs;
 platform::SensorInputs gSensors;
+platform::CurrentSampler gCurrent;
+platform::Tca9539Bus gExpander;
+platform::RtcRetainedStore gRetained;
 platform::NvsBlobStorage gStorage;
 platform::I2cBus gI2c;
 platform::Pcf8563Rtc gRtc;
@@ -50,6 +52,30 @@ CommandQueue gCommands;
 ConfigStore gConfig(gStorage);
 HistoryLog gHistory(gStorage);
 platform::ZeroCrossInput gZeroCross;
+
+// The output stage: expander bits from the board header (pin map).
+hw::ExpanderLayout expanderLayout()
+{
+    hw::ExpanderLayout l;
+    for (std::size_t z = 0; z < kMaxZones; ++z) {
+        l.zone[z] = {board::kExpanderBits.zone[z].port, board::kExpanderBits.zone[z].bit};
+    }
+    l.master = {board::kExpanderBits.master.port, board::kExpanderBits.master.bit};
+    l.relay = {board::kExpanderBits.relay.port, board::kExpanderBits.relay.bit};
+    l.variant8ZoneN = {board::kExpanderBits.variant8ZoneN.port, board::kExpanderBits.variant8ZoneN.bit};
+    l.sensorFaultN = {board::kExpanderBits.sensorFaultN.port, board::kExpanderBits.sensorFaultN.bit};
+    return l;
+}
+
+hw::OutputStageConfig stageConfig()
+{
+    hw::OutputStageConfig c;
+    c.maxValveBitsLow = static_cast<uint8_t>(board::kMaxOutputsOn);
+    c.tickMs = CONFIG_ZF_CONTROL_PERIOD_MS;
+    return c;
+}
+
+hw::OutputStage gStage(gExpander, gOutputEnable, gClock, expanderLayout(), stageConfig());
 TimeService *gTime = nullptr;
 Controller *gController = nullptr;
 
@@ -74,10 +100,7 @@ void controlTask(void *)
     }
 }
 
-void setStatusLed(bool on)
-{
-    gpio_set_level(static_cast<gpio_num_t>(board::kStatusLedGpio), on == board::kStatusLedActiveHigh ? 1 : 0);
-}
+void setStatusLed(bool on) { platform::setStatusLed(on); }
 
 void logState(const SystemState &s)
 {
@@ -97,9 +120,14 @@ void logState(const SystemState &s)
 
 extern "C" void app_main(void)
 {
-    // Outputs off before anything else can fail.
-    ESP_ERROR_CHECK(gOutputs.init());
+    // Keep-alive low before anything else can fail: with it low the expander
+    // is in reset and the relay open, whatever else happens.
+    ESP_ERROR_CHECK(platform::initOutputStagePins());
     ESP_LOGI(kTag, "ZoneFlow firmware, board %s", board::kBoardName);
+    // First user of the GPIO interrupt service: installs it IRAM-safe.
+    if (gZeroCross.init() != ESP_OK) {
+        ESP_LOGE(kTag, "no zero-cross input: 24 VAC will read as absent and nothing runs");
+    }
 
     ESP_ERROR_CHECK(gStorage.init());
     ESP_ERROR_CHECK(esp_netif_init());
@@ -113,21 +141,36 @@ extern "C" void app_main(void)
     }
 
     IRtc *rtc = nullptr;
-    if (gI2c.init() == ESP_OK && gRtc.init(gI2c) == ESP_OK) {
-        rtc = &gRtc;
+    if (gI2c.init() == ESP_OK) {
+        if (gRtc.init(gI2c) == ESP_OK) {
+            rtc = &gRtc;
+        }
+        if (gExpander.init(gI2c) != ESP_OK) {
+            ESP_LOGE(kTag, "expander device not added: the self-test will fail with a bus error");
+        }
     }
     static TimeService timeService(gSystemTime, rtc);
     gTime = &timeService;
     ESP_LOGI(kTag, "time at boot: %s", toString(timeService.boot()));
 
-    ESP_ERROR_CHECK(gSensors.init());
+    if (gCurrent.start() != ESP_OK) {
+        ESP_LOGE(kTag, "valve current not measured: current_sense_unavailable");
+    }
+    ESP_ERROR_CHECK(gSensors.init(gZeroCross, gCurrent));
+    // Rule 13: the application runs, so the strapping pin may now be driven.
+    ESP_ERROR_CHECK(gSensors.enableSensorSupply());
 
     static Controller controller(
-        ControllerDeps{gClock, gOutputs, gSensors, gOutputEnable, gEvents, gState, gConfig, &gStorage});
+        ControllerDeps{gClock, gStage, gSensors, gOutputEnable, gEvents, gState, gConfig, &gStorage, &gRetained});
     gController = &controller;
-    if (gZeroCross.init() == ESP_OK) {
-        controller.attachZeroCross(&gZeroCross, board::kZeroCrossOffsetUs);
-    }
+    CurrentSenseConfig sense;
+    sense.hiMaPerMv = board::kIsenseHiMaPerMv;
+    sense.loMaPerMv = board::kIsenseLoMaPerMv;
+    sense.hiMinMv = board::kIsenseHiMinMv;
+    sense.hiMaxMv = board::kIsenseHiMaxMv;
+    controller.configureCurrentSense(sense);
+    // The tracker already gives the crossings themselves: offset 0.
+    controller.attachZeroCross(&gZeroCross, 0);
     ESP_ERROR_CHECK(platform::installSafetyHooks(controller, gOutputEnable));
     ESP_ERROR_CHECK(platform::startEventLogger(gEvents));
     gHistory.load();

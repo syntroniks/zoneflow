@@ -6,9 +6,12 @@ set(ZF_CORE_SOURCES
     src/config_store.cpp
     src/controller.cpp
     src/current_monitor.cpp
+    src/current_sense.cpp
     src/event_bus.cpp
     src/history.cpp
+    src/output_stage.cpp
     src/persist.cpp
+    src/retained.cpp
     src/scheduler.cpp
     src/sensors.cpp
     src/strings.cpp

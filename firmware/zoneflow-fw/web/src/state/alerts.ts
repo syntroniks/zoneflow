@@ -18,7 +18,9 @@ export interface Alert {
 }
 
 /** Faults that clear themselves when the cause goes away. */
-const CONDITIONS = new Set(['ac_lost', 'time_invalid', 'current_sense_unavailable']);
+const CONDITIONS = new Set(['ac_lost', 'time_invalid', 'current_sense_unavailable', 'sensor_supply', 'mains_signal']);
+/** Faults that are warnings, not errors: watering carries on. */
+const WARNINGS = new Set(['current_sense_unavailable', 'flow_without_zones', 'sensor_supply', 'mains_signal']);
 
 export function faultTitle(code: string): string {
   return tk(`fault_${code}`, undefined, t('fault_unknown', { code }));
@@ -40,10 +42,11 @@ export function deriveAlerts(s: Status, zoneName: (id: number) => string, untilT
     const where = affected.length ? ` ${t('fault_on_zone', { zone: affected.join(', ') })}` : '';
     out.push({
       id: `fault:${code}`,
-      severity: code === 'current_sense_unavailable' || code === 'flow_without_zones' ? 'warning' : 'error',
+      severity: WARNINGS.has(code) ? 'warning' : 'error',
       title: faultTitle(code) + where,
       detail: faultCheck(code),
-      clearable: !CONDITIONS.has(code),
+      // A keep-alive detector fault needs the repair confirmed; clearing faults does not clear it.
+      clearable: !CONDITIONS.has(code) && !(code === 'keepalive_detector' && s.faults?.hardware?.repair_needed),
     });
     seen.add(code);
   }

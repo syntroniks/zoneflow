@@ -56,6 +56,12 @@ in its `README.md`); `npm run build` there writes `www/`.
   (diagnostics blind, watering continues) and `over_current_tripped`. The
   lockouts and the trip clear with "clear faults"; the current-sense fault
   clears when readings return; a rest ends on its own.
+- Show the valve board's state (`hardware`, `faults.hardware`): a failed
+  self-test blocks every start (`inhibit.hardware`, run error
+  `hardware_fault`). "Clear faults" acknowledges it, except when
+  `faults.hardware.repair_needed` is true: then the user must confirm a
+  repair with `POST /api/v1/faults/acknowledge-repair` and
+  `{"repaired": true}`, never with one press.
 
 ## Authentication in the browser
 

@@ -60,6 +60,9 @@ target_include_directories(cjson PUBLIC "${cjson_src_SOURCE_DIR}")
 
 add_subdirectory(../components/zf_core zf_core)
 add_subdirectory(../components/zf_display zf_display)
+# Board header, generated from hardware/pinmap.yaml: the simulated rev A
+# output stage uses its expander bit map.
+add_subdirectory(../components/zf_board zf_board)
 # GCC 16 at -O2 reports -Warray-bounds in zf_core's scheduler.cpp
 # (zoneEnabled[z] with z < zoneCount; zoneCount is validated to be at most
 # kMaxZones, which the compiler cannot see). zf_core builds with -Werror;
@@ -75,7 +78,7 @@ add_executable(zoneflow-sim
 # The harness (controller on fake hardware) is shared with the host tests.
 target_include_directories(zoneflow-sim PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../test/host")
 target_compile_options(zoneflow-sim PRIVATE -Wall -Wextra)
-target_link_libraries(zoneflow-sim PRIVATE zf_view zf_ui zf_core cjson lvgl m)
+target_link_libraries(zoneflow-sim PRIVATE zf_view zf_ui zf_core zf_board cjson lvgl m)
 
 # The window is optional: without SDL2 the simulator is headless only.
 option(ZF_SIM_SDL "Build the interactive window (needs SDL2)" ON)

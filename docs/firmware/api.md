@@ -172,7 +172,7 @@ Controller event types and their extra fields:
 | `program_skipped` | `program_id`, `reason` |
 | `program_missed` | `program_id`, `scheduled_utc` |
 | `sensor_changed` | `sensor` (`rain`, `spare`, `ac`), `active` |
-| `fault_raised`, `fault_cleared` | `code`, `zone` (1-based or null) |
+| `fault_raised`, `fault_cleared` | `code`, `zone` (1-based or null); for a valve board fault `fault_raised` also has `check` and `step` (hardware design 19.7) |
 | `rain_delay_changed` | `until_utc` (null when cleared) |
 | `config_applied` | |
 | `time_status_changed` | `status` (`unset`, `rtc`, `synced`) |

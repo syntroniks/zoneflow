@@ -264,8 +264,48 @@
     X(FaultSenseBody, "The board gets no current reading. Zones still run, but a broken or shorted "                   \
                       "valve is not noticed. If it stays, the board needs service.")                                   \
     X(FaultTripTitle, "Protection tripped")                                                                            \
-    X(FaultTripBody, "A short circuit made the board switch all valves off. "                                          \
-                     "Check: valve wires touching each other or the common wire. Then clear the fault.")               \
+    X(FaultTripBody, "A short made the board switch all valves off for a moment. The other zones carry on. A "         \
+                     "zone with three trips in a day stays off. Check: valve wires touching each other or the "        \
+                     "common wire. Then clear the fault.")                                                             \
+    X(FaultDetectorTitle, "Safety circuit failed its test")                                                            \
+    X(FaultDetectorBody, "The circuit that turns the valves off if the controller stops failed its self-test. "        \
+                         "Nothing runs. Repair the board, then confirm it here.")                                      \
+    X(FaultExpanderTitle, "Valve driver not responding")                                                               \
+    X(FaultExpanderBody, "The chip that drives the valves did not answer or did not read back what was "               \
+                         "written. All valves were switched off. Clear the fault to try again. If it comes "           \
+                         "back, the board needs service.")                                                             \
+    X(FaultWeldedTitle, "Valve relay stuck closed")                                                                    \
+    X(FaultWeldedBody, "Current flowed although the valve relay should have been open: a welded relay contact "        \
+                       "or a bridged jumper. Nothing runs. The board needs service.")                                  \
+    X(FaultOutputShortTitle, "Valve output stuck on")                                                                  \
+    X(FaultOutputShortBody, "Current flowed with every valve off: a valve output on the board is shorted. The "        \
+                            "relay was opened and nothing runs. The board needs service.")                             \
+    X(FaultLatchTitle, "Protection did not reset")                                                                     \
+    X(FaultLatchBody, "The short-circuit protection stayed tripped after the valves were switched off. Nothing "       \
+                      "runs. Clear the fault to try again. If it comes back, the board needs service.")                \
+    X(FaultSupplyTitle, "Sensor supply overloaded")                                                                    \
+    X(FaultSupplyBody, "The 5 V terminal for sensors is overloaded or too hot. Check: sensor wiring and how "          \
+                       "much current the sensors draw (100 mA at most).")                                              \
+    X(FaultDcTitle, "%s: valve current lopsided") /* zone label */                                                     \
+    X(FaultDcBody, "The valve current flowed in one direction only, so the output that drives it is failing. "         \
+                   "The zone was switched off. The board needs service.")                                              \
+    X(FaultMainsTitle, "Mains signal wrong")                                                                           \
+    X(FaultMainsBody, "The 24 V AC timing signal is not at mains frequency. Zero-cross switching and current "         \
+                      "readings may be off. The board needs service.")                                                 \
+    X(FaultStep, "Step %d: %s") /* self-test step, check name */                                                       \
+    X(FaultRepaired, "Repaired")                                                                                       \
+    X(FaultRepairedAsk, "Was the board repaired?")                                                                     \
+    X(FaultRepairedAskBody, "Confirm only after the safety circuit was repaired and checked. The full "                \
+                            "self-test runs again before any valve opens.")                                            \
+    X(FaultRepairedYes, "Yes, repaired")                                                                               \
+    X(ToastRepairConfirmed, "Repair confirmed")                                                                        \
+    X(SkipHardware, "board fault")                                                                                     \
+    X(SensBoard, "Valve board")                                                                                        \
+    X(BoardReady, "Ready")                                                                                             \
+    X(BoardTesting, "Testing")                                                                                         \
+    X(BoardIdle, "Idle")                                                                                               \
+    X(BoardFault, "Fault")                                                                                             \
+    X(BoardNoAc, "No 24 V AC")                                                                                         \
     X(FaultClear, "Clear")                                                                                             \
     X(FaultClearsItself, "Clears by itself")                                                                           \
     /* ---- setup ---- */                                                                                              \

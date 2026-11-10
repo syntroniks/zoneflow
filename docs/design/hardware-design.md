@@ -2660,11 +2660,11 @@ keep-alive code.
 
 ### 19.5 Open points between hardware and firmware
 
-1. **Firmware still drives valves as GPIOs.** The merged firmware has no expander or relay driver, expects a release pulse for the over-current latch, expects one pulse per zero crossing, and averages the current reading. Sections 19.1 to 19.9 are the hardware side of each change. The board header must be regenerated from `hardware/pinmap.yaml`.
-2. **The self-test is new work.** Nothing in the merged firmware reads GPIO42 or GPIO7, times the detectors or does the weld check. Section 19.7.
-3. **PSRAM ECC.** `sdkconfig.defaults` on `main` does not enable it. Rule 7. It is now required.
+1. **Firmware still drives valves as GPIOs.** *Resolved in the firmware (correction to this list after the rev A firmware work, firmware architecture section 20):* the board header is generated from `hardware/pinmap.yaml` at every build, the valves are driven through the expander with the relay, the latch is cleared by stopping the keep-alive, the zero-cross input is treated as a square wave, and the current is an RMS of 100 ms windows.
+2. **The self-test is new work.** *Resolved in the firmware, same change:* the sequence of section 19.7 runs at start-up, before and after every run, with the polling cycle of 19.6, and reads GPIO42 and GPIO7 every 5 ms. Nothing has been measured; firmware architecture section 20 lists the questions it raised.
+3. **PSRAM ECC.** *Resolved:* `CONFIG_SPIRAM_ECC_ENABLE=y` in `sdkconfig.defaults`.
 4. **Heartbeat timeout against erase time.** The 50 ms of margin in section 19.4 rests on one flash data sheet, and Espressif does not fix the flash part. Measure the longest control-loop stall on real modules.
-5. **Sensor supply enable moved.** It is on GPIO45, not GPIO7. Rule 13.
+5. **Sensor supply enable moved.** It is on GPIO45, not GPIO7. Rule 13. *Resolved in the firmware.*
 6. **Limits in section 19.7 are from simulation.** The pass windows for the two release times, 0.3 to 1.0 s and 0.08 to 1.0 s, come from tolerance corners of generic models. Measure both on the first boards, at -20 and 50 °C, before the limits go into a release.
 
 ### 19.6 Expander inputs between runs

@@ -101,12 +101,12 @@ bool NvsBlobStorage::erase(const char *key)
 esp_err_t I2cBus::init()
 {
     i2c_master_bus_config_t cfg = {};
-    cfg.i2c_port = I2C_NUM_0;
+    cfg.i2c_port = static_cast<i2c_port_num_t>(board::kI2cPort);
     cfg.sda_io_num = static_cast<gpio_num_t>(board::kI2cSdaGpio);
     cfg.scl_io_num = static_cast<gpio_num_t>(board::kI2cSclGpio);
     cfg.clk_source = I2C_CLK_SRC_DEFAULT;
     cfg.glitch_ignore_cnt = 7;
-    cfg.flags.enable_internal_pullup = true; // external pull-ups expected as well
+    cfg.flags.enable_internal_pullup = false; // 2.2 kohm on the board (R21, R22)
     return i2c_new_master_bus(&cfg, &bus_);
 }
 
@@ -130,7 +130,18 @@ esp_err_t Pcf8563Rtc::init(I2cBus &bus)
     dev.dev_addr_length = I2C_ADDR_BIT_LEN_7;
     dev.device_address = board::kRtcI2cAddress;
     dev.scl_speed_hz = board::kI2cFrequencyHz;
-    return i2c_master_bus_add_device(bus.handle(), &dev, &dev_);
+    err = i2c_master_bus_add_device(bus.handle(), &dev, &dev_);
+    if (err == ESP_OK) {
+        // Hardware design 19.1 rule 11: the chip powers up with its 32 kHz
+        // clock output on, which doubles its back-up current. Register 0Dh
+        // CLKOUT_control: bit 7 FE = 0 disables it.
+        const uint8_t clkout[2] = {0x0D, 0x00};
+        const esp_err_t off = i2c_master_transmit(dev_, clkout, sizeof clkout, kI2cTimeoutMs);
+        if (off != ESP_OK) {
+            ESP_LOGW(kTag, "RTC clock output not disabled: %s", esp_err_to_name(off));
+        }
+    }
+    return err;
 }
 
 bool Pcf8563Rtc::read(UtcSeconds &out)

@@ -79,8 +79,9 @@ For people who already run Home Assistant.
 
 </div>
 
-A browser-based [web installer](firmware/web-installer.md) is planned for
-flashing either option over USB.
+A browser-based [web installer](firmware/web-installer.md) flashes the standalone
+firmware over USB once a release is published. The ESPHome package is not built
+yet. See [Releases and updating](firmware/releases.md).
 
 ## Where to start
 

@@ -67,6 +67,8 @@ const char *toString(SkipReason r)
         return "nothing_to_run";
     case SkipReason::MasterLockedOut:
         return "master_locked_out";
+    case SkipReason::HardwareFault:
+        return "hardware_fault";
     }
     return "?";
 }
@@ -96,6 +98,8 @@ const char *toString(RunError e)
         return "zone_resting";
     case RunError::MasterLockedOut:
         return "master_locked_out";
+    case RunError::HardwareFault:
+        return "hardware_fault";
     }
     return "?";
 }
@@ -234,7 +238,7 @@ void Scheduler::setInhibit(uint8_t flags)
 {
     const uint8_t added = flags & static_cast<uint8_t>(~inhibit_);
     inhibit_ = flags;
-    if ((added & (kInhibitNoAc | kInhibitMaintenance | kInhibitMasterLockout)) != 0) {
+    if ((added & (kInhibitNoAc | kInhibitMaintenance | kInhibitMasterLockout | kInhibitHardware)) != 0) {
         stop();
     } else if ((added & kInhibitSensor) != 0) {
         removeIf([this](const RunEntry &e) {
@@ -305,6 +309,9 @@ RunError Scheduler::runZone(ZoneIndex zone, uint32_t durationSec)
     if ((inhibit_ & kInhibitMasterLockout) != 0) {
         return RunError::MasterLockedOut;
     }
+    if ((inhibit_ & kInhibitHardware) != 0) {
+        return RunError::HardwareFault;
+    }
     if (zone >= cfg_.zoneCount || !cfg_.zoneEnabled[zone]) {
         return RunError::InvalidZone;
     }
@@ -342,6 +349,9 @@ RunError Scheduler::runProgram(uint16_t programId)
     }
     if ((inhibit_ & kInhibitMasterLockout) != 0) {
         return RunError::MasterLockedOut;
+    }
+    if ((inhibit_ & kInhibitHardware) != 0) {
+        return RunError::HardwareFault;
     }
     const Program *p = findProgram(programId);
     if (p == nullptr) {
@@ -688,6 +698,8 @@ void Scheduler::fireScheduled(const Program &p, bool late)
         skipped(SkipReason::NoAc);
     } else if ((inhibit_ & kInhibitMasterLockout) != 0) {
         skipped(SkipReason::MasterLockedOut);
+    } else if ((inhibit_ & kInhibitHardware) != 0) {
+        skipped(SkipReason::HardwareFault);
     } else if (rainDelayActive()) {
         skipped(SkipReason::RainDelay);
     } else if ((inhibit_ & kInhibitSensor) != 0 && p.obeySensorInhibit) {

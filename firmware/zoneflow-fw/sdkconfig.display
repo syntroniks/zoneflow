@@ -1,6 +1,0 @@
-# Added to sdkconfig.defaults by -D ZF_DISPLAY=1 (CMakeLists.txt): the
-# provisional pin map with the display on GPIO18, 47 and 48. See "ZoneFlow
-# board" in menuconfig and the pin budget in components/zf_board.
-#
-#   idf.py -B build-display -D SDKCONFIG=build-display/sdkconfig -D ZF_DISPLAY=1 build
-CONFIG_ZF_DISPLAY_ON_SHARED_PINS=y

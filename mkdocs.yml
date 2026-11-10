@@ -96,6 +96,7 @@ nav:
       - Standalone firmware: firmware/standalone.md
       - ESPHome: firmware/esphome.md
       - Web installer: firmware/web-installer.md
+      - Releases and updating: firmware/releases.md
       - API reference: firmware/api.md
       - MQTT and Home Assistant: firmware/mqtt.md
       - Web UI contract: firmware/web-ui-contract.md

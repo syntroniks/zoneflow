@@ -68,6 +68,7 @@ enum class RouteId : uint8_t {
     MqttPut,
     HistoryGet,
     SetupPut,
+    FaultsAcknowledgeRepair,
 };
 
 enum class Access : uint8_t {

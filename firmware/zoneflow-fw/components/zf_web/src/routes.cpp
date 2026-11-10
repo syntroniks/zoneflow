@@ -59,6 +59,7 @@ constexpr std::array kRoutes = {
     Route{"GET", "/sensors", Sensors, R, Body::None, 0},
     Route{"GET", "/faults", FaultsList, R, Body::None, 0},
     Route{"POST", "/faults/clear", FaultsClear, A, Body::None, kEmpty},
+    Route{"POST", "/faults/acknowledge-repair", FaultsAcknowledgeRepair, A, Body::Json, kSmall},
     Route{"GET", "/config", ConfigGet, R, Body::None, 0},
     Route{"PUT", "/config", ConfigPut, A, Body::Json, kConfig},
     Route{"GET", "/config/backup", ConfigBackup, R, Body::None, 0},

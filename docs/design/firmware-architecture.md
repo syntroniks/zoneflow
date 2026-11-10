@@ -1,11 +1,12 @@
 # ZoneFlow firmware architecture
 
-Status: **phase 2** (core hardening, network, REST API, OTA, display).
+Status: **phase 3, aligned with the rev A hardware design** (section 20).
 Covers the standalone ESP-IDF firmware of system spec section 4.1
-(`firmware/zoneflow-fw/`). Nothing described here has run on a board.
-Checks done so far: host unit tests (GoogleTest, ASan and UBSan), the
-display simulator, and `idf.py build` with ESP-IDF v5.5.6. Section 11 lists
-what the phase 2 core hardening changed.
+(`firmware/zoneflow-fw/`). No board exists and nothing described here has
+run on one. Checks done so far: host unit tests (GoogleTest, ASan and
+UBSan), the display simulator, and `idf.py build` with ESP-IDF v5.5.6.
+Section 11 lists what the phase 2 core hardening changed, section 20 what
+the rev A board changed.
 
 Phase 1 delivered the structure, the safety-critical core and tests. Phase 2
 hardens the core (section 11) and adds WiFi and provisioning (`zf_net`,
@@ -43,13 +44,17 @@ flowchart TB
         sched[Scheduler]
         diag[Sensors, FlowMeter,<br/>CurrentMonitor, AcMonitor]
         oeg[OutputEnableGuard]
+        stage[OutputStage<br/>expander, relay, self-test]
+        isense[CurrentSense<br/>RMS windows]
         tz[TimeZone]
     end
 
     subgraph plat["zf_platform (ESP-IDF)"]
-        gpio[GpioOutputs]
-        ka[keep-alive timer ISR]
-        zc[ZeroCrossInput]
+        i2cx[Tca9539Bus]
+        ka[keep-alive timer ISR<br/>and read-backs]
+        zc[ZeroCrossInput<br/>IRAM, both edges]
+        adc[CurrentSampler<br/>ADC1 continuous]
+        rtcm[RtcRetainedStore]
         pw[persist writer task]
         sens[SensorInputs<br/>GPIO, PCNT, ADC1]
         nvs[NvsBlobStorage]
@@ -70,13 +75,17 @@ flowchart TB
     ctrl --> diag
     sched --> drv
     sched --> tz
-    drv --> oeg
-    drv --> gpio
+    drv --> stage
     drv --> zc
+    stage --> oeg
+    stage --> i2cx
+    ctrl --> isense
+    ctrl --> rtcm
     ctrl --> pw
     pw --> nvs
     oeg --> ka
     diag --> sens
+    sens --> adc
     cfg --> nvs
     time --> rtc
     sntp --> time
@@ -86,7 +95,7 @@ flowchart TB
 | Component | Role |
 |---|---|
 | `zf_core` | All decisions. No ESP-IDF headers. Built by the firmware and by `test/host`. |
-| `zf_board` | The board header. Every GPIO number and board constant, plus `static_assert` checks of the pin rules. |
+| `zf_board` | The board header. Pin numbers, I2C addresses and expander bits are generated from `hardware/pinmap.yaml` at build time (`tools/gen_board_header.py`); the hand-written `zoneflow_rev_a.hpp` names them, adds scales and timings with their sources, and checks the pin rules with `static_assert`. Section 20. |
 | `zf_platform` | Implements the core's interfaces on ESP-IDF. Holds no policy. |
 | `main` | Creates the objects (all static), starts the tasks, calls the extension modules. |
 | `zf_net` | WiFi station, BLE and SoftAP provisioning, hostname and mDNS, captive DNS, factory reset. Logic in `net_logic.cpp` (host-tested). |
@@ -99,7 +108,9 @@ flowchart TB
 
 | Task | Priority | Core | Period | Does |
 |---|---|---|---|---|
-| keep-alive (GPTimer alarm ISR, IRAM) | interrupt | allocating core | 5 ms (`CONFIG_ZF_OE_TOGGLE_PERIOD_MS`) | Calls `OutputEnableGuard::step()` and writes the OE pin register. Runs while the flash cache is off. No heap, no locks, no calls into flash. |
+| keep-alive (GPTimer alarm ISR, IRAM) | interrupt | allocating core | 5 ms (`CONFIG_ZF_OE_TOGGLE_PERIOD_MS`) | Calls `OutputEnableGuard::step()`, writes the keep-alive pin register (GPIO38), then reads GPIO42, GPIO7 and GPIO40 into `OutputEnableGuard::sample()` for the self-test timing. Runs while the flash cache is off. No heap, no locks, no calls (checked in the linked ELF). |
+| zero-cross (GPIO ISR, IRAM) | interrupt | core of `app_main` | each AC_ZC edge, 100 per second | Timestamps the edge into `ZeroCrossTracker`. IRAM-safe, so a flash erase does not look like a loss of 24 VAC; its only call is `esp_timer_get_time()`, which is in IRAM. |
+| `zf_isense` | 6 | 0 | 10 ms frames | Reads ADC1 continuous conversions (5 kS/s per channel, 6 dB), calibrates them to mV and accumulates 100 ms windows (`ChannelStats`). Publishes the latest window under a spinlock. Static stack (12 KB). |
 | `zf_control` | 10 | 1 | 50 ms (`CONFIG_ZF_CONTROL_PERIOD_MS`) | Drains the command queue, then `Controller::tick()`. Subscribed to the task watchdog (5 s, panics). |
 | `zf_persist` | 3 | 0 | 250 ms poll | Takes the latest runtime state from `PersistMailbox`, builds the JSON and writes NVS. Static stack (6 KB). |
 | `zf_evlog` | 2 | 0 | on event | Logs events from its own queue. |
@@ -193,9 +204,9 @@ How the firmware implements spec section 2:
 
 | Spec rule | Firmware |
 |---|---|
-| 1. Outputs off by default | `GpioOutputs::init()` is the first call in `app_main`: it sets the output latch to off, then enables the drivers (pin goes from high impedance straight to driven off). `ZoneDriver::init()` forces all off again. Hardware pull-downs must hold outputs off before that (see open questions). |
-| 2. No strapping or glitching pins on outputs | `zf_board` `static_assert`s: no strapping (0, 3, 45, 46), USB (19, 20) or flash/PSRAM (26 to 37) pins, no output or OE on a pin with a high-level power-up glitch (18, 19, 20; ESP32-S3 datasheet v2.2 table 2-2), no duplicates. |
-| 3. Hardware output enable | Firmware keeps toggling a keep-alive signal, and hardware removes gate drive within about 1 s after toggling stops. `OutputEnableGuard` toggles only while (a) an output is on or about to be, (b) the control loop heartbeat is younger than `CONFIG_ZF_OE_HEARTBEAT_TIMEOUT_MS` (500 ms), (c) it is not tripped. The edges come from a GPTimer alarm interrupt every 5 ms that keeps running through flash erases (see "Keep-alive from a timer" below). A stuck control loop, a stopped timer or a halted CPU all stop the toggling. A static-level variant exists as a Kconfig option for other hardware; rev A uses toggle mode. |
+| 1. Outputs off by default | Rev A has no valve GPIO: the valves are bits of an I/O expander that the keep-alive detectors hold in reset while the keep-alive is stopped, with resistors holding every pin off (hardware design 8.2). `initOutputStagePins()` is the first call in `app_main`: keep-alive latch low, then the pin an output (R33 holds it low before that). Read-back pins are configured as inputs with the pulls of rule 12. |
+| 2. No strapping or glitching pins on outputs | The pin map has no valve or enable function on a GPIO; the generator refuses one. `zf_board` `static_assert`s: no pin on GPIO22 to 37, a strapping pin only for the function the pin map allows (BOOT, VIN_MON, sensor supply enable, status LED), the keep-alive an output, the two read-backs, the latch and the zero-cross inputs. |
+| 3. Hardware output enable | Firmware keeps toggling a keep-alive signal, and two detectors on the board remove gate drive and open the valve-common relay within about 1 s after toggling stops. `OutputEnableGuard` toggles only while (a) the output stage asks for it (`KeepAliveRequest::Run`; `HoldHigh` for the pin-high self-test step), (b) the control loop heartbeat is younger than `CONFIG_ZF_OE_HEARTBEAT_TIMEOUT_MS` (500 ms), (c) it is not tripped. The edges come from a GPTimer alarm interrupt every 5 ms that keeps running through flash erases (see "Keep-alive from a timer" below). A stuck control loop, a stopped timer or a halted CPU all stop the toggling. The self-test of section 20 proves both detectors before and after every run. |
 | 4. Maximum run time | Per zone, not per run (spec v0.3 rule 4 as amended). The driver adds up each zone's on-time across runs until the zone has been closed for `driver.min_rest_s` (default 1800 s). `ZoneDriver::start()` clamps every request to what is left of min(zone `max_run_s`, 4 h); the driver times the run and closes the valve, and `tick()` independently closes a zone whose accumulated on-time reaches the limit (`max_run_time`). The zone then refuses to start (`resting`) until it has been closed for the rest time. Stop and restart, pause and resume, back-to-back programs and config reloads do not reset the count. |
 
 #### Keep-alive from a timer
@@ -247,16 +258,18 @@ Fault paths, each ending with outputs off:
 |---|---|
 | Short circuit (above `short_circuit_ma`, 2 samples, checked even during inrush) | All off, queue stopped, zone locked out, fault latched. On the master: counted towards the master lockout. |
 | Over-current (above the summed window after settling, 3 samples; short-circuit samples count towards them) | Same as short circuit. |
-| Hardware over-current trip (comparator latch, read every tick) | All off in firmware state, queue stopped, `over_current_trip` latched. Blamed: every output switched on within `settle_ms` before the trip, else the output switched on most recently. Blamed zones lock out; a blamed master counts towards the master lockout. Starts are refused while the latch is set. The latch is released on a later tick, only when the driver has nothing open or waiting, right after all outputs are driven off again; a latch that comes back is released at most once a second and reported once. |
+| Hardware over-current trip (latch on GPIO40, sampled every 5 ms) | Hardware design 19.8. The latch has already removed drive and opened the relay. The output stage drives the keep-alive low, holds it for 1.5 s, which clears the latch and resets the expander, and checks the latch cleared (`trip_latch_stuck` after 3 s). The controller stops every output (`fault`), raises `over_current_trip` and blames the output switched on within 500 ms before the trip, else every output that was on (suspect). Each trip counts against the outputs it marks; an output with three trips within 24 h locks out until faults are cleared. The queue is not cleared: the next entry runs after the self-test, without the faulted output. |
 | Master lockout (`master.fault_lockout_count` consecutive faults blamed on the master, default 3) | `master_locked_out` latched. With the master enabled, every start is refused: scheduled starts are skipped (`master_locked_out`), manual runs return `master_locked_out`, the driver refuses to open anything. A master session of at least `settle_ms` without a fault resets the count. |
 | Open circuit (below the summed window) | That zone off, queue moves to the next entry, fault latched. Master or unattributable: all off. |
-| Current with every output off | Fault only. Firmware already has everything off; the output stage needs a human. If the current then rises past `short_circuit_ma`, `short_circuit` is reported as well. |
+| Current with every output off | Keep-alive stopped, relay open: `current_while_idle`, fault only; on rev A this needs a welded relay and a shorted output device together, or a broken amplifier. Relay closed and no valve on: `output_shorted`, the output stage's fault state (rule 6, section 20). If the current rises past `short_circuit_ma`, `short_circuit` is reported as well. |
+| Output-stage self-test or read-back fails (section 20) | Keep-alive low at once, every expander pin back to input while the expander still answers, `keepalive_detector`, `output_expander`, `relay_welded`, `output_shorted` or `trip_latch_stuck` with the check and step. Everything stops, the queue is cleared, every start is refused (`hardware_fault`) until a person acknowledges it. Kept over a software restart. |
+| DC component in a zone's current (one triac polarity not conducting) | That zone off, `zone_dc_current` latched on the zone. |
 | Current sense unavailable (ADC init or calibration failed, or no reading) | `current_sense_unavailable` raised; zones still run (policy below). |
-| 24 VAC lost (60 ms debounce) | All off, queue cleared, starts blocked until AC returns (500 ms debounce). |
+| 24 VAC lost (no AC_ZC edge for 25 ms, then a 60 ms debounce) | All off, queue cleared, starts blocked until AC returns (500 ms debounce). The output stage stops the keep-alive at once and tests nothing without 24 VAC. |
 | Maintenance command (OTA, factory reset) | All off, starts blocked. |
-| `esp_restart()` (includes the reboot after OTA) | Shutdown handler trips OE and forces outputs off. |
-| Panic, abort, task or interrupt watchdog | `-Wl,--wrap=esp_panic_handler`: an IRAM wrapper forces OE and outputs off by direct register writes, then runs the IDF handler. Checked in the linked ELF: the IDF call site loads `__wrap_esp_panic_handler`. |
-| Brownout | Brownout interrupt callback (IRAM) forces outputs off before the reset. |
+| `esp_restart()` (includes the reboot after OTA) | Shutdown handler trips the guard and drives the keep-alive pin low. |
+| Panic, abort, task or interrupt watchdog | `-Wl,--wrap=esp_panic_handler`: an IRAM wrapper drives the keep-alive pin low by a direct register write, then runs the IDF handler. On rev A that is the only GPIO action that removes valve drive; the detectors do the rest within their hold-up. |
+| Brownout | Brownout interrupt callback (IRAM) trips the guard and drives the keep-alive pin low before the reset. |
 
 Latched faults clear with the `ClearFaults` command. Lockouts (zones and
 master) clear with it. A current fault whose cause is still present is
@@ -531,27 +544,37 @@ the REST and backup format. Abbreviated example:
   filter). Litres = pulses / `pulses_per_litre`; rate over the last 5 s (one sample per second).
   Flow above `leak_threshold_lpm` for `leak_detect_s` with every valve shut
   raises `flow_without_zones`.
-- **Valve current.** One total current from the low-side shunt (spec 3.1).
-  A shorted valve or wire shuts the zone off and is reported (spec 1).
-  Expected window = sum of
+- **Valve current.** One total current from the low-side shunt (spec 3.1),
+  measured as the RMS of 100 ms windows (section 20, current measurement).
+  A new reading arrives every other control tick; confirmation counts are
+  in windows. A shorted valve or wire shuts the zone off and is reported
+  (spec 1). Expected window = sum of
   the min/max of every output that is on. Comparisons start `settle_ms` after
   any output change; the short-circuit limit applies at all times. A config
   reload does not restart a confirmation in progress. A fault
   is attributed to the output switched on most recently. Per-output current
   observed when the output runs alone (or with the master, minus the
   master's share) is recorded as the basis for learned limits later.
-- **24 VAC present.** Loss declared after 60 ms, return after 500 ms. With
-  no AC (USB-only power) the current checks are suspended.
+- **24 VAC present.** From the AC_ZC edge stream: present while an edge of
+  either polarity came within 25 ms (hardware design 19.9). Loss declared
+  after a further 60 ms, return after 500 ms. With no AC (USB-only power)
+  the current checks are suspended and the output stage tests nothing.
 - **Current sense unavailable.** `SensorSample::currentSenseAvailable` is
   false when the ADC or its calibration could not be set up, or a tick gave
   no reading. Policy in section 3.
-- **Hardware over-current trip.** `SensorSample::overCurrentTripped` reads
-  the comparator latch; `IOutputHal::clearOverCurrentTrip()` pulses its
-  release. Handling in section 3.
+- **Hardware over-current trip.** GPIO40, low while the latch is set,
+  sampled by the keep-alive interrupt every 5 ms and read every tick. There
+  is no release pin: the output stage clears the latch by holding the
+  keep-alive low for 1.5 s. Handling in section 3.
 - **Zero-cross switching.** With `driver.zero_cross_switching` on and a
-  zero-cross input attached (`IZeroCrossHal`, GPIO interrupt timestamps on
-  the device), `ZoneDriver` turns each output on at the next mains zero
-  crossing plus the board's detector offset. `zeroCrossWaitUs()` is a pure
+  zero-cross input attached (`IZeroCrossHal`), `ZoneDriver` turns each
+  output on at the next mains zero crossing. On rev A the signal is a
+  square wave, not a pulse per crossing (hardware design 19.9):
+  `ZeroCrossTracker` takes both edges, takes the upward crossing as the
+  rising edge less 0.30 ms, the mains period from rising edge to rising
+  edge, and gives crossings half a period apart; the driver's offset is
+  then 0. An output switches when its I2C write completes, about 0.1 ms
+  after the wait. `zeroCrossWaitUs()` is a pure
   function (host-tested): it waits at most one crossing interval, and
   returns 0 (switch now) with no signal, an interval outside 7 to 11 ms, or
   no edge for three intervals. Turning off never waits: a triac stops at
@@ -585,6 +608,13 @@ The hardware team answered questions 1 to 14 in
 with the circuit. Question 2 is settled: the agreed contract follows it
 below. Questions 12 and 13 have answers that change code and are noted in
 place. The questions themselves are kept as they were asked.
+
+**All fourteen answers are now implemented** (section 20): the board header
+is generated from the pin map, the valves are expander bits, the latch has
+no release pin, the zero-cross input is a square wave, the current is an
+RMS of biased AC windows, and the shared-pin build option is gone. The new
+questions that came up doing it are in section 20, "Questions for the
+hardware author".
 
 1. **Pin map.** Everything in `zoneflow_rev_a.hpp` is provisional. Please
    publish `hardware/pinmap.yaml`; the board header will follow it. The
@@ -992,9 +1022,9 @@ must be measured on the first board: `GET /api/v1/info` reports `heap.free` and
 What the interface shows and why is in [display interface](display-ui.md).
 This section is how it is built.
 
-In the default build `display::start()` logs that the pin map has no pins
-for the panel and returns; see open question 14. Everything below describes
-the build with `CONFIG_ZF_DISPLAY_ON_SHARED_PINS`, and the simulator.
+Since section 20 the display has its own pins and every build starts it.
+(Before, the provisional pin map had none and `display::start()` returned
+at once.) Everything below describes the firmware build and the simulator.
 
 ### Layers
 
@@ -1062,8 +1092,8 @@ queue state.
 Measured with `idf.py size` (ESP-IDF v5.5.6, esp32s3, `-Os`). "Main" is
 the firmware before this module (`5c1a131`). "Default" is the default build
 with this module, in which the display has no pins and is not started, so
-the linker drops it. "Display" is the build with
-`CONFIG_ZF_DISPLAY_ON_SHARED_PINS` (`-D ZF_DISPLAY=1`).
+the linker drops it. "Display" was the build with
+the display on shared pins; since section 20 that is the only build.
 
 | | Main | Default | Display | Display minus main |
 |---|---|---|---|---|
@@ -1073,9 +1103,11 @@ the linker drops it. "Display" is the build with
 | Code that ESP-IDF places in RAM, `DIRAM .text`, bytes | 98,499 | 98,499 | 107,403 | +8,904 |
 | Internal RAM left for heap and stacks, bytes | 170,137 | 170,025 | 156,061 | -14,076 |
 
-The display build leaves out the over-current trip and zero-cross inputs,
-whose code the linker then drops, so the true cost of the display is a
-little above the last column.
+The display build of that time left out the over-current trip and
+zero-cross inputs, whose code the linker then dropped, so the true cost of
+the display was a little above the last column. These figures are from
+before the rev A board; section 20 has the size of the current single
+build.
 
 Where the flash goes (`idf.py size-components`, display build): LVGL
 349,285 bytes, of which 173,843 are constant data, mostly the four fonts;
@@ -1238,7 +1270,8 @@ install one. Firmware installs stay behind the admin login of the REST API
   left for heap and stacks 167,109 bytes, 2,764 less than `main` (169,873).
   With `-D ZF_DISPLAY=1`: 2,027,648 bytes, 58,432 more than the 1,969,216
   reported for `main` in pull request #23. No warnings in ZoneFlow code in
-  either build.
+  either build. (Historical: since section 20 there is one build, display
+  included.)
 
 ## 19. History
 
@@ -1305,3 +1338,212 @@ conversion, and `RunEnded` from the real controller (durations, current,
 volume, a paused program run). `web_api_test.cpp` covers the route, its
 parameters and `protect_reads`; `web_openapi_schema_test.cpp` checks every
 GET answer, history included, against `docs/firmware/openapi.json`.
+
+## 20. Rev A board
+
+The firmware follows [hardware design](hardware-design.md) section 19, which
+was written for it, and `hardware/pinmap.yaml`. Tracking issue #6. No board
+exists: everything below was checked against a simulated board in host
+tests, not against hardware.
+
+### Board header from the pin map
+
+`tools/gen_board_header.py` reads `hardware/pinmap.yaml`, checks it (known
+keys and values, no GPIO or signal twice, analogue inputs on ADC1 with the
+right channel, only pins the N16R8 module brings out, no valve or relay
+function on a GPIO, 16 expander bits, I2C addresses unique per bus) and
+writes `zf_board/pinmap_generated.hpp`: one constant per signal, the I2C
+buses and devices, the expander bits and the limits. Every build runs it at
+configure time and again when the pin map or the script changes
+(`components/zf_board/zf_board_generate.cmake`): the ESP-IDF build with
+ESP-IDF's Python, the host tests and the simulator with `uv run --script`.
+The output is not committed. The firmware workflow runs on every change to
+`hardware/pinmap.yaml`, so a pin map change that breaks the firmware fails
+CI. `zoneflow_rev_a.hpp` names no GPIO number: it maps the generated names
+to the firmware's, adds the constants the map does not carry, each with its
+source, and checks the rules (strapping pins, read-backs as inputs, valve
+bits active-low outputs, relay active high, ADC1, backlight 1 to 20 kHz,
+SPI clock at most 15 MHz). The `ZF_DISPLAY` build and its Kconfig option are
+gone: one build, display included.
+
+### The output stage
+
+`hw::OutputStage` (`zf/hw/output_stage.hpp`, pure C++) implements
+`IOutputHal` for the zone driver and runs the procedures of section 19 on
+the control task, every 50 ms tick. It owns the keep-alive request of
+`OutputEnableGuard`: `Off`, `Run` (toggle) or `HoldHigh` (the pin-high
+test). The guard's interrupt still decides each edge from the heartbeat
+(contract 19.4), and every period records the levels of GPIO42 (`A_RB`),
+GPIO7 (`B_RB`) and GPIO40 (`OC`) and when each last changed. That record
+times both detectors to one 5 ms period.
+
+The expander is reached through `hw::IExpanderBus`; on the device
+`Tca9539Bus`, ESP-IDF's I2C master driver at 400 kHz with a 5 ms timeout per
+transaction and `i2c_master_bus_reset()` (nine clocks, a 50 ms limit) to
+recover a stuck bus. No call waits without a limit. A missing acknowledge,
+a timeout, a stuck bus or a wrong read-back stops the keep-alive at once; the
+hardware then resets the expander and opens the relay within the detectors'
+hold-up whatever the bus does. A missing acknowledge while the keep-alive
+runs is decided on the next tick: an over-current trip (the latch reset the
+expander) or an expander fault.
+
+| Section 19.7 | What the firmware does |
+|---|---|
+| Step 0 | Waits for 24 VAC (an AC_ZC edge within 25 ms), the keep-alive low for 2.0 s and the latch clear. Without 24 VAC nothing is tested or run. |
+| Step 1 | `A_RB` low, `B_RB` high, the expander does not acknowledge. |
+| Step 2 | Pin held high for 1.0 s, both read-backs unchanged, 100 ms low. At start-up, before every run (the "better" option, 1.1 s) and in a polling cycle when the last one is 24 h old. |
+| Step 3 | Toggle; `A_RB` high and `B_RB` low within 150 ms of the first edge (timed by the interrupt), and the expander acknowledges. |
+| Step 4a | Input ports: 0x1F on port 0; port 1 0x2F on an 8-zone board, 0x3F on a 4-zone board. The variant bit is read once (start-up) and must not change later; the sensor-fault bit is reported, not a stop. |
+| Step 4b, 4c | Output ports 0xDF and 0xFF, then configuration 0xC0 and 0xF0 (0xFF on a 4-zone board), all read back; polarity 0x00. The values are computed from the pin map's bits; a host test checks them against the literals of 19.7. |
+| Step 5 | The run's first output (the master if it opens first) on with the relay open for one 100 ms window: current above the idle threshold is `relay_welded`. |
+| Step 6 | Relay bit set and read back, 20 ms, one window with every valve off: current above the idle threshold is `output_shorted`. Then outputs may switch. |
+| Step 7 | Every write read back (output and input port). Every tick all six registers are read and compared with the shadow copy and the valve inputs with the valve outputs; `A_RB` high, `B_RB` low, `OC` high. Never more than three valve bits low after any write. |
+| Step 8 | Valve bits set, 40 ms, relay bit cleared, configuration 0xFF. |
+| Step 9 | Keep-alive low; `A_RB` released 0.3 to 1.0 s and `B_RB` 0.08 to 1.0 s after the stop (3 s timeout); the expander does not acknowledge. |
+| Fault state | Keep-alive low; while the expander still acknowledges, configuration 0xFF on every tick. Nothing starts until a person acknowledges. |
+| 19.6 polling | Every 10 minutes while the sensor supply is on, and when flow starts with every valve shut or stops with one open (at most once a minute): steps 0, 1, 3, 4a, a read of port 1, step 9. No output or configuration register is written. |
+| 19.8 latch | Read every tick (sampled every 5 ms). On a trip: keep-alive low, 1.5 s, the latch must be clear by 3 s or `trip_latch_stuck`. The next run starts from step 0. |
+
+Decisions where section 19 leaves room:
+
+- **Power linger.** After the last output goes off the relay stays closed
+  for 2 s before step 8, so back-to-back zones and programs do not repeat
+  the 2 s precondition and the self-test between them. Rule 4 says the
+  relay opens 40 ms "after the last" output; the firmware reads that as "at
+  least". Rule 6 (current with the relay closed and no valve on) is checked
+  during the linger.
+- **Toggling before a stop test.** The start-up test and the polling cycle
+  would stop the keep-alive about 0.1 s after starting it. The firmware
+  keeps toggling, with every pin an input, for at least 1 s before step 9,
+  so that the detectors' reservoirs are charged as in the simulations the
+  release limits come from.
+- **Acknowledge polling in step 3.** The detectors are timed to 5 ms by the
+  interrupt; the expander is addressed once per control tick, so its
+  acknowledge is accepted up to one tick after the 150 ms.
+- **Stagger.** The zone driver never switches two outputs on within
+  100 ms (rule 10), master included: a zone waits at least 100 ms after the
+  master even with `pre_open_ms` 0.
+- **Without current readings** (ADC failed) the weld and shorted-output
+  checks are skipped and zones still run, the policy of section 3.
+
+### Faults and who may clear them
+
+| Fault | Checks | Clear |
+|---|---|---|
+| `keepalive_detector` | Steps 1 and 2, steps 3 and 9 detector timing, `A_RB` or `B_RB` wrong while running | Steps 1, 2 and 9 (a detector can no longer be relied on): only `AcknowledgeRepair`, a second deliberate action. Others: `ClearFaults`. |
+| `output_expander` | No acknowledge, read-back or input mismatch, stuck bus, more than three valve bits | `ClearFaults` |
+| `relay_welded` | Step 5 | `ClearFaults`; found again at the next run if still welded |
+| `output_shorted` | Step 6, rule 6 | `ClearFaults` |
+| `trip_latch_stuck` | 19.8 | `ClearFaults` |
+| `sensor_supply` | `SENS_FLT_N` low | Clears itself when it reads high |
+| `zone_dc_current` | DC component in three windows | `ClearFaults` |
+| `mains_signal` | AC_ZC outside 45 to 66 Hz (100 Hz: bridged to the keep-alive) | Clears itself |
+
+`AcknowledgeRepair` is a command with a confirmation flag. The display
+offers it as **Repaired** on the fault's detail screen, then asks again with
+Cancel first; the REST API as `POST /faults/acknowledge-repair` with
+`{"repaired": true}`; MQTT not at all. `ClearFaults` acknowledges every other
+output-stage fault. The latched check survives a software restart (below).
+
+Every fault is visible everywhere: the fault code and, for an output-stage
+fault, the check and step in `FaultRaised` (`FaultData::detail`), the
+event stream (`check`, `step`), `GET /status` (`hardware`, `faults.hardware`,
+`inhibit.hardware`), `GET /faults`, `GET /sensors` (`sensor_supply_fault`),
+MQTT (`faults.hardware`, `sensors.sensor_supply_fault`) and two Home
+Assistant binary sensors (valve board fault, sensor supply fault), the
+display's fault list, detail texts and Sensors screen, and the web UI's
+string table. A run refused because of it answers `hardware_fault`; a
+skipped schedule reports `hardware_fault`.
+
+### Current measurement
+
+ADC1 continuous mode samples `ISENSE_HI` (GPIO2) and `ISENSE_LO` (GPIO1) at
+5 kS/s each, 6 dB attenuation, calibrated to millivolts with the
+curve-fitting scheme. `zf_isense` accumulates exactly 500 samples of each
+channel per window: 100 ms of the ADC's clock, five cycles at 50 Hz and six
+at 60 Hz. A window that took more than 120 ms of wall time lost samples and
+is dropped. `CurrentSense` (pure C++) then takes the RMS with the window mean
+removed, uses the high-gain channel (1.503 mA/mV) unless one of its samples
+was below 60 mV or above 1500 mV, and the low-gain channel (7.50 mA/mV)
+otherwise. Windows with the keep-alive stopped teach the noise floor and the
+idle mean; the floor is removed in quadrature, and a window mean that moves
+away from the idle mean by more than 30 % of the RMS (and 20 mA) while
+current flows is a DC component. The idle threshold default is now 30 mA
+(19.2). Host tests feed synthetic 50 and 60 Hz waveforms at several phases,
+a clipped 1.5 A load, a bias drift, noise and a half-wave current through
+the same code.
+
+### Run budget over a software restart
+
+Firmware security residual risk 10: a restart reset each zone's on-time and
+rest. Every control tick the controller now writes a `RetainedRecord` to
+RTC memory (`RTC_NOINIT`, 192 bytes): per zone the on-time since it last
+rested and how long it has been closed, the latched output-stage check, and
+the ages of the last three over-current trips per output. A magic number,
+version, size, CRC-32 and the CRC's complement guard it; power-on garbage
+and a half-written record are rejected and the budget starts empty. On
+start-up the driver takes the budgets back; the restart itself counts as no
+rest, so a restart can lengthen a zone's rest but not shorten it. A power
+cycle or brownout loses the record, as it loses RAM.
+
+### Other items of section 19.1
+
+- **PSRAM ECC**: `CONFIG_SPIRAM_ECC_ENABLE=y` (name checked in ESP-IDF
+  v5.5.6, `esp_psram/esp32s3/Kconfig.spiram`).
+- **RTC clock output**: `Pcf8563Rtc::init()` writes 0x00 to register 0x0D.
+- **Read-back pins**: GPIO42 input with the internal pull-down, GPIO7 input
+  with no pull, never outputs.
+- **Sensor supply**: GPIO45 is left alone until `app_main` has the output
+  stage pins set up, then latched high and made an output, with no pull-up.
+- **Backlight** 5 kHz (1 to 20 kHz); **display SPI** 15 MHz (ST7789V
+  guaranteed figure, hardware design 15.3); chip select and reset driven;
+  encoder two counts per detent.
+- **Flash**: OTA already turns maintenance on, stops every output and waits
+  before writing the passive slot; the heartbeat timeout stays 500 ms.
+- **AC presence** from the zero-cross interrupt, which is IRAM-safe so that
+  a flash erase does not look like a loss of 24 VAC.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `test/host/run.sh` (ASan, UBSan) | 587 tests pass, 79 of them new: `OutputStage` (28) and `SelfTestFailure` (20 injected faults: each detector stuck on, both pin-high faults, slow enable and release of each detector, an open bleed, wrong inputs, outputs, configuration and polarity, stuck bus, welded relay, shorted output, a detector stuck on after a run), `HardwareController` (8, the controller on the simulated board), `CurrentSense` (12), `Retained` (6), `ZeroCrossTracker` (5). |
+| Simulated board (`test/host/fake_board.hpp`) | The two detectors with their enable and hold times, the latch, a register-level TCA9539 in reset while `DRV_EN` is low, the relay, the valve current; faults injected per part. It is a model of the design's tables, not of the circuit. |
+| `idf.py build`, ESP-IDF v5.5.6 | No warnings. `zoneflow-fw.bin` 2,071,504 bytes (49 % of a 4 MB slot). The keep-alive and zero-cross interrupts are in IRAM; the keep-alive handler makes no call, the zero-cross handler only `esp_timer_get_time()` (in IRAM). |
+| Release dry run (`tools/zfrelease`: `package`, `assemble`, `verify`, as `release.yml` runs them, on a build with the web UI packed) | Every `verify` check passes. The application is 2,071,504 of the 4,194,304 bytes of an OTA slot: 2,122,800 bytes (50.6 %) left. `zfflash fetch`, the installer page test and `stage-site` pass on the same files. |
+| Display simulator | 69 scenes, four new ones on the simulated board. |
+| Web UI | Type check and 156 unit tests pass; API types regenerated from `openapi.json`. |
+
+Not checked, because it needs a board: anything about real timing, the I2C
+bus at 400 kHz, the ADC sample rate and calibration, the noise floor, the
+detector times, and the interrupt load.
+
+### Questions for the hardware author
+
+1. **Stop test after a short toggle.** The release limits of step 9 come
+   from simulations. Do they hold after 1 s of toggling (the firmware's
+   minimum before a stop test), and after the 0.1 s a start-up test or
+   polling cycle would otherwise take? If the hold-up is shorter after a
+   short toggle, healthy boards would fail step 9 at start-up.
+2. **Step 3 acknowledge.** The firmware addresses the expander once per
+   50 ms tick, not every 5 ms; is an acknowledge up to 200 ms after the
+   first edge acceptable when both read-backs were in time?
+3. **Pin-high test before every run** adds 1.1 s to every start. Is that the
+   intended default, or is "start-up and every 24 h" enough?
+4. **Relay linger.** Is a relay closed for up to 2 s with every valve off
+   (rule 6 checked meanwhile) acceptable under rule 4?
+5. **`SENS_FLT_N` with the supply off.** Step 4a expects bit 5 high. What
+   does the TPS2553 fault output do while its enable is low? The firmware
+   masks the bit in the step 4a comparison and reports it only.
+6. **Bias check.** 19.2 says the window mean should stay near 790 mV. What
+   deviation of the idle mean is a front-end fault? The firmware learns the
+   idle mean but does not judge it.
+7. **Q2 gate-drain short on GPIO7.** 7.4 suggests reading GPIO7 as ADC1
+   channel 6 to see 0.3 to 1.5 V. The firmware reads it as a digital input,
+   where that fault reads low and fails step 1 as `idle_relay_on`. Is the
+   analogue reading wanted as well?
+8. **Zero-cross offsets.** The firmware uses the 24 VAC offsets (0.30 ms,
+   0.09 ms). They shrink at 32 VAC; should `VIN_MON` (GPIO3) correct them?
+   `VIN_MON` is not read yet.
+9. **DC component.** What size of mean shift should count? The firmware
+   uses 30 % of the RMS current and at least 20 mA, and stops the zone.

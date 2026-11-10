@@ -278,6 +278,7 @@ TEST_F(SchedulerTest, SkipMovesToNextEntry)
 {
     ASSERT_EQ(sched->runZone(0, 100), RunError::Ok);
     ASSERT_EQ(sched->runZone(1, 100), RunError::Ok);
+    step();
     sched->skip();
     EXPECT_FALSE(out.zone[0]);
     EXPECT_TRUE(out.zone[1]);

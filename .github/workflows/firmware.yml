@@ -5,12 +5,14 @@ on:
     branches: [main]
     paths:
       - "firmware/**"
+      - "hardware/pinmap.yaml"
       - "docs/firmware/openapi.json"
       - "docs/design/display-ui/**"
       - ".github/workflows/firmware.yml"
   pull_request:
     paths:
       - "firmware/**"
+      - "hardware/pinmap.yaml"
       - "docs/firmware/openapi.json"
       - "docs/design/display-ui/**"
       - ".github/workflows/firmware.yml"
@@ -28,6 +30,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      # The board header is generated from hardware/pinmap.yaml at configure
+      # time (tools/gen_board_header.py, PyYAML through uv).
+      - uses: astral-sh/setup-uv@v10.3.3
       - name: Build and run (ASan + UBSan)
         run: firmware/zoneflow-fw/test/host/run.sh --output-junit junit.xml
       - name: Upload test report
@@ -43,6 +48,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10.3.3
       - name: Cache LVGL and cJSON sources
         uses: actions/cache@v4
         with:
@@ -114,30 +120,4 @@ jobs:
             firmware/zoneflow-fw/build/flasher_args.json
             firmware/zoneflow-fw/build/flash_args
             firmware/zoneflow-fw/build/www.bin
-          if-no-files-found: error
-
-  # The default build does not start the display: the provisional pin map
-  # has no pins for it (components/zf_board, "pin budget"). This builds the
-  # configuration that gives it GPIO18, 47 and 48, so the panel, backlight
-  # and control drivers and LVGL stay compiled and linked.
-  build-display:
-    name: ESP-IDF build with the display (esp32s3)
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: idf.py build, sdkconfig.display
-        uses: espressif/esp-idf-ci-action@v1
-        with:
-          esp_idf_version: v5.5.6
-          target: esp32s3
-          path: firmware/zoneflow-fw
-          command: idf.py -B build-display -D SDKCONFIG=build-display/sdkconfig -D ZF_DISPLAY=1 build
-      - name: Upload firmware
-        uses: actions/upload-artifact@v4
-        with:
-          name: zoneflow-fw-display-esp32s3-${{ github.sha }}
-          path: |
-            firmware/zoneflow-fw/build-display/zoneflow-fw.bin
-            firmware/zoneflow-fw/build-display/zoneflow-fw.elf
-            firmware/zoneflow-fw/build-display/zoneflow-fw.map
           if-no-files-found: error

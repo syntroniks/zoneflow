@@ -33,3 +33,13 @@
   border-radius: 0.2rem;
   padding: 0.2rem 0.8rem;
 }
+
+/* Installer page: the install button and generated command blocks. */
+#zf-installer [hidden] {
+  display: none !important;
+}
+
+#zf-installer esp-web-install-button {
+  display: inline-block;
+  margin: 0.5rem 0 1rem;
+}

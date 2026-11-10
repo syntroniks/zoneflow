@@ -845,7 +845,7 @@ TEST(EventJson, FaultWithoutZoneIsNull)
 {
     Event e{};
     e.type = EventType::FaultRaised;
-    e.fault = {FaultCode::AcLost, kNoZone};
+    e.fault = {FaultCode::AcLost, kNoZone, 0};
     JsonPtr o(eventToJson(e));
     EXPECT_TRUE(cJSON_IsNull(cJSON_GetObjectItem(o.get(), "zone")));
     EXPECT_STREQ(cJSON_GetObjectItem(o.get(), "code")->valuestring, "ac_lost");

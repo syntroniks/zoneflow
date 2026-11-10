@@ -42,6 +42,7 @@ cJSON *queueToJson(const QueueStatus &q, uint16_t pauseTimeoutMin);
 // Sensor readings plus the current-sense and over-current-trip conditions.
 cJSON *sensorsToJson(const SystemState &s);
 cJSON *faultsToJson(const SystemState &s);
+cJSON *hardwareToJson(const HardwareStatus &h);
 cJSON *rainDelayToJson(const SystemState &s);
 // Everything a UI needs for its main screen. `cfg` supplies zone names.
 cJSON *stateToJson(const SystemState &s, const Config &cfg);

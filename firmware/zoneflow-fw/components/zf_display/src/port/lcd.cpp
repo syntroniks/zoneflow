@@ -107,7 +107,7 @@ esp_err_t lcdInit(lv_display_t **out)
     }
 
     esp_lcd_panel_dev_config_t dev = {};
-    dev.reset_gpio_num = board::kLcdResetGpio; // -1: software reset command
+    dev.reset_gpio_num = board::kLcdResetGpio; // GPIO14, 10 kohm pull-up on the board
     dev.rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB;
     dev.bits_per_pixel = 16;
     err = esp_lcd_new_panel_st7789(ioHandle, &dev, &sPanel);
