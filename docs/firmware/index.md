@@ -13,7 +13,9 @@ Two options are planned. Both use the same hardware and the same pin map.
 | Needs a cloud service | No | No |
 | Page | [Standalone firmware](standalone.md) | [ESPHome](esphome.md) |
 
-Both can be flashed with the [web installer](web-installer.md) once it exists.
+The [web installer](web-installer.md) flashes a release over USB from a Chromium
+browser. [Releases and updating](releases.md) covers updates, rollback and
+recovery.
 The REST API of the standalone firmware is covered in the
 [API reference](api.md).
 
