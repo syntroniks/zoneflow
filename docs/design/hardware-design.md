@@ -149,19 +149,21 @@ Currents on `V5` and `V_BUCK`.
 | Relay K1 coil | 40 | 40 | 5 V across 125 ohm |
 | Comparator U6, sensor pull-ups | 2 | 3 | |
 | **Total `V5`** | **262** | **660** | |
-| Sensor supply terminal, from `V_BUCK` | 20 | 150 | Limit of U11 |
-| **Total `V_BUCK`** | **282** | **810** | U1 is rated 1 A |
+| Sensor supply terminal, from `V_BUCK` | 20 | 158 | Highest limit of U11, section 13.5 |
+| **Total `V_BUCK`** | **282** | **818** | U1 is rated 1 A |
 
 Power drawn from `VIN_DC`, with the buck efficiency taken as 85 %. That figure
 is an assumption. I did not read an efficiency curve for a 5 V output.
 
 - **Typical**: 5.28 V x 0.282 A / 0.85 = 1.75 W.
-- **Peak**: 5.28 V x 0.81 A / 0.85 = 5.0 W.
+- **Peak**: 5.28 V x 0.82 A / 0.85 = 5.1 W. The simulations use 5.0 W.
 
 ### 4.3 Fuse F1
 
-F1 is a Littelfuse 154T-series holder with a 452-series 3 A time-lag fuse. The
-user can replace it without soldering. The datasheet gives 125 V, 50 A
+F1 is a Littelfuse 0154003.DRT: a 154-series holder supplied with a 3 A
+time-lag fuse of the 454 series fitted. The 452 series is the same fuse
+without the silver-plated caps and is the replacement part. The user can
+replace it without soldering. The 452/454 datasheet gives 125 V, 50 A
 interrupting rating, 0.034 ohm and a melting I²t of 20.16 A²s. Opening times
 are 1 to 60 s at 200 %, 0.2 to 3 s at 300 % and 20 to 100 ms at 800 %.
 
@@ -197,6 +199,18 @@ constant of 1.44 ms. That gives a rise of about 13 V, to 58 V. C1 is rated
 63 V and U1 100 V. The simulation puts the loss in R1 at 0.09 W typical and
 0.95 W at low line with every consumer at its limit. R1 is rated 1 W.
 
+**R1 has no pulse rating.** Review A1 checked the plug-in pulse against the
+part. Plugging in at the 32 VAC peak puts 8.2 A through R1 on a 40 VA
+transformer and 10.5 A on a 75 VA one: 220 to 365 W at the peak, 0.28 to
+0.36 J in about 3 ms, on every power-up that lands near a peak. The Uniroyal
+thick-film data sheet for the part gives a continuous rating of 1 W and a
+short-time overload of 2.5 times the rated voltage for 5 s, which is 6 W. It
+has no pulse curve. A general-purpose thick-film resistor is the wrong kind of
+part for this place. Fit a 2512 part with a published single-pulse rating that
+covers 0.4 J in 3 ms: an anti-surge thick-film type or a wirewound. Review A1
+found such series listed at JLCPCB but out of stock on 2026-11-10, so no
+replacement part number is given here.
+
 ### 4.5 Bulk capacitor C1
 
 The rectifier is half-wave, so C1 supplies the load for most of a 20 ms cycle
@@ -223,12 +237,13 @@ load from 29 V down to 9 V for 0.5 x 470 uF x (29² - 9²) / 1.75 W = 100 ms,
 five cycles.
 
 C1 is a Lelon VZH 470 uF 63 V in a 16 x 16.5 mm SMD can, 5000 h at 105 °C. Its
-steady voltage is at most 44.3 V, 70 % of rating. I could not read the ripple
-rating of the 63 V part from the datasheet text. The 50 V part in the same can
-is rated 1000 mA at 100 kHz, with a multiplier of 0.6 at 50 and 60 Hz. The
+steady voltage is at most 44.3 V, 70 % of rating. The Lelon table for 63 V
+gives this part 900 mA at 100 kHz and 105 °C and 0.082 ohm, with a multiplier
+of 0.6 at 50 and 60 Hz: 540 mA. The
 through-hole alternative, Rubycon 63PX470MEFC12.5X20, is rated 700 mA at
 120 Hz and 0.8 of that at 50 Hz, which is 560 mA. Both cover the 0.16 A typical
-and 0.48 A peak.
+and 0.48 A peak. The peak figure is 89 % of the Lelon rating, at an ambient
+far below 105 °C.
 
 ### 4.6 Buck converter U1
 
@@ -255,7 +270,7 @@ Design values, using the equations of datasheet SNVSAU4D.
 | Switching frequency, eq. 1 | VOUT x 2500 / RRON(kohm) | 5.28 x 2500 / 47 = 281 kHz |
 | On-time at 45 V, eq. 11 | RRON / (VIN x 2.5) | 47 / 112.5 = 0.42 us. Minimum allowed is 50 ns. |
 | Inductor ripple at 34 V, eq. 18 | VOUT / (FSW x L) x (1 - VOUT / VIN) | 5.28 / (281k x 47u) x 0.845 = 0.34 A |
-| Peak inductor current, eq. 19 | IOUT + ripple / 2 | 0.81 + 0.17 = 0.98 A. Current limit is 1.25 A minimum. |
+| Peak inductor current, eq. 19 | IOUT + ripple / 2 | 0.82 + 0.17 = 0.99 A. Current limit is 1.25 A minimum. |
 | Output capacitor, eq. 21 | ripple / (8 x FSW x 0.5 % of VOUT) | 5.7 uF minimum. Fitted 2 x 22 uF, 25 V. |
 | Ripple capacitor CA, eq. 24 | 10 / (FSW x (RFB1 parallel RFB2)) | 10 / (281k x 77.3k) = 460 pF minimum. Fitted 3.3 nF. |
 | Ripple resistor RA, eq. 25 | tON x (VIN - VOUT) / (20 mV x CA) | At 34 V: 0.553 us x 28.7 V / (20 mV x 3.3 nF) = 240k maximum. Fitted 200k. |
@@ -288,7 +303,10 @@ I accept that and list it in section 22.
 J5 is a 16-pin USB 2.0 Type-C receptacle. R15 and R16, 5.1 kohm from CC1 and
 CC2 to `GND`, mark the board as a device so that a Type-C source turns VBUS on.
 U2 clamps D+, D- and VBUS. D+ and D- go straight to GPIO20 and GPIO19 with no
-series resistors, as in the Espressif reference circuit.
+series resistors. Espressif's hardware design guidelines recommend reserving
+a series resistor, 22 or 33 ohm to start with, and an unpopulated capacitor
+to ground on each line, close to the module. Review A1 recommends adding
+those four footprints with 0 ohm fitted. They are not in the netlist yet.
 
 | Ref | Part | Package | LCSC | Connections | Note |
 |---|---|---|---|---|---|
@@ -377,8 +395,8 @@ fuse in each leg, finding M2. This document keeps one fuse and relies on the
 warning below; the choice is the owner's.
 
 F1 is a 3 A time-lag fuse. I take 8 A as the short-circuit limit of a Class 2
-source. That figure is from memory of the NEC Class 2 tables and I did not
-re-read it. At 8 A, 270 % of rating, the fuse datasheet bounds the opening time
+source. That figure is from memory of the NEC Class 2 tables. Secondary
+sources agree with it; section 22. At 8 A, 270 % of rating, the fuse datasheet bounds the opening time
 between 0.2 s and 60 s. A USB cable's ground conductor is thin. I estimate
 that 8 A heats 28 AWG copper at about 50 K per second with no cooling. So
 **F1 protects the board traces and limits the damage, but it does not make
@@ -574,7 +592,8 @@ the fastest slope is 34 V x 27.7 krad/s = 0.94 V/us.
 can step more than the 77 V of the TVS clamp. A surge edge faster than 40 V/us
 could still turn a triac on. It would conduct for at most one half-cycle and
 then stop, because the gate is not driven. I assume a valve does not open in
-10 ms. The MOC3023 withstands 1000 V/us.
+10 ms. The onsemi MOC3023 withstands 1000 V/us; that figure belongs to this
+maker's part.
 
 **Snubber values.** R105 = 47 ohm and C101 = 10 nF are the values that every
 published design in the prior-art survey uses. With the triac off, the snubber
@@ -1311,14 +1330,23 @@ C14, 22 uF, and C15, 100 nF, sit at module pin 2, as in the module datasheet's
 reference circuit. R18, 10 kohm, and C16, 1 uF, delay EN by about 10 ms after
 `3V3` rises. The datasheet recommends those values. SW1 pulls EN low.
 
+Espressif's hardware design guidelines add a condition. Where the supply
+rises or falls slowly, is switched often or is unstable, the RC circuit alone
+may not meet the reset timing, the chip may fail to start or a flash erase may
+fail, and a power monitor chip with a threshold near 3.0 V should be
+reserved. This board's supply sags when a weak transformer meets valve
+inrush and decays over about 100 ms when the 24 VAC goes away. Review A1
+recommends a footprint for a 3.0 V open-drain supervisor on `EN`. It is not
+in the netlist yet.
+
 Flashing over USB needs no extra parts. The ESP32-S3's USB Serial/JTAG
 controller resets the chip and enters download mode by itself. For a factory
 jig, J8 carries `3V3`, `GND`, TXD0, RXD0, EN and IO0 on 2.54 mm pads.
 
 ### 12.5 Layout notes for this block
 
-- **Antenna**: the module's land pattern in datasheet figure 11-1 marks an antenna area of 18 x 6 mm at the top of the module. Put the module on a board edge with that area beyond the edge, or with no copper on any layer under it. I read only the land pattern. The clearance to keep around the antenna comes from Espressif's hardware design guidelines, which I did not read for this document.
-- **Metal near the antenna**: keep C1, K1, the display frame and the terminal blocks away from the antenna end. I have no number for "away". RF performance is a bench item.
+- **Antenna**: the module's land pattern in datasheet figure 11-1 marks an antenna area of 18 x 6 mm at the top of the module. Put the module on a board edge with that area beyond the edge, or with no copper on any layer under it. Espressif's hardware design guidelines, section 1.4.7, read in review A1, ask for the antenna to be outside the base board with its feed point at the board edge. Where that is not possible the board is to be cut away beside and below the antenna. Inside the housing they recommend at least 15 mm of clearance around the antenna in all directions.
+- **Metal near the antenna**: keep C1, K1, the display frame and the terminal blocks at least 15 mm from the antenna, the figure from the guidelines. RF performance is a bench item.
 - **USB**: route D+ and D- as a pair from J5 through U2 to module pins 14 and 13. Keep it short and without stubs. This is full-speed USB at 12 Mbit/s.
 - **ADC**: C30 and C31 go at module pins 39 and 38. Route `ISENSE_LO` and `ISENSE_HI` away from L1, the display clock and the antenna.
 - **Display SPI**: see section 15.3.
@@ -1353,7 +1381,7 @@ Three identical inputs: `T_RAIN`, `T_FLOW` and `T_AUX` at the terminals.
 | U11 | TPS2553DBVR current-limited switch | SOT-23-6 | C55266 | 1 IN `V_BUCK`, 2 GND `GND`, 3 EN `SENS_PWR_EN`, 4 FAULT `SENS_FLT_N`, 5 ILIM `SP_ILIM`, 6 OUT `SP_OUT` |  |
 | C47 | 1 uF 50 V X5R | 0603 | C15849 | `V_BUCK` to `GND` | At U11 |
 | C49 | 1 uF 50 V X5R | 0603 | C15849 | `SP_OUT` to `GND` |  |
-| R83 | 200k 1% | 0603 | C25811 | `SP_ILIM` to `GND` | Current limit about 137 mA |
+| R83 | 200k 1% | 0603 | C25811 | `SP_ILIM` to `GND` | Current limit 135 mA nominal, 116 to 158 mA |
 | R85 | 10k 1% | 0603 | C25804 | `3V3` to `SENS_FLT_N` |  |
 | R86 | 100k 1% | 0603 | C25803 | `SENS_PWR_EN` to `GND` |  |
 | D19 | SS210 Schottky 2 A 100 V | SMA | C14996 | A `SP_OUT`, K `SP_B` | Blocks a positive miswire |
@@ -1415,9 +1443,12 @@ allows. That is a layout task for every terminal of J2, J3 and J4.
 One terminal, labelled 5V, for flow meters with electronics. It comes from
 `V_BUCK`, so it is off on USB power. GPIO7 switches it.
 
-U11 is a TPS2553 current-limited switch. With R83 = 200 kohm the limit is about
-137 mA. I scaled that from the datasheet's 130 mA at 210 kohm and did not use
-the datasheet's formula. Its fault output goes to expander bit P15.
+U11 is a TPS2553 current-limited switch. With R83 = 200 kohm the datasheet
+equations (SLVS841, equation 1) give a limit of 135 mA nominal, 116 mA minimum
+and 158 mA maximum. Its fault output goes to expander bit P15. The PTC F3
+behind it holds 0.20 A at 20 °C but only 0.14 A at 60 °C, so in a hot
+enclosure F3 can trip before U11 limits. Treat 100 mA as the usable sensor
+current.
 
 Voltage at the terminal:
 
@@ -1439,11 +1470,15 @@ all see less than their ratings of 100 V, 100 V and 48 V. No current flows.
 and holds node `SP_A` near -1 V. The PTC F3, 1.4 to 4.4 ohm cold, takes the
 rest and trips. Its datasheet gives 2 s to trip at 1 A, and the fault current
 here is several amps, so it trips much sooner. D20 is rated 50 A for one
-half-cycle. Meanwhile U11 limits its own current to 137 mA, and R84 with D19
-keeps its output pin at about 0 V, inside its -0.3 V limit.
+half-cycle. Meanwhile U11 limits its own current to at most 158 mA, and R84
+with D19 keeps its output pin at about 0 V, inside its -0.3 V limit. That
+holds while U11 is on. With the sensor supply switched off, U11 sources
+nothing, and D19 can pull its output pin towards -0.6 V for the second or
+two that F3 takes to trip. Review A1 lists this as a minor finding; a
+Schottky from `GND` to `SP_OUT` would close it.
 
-**Short to ground.** U11 limits at 137 mA and reports the fault. F3 holds at
-0.2 A and does not trip.
+**Short to ground.** U11 limits at 116 to 158 mA and reports the fault. F3
+holds at 0.2 A at 20 °C and does not trip; at 60 °C it may.
 
 ## 14. Real-time clock and backup
 
@@ -1508,7 +1543,7 @@ Figures from its datasheet, version 1.0, 2020-11-04:
 |---|---|
 | Size and resolution | 2.0 inch, 240 x 320, RGB stripe |
 | Type | Transmissive TFT, viewing direction "ALL" in the table and "FREE" on the drawing, marked IPS on the drawing |
-| Controller | ST7789T3 in the table, "ST7789V2" on the drawing |
+| Controller | ST7789T3 in the table, "ST7789V2+HSD" on the drawing. The sample code at the end of the datasheet is headed ST7735R. Treat the variant as unknown until a panel is read out. |
 | Interface | 4-wire SPI, write only. There is no data output pin. |
 | Logic supply | IOVCC 1.65 to 3.3 V, VCI 2.4 to 3.3 V, absolute maximum 4.6 V |
 | Backlight | 4 white LEDs in parallel, 80 mA, 2.8 to 3.2 V at 80 mA |
@@ -1525,7 +1560,7 @@ general tolerance on the drawing is 0.2 mm.
 | Thickness | 2.05 | A second figure, 1.1, is marked on the side view. I take it as the glass. |
 | Active area to the long edge | 2.8 | |
 | Active area to the short edge opposite the FPC | 2.64 | |
-| Other marked figures | 33.6 wide, 43.94 and 46.6 long | Frame opening or viewing area. I could not tell which is which. |
+| Other marked figures | 33.6 wide, 43.94 and 46.6 long | Note 8 of the drawing says the "LCD V.A" is the recommended window in the housing. 33.6 x 43.94 is the likely viewing area; the drawing does not label it. |
 | FPC | 12 contacts, 0.5 mm pitch, 6.5 mm wide, 0.3 mm thick at the contacts | Leaves from one short edge |
 | FPC length beyond the outline | 20.7, tolerance 0.5 | |
 | FPC offset from one long edge | 15.28, tolerance 0.5 | Whether to the tail's centre or edge is not clear |
@@ -1559,10 +1594,22 @@ solder-type tail needs hand or hot-bar soldering. A display module on a
 carrier board needs a header, a second PCB and hand assembly, and it sets the
 display height by the header.
 
-J7 as chosen has its contacts on the bottom, the board side. I could not tell
-from the drawing which face of the panel's tail carries the contacts. **Check
-with a sample before layout.** If it is the other face, use the top-contact
-version of the connector on the same footprint.
+J7 as chosen has its contacts on the bottom, the board side. Its drawing calls
+it flip-lock, bottom contact, and asks for a tail 0.3 mm thick with (N+1) x
+0.5 mm = 6.5 mm width and at least 3 mm of exposed contact. The panel tail is
+0.3 mm thick, 6.5 mm wide, with 3.5 mm contacts.
+
+Review A1 read the panel drawing as an image. The front view, the one that
+shows the active area, shows the twelve contact fingers, with pin 1 at the
+left when the tail points down. The rear view shows a hatched 5 x 6.5 mm
+stiffener in the same place. **So the contacts are on the same face as the
+screen.** With the screen facing away from the PCB, a tail that runs straight
+into a connector has its contacts facing away from the board and needs a
+top-contact connector. A tail folded back under the panel has them facing the
+board and suits J7 as chosen. The fold also reverses the left-to-right order
+of the pins as the board sees them. Decide the fold with the enclosure, then
+choose the contact side and place pin 1 of J7 to match. **Still check with a
+sample before layout.** The drawing is the only evidence.
 
 The panel should sit in a pocket of the enclosure front, not on the PCB. The
 tail is 20.7 mm long, so J7 must be within about 15 mm of the panel's FPC edge
@@ -1613,9 +1660,11 @@ turns it off after a timeout, as the owner asked. That also extends its life.
 
 The display is on SPI2 using the pins that the ESP32-S3's IO MUX wires to it
 directly: GPIO12 clock, GPIO11 data, GPIO10 chip select. GPIO13 is data or
-command and GPIO14 is reset. Start at 20 MHz. I did not read the ST7789 timing
-table, so the maximum clock is not confirmed. A full frame of 154 kB takes
-62 ms at 20 MHz.
+command and GPIO14 is reset. The Sitronix ST7789V datasheet, version 1.3,
+gives a minimum serial write cycle of 66 ns with 15 ns high and 15 ns low: a
+guaranteed clock of 15 MHz. Start there. Faster clocks are common practice
+with these panels and are outside that figure; the panel's exact controller
+variant is also not certain. A full frame of 154 kB takes 82 ms at 15 MHz.
 
 Layout: keep J7 within about 40 mm of module pins 18 to 22. Route the clock
 over unbroken ground, away from the antenna and from the current-sense traces.
@@ -1897,21 +1946,37 @@ For the first prototype. Stop at the first step that fails.
 
 ## 22. What I could not confirm
 
-- **Class 2 short-circuit limit.** The 8 A figure in sections 5.3 and 20 is from memory.
+Review A1 went through this list against primary sources. The first table is
+what it settled. The list after it is what is still open.
+
+| Item | Result | Source |
+|---|---|---|
+| T410 pin order | Confirmed: pin 1 T1, pin 2 and tab T2, pin 3 gate | ST DocID7699 rev 9, page 1 drawing |
+| Bulk capacitor ripple rating | 900 mA at 100 kHz, 540 mA at 50 and 60 Hz for the 63 V part | Lelon VZH table, 63 V column |
+| Relay must-operate voltage | 75 % of rated at a coil temperature of 23 °C. 3 % margin with a hot coil, section 7.2 | Omron G5NB data sheet, English edition |
+| Display FPC contact side | Same face as the screen | Panel drawing, front and rear views |
+| Display viewing area | 33.6 x 43.94 mm is the likely window. The drawing does not label it. | Panel drawing, note 8 |
+| Display SPI clock | 15 MHz guaranteed for an ST7789V | Sitronix ST7789V v1.3, serial interface timing |
+| Antenna clearance | 15 mm in all directions inside the housing; antenna beyond the board edge | Espressif hardware design guidelines, 1.4.7 |
+| Module flash erase time | Espressif does not name the part. A representative 16 MB part: 45 ms typical, 400 ms maximum per 4 kB sector; 2 s maximum per 64 kB block | Module datasheet v1.8 note 3; Winbond W25Q128JV rev C |
+| TPS2553 limit | 116, 135 and 158 mA minimum, nominal and maximum at 200 kohm | TI SLVS841, equation 1 |
+| Buck efficiency | The data sheet has curves for a 12 V output only. A loss estimate from its on-resistances gives about 90 % at 0.3 to 0.8 A, so 85 % is on the safe side. | TI SNVSAU4D, electrical table |
+| MOC3023 dv/dt | 1000 V/us minimum is the onsemi figure for this part number. A part from another maker with the same type number needs its own check. | onsemi MOC3023M/D rev 3, electrical table |
+| `listing only` parts opened in the review | AO3400A, 1N4148W, 1206L012 PTC, both LEDs, the crystal, the USB-C receptacle, the 3.81 mm header, the FPC connector, the Uniroyal resistor series. Ratings and pin tables agree with the netlist. The resistor series has no pulse rating, see section 4.4. | LCSC copies of the maker data sheets |
+
+Still open:
+
+- **Class 2 short-circuit limit.** Secondary sources agree on 8 A and 100 VA for an inherently limited source up to 30 V. I could not read the NEC table itself. A Class 2 source that relies on a fuse may deliver more for a short time.
 - **USB attach capacitance.** The 10 uF figure in section 5.2 is from memory.
-- **Bulk capacitor ripple rating.** I read the Lelon table for 50 V, not 63 V.
 - **Surface-mount relay.** No surface-mount alternative to K1 was searched for.
-- **Display.** FPC contact side, which marked dimension is the viewing area, the controller variant, the logic supply current, the maximum SPI clock and a second source. I did not read an ST7789 datasheet.
-- **Antenna clearance.** I did not read Espressif's hardware design guidelines.
-- **Module flash.** Its part number and sector-erase time.
-- **TPS2553 limit.** Estimated by scaling, not from the datasheet formula.
-- **Buck efficiency.** Assumed 85 %.
-- **Coin cell.** Capacity and shelf life assumed.
+- **Display.** The controller variant, the logic supply current and a second source. JLCPCB lists no other maker's ST7789 panel in stock, and a search found no panel with this 12-pin order.
+- **Coin cell.** Capacity and shelf life assumed. No cell is on the BOM yet.
 - **Solenoid inductance and transformer impedance.** Estimates, used in sections 6.5 and 6.6.
-- **Typical values that the datasheets do not give.** Expander output voltage at 13 mA, opto-triac drop at 10 mA, ADC noise.
-- **Parts marked `listing only` in the BOM.** I confirmed the LCSC number, maker, part number, package and stock, and took the ratings from the listing. I did not open datasheets for the generic resistors and capacitors, the LEDs, tactile switches, terminal blocks, the JST and USB-C connectors, the crystal, the coin-cell holder, the AO3400A, the 1N4148W and the 1206 PTC.
-- **Second sources.** PCA9539PW for the expander and BSMD2920-100-60V for the output PTC are named in the BOM notes. I did not read their datasheets. LCSC's own page for the PCA9539PW returned "not found" although JLCPCB lists the part.
-- **The micro-crystal RV-8263-C7 and RV-3028-C7.** I wanted to evaluate them as RTCs without a crystal and could not fetch a datasheet.
+- **Typical values that the datasheets do not give.** Expander output voltage at 13 mA and ADC noise.
+- **Generic capacitors, the tactile switches, the JST connector and the coin-cell holder.** Ratings are from the listing. The switch and JST files are drawings without extractable text and were not read in detail. LCSC has no data sheet for the holder.
+- **Second sources.** PCA9539PW for the expander and BSMD2920-100-60V for the output PTC are named in the BOM notes. Their datasheets are not read.
+- **Lifecycle status.** The JLCPCB listing does not give it. Only the LM5164DDAR is confirmed active, from the TI data sheet addendum.
+- **The micro-crystal RV-8263-C7 and RV-3028-C7.** Not evaluated.
 
 ## 23. Sources
 
@@ -1944,6 +2009,11 @@ is LCSC's copy of the maker's PDF for that LCSC number.
 | EC11J1525402 | ALPS product sheet | <https://www.lcsc.com/datasheet/C209762.pdf> |
 | G5NB-1A-E | Omron G5NB, Chinese edition; English edition read in review A1 | <https://www.lcsc.com/datasheet/C48746.pdf>, <https://omronfs.omron.com/en_US/ecb/products/pdf/en-g5nb.pdf> |
 | AO3401A, SS34, SS210, M7, BAT54S, USBLC6-2SC6 | Maker datasheets, key ratings only | LCSC pages for C15127, C8678, C14996, C95872, C47546, C7519 |
+| ESP32-S3 hardware design | Espressif hardware design guidelines, release of 2026-11-10 (review A1) | <https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32s3/> |
+| ST7789V | Sitronix datasheet v1.3 (review A1) | <https://dl.espressif.com/dl/schematics/LCD_ST7789.pdf> |
+| W25Q128JV | Winbond datasheet rev C (review A1) | <https://www.pjrc.com/teensy/W25Q128JV.pdf> |
+| 452/454 fuse | Littelfuse 452/454 series (review A1) | <https://www.lcsc.com/datasheet/C99550.pdf> |
+| FPC connector, USB-C, header, AO3400A, 1N4148W, 1206L012, LEDs, crystal, thick-film resistors | Maker datasheets (review A1) | LCSC pages for C2856799, C165948, C441187, C20917, C81598, C151160, C125094, C2286, C32346, C39347 |
 
 Stock, price and library class came from the JLCPCB parts search on
 2026-11-10. The prior-art evidence is in the [prior-art survey](prior-art.md).

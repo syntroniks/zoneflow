@@ -1960,7 +1960,7 @@ components:
     lcsc: C25811
     block: "L sensor inputs and sensor supply"
     variant: "all"
-    note: "Current limit about 137 mA"
+    note: "Current limit 135 mA nominal, 116 to 158 mA"
     pins:
       "1": "SP_ILIM"
       "2": "GND"
