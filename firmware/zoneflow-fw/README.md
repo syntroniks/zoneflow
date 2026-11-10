@@ -36,6 +36,15 @@ registry (`espressif/mdns` 1.14.1, `joltwallet/littlefs` 1.22.3) into
 Web UI files placed in `www/` (with an `index.html`) are packed into
 `build/www.bin` and flashed to the `www` partition; see
 [`docs/firmware/web-ui-contract.md`](../../docs/firmware/web-ui-contract.md).
+The web UI lives in [`web/`](web/README.md); build it into `www/` with
+Node 22.18 or newer before `idf.py build`:
+
+```sh
+cd firmware/zoneflow-fw/web && npm ci && npm run build
+```
+
+Without Node (no `www/index.html`) the firmware still builds and the device
+serves its built-in page.
 
 ## Run the host tests
 
@@ -74,6 +83,8 @@ CI checks formatting with the same clang-format version.
 | `components/zf_mqtt`, `zf_display` | Stubs with the planned work written in each header. |
 | `main/app_main.cpp` | Wires everything together and starts the tasks. |
 | `test/host/` | GoogleTest suites and fakes for the core. |
+| `test/vectors/` | Schedule cases shared by the C++ scheduler test and the web UI's preview. |
+| `web/` | Browser UI (Preact, TypeScript), mock controller and its tests. |
 | `partitions.csv` | 16 MB layout: NVS, two 4 MB OTA slots, 7.75 MB LittleFS `www` for web and display assets, 128 KB core dump. |
 
 ## What is verified
@@ -81,6 +92,10 @@ CI checks formatting with the same clang-format version.
 - Host tests: `test/host/run.sh`, all suites pass under ASan and UBSan.
 - `idf.py build` with ESP-IDF v5.5.6 for esp32s3 completes with no warnings
   in ZoneFlow code. Image size 1 501 983 bytes (35.8 % of a 4 MB OTA slot).
+- Web UI (`web/`): unit tests (vitest) and Playwright end-to-end tests on a
+  phone, a 320 px and a desktop viewport, all against the mock controller in
+  `web/mock/`, not against firmware. The schedule preview and the C++
+  scheduler agree on the shared vectors in `test/vectors/`.
 - Nothing has run on an ESP32-S3. Pin assignments, the output-enable
   timing, the current-sense scaling and the PCF8563 driver are untested
   against hardware. So are WiFi, provisioning with a phone, mDNS, the HTTP
