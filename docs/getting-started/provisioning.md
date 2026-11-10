@@ -57,15 +57,19 @@ python $IDF_PATH/tools/esp_prov/esp_prov.py --transport ble \
 
 ## Path 2: the setup access point
 
-If nobody connects over Bluetooth within 10 minutes, the controller switches
-to a WiFi access point and stays there until it is set up:
+If no phone has opened a setup session over Bluetooth (with the setup code)
+within 10 minutes, the controller switches to a WiFi access point and stays
+there until it is set up. A session that stays open keeps Bluetooth up for at
+most 30 minutes.
 
 1. Join the network `ZoneFlow-XXXX` from a phone or laptop. Its password is
    the **setup code**.
 2. Most phones open the setup page by themselves ("sign in to network"). If
    not, browse to `http://192.168.4.1/`.
 3. Pick your network, type its password, and choose an admin password for the
-   controller (8 to 64 characters). Press **Connect**.
+   controller (8 to 64 characters). Press **Connect**. Set the admin password
+   here: until one is set, anyone on your network who knows the setup code
+   can set it.
 4. The page reports when the controller has joined your network and gives its
    address, `http://zoneflow-xxxx.local/`. The access point then closes.
 
@@ -88,8 +92,9 @@ point with the same setup code.
   `{"transport": "ble"}` or `{"transport": "softap"}`.
 
 Either way the controller restarts into setup. The stored network stays until
-new credentials work; if nobody completes setup within **15 minutes**, the
-controller goes back to the stored network. Watering stops during the
+new credentials work; if nobody completes setup within **15 minutes** (30 at
+most while a phone keeps a setup session open), the controller goes back to
+the stored network. Watering stops during the
 restart and resumes on schedule.
 
 ## Factory reset
@@ -97,8 +102,11 @@ restart and resumes on schedule.
 `POST /api/v1/system/factory-reset` with `{"confirm": "factory-reset"}`
 (admin session), or from the controller's menu once the display firmware
 offers it. The controller stops watering, then erases the configuration,
-programs, WiFi credentials, admin password and web settings, and restarts
-into setup. The setup code is kept so a printed label stays valid.
+programs, WiFi credentials, admin password, web settings, HTTPS key and the
+stored crash dump, and restarts into setup. The setup code is kept so a
+printed label stays valid; this also means anyone who saw the code before the
+reset can still use it during the next setup. The web UI image and the
+previous firmware in the other update slot are kept.
 
 ## If it does not work
 
