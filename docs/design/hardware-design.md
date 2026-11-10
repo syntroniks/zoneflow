@@ -25,7 +25,7 @@ run showed.
 | Logic supply | Fuse in the ground leg, 1500 W TVS, half-wave rectifier, 470 uF, LM5164 100 V buck to 5.3 V, Schottky OR with USB, LDL1117 to 3.3 V | The TVS clamps at 77.4 V. A 100 V regulator survives that with no further argument. A 5 V bus makes USB and 24 VAC equal sources and gives the LDO room to reject ripple. |
 | Output switch | T410-600B-TR 4 A three-quadrant triac in DPAK, fired by a MOC3023 opto-triac from its own T2 | The triacs JLCPCB stocks with real surge ratings are three-quadrant parts. Positive-only gate drive from logic cannot fire them on the negative half-cycle. Section 6 has the analysis. |
 | Output control | TCA9539 I2C expander sinks the opto LEDs | The TFT took six GPIOs. Nine valve pins no longer fit. The expander is held in reset by the fail-safe circuit, so no valve bit survives a crash. |
-| Fail-safe | Diode pump on the keep-alive pin, comparator with hysteresis, switched LED supply, expander reset | Gate drive needs an edge at least every 50 ms. It is gone 0.5 to 0.9 s after the edges stop. |
+| Fail-safe | Diode pump on the keep-alive pin, comparator with hysteresis, switched LED supply, expander reset | Gate drive needs an edge at least every 20 ms. It is gone 0.45 to 0.9 s after the edges stop. |
 | Over-current | Window comparator on the shunt amplifier, NAND latch, same switch as the fail-safe | Removes drive about 70 us after a short begins. The triac then stops at the next current zero. |
 | Valve common | Relay in the COM feed, driven only while drive is enabled | A shorted triac or TVS otherwise leaves a valve on with no way to stop it. This is an addition to the specification. |
 | Current measurement | 0.1 ohm shunt, two difference amplifiers biased at 0.8 V, sampled by ADC1 | True RMS in firmware. No precision rectifier, which would add millivolts of error to a 5 mV signal. |
@@ -790,7 +790,7 @@ inputs. Through R31 in parallel with R32 that is a 42 mV error. C24 keeps the
 comparator input below the reference while `3V3` ramps up, so `KA_OK` cannot
 pulse at power-on. The simulation includes the ramp and the bias current.
 
-### 8.4 Timing, from `hardware/sim/keepalive.cir`
+### 8.4 Timing, from `hardware/sim/keepalive.cir` and `keepalive_faults.cir`
 
 | Keep-alive signal | Result |
 |---|---|
@@ -809,41 +809,104 @@ pulse at power-on. The simulation includes the ramp and the bias current.
 The hold-up is longer when the pin stops high, because C22 then stays in
 circuit and discharges with C23.
 
+Review A1 added `hardware/sim/keepalive_faults.cir`. It runs more toggle
+rates, tolerance and temperature corners, and every single component fault.
+The fault results are in section 8.5. The rest:
+
+| Question | Result |
+|---|---|
+| Slowest rate that enables | 1 Hz never did. 2 Hz does not with nominal parts but does with C23 30 % low, C22 20 % high and -15 mV of comparator offset. 3 Hz and faster always did. |
+| Fastest rate that enables | No limit found. 50 kHz enables after 9 ms and 1 MHz after 28 ms. |
+| Duty cycle | 2 % and 98 % at 100 Hz both enable, after about 0.1 s. |
+| Hold-up, pin stops low, -20 to 60 °C with tolerances | 0.47 to 0.80 s |
+| Hold-up, pin stops high, longest | 1.19 s |
+| Hold-up at 85 °C | 0.44 s with nominal parts, 0.30 s at the short corner. Schottky leakage adds to R30. The leakage model is generic. |
+| Time to enable at 100 Hz | 14 ms nominal, 41 ms at the slow corner |
+| Time to enable at 25 Hz | 43 ms nominal, 0.16 s at the slow corner |
+| Time to enable at 10 Hz | 0.10 s nominal, 0.50 s at the slow corner, where the reservoir clears the threshold by 11 % only |
+| `3V3` ramps over 0.1 s or 1 s | `KA_OK` stays low with the pin low. With the pin tied to the rail it follows the rail to 0.95 V and falls again, below the voltage at which U7 or the expander work. |
+
+The short corner is C23 at 7 uF, C22 at 3.3 uF, R30 1 % low, `3V3` at 3.2 V
+and +15 mV of comparator offset. The slow corner is C23 at 12 uF, C22 at
+3.3 uF, a high level of 2.9 V on the pin, +15 mV of offset and -20 °C.
+
 **Specification for firmware.**
 
-- **Accepted**: a square wave from 10 Hz to 5 kHz, which means an edge at least every 50 ms. I simulated up to 1 kHz. The 5 kHz limit is my estimate from the 0.7 ms time constant of R29 and C22.
-- **Hold-up**: drive is removed 0.5 to 0.9 s after the last edge if the pin stops low, and at most about 1.4 s if it stops high.
-- **Not accepted**: anything at 2 Hz or slower. The margin at 2 Hz is 8 %, so treat only a steady level as guaranteed off.
-- **Source**: task code that the scheduler supervises. Never a hardware timer, LEDC, RMT or MCPWM output. A hardware timer keeps running when the firmware hangs, and the circuit cannot tell the difference.
+- **Accepted**: an edge at least every 20 ms. The firmware's 5 ms is the design point. 10 Hz works with nominal parts and has too little margin at the slow corner to rely on.
+- **No upper limit**: the detector is a rectifier, not a window. A square wave at 50 kHz or 1 MHz enables drive as well as 100 Hz does. An earlier version of this section gave 5 kHz as a limit. That was an estimate and it was wrong.
+- **Hold-up**: drive is removed 0.45 to 0.9 s after the last edge if the pin stops low, and at most 1.2 s if it stops high. Above 60 °C on the board the lower figure falls towards 0.3 s.
+- **Not accepted**: a steady level, high or low. Slow toggling is not reliably rejected: between 2 and 3 Hz the result depends on part tolerances. Treat only a steady level as guaranteed off.
+- **Source**: code that decides every edge from evidence that the control loop is running. Never an output that a peripheral generates by itself: LEDC, RMT, MCPWM or a timer with a pin output keep toggling when the firmware hangs, and the circuit cannot tell the difference. Section 19.4 has the contract agreed with the firmware.
 
-The firmware team asked whether the hold-up exceeds the flash sector-erase
-time, during which both cores stall. The shortest hold-up is 0.52 s. I did not
-find the flash part or its erase time in the module datasheet. If the erase can
-take longer than 0.5 s, the result is a dropped output, which is the safe
-direction. Firmware should avoid flash writes while a valve is on.
+The firmware team asked about the flash sector-erase time, during which both
+cores stall. Espressif does not name the flash part. The module data sheet
+v1.8 says only that the flash runs at 80 MHz and does not support
+auto-suspend. The Winbond W25Q128JV, one 16 MB part of the kind fitted, gives
+45 ms typical and 400 ms maximum for a 4 kB sector erase, and 150 ms typical
+and 2 s maximum for a 64 kB block erase. Section 19.4 says what that means for
+the firmware's heartbeat timeout.
 
 ### 8.5 Single-fault analysis
+
+States of the keep-alive pin and of the firmware:
 
 | Fault or state | What happens | Outputs |
 |---|---|---|
 | `KA` stuck low | No edges. C23 drains through R30. | Off within 0.9 s |
-| `KA` stuck high | C22 blocks DC. C23 drains. | Off within 1.4 s |
+| `KA` stuck high | C22 blocks DC. C23 drains. | Off within 1.2 s |
 | `KA` floating: chip in reset, EN low, or unprogrammed | R33 pulls it low. | Off |
+| `KA` toggling at the wrong rate | Anything from about 3 Hz up enables drive, whatever the duty cycle. | The circuit does not catch this. See section 8.4. |
 | USB flashing | The ROM loader runs. GPIO38 stays an input. No edges. | Off |
 | Boot | GPIO38 has no power-up glitch in datasheet table 2-2. One edge could not enable drive anyway. | Off |
-| Brownout of `3V3` | The ESP32 resets and toggling stops. | Off within 0.9 s. Until then the outputs that were on stay on. |
-| Firmware hangs with outputs on | Toggling stops. | Off within 1.4 s |
+| Brownout of `3V3` | The ESP32 resets and toggling stops. The expander keeps its bits down to about 1 V. | Off within 0.9 s. Until then the outputs that were on stay on. |
+| Firmware hangs with outputs on | Toggling stops. | Off within 1.2 s of the last edge |
 | I2C bus stuck by a fault | Firmware cannot write the expander. It must stop toggling. | Off within 0.9 s of that decision |
 | Expander bit stuck low inside the chip | That valve follows `V_DRV`. Firmware sees current it did not ask for and stops toggling. | Off after firmware reacts |
+| GPIO40 driven as an output by mistake | R87 keeps it from moving the latch node. | No effect |
+
+Single component faults in the detector, each simulated in
+`hardware/sim/keepalive_faults.cir`. A resistor is taken to fail open, a
+capacitor open or short, and a diode or an IC output either way.
+
+| Fault | What happens | Drive |
+|---|---|---|
+| R29 open, C22 open, D7A short or open, D7B short or open, C23 short, C24 short, R35 open | No charge reaches the comparator, or the reference sits at the rail. | Never enabled. Found at the first run. |
+| R31 open from power-up | The comparator input stays near 0.27 V. | Never enabled |
+| C23 open | `KA_OK` follows the keep-alive and resets the expander on every cycle. | Unusable. Found at the first run. |
+| R32 open | No hysteresis. Hold-up falls to 0.46 s. | Works |
+| R33 open | No pull-down. A pin in reset floats and gives no edges. | Works |
+| R36 open | `KA_OK` is pulled up through R32 only, to 2.9 V. | Works |
+| **R30 open** | Nothing drains C23. R32 feeds it from `KA_OK`, so it rises to 3.26 V and stays. | **Enabled for ever after the first run** |
+| **R31 opens while drive is enabled** | R32 holds the comparator input at 3.3 V. | **Enabled until power is cycled** |
+| **R34 open** | The reference is at 0 V. The comparator output is high from power-up. | **Enabled with no keep-alive at all** |
+| **C22 short** | The detector passes DC. With a toggling pin it behaves normally. | **A pin stuck high keeps drive enabled** |
+| **U6A output open, or U7 gate 3 or 4 stuck** | `DRV_EN` stays high. | **Enabled for ever** |
 | Q3 shorted drain to source | `V_DRV` stays on. | Expander reset and relay still turn everything off |
-| U6A output stuck high, or U7 failed with `DRV_EN` high | The fail-safe is defeated and nothing shows it in normal use. | Detected at start-up, see below |
 | Triac, TVS or opto-triac shorted | LED drive is irrelevant. | Relay K1, section 7 |
 
-**Start-up self-test.** The expander answers on I2C only when `DRV_EN` is
-high. Before firmware starts toggling `KA` it must probe address 0x74 and get
-no answer. Then it toggles, and must get an answer within about 110 ms. If the
-expander answers before the keep-alive starts, the fail-safe circuit has
-failed. Firmware must then refuse to run valves.
+**The five bold rows are the weak point of this circuit.** In each one the
+valves still switch normally through the expander, so nothing shows. If the
+firmware then stops with a valve on, nothing removes drive: the LED supply,
+the expander reset and the relay all hang on the one `DRV_EN` signal. The
+first draft of this section listed only the U6A and U7 case and relied on a
+test at start-up. A controller that stays powered for a season is not tested
+often enough that way. Review A1 rates this as a blocking finding and proposes
+a second, independent detector for the relay. See hardware review A1 (`hardware-review-a1.md`), finding B1. Until that is
+decided, the test below is the only cover.
+
+**Self-test before every run.** Firmware stops the keep-alive whenever no
+output is wanted, so `DRV_EN` should be low before each run. The expander
+answers on I2C only when `DRV_EN` is high. That makes a complete test
+possible at no cost, before every run and not only at start-up:
+
+1. With `KA` low, probe address 0x74. It must not answer. An answer means a stuck-enabled fault.
+2. At start-up, also hold `KA` high for 1.5 s and probe again. It must not answer. An answer means C22 has failed short.
+3. Start toggling. The expander must answer within 110 ms.
+4. After the run, stop toggling. Within 1.5 s the expander must stop answering.
+
+If step 1, 2 or 4 fails, firmware must write every expander pin back to input,
+because the hardware will not do it, then raise a fault and refuse to run
+valves until the board has been repaired.
 
 ### 8.6 Boot behaviour of the pins
 
@@ -1736,7 +1799,7 @@ For the first prototype. Stop at the first step that fails.
 1. **Before power.** Inspect. Measure resistance from `VIN_DC`, `V5`, `3V3` and `V_DRV` to `GND`. No cell in BT1, no display, no valve wiring.
 2. **USB only.** Feed 5 V from a bench supply limited to 200 mA into VBUS. Expect `V5` 4.4 to 4.9 V, `3V3` 3.20 to 3.40 V, under 80 mA with a blank module. Then use a USB port and read the ROM boot log.
 3. **Fail-safe at rest.** `KA_OK` low, `DRV_EN` low, `V_DRV` at 0 V, K1 open, no I2C answer at 0x74. The RTC at 0x51 answers.
-4. **Keep-alive.** Test firmware toggles `KA` at 100 Hz. `KA_N2` rises to about 2.9 V and `DRV_EN` goes high within 20 ms. Stop toggling and time the fall on a scope: 0.5 to 0.9 s. Repeat stuck high, at 10 Hz, and at 2 Hz, which must not enable.
+4. **Keep-alive.** Test firmware toggles `KA` at 100 Hz. `KA_N2` rises to about 2.9 V and `DRV_EN` goes high within 20 ms. Stop toggling and time the fall on a scope: 0.45 to 0.9 s. Repeat stuck high, which must fall within 1.2 s, and at 25 Hz. Then try 1 Hz, which must not enable, and 2 Hz, 1 kHz and 100 kHz, and record what each does.
 5. **Expander and LEDs.** Turn each output on in turn. Its LED lights. The voltage across R101 is about 1.8 V, 12 mA. `V_DRV` falls when the keep-alive stops, and the expander stops answering.
 6. **Current channels.** Pass a known 50 or 60 Hz current through `ISNS` to `GND` from a low-voltage source. Check 133 mV/A and 665 mV/A and the 0.79 V bias.
 7. **Over-current latch.** Raise that current. `FAULT` sets between 4.2 and 5.1 A peak, D8 lights, `DRV_EN` falls. It stays set until the keep-alive stops.
@@ -1746,7 +1809,7 @@ For the first prototype. Stop at the first step that fails.
 11. **Resistive load.** 47 ohm, 25 W from `COM` to each output in turn: 0.5 A. Scope T2: firing voltage a few volts each half-cycle. Compare the current reading with a meter.
 12. **Valve.** A real solenoid on each output. Scope T2 at turn-off: one clean stop at the current zero, ringing under the 77 V clamp. Then a 50 mA relay coil.
 13. **Short circuit.** With a 40 VA transformer, short an output to `COM` and turn it on. One half-cycle of current, latch set, fuse intact, triac still working. Repeat with the short applied while the output is on.
-14. **Fail-safe with a valve running.** Halt the CPU, hold reset, start a USB flash. The valve closes within 0.9 s each time and does not reopen.
+14. **Fail-safe with a valve running.** Halt the CPU, hold reset, start a USB flash. The valve closes within 0.9 s each time, or 1.2 s if the pin stopped high, and does not reopen.
 15. **Sensors.** Contact on each input. 200 Hz square wave on FLOW with no lost counts. 24 VAC onto each sensor terminal for ten minutes, then check the input still works. Short and miswire the 5V terminal.
 16. **RTC.** Fit the cell. Measure cell current with `3V3` off: under 1 uA. Check the clock against a reference over a day.
 17. **Display and controls.** Plug the panel in. Backlight current about 59 mA at full duty. Run the SPI at 20 MHz, then higher. Encoder and buttons.

@@ -257,12 +257,15 @@ gpio:
     reset_state: high impedance
     powerup_glitch: none
     notes: >-
-      Must be toggled by supervised task code, never by LEDC, RMT, MCPWM or a
-      timer output. Accepted: square wave 10 Hz to 5 kHz (an edge at least
-      every 50 ms). Drive is enabled 8 to 105 ms after toggling starts and
-      removed 0.5 to 0.9 s after it stops low, at most 1.4 s if it stops high.
-      Stopping for longer than that also clears the over-current latch and
-      resets the I/O expander.
+      Every edge must be decided by code that has proof the control loop is
+      running (the firmware's timer interrupt checks a heartbeat). Never an
+      output that LEDC, RMT, MCPWM or a timer generates by itself. Required:
+      an edge at least every 20 ms; firmware uses 5 ms. There is no upper
+      frequency limit and slow toggling down to 2 to 3 Hz can still enable
+      drive, so only a steady level is guaranteed off. Drive is enabled 14
+      to 41 ms after 100 Hz toggling starts and removed 0.45 to 0.9 s after
+      it stops low, at most 1.2 s if it stops high. Stopping for 1.5 s also
+      clears the over-current latch and resets the I/O expander.
 
   - gpio: 39
     signal: BTN_HOME

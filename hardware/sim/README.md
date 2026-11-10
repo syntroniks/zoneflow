@@ -112,3 +112,54 @@ What it showed:
 
 - **Rating**: without R88 the pin sits at the LM2901's -0.3 V absolute maximum at 25 °C and goes past it when cold. With R88 it stays above -0.2 V.
 - **Timing**: the rising edge lags the zero crossing by 0.25 to 0.30 ms and the falling edge leads the next one by 0.04 to 0.09 ms. The two are not symmetric, because the C34 delay adds to one and subtracts from the other. Firmware needs a separate offset for each edge.
+
+## keepalive_faults.cir
+
+Added by review A1. The same detector as `keepalive.cir`, run 47 times: every
+single component fault, toggle rates from 1 Hz to 1 MHz, and tolerance and
+temperature corners. Result lines start `RESULT FAULT`, `RESULT RATE` or
+`RESULT CORNER`. ngspice also prints "out of interval" errors for events that
+do not happen, such as `KA_OK` never going low. That is expected.
+
+Faults that leave `KA_OK` high when it should be low:
+
+| Fault | `KA_OK` |
+|---|---|
+| R30 open | High 13 ms after the first edge and never low again. The reservoir rises to 3.26 V. Same at 60 °C. |
+| R31 opens while enabled | Stays at 3.3 V |
+| R34 open | High from power-up with no keep-alive at all |
+| C22 short | Normal while the pin toggles. High with the pin held high and no edges. |
+| U6A output never pulls low | High from power-up |
+
+Faults that leave it low or harmless: R29 open, D7A short, D7B short or open,
+C23 short, C24 short, R35 open and R31 open from power-up never enable. C23
+open makes `KA_OK` follow the keep-alive. R32 open, R33 open and R36 open still
+work; R32 open shortens the hold-up to 0.46 s.
+
+| Toggle rate | `KA_OK` |
+|---|---|
+| 1 Hz | Never high. Reservoir peaks at 1.16 V. |
+| 2 Hz, nominal parts | Never high. 1.42 V. |
+| 2 Hz, C23 30 % low, C22 20 % high, -15 mV offset, `3V3` 3.4 V | High after 0.50 s |
+| 3 Hz, 5 Hz | High after 0.67 s and 0.40 s |
+| 25 Hz | High after 43 ms |
+| 50 kHz, 1 MHz | High after 9 ms and 28 ms |
+| 100 Hz at 2 % and at 98 % duty | High after 0.11 s and 0.09 s |
+
+| Corner | Hold-up after the last edge |
+|---|---|
+| Nominal parts at -20, 27, 60, 85 °C | 0.71, 0.74, 0.67, 0.44 s |
+| Short corner at -20, 60, 85 °C | 0.50, 0.47, 0.30 s |
+| Long corner at -20 °C | 0.80 s |
+| Long corner, pin stops high | 1.19 s |
+
+The slowest enable, at the slow corner and -20 °C, is 41 ms at 100 Hz, 0.16 s
+at 25 Hz and 0.50 s at 10 Hz. With `3V3` ramping over 0.1 s or 1 s, `KA_OK`
+stays low when the pin is low. With the pin tied to the rail it follows the
+rail to 0.95 V and falls again.
+
+What it showed:
+
+- **Single faults**: five faults leave drive enabled with no working keep-alive. This is finding B1 of the review.
+- **Rates**: the detector has no upper frequency limit and does not reliably reject slow toggling above about 2 Hz. It detects edges, not a correct rate.
+- **Temperature**: the hold-up shortens above 60 °C because Schottky leakage adds to the bleed resistor. The leakage figure comes from a generic model.
