@@ -81,14 +81,17 @@ jobs:
       - name: Generate the schematic and check it
         run: make -C hardware/zoneflow-a schematic
 
-      # The generated files are committed. They must be what the sources give.
-      # The PDF is left out: it is binary and may differ between machines.
+      # The generated files are committed. They must be what the sources give,
+      # byte for byte: schematic sheets, project file, libraries, netlist, BOMs
+      # and ERC reports. A plot is compared by what it draws: two builds of one
+      # KiCad release write a page's items in a different order, so the build
+      # keeps a committed plot whose new version draws the same elements, and
+      # a plot that shows up here as changed draws something else.
       - name: The committed files are what the sources generate
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git status --short -- hardware/zoneflow-a
-          git diff -- hardware/zoneflow-a/output/zoneflow-a.net | head -n 40
-          git diff --exit-code --stat -- hardware/zoneflow-a ':!hardware/zoneflow-a/output/*.pdf'
+          git diff --exit-code --stat -- hardware/zoneflow-a
           test -z "$(git status --porcelain --untracked-files=all -- hardware/zoneflow-a | grep '^??')"
 
       # What this run generated, so that a difference can be looked at.
