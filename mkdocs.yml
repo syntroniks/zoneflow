@@ -98,3 +98,4 @@ nav:
   - Design documents:
       - design/index.md
       - System specification: design/system-spec.md
+      - Prior-art survey: design/prior-art.md
