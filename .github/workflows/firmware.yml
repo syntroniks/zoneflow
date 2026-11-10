@@ -1,0 +1,71 @@
+name: firmware
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "firmware/**"
+      - ".github/workflows/firmware.yml"
+  pull_request:
+    paths:
+      - "firmware/**"
+      - ".github/workflows/firmware.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firmware-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  host-tests:
+    name: Host unit tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run (ASan + UBSan)
+        run: firmware/zoneflow-fw/test/host/run.sh --output-junit junit.xml
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: host-test-report
+          path: firmware/zoneflow-fw/test/host/build/junit.xml
+          if-no-files-found: ignore
+
+  format:
+    name: clang-format check
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check formatting (clang-format 23.1.4 from PyPI)
+        working-directory: firmware/zoneflow-fw
+        run: |
+          git ls-files '*.cpp' '*.hpp' | xargs pipx run --spec clang-format==23.1.4 clang-format --dry-run --Werror
+
+  build:
+    name: ESP-IDF build (esp32s3)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: idf.py build
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.5.6
+          target: esp32s3
+          path: firmware/zoneflow-fw
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: zoneflow-fw-esp32s3-${{ github.sha }}
+          path: |
+            firmware/zoneflow-fw/build/zoneflow-fw.bin
+            firmware/zoneflow-fw/build/zoneflow-fw.elf
+            firmware/zoneflow-fw/build/zoneflow-fw.map
+            firmware/zoneflow-fw/build/bootloader/bootloader.bin
+            firmware/zoneflow-fw/build/partition_table/partition-table.bin
+            firmware/zoneflow-fw/build/ota_data_initial.bin
+            firmware/zoneflow-fw/build/flasher_args.json
+            firmware/zoneflow-fw/build/flash_args
+          if-no-files-found: error
