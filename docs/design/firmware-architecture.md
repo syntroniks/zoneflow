@@ -1,22 +1,25 @@
 # ZoneFlow firmware architecture
 
-Status: **phase 1**. Covers the standalone ESP-IDF firmware of system spec
-section 4.1 (`firmware/zoneflow-fw/`). Nothing described here has run on a
-board. Checks done so far: host unit tests (GoogleTest, ASan and UBSan) and
-`idf.py build` with ESP-IDF v5.5.6.
+Status: **phase 2** (network, REST API, OTA). Covers the standalone ESP-IDF
+firmware of system spec section 4.1 (`firmware/zoneflow-fw/`). Nothing
+described here has run on a board. Checks done so far: host unit tests
+(GoogleTest, ASan and UBSan) and `idf.py build` with ESP-IDF v5.5.6.
 
-Phase 1 delivers the structure, the safety-critical core and tests. WiFi and
-BLE provisioning, the web UI and REST API, MQTT, OTA and the OLED UI are
-later phases. They plug into the interfaces in section 4 and must not reach
-around them.
+Phase 1 delivered the structure, the safety-critical core and tests. Phase 2
+adds WiFi and provisioning (`zf_net`, section 11), the REST API, event stream
+and static web serving (`zf_web`, section 12) and OTA with rollback
+(`zf_ota`, section 13). The network security design is in
+[firmware security](firmware-security.md). MQTT, the display UI and the web
+UI itself are later work. Every module plugs into the interfaces in
+section 4 and does not reach around them.
 
 ## 1. Modules
 
 ```mermaid
 flowchart TB
-    subgraph ext["Extension modules (phase 2+)"]
-        net[zf_net<br/>WiFi, BLE provisioning]
-        web[zf_web<br/>HTTP, REST, live stream]
+    subgraph ext["Extension modules"]
+        net[zf_net<br/>WiFi, provisioning, mDNS]
+        web[zf_web<br/>HTTP, REST, SSE stream]
         mqtt[zf_mqtt<br/>MQTT, HA discovery]
         ota[zf_ota<br/>OTA, rollback]
         disp[zf_display<br/>OLED, encoder]
@@ -77,7 +80,10 @@ flowchart TB
 | `zf_board` | The board header. Every GPIO number and board constant, plus `static_assert` checks of the pin rules. |
 | `zf_platform` | Implements the core's interfaces on ESP-IDF. Holds no policy. |
 | `main` | Creates the objects (all static), starts the tasks, calls the extension modules. |
-| `zf_net`, `zf_web`, `zf_mqtt`, `zf_ota`, `zf_display` | Stubs. Each header lists what the module must do. |
+| `zf_net` | WiFi station, BLE and SoftAP provisioning, hostname and mDNS, captive DNS, factory reset. Logic in `net_logic.cpp` (host-tested). |
+| `zf_web` | HTTP(S) server, REST API, SSE stream, static files, admin authentication. Logic in `api.cpp`, `auth.cpp`, `crypto.cpp`, `routes.cpp`, `http_util.cpp`, `json_map.cpp` (host-tested). |
+| `zf_ota` | Firmware upload and pull, web UI image upload, post-boot self-test and rollback. Logic in `ota_logic.cpp` (host-tested). |
+| `zf_mqtt`, `zf_display` | Stubs here (the display is on another branch). Each header lists what the module must do. |
 
 ## 2. Threading model
 
@@ -88,7 +94,12 @@ flowchart TB
 | `zf_evlog` | 2 | 0 | on event | Logs events from its own queue. |
 | `main` | 1 | any | 100 ms | Status LED, state log once a minute. |
 | lwIP / SNTP | IDF | IDF | on sync | `TimeService::onNetworkSync()` writes the RTC. |
-| Phase 2 modules | own tasks | | | Read state, subscribe, post commands. |
+| `zf_net` | 5 | 0 | 1 s or on message, 6 KB | WiFi, provisioning and mDNS calls. IDF event handlers only queue a message. |
+| `zf_dns` | 3 | 0 | on packet, 3 KB | Captive-portal DNS, only while the setup access point runs. |
+| `httpd` (port 80, and 443 with HTTPS) | 5 | 0 | per request, 12 KB | Every REST request, config writes included; static files; uploads. |
+| `zf_web_sse` | 3 | 0 | 250 ms or on event, 6 KB | Formats and sends event-stream messages from its own event queue. |
+| `zf_ota_pull` | 4 | any | while pulling, 8 KB | HTTPS download into the passive slot. |
+| `zf_ota_test` | 2 | any | 500 ms, at most 60 s after an update | Post-boot self-test, then confirm or roll back. |
 
 Rules:
 
@@ -148,7 +159,7 @@ Fault paths, each ending with outputs off:
 | Open circuit (below the summed window) | That zone off, queue moves to the next entry, fault latched. Master or unattributable: all off. |
 | Current with every output off | Fault only. Firmware already has everything off; the output stage needs a human. |
 | 24 VAC lost (60 ms debounce) | All off, queue cleared, starts blocked until AC returns (500 ms debounce). |
-| Maintenance command (OTA) | All off, starts blocked. |
+| Maintenance command (OTA, factory reset) | All off, starts blocked. |
 | `esp_restart()` (includes the reboot after OTA) | Shutdown handler trips OE and forces outputs off. |
 | Panic, abort, task or interrupt watchdog | `-Wl,--wrap=esp_panic_handler`: an IRAM wrapper forces OE and outputs off by direct register writes, then runs the IDF handler. Checked in the linked ELF: the IDF call site loads `__wrap_esp_panic_handler`. |
 | Brownout | Brownout interrupt callback (IRAM) forces outputs off before the reset. |
@@ -188,6 +199,14 @@ Event types: `ZoneChanged`, `MasterChanged`, `QueueChanged`, `ProgramStarted`,
 Adding state a module owns (for example network status) means adding a field
 to `SystemState` and a command or setter that the control task applies.
 Modules do not write `StateStore` themselves.
+
+Phase 2 exception: network status lives in `zf_net`'s own `NetStatusStore`
+(same pattern as `StateStore`: one writer, a mutex held for a copy, a
+sequence counter) instead of `SystemState`, because `zf_core` was being
+hardened on another branch at the same time. Readers use `net::status()` and
+`net::statusSequence()`; the event stream merges it into its `state`
+message. Moving it into `SystemState` is a small follow-up once both branches
+are merged.
 
 ## 5. Scheduler
 
@@ -410,3 +429,180 @@ the REST and backup format. Abbreviated example:
   keep OE alive through flash operations (the heartbeat check would still
   drop OE if the control loop stopped). Worth doing only if open question 2
   shows the hold time cannot cover a flash erase.
+
+## 11. Network (`zf_net`)
+
+Pure logic in `net_logic.hpp` (host-tested), ESP-IDF glue in `net.cpp`.
+
+### Station
+
+- Credentials are stored by the WiFi driver (`WIFI_STORAGE_FLASH`). At every
+  start the station config is rewritten with `bssid_set = false`,
+  `channel = 0`, all-channel scan and connect-by-signal, so each connect
+  picks the strongest access point of the SSID. No BSSID or channel is ever
+  stored (prior-art recommendation 8, OpenSprinkler #413). 802.11k/v are on
+  so mesh systems can steer the station. Minimum security WPA2-PSK (WPA3-SAE
+  accepted), PMF capable; an open network is used only when no password is
+  stored.
+- **Reconnect backoff** (`StationPolicy`, `Backoff`): 1 s, doubling to a
+  5-minute cap, each delay scaled by a random 80 to 120 % so devices that
+  lost the same AP do not retry in step. Reset on every IPv4 address.
+  Retries never stop and never fall back to an access point: a router outage
+  must not turn the controller into an open setup network.
+- **Hostname** `zoneflow-xxxx` (last two MAC bytes, lower-case hex), used for
+  DHCP and mDNS. **mDNS** (`espressif/mdns` 1.14.1): `zoneflow-xxxx.local`,
+  `_http._tcp` and `_zoneflow._tcp` on port 80 with TXT `api=/api/v1`,
+  `fw=<version>`, `id=<mac>`.
+- **SNTP** is unchanged: `zf_platform` starts it on the first
+  `IP_EVENT_STA_GOT_IP` and hands each sync to `TimeService`.
+
+### Provisioning
+
+| Item | Decision |
+|---|---|
+| Identity | At first boot: 10-character setup code (50 bits, hardware RNG with the radio on), SRP6a salt and verifier from `esp_srp_gen_salt_verifier` for user `wifiprov`. Stored in NVS namespace `zf_net`; kept by a factory reset. |
+| Boot plan (`ProvisioningFsm::plan`) | Re-provision request stored → that transport. No credentials → BLE (SoftAP if BLE is not built in). Otherwise station, and the BT controller memory is released at once. |
+| BLE | ESP-IDF unified provisioning (`wifi_provisioning`), Security 2, device name `ZoneFlow-XXXX`, scheme handler `FREE_BTDM` so BT memory is released when provisioning ends. |
+| SoftAP | Same manager, SoftAP scheme, SSID `ZoneFlow-XXXX`, WPA2 with the setup code as passphrase. Shares `zf_web`'s HTTP server (`wifi_prov_scheme_softap_set_httpd_handle`), which serves the captive setup page at `/setup`; a DNS responder on 192.168.4.1:53 answers every A query with 192.168.4.1. |
+| Windows | Unprovisioned: BLE for 10 min, then SoftAP until provisioned (one-way: BLE memory is gone). Re-provisioning a configured device: 15 min, then back to the stored network without a restart. A connected phone or AP client holds the window open. |
+| Failures | Wrong password or AP not found: the manager's state machine is reset so the user can retry in the same session. |
+| QR payload | `{"ver":"v1","name":"ZoneFlow-XXXX","username":"wifiprov","pop":"<code>","transport":"ble"}`, the format of the ESP-IDF `wifi_prov_mgr` example and Espressif's apps. `net::setupInfo()` returns it for the display; nothing sends it over the network. |
+| Re-provision | `net::requestProvisioning(transport)` stores the request and restarts. The display module binds it to a long-press; the API has `POST /network/reprovision`. |
+| Factory reset | `net::factoryReset()`: maintenance on, wait until the snapshot shows every output off (5 s max), keep the identity in RAM, `nvs_flash_erase()`, write the identity back, restart. Power loss between erase and rewrite gives a new setup code. |
+
+### Status
+
+`NetStatus` (state, provisioning transport, SSID, BSSID, channel, RSSI, IPv4,
+reconnect attempt and delay, last disconnect reason, mDNS) is published to
+`NetStatusStore` when a field changes (RSSI by 5 dB or more) and at least
+every 30 s. See section 4 for why it is not in `SystemState` yet.
+
+## 12. Web server and API (`zf_web`)
+
+- **Server.** `esp_http_server` on port 80, 12 KB task stack, up to 7
+  sockets, LRU purge on. With HTTPS on, `esp_https_server` on 443 (4 sockets)
+  serves everything and port 80 answers 301, except while the setup access
+  point runs.
+- **Routing.** One table (`routes.cpp`) gives each route its method, path,
+  access level (Public, Read, Admin, Provisioning), body type and body cap.
+  `Api::admit()` applies, in order: Host check, route match (404/405), Origin
+  check for writes, session, CSRF header for cookie sessions, provisioning
+  state, body size from `Content-Length`, content type. Only then is the body
+  read. The HTTP glue registers five wildcard handlers for `/api/v1/*`, three
+  exact handlers (events, firmware upload, UI upload) and `/*` for files.
+- **OpenAPI.** `docs/firmware/openapi.json` (OpenAPI 3.1) documents every
+  route. `web_openapi_test.cpp` checks both directions plus security, body
+  type, `x-max-body-bytes` and response type per route.
+- **Mapping to the core.** Reads use `state.snapshot()` and `config.get()`.
+  Commands use `commands.post(Command::...)` and answer 202, or 503 when the
+  queue is full. Configuration edits (zone settings, programs, time zone)
+  patch the JSON document from `config.toJson()` and write it back with
+  `config.updateFromJson()`, so all validation stays in `zf_core`; the error
+  path is made relative to the edited object. A successful write posts
+  `ReloadConfig`. Zone numbers are 1-based in the API.
+- **Stop one zone.** The core has no "remove this queue entry" command, so
+  `POST /zones/{n}/stop` skips the head entry when that zone is running and
+  answers 409 otherwise.
+- **Event stream: SSE**, not WebSocket (reasons in the
+  [API reference](../firmware/api.md#live-event-stream)). The bus handler is
+  `platform::EventQueueSubscriber` (copy into a 32-entry queue, never waits).
+  The `zf_web_sse` task turns events into `event` messages, sends a `state`
+  message when the snapshot changes (at most every 500 ms, at least every
+  30 s), `network` and `ota` messages on change and a keep-alive comment after
+  15 s. Each stream is an `httpd_req_async_handler_begin()` request owned by
+  that task; at most 3. A send that fails ends the stream. Sends happen
+  outside the stream lock, so a slow client delays only the stream task.
+- **Static files** from the `www` LittleFS partition (`joltwallet/littlefs`
+  1.22.3), with gzip variants, immutable caching under `/assets/` and a
+  client-side-routing fallback; a built-in page when the partition is empty.
+  Contract for the UI: [web UI contract](../firmware/web-ui-contract.md).
+- **Settings** (`protect_reads`, `https`, `check_host`) and the password
+  record live in NVS namespace `zf_web`, not in the configuration, so a
+  backup never carries them.
+
+## 13. OTA (`zf_ota`)
+
+- **Upload** (`POST /firmware/upload`, streamed in 4 KB chunks) and **pull**
+  (`POST /firmware/pull`, `esp_https_ota` with the certificate bundle,
+  redirects followed, `https://` only).
+- **Gate** (`mayStart`): refused while another update runs, or while a zone
+  is open or waiting, the master is on or the queue is running, unless forced.
+- **Before writing:** post `StopAll` and `SetMaintenance(true)`, then poll the
+  snapshot until maintenance is on and every output is off (`outputsSafe`,
+  5 s limit, else `outputs_not_off`). Maintenance stays on until the restart;
+  on failure it is released. Flash writes stall both cores, so the outputs
+  are off before the first erase (see open question 2).
+- **Image checks:** the first 288 bytes (image header, first segment header,
+  `esp_app_desc_t`) are held back until chip id (ESP32-S3) and project name
+  (`zoneflow-fw`) match; nothing is written for a wrong image. `esp_ota_end`
+  then checks the image hash before the boot slot changes.
+- **Swap:** `esp_ota_set_boot_partition`, restart after 1 s so the HTTP
+  answer goes out. The restart shutdown handler forces outputs off again.
+- **Rollback.** `CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE` was already on.
+  `ota::markRunningAppValid()` (unchanged call in `app_main`) now starts a
+  self-test when the image is pending verification: confirm once the state
+  sequence advanced 5 times (control loop alive) and the web server started;
+  roll back at once if the stored configuration was rejected
+  (`config_invalid`), or after 60 s. A crash before confirmation also rolls
+  back (bootloader). Network connectivity is not a condition: a router outage
+  during an update must not undo it.
+- **Web UI image** (`POST /firmware/assets`): same gate and maintenance; the
+  first chunk must carry the LittleFS magic at offset 8 (LittleFS SPEC.md);
+  each 4 KB sector is erased just before it is written.
+- **Status** in `GET /firmware` and the `ota` stream message: phase, error,
+  bytes, new version, running and next slot, image state, version in the
+  other slot.
+
+## 14. Memory and flash budget
+
+Measured by `idf.py size` (ESP-IDF v5.5.6, esp32s3, `-Os`):
+
+| | Phase 1 (`a5081cf`) | Phase 2 (this branch) |
+|---|---|---|
+| Application image | 420 919 B | 1 476 571 B (46.9 % of the 3 MB OTA slot) |
+| Flash code (`.text`) | 270 848 B | 1 033 364 B |
+| Flash data (`.rodata`) | 80 880 B | 312 932 B |
+| Internal RAM used statically (DIRAM `.text` + `.data` + `.bss`) | 78 455 B | 155 907 B |
+| Internal RAM left for heap and stacks (DIRAM remaining) | 263 305 B | 185 853 B |
+
+Most of the growth is the WiFi and BLE stacks, mbedTLS (TLS server and
+client, X.509 writing), the provisioning manager, the HTTP servers, mDNS and
+LittleFS. The image leaves 1.6 MB of headroom in each OTA slot.
+
+Heap at run time has not been measured; no board exists. Estimates, with
+their sources:
+
+| Consumer | Estimate | Basis |
+|---|---|---|
+| Free internal heap after static allocation | about 181 KB | DIRAM remaining in the table above, before any task or driver allocates |
+| WiFi driver (station) | 40 to 60 KB, rough | 10 static RX buffers of about 1.6 KB (`CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=10`) are allocated at start; up to 32 dynamic RX and 32 dynamic TX buffers come and go with traffic; plus driver state. The range is a guess to be replaced by a measurement |
+| NimBLE + BLE controller, provisioning only | about 60 to 100 KB | Released after provisioning; the prior-art survey cites about 110 KB for BLE provisioning |
+| Task stacks added in phase 2 | 35 KB | httpd 12 + SSE 6 + net 6 + DNS 3 (setup only) + OTA pull 8 (while pulling) |
+| One TLS session (HTTPS on, or OTA pull) | 20 to 40 KB | mbedTLS with `CONFIG_MBEDTLS_DYNAMIC_BUFFER`; worst case is a 16 KB record each way |
+| Config copies during a request | up to about 20 KB | JSON text (up to 16 KB body) plus a cJSON tree and one `Config` struct (about 2 KB) |
+
+The tightest case is a provisioning session (BLE stack and WiFi together)
+followed by an HTTPS session; it should fit in the internal heap but must be
+measured on the first board (`GET /api/v1/info` reports `heap.free`,
+`heap.min_free` and `http_stack_free_min`). The module has PSRAM (spec 3.1);
+enabling it for WiFi/TLS buffers is a lever if the measurement says so.
+
+## 15. Decisions made in phase 2
+
+- **SSE for the live stream**, not WebSocket: one direction is enough, it
+  reuses HTTP authentication and the Host check, and browsers reconnect by
+  themselves.
+- **Own SHA-256/HMAC/PBKDF2** (`crypto.cpp`, 200 lines) instead of mbedTLS
+  for the password hash, so host tests and the device run the same code;
+  checked against RFC 4231 and RFC 7914 vectors. mbedTLS is used for TLS and
+  the certificate.
+- **One admin password, RAM sessions**, CSRF token plus SameSite=Strict
+  cookie, Host-header check. See [firmware security](firmware-security.md).
+- **Configuration edits as JSON patches** of the stored document, so the API
+  adds no second validator.
+- **Network status outside `SystemState`** for now (section 4).
+- **Requests run on the HTTP task with a 12 KB stack** rather than a separate
+  worker task: one place to size, measured at run time.
+- **Managed components** `espressif/mdns` 1.14.1 and `joltwallet/littlefs`
+  1.22.3, pinned exactly in each component's `idf_component.yml`. mDNS left
+  ESP-IDF core in v5.0; LittleFS was never in it.
