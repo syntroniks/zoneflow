@@ -1,0 +1,3679 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ZoneFlow local API",
+    "version": "1.0.0",
+    "summary": "REST API of the ZoneFlow standalone firmware.",
+    "description": "Served by the controller on the local network. Not tested on hardware yet: the firmware has run only in host unit tests. Every route is checked against the firmware route table by `test/host/web_openapi_test.cpp`.",
+    "license": {
+      "name": "Apache-2.0",
+      "identifier": "Apache-2.0"
+    }
+  },
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "The controller itself"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth"
+    },
+    {
+      "name": "Device"
+    },
+    {
+      "name": "Zones"
+    },
+    {
+      "name": "Programs"
+    },
+    {
+      "name": "Queue"
+    },
+    {
+      "name": "Rain delay"
+    },
+    {
+      "name": "Sensors"
+    },
+    {
+      "name": "Faults"
+    },
+    {
+      "name": "Configuration"
+    },
+    {
+      "name": "Time"
+    },
+    {
+      "name": "Network"
+    },
+    {
+      "name": "Provisioning"
+    },
+    {
+      "name": "System"
+    },
+    {
+      "name": "Firmware"
+    }
+  ],
+  "paths": {
+    "/auth": {
+      "get": {
+        "operationId": "getAuth",
+        "summary": "Authentication state",
+        "tags": [
+          "Auth"
+        ],
+        "security": [],
+        "description": "Whether an admin password exists and whether this request carries a valid session. For a cookie session it also returns the CSRF token, so a reloaded page can recover it.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "login",
+        "summary": "Log in",
+        "tags": [
+          "Auth"
+        ],
+        "security": [],
+        "description": "Rate limited per client address (5 free failures, then 1 s doubling to 15 min) and in total (30 failures in 5 min lock everyone out for 60 s). A refused attempt answers 429 with Retry-After.",
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 512,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Logged in. Also sets the `zf_session` cookie (HttpOnly, SameSite=Strict).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/auth/setup": {
+      "post": {
+        "operationId": "setupPassword",
+        "summary": "Set the first admin password",
+        "tags": [
+          "Auth"
+        ],
+        "security": [],
+        "description": "Only while no password exists. The setup code is shown on the device display and serial log, never over the network; knowing it proves physical access. Rate limited like login.",
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 512,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Password set and logged in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "logout",
+        "summary": "Log out",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Ends this session and clears the cookie.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "logged_out": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          }
+        }
+      }
+    },
+    "/auth/password": {
+      "post": {
+        "operationId": "changePassword",
+        "summary": "Change the admin password",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 512,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Changed. Every other session is signed out; this is the new one.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Session"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/security": {
+      "get": {
+        "operationId": "getSecurity",
+        "summary": "Web security settings",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Security"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "putSecurity",
+        "summary": "Change web security settings",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Partial update. Turning HTTPS on or off takes effect after a reboot (`restart_required`).",
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 512,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SecurityUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Security"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/info": {
+      "get": {
+        "operationId": "getInfo",
+        "summary": "Device and firmware information",
+        "tags": [
+          "Device"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Info"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/status": {
+      "get": {
+        "operationId": "getStatus",
+        "summary": "Full status snapshot",
+        "tags": [
+          "Device"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Everything a dashboard needs in one call: zones, master, queue, sensors, rain delay, inhibits, faults, network and OTA state.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events": {
+      "get": {
+        "operationId": "getEvents",
+        "summary": "Live event stream (Server-Sent Events)",
+        "tags": [
+          "Device"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "On connect the server sends a `state` message (same body as GET /status), then one message per change: `event` for each controller event, `state` when the snapshot changed (at most every 500 ms, and at least every 30 s), `network` and `ota` when those change, and a comment line every 15 s as keep-alive. At most 3 streams are open at once; a fourth gets 503.",
+        "responses": {
+          "200": {
+            "description": "An endless `text/event-stream`. See the API reference page for the event names and payloads.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
+    },
+    "/zones": {
+      "get": {
+        "operationId": "listZones",
+        "summary": "List zones",
+        "tags": [
+          "Zones"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Zone"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/zones/{zone}": {
+      "get": {
+        "operationId": "getZone",
+        "summary": "One zone",
+        "tags": [
+          "Zones"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "zone",
+            "in": "path",
+            "required": true,
+            "description": "Zone number as printed on the terminal block, 1 to zone_count.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Zone"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "patchZone",
+        "summary": "Rename or configure a zone",
+        "tags": [
+          "Zones"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Changes the zone's entry in the configuration. Validation errors name the field in `error.path`.",
+        "parameters": [
+          {
+            "name": "zone",
+            "in": "path",
+            "required": true,
+            "description": "Zone number as printed on the terminal block, 1 to zone_count.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 512,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ZoneUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Zone"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
+    },
+    "/zones/{zone}/run": {
+      "post": {
+        "operationId": "runZone",
+        "summary": "Run a zone for N seconds",
+        "tags": [
+          "Zones"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Adds a manual run to the end of the queue. The zone driver clamps the time to the zone's `max_run_s` (the answer shows the clamped value). Refused (409) for a disabled or locked-out zone, without 24 VAC, and during maintenance (OTA).",
+        "parameters": [
+          {
+            "name": "zone",
+            "in": "path",
+            "required": true,
+            "description": "Zone number as printed on the terminal block, 1 to zone_count.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 512,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ZoneRun"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZoneRunAccepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
+    },
+    "/zones/{zone}/stop": {
+      "post": {
+        "operationId": "stopZone",
+        "summary": "Stop a running zone",
+        "tags": [
+          "Zones"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Closes the zone if it is the running queue entry (the queue then moves on). A zone that is only queued further back gives 409 `not_head`; use POST /queue/stop.",
+        "parameters": [
+          {
+            "name": "zone",
+            "in": "path",
+            "required": true,
+            "description": "Zone number as printed on the terminal block, 1 to zone_count.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Command queued for the control task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
+    },
+    "/programs": {
+      "get": {
+        "operationId": "listPrograms",
+        "summary": "List programs",
+        "tags": [
+          "Programs"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Program"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createProgram",
+        "summary": "Create a program",
+        "tags": [
+          "Programs"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Without `id` the next free id is used. At most 16 programs. Fields left out take their defaults.",
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 2048,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgramInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created; Location header names it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Program"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
+    },
+    "/programs/{id}": {
+      "get": {
+        "operationId": "getProgram",
+        "summary": "One program",
+        "tags": [
+          "Programs"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Program id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Program"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "operationId": "replaceProgram",
+        "summary": "Replace a program",
+        "tags": [
+          "Programs"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Replaces the whole program; fields left out take their defaults. `error.path` is relative to the program, for example `starts[1]`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Program id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 2048,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgramInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Program"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteProgram",
+        "summary": "Delete a program",
+        "tags": [
+          "Programs"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Program id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
+    },
+    "/programs/{id}/run": {
+      "post": {
+        "operationId": "runProgram",
+        "summary": "Run a program now",
+        "tags": [
+          "Programs"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Queues every zone of the program (manual program run; seasonal adjustment applies).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Program id.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 65535
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Command queued for the control task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
+    },
+    "/queue": {
+      "get": {
+        "operationId": "getQueue",
+        "summary": "Run queue",
+        "tags": [
+          "Queue"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Queue"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queue/pause": {
+      "post": {
+        "operationId": "queuePause",
+        "summary": "Pause the queue",
+        "tags": [
+          "Queue"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Closes the running zone and keeps its remaining time.",
+        "responses": {
+          "202": {
+            "description": "Command queued for the control task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
+    },
+    "/queue/resume": {
+      "post": {
+        "operationId": "queueResume",
+        "summary": "Resume the queue",
+        "tags": [
+          "Queue"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Reopens the paused zone for its remaining time.",
+        "responses": {
+          "202": {
+            "description": "Command queued for the control task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
+    },
+    "/queue/skip": {
+      "post": {
+        "operationId": "queueSkip",
+        "summary": "Skip the running entry",
+        "tags": [
+          "Queue"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Drops the head entry and starts the next.",
+        "responses": {
+          "202": {
+            "description": "Command queued for the control task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
+    },
+    "/queue/stop": {
+      "post": {
+        "operationId": "queueStop",
+        "summary": "Stop all watering",
+        "tags": [
+          "Queue"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Closes everything and empties the queue.",
+        "responses": {
+          "202": {
+            "description": "Command queued for the control task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
+    },
+    "/rain-delay": {
+      "get": {
+        "operationId": "getRainDelay",
+        "summary": "Rain delay",
+        "tags": [
+          "Rain delay"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RainDelay"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "setRainDelay",
+        "summary": "Set a rain delay",
+        "tags": [
+          "Rain delay"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Scheduled starts are skipped until the time given; manual runs still work. Needs a valid clock (409 `time_not_set` otherwise). At most 30 days ahead.",
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 512,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RainDelayRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RainDelayAccepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "clearRainDelay",
+        "summary": "Clear the rain delay",
+        "tags": [
+          "Rain delay"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Command queued for the control task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
+    },
+    "/sensors": {
+      "get": {
+        "operationId": "getSensors",
+        "summary": "Sensor readings",
+        "tags": [
+          "Sensors"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Sensors"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/faults": {
+      "get": {
+        "operationId": "listFaults",
+        "summary": "Active faults",
+        "tags": [
+          "Faults"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Faults"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/faults/clear": {
+      "post": {
+        "operationId": "clearFaults",
+        "summary": "Clear latched faults and lockouts",
+        "tags": [
+          "Faults"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "A fault whose cause is still present is raised again on the next sample.",
+        "responses": {
+          "202": {
+            "description": "Command queued for the control task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
+    },
+    "/config": {
+      "get": {
+        "operationId": "getConfig",
+        "summary": "Whole configuration",
+        "tags": [
+          "Configuration"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Config"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "putConfig",
+        "summary": "Replace the whole configuration",
+        "tags": [
+          "Configuration"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Validated as a whole; nothing changes on error and `error.path` names the field. Missing fields take defaults, unknown fields are ignored. Nested deeper than 16 levels is rejected before parsing.",
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 16384,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Config"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "applied": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
+    },
+    "/config/backup": {
+      "get": {
+        "operationId": "backupConfig",
+        "summary": "Download a backup",
+        "tags": [
+          "Configuration"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "The configuration with a small header. Never contains secrets: no WiFi credentials, password hash, sessions, setup code or TLS key.",
+        "responses": {
+          "200": {
+            "description": "Backup file (Content-Disposition: attachment)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Backup"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/config/restore": {
+      "post": {
+        "operationId": "restoreConfig",
+        "summary": "Restore a backup",
+        "tags": [
+          "Configuration"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 16384,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/Backup"
+                  },
+                  {
+                    "$ref": "#/components/schemas/Config"
+                  }
+                ]
+              }
+            }
+          },
+          "description": "A backup file from GET /config/backup, or a bare configuration document."
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "restored": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
+    },
+    "/time": {
+      "get": {
+        "operationId": "getTime",
+        "summary": "Clock and time zone",
+        "tags": [
+          "Time"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Time"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "setTime",
+        "summary": "Set the clock or the time zone",
+        "tags": [
+          "Time"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "`utc` sets the clock (and the RTC) by hand; SNTP overrides it at the next sync. `timezone` is a POSIX TZ string stored in the configuration.",
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 512,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Time"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Busy"
+          }
+        }
+      }
+    },
+    "/network": {
+      "get": {
+        "operationId": "getNetwork",
+        "summary": "Network status",
+        "tags": [
+          "Network"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Network"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/network/reprovision": {
+      "post": {
+        "operationId": "reprovision",
+        "summary": "Restart into WiFi provisioning",
+        "tags": [
+          "Network"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "The stored WiFi credentials stay until new ones connect; after 15 minutes without a new setup the device returns to the stored network. Same as the long-press on the device.",
+        "requestBody": {
+          "required": false,
+          "x-max-body-bytes": 512,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReprovisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "The device restarts after answering",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          }
+        }
+      }
+    },
+    "/provision": {
+      "get": {
+        "operationId": "getProvisioning",
+        "summary": "Provisioning state",
+        "tags": [
+          "Provisioning"
+        ],
+        "security": [],
+        "description": "Used by the setup page on the SoftAP. Never returns the setup code.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvisioningState"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/provision/networks": {
+      "get": {
+        "operationId": "scanNetworks",
+        "summary": "Scan for WiFi networks",
+        "tags": [
+          "Provisioning"
+        ],
+        "security": [],
+        "description": "Only while SoftAP provisioning runs (409 `not_provisioning` otherwise). The setup code is the WPA2 passphrase of that access point, so a client on it has already proven it knows the code.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WifiNetwork"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/provision/wifi": {
+      "post": {
+        "operationId": "provisionWifi",
+        "summary": "Send WiFi credentials",
+        "tags": [
+          "Provisioning"
+        ],
+        "security": [],
+        "description": "Only while SoftAP provisioning runs. Optionally sets the first admin password.",
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 512,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProvisionWifiRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Handed to the provisioning manager; poll GET /provision",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          }
+        }
+      }
+    },
+    "/system/reboot": {
+      "post": {
+        "operationId": "reboot",
+        "summary": "Reboot",
+        "tags": [
+          "System"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Outputs are forced off by the restart handler.",
+        "responses": {
+          "202": {
+            "description": "Reboots after answering",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          }
+        }
+      }
+    },
+    "/system/factory-reset": {
+      "post": {
+        "operationId": "factoryReset",
+        "summary": "Factory reset",
+        "tags": [
+          "System"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Stops watering, then erases configuration, runtime state, WiFi credentials, the admin password, sessions, web settings and the TLS certificate. The setup code is kept so a printed label stays valid.",
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 512,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FactoryResetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Erases and reboots after answering",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          }
+        }
+      }
+    },
+    "/firmware": {
+      "get": {
+        "operationId": "getFirmware",
+        "summary": "Firmware, slots and update progress",
+        "tags": [
+          "Firmware"
+        ],
+        "security": [
+          {},
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Firmware"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/firmware/upload": {
+      "post": {
+        "operationId": "uploadFirmware",
+        "summary": "Upload a firmware image",
+        "tags": [
+          "Firmware"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Refused (409 `zones_active`) while a zone runs unless `force=true`. Before writing, the controller is put in maintenance mode, which closes every valve and blocks starts. The header is checked (ESP32-S3, project `zoneflow-fw`) before anything is written; the image is verified at the end. The new image must confirm itself after boot, otherwise the bootloader rolls back.",
+        "parameters": [
+          {
+            "name": "force",
+            "in": "query",
+            "required": false,
+            "description": "Update even while watering (outputs are still forced off first).",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 3145728,
+          "description": "The raw application image (`zoneflow-fw.bin` from a release).",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Verified and set as boot image; the device restarts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/firmware/pull": {
+      "post": {
+        "operationId": "pullFirmware",
+        "summary": "Download and install an image from a URL",
+        "tags": [
+          "Firmware"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "HTTPS only, checked against the ESP-IDF certificate bundle; redirects are followed (GitHub release assets redirect to a CDN). Same safety rules as upload.",
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 512,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PullRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Download started; follow GET /firmware or the `ota` stream event",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/firmware/assets": {
+      "post": {
+        "operationId": "uploadAssets",
+        "summary": "Upload the web UI image",
+        "tags": [
+          "Firmware"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "description": "Replaces the web UI files. Does not touch the firmware or settings.",
+        "requestBody": {
+          "required": true,
+          "x-max-body-bytes": 1900544,
+          "description": "A LittleFS image of the `www` partition (`www.bin` from a release).",
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "contentMediaType": "application/octet-stream"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Written; the UI is served from it at once",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Accepted"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Token from POST /auth/login. Scripts use this; no CSRF header needed."
+      },
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "zf_session",
+        "description": "Set by login. Writes with the cookie also need the X-CSRF-Token header."
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Stable machine-readable code, e.g. `invalid_config`, `csrf`."
+              },
+              "message": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string",
+                "description": "JSON path of the offending field, when there is one."
+              }
+            }
+          }
+        }
+      },
+      "Accepted": {
+        "type": "object",
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "command": {
+            "type": "string"
+          }
+        }
+      },
+      "AuthStatus": {
+        "type": "object",
+        "properties": {
+          "password_set": {
+            "type": "boolean"
+          },
+          "authenticated": {
+            "type": "boolean"
+          },
+          "protect_reads": {
+            "type": "boolean"
+          },
+          "csrf": {
+            "type": "string",
+            "description": "Only for a valid cookie session."
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "password"
+        ],
+        "properties": {
+          "password": {
+            "type": "string",
+            "maxLength": 64
+          }
+        }
+      },
+      "SetupRequest": {
+        "type": "object",
+        "required": [
+          "setup_code",
+          "password"
+        ],
+        "properties": {
+          "setup_code": {
+            "type": "string",
+            "pattern": "^[2-9A-HJ-NP-Z]{10}$"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 64
+          }
+        }
+      },
+      "PasswordChange": {
+        "type": "object",
+        "required": [
+          "current_password",
+          "new_password"
+        ],
+        "properties": {
+          "current_password": {
+            "type": "string"
+          },
+          "new_password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 64
+          }
+        }
+      },
+      "Session": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Bearer token; the same value is in the cookie."
+          },
+          "csrf": {
+            "type": "string",
+            "description": "Send as X-CSRF-Token on writes that use the cookie."
+          },
+          "idle_timeout_s": {
+            "type": "integer"
+          }
+        }
+      },
+      "Security": {
+        "type": "object",
+        "properties": {
+          "protect_reads": {
+            "type": "boolean"
+          },
+          "https": {
+            "type": "boolean"
+          },
+          "check_host": {
+            "type": "boolean"
+          },
+          "password_set": {
+            "type": "boolean"
+          },
+          "sessions": {
+            "type": "integer"
+          },
+          "tls_fingerprint_sha256": {
+            "type": "string",
+            "description": "Of the self-signed certificate; empty if none."
+          },
+          "restart_required": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SecurityUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "protect_reads": {
+            "type": "boolean",
+            "description": "GET routes need a session too."
+          },
+          "https": {
+            "type": "boolean",
+            "description": "Serve on port 443 with a self-signed certificate."
+          },
+          "check_host": {
+            "type": "boolean",
+            "description": "Refuse requests whose Host is not this device."
+          }
+        }
+      },
+      "Info": {
+        "type": "object",
+        "properties": {
+          "api_version": {
+            "type": "string"
+          },
+          "device_name": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "mac": {
+            "type": "string"
+          },
+          "board": {
+            "type": "string"
+          },
+          "firmware": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "string"
+              },
+              "project": {
+                "type": "string"
+              },
+              "idf_version": {
+                "type": "string"
+              },
+              "build_date": {
+                "type": "string"
+              }
+            }
+          },
+          "uptime_s": {
+            "type": "integer"
+          },
+          "reset_reason": {
+            "type": "string"
+          },
+          "heap": {
+            "type": "object",
+            "properties": {
+              "free": {
+                "type": "integer"
+              },
+              "min_free": {
+                "type": "integer"
+              },
+              "largest_block": {
+                "type": "integer"
+              }
+            }
+          },
+          "http_stack_free_min": {
+            "type": "integer"
+          }
+        }
+      },
+      "Zone": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 23
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "max_run_s": {
+            "type": "integer"
+          },
+          "current_min_ma": {
+            "type": "integer"
+          },
+          "current_max_ma": {
+            "type": "integer"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "off",
+              "waiting",
+              "open"
+            ]
+          },
+          "remaining_s": {
+            "type": "integer"
+          },
+          "last_stop": {
+            "type": "string",
+            "enum": [
+              "none",
+              "completed",
+              "requested",
+              "max_run_time",
+              "fault",
+              "ac_lost",
+              "shutdown",
+              "maintenance"
+            ]
+          },
+          "fault": {
+            "type": "string"
+          },
+          "locked_out": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ZoneUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 23
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "max_run_s": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 14400
+          },
+          "current_min_ma": {
+            "type": "integer"
+          },
+          "current_max_ma": {
+            "type": "integer"
+          }
+        }
+      },
+      "ZoneRun": {
+        "type": "object",
+        "required": [
+          "duration_s"
+        ],
+        "properties": {
+          "duration_s": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 14400
+          }
+        }
+      },
+      "ZoneRunAccepted": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Accepted"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "zone": {
+                "type": "integer"
+              },
+              "duration_s": {
+                "type": "integer",
+                "description": "After clamping to max_run_s."
+              }
+            }
+          }
+        ]
+      },
+      "Program": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "starts": {
+            "type": "array",
+            "maxItems": 4,
+            "items": {
+              "type": "string",
+              "pattern": "^[0-2][0-9]:[0-5][0-9]$"
+            },
+            "description": "Local start times HH:MM."
+          },
+          "days": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "weekdays",
+                  "interval",
+                  "odd",
+                  "even"
+                ]
+              },
+              "weekdays": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "sun",
+                    "mon",
+                    "tue",
+                    "wed",
+                    "thu",
+                    "fri",
+                    "sat"
+                  ]
+                }
+              },
+              "every": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 365,
+                "description": "Interval rule: every N days."
+              },
+              "anchor": {
+                "type": "string",
+                "format": "date",
+                "description": "First day of an interval rule (local)."
+              }
+            }
+          },
+          "durations_s": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Seconds per zone; index 0 is zone 1. 0 leaves the zone out."
+          },
+          "seasonal": {
+            "type": "boolean",
+            "description": "Scale by schedule.seasonal_percent."
+          },
+          "obey_sensor": {
+            "type": "boolean",
+            "description": "Skip while the rain sensor is active."
+          }
+        }
+      },
+      "ProgramInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "starts": {
+            "type": "array",
+            "maxItems": 4,
+            "items": {
+              "type": "string",
+              "pattern": "^[0-2][0-9]:[0-5][0-9]$"
+            },
+            "description": "Local start times HH:MM."
+          },
+          "days": {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "weekdays",
+                  "interval",
+                  "odd",
+                  "even"
+                ]
+              },
+              "weekdays": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "sun",
+                    "mon",
+                    "tue",
+                    "wed",
+                    "thu",
+                    "fri",
+                    "sat"
+                  ]
+                }
+              },
+              "every": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 365,
+                "description": "Interval rule: every N days."
+              },
+              "anchor": {
+                "type": "string",
+                "format": "date",
+                "description": "First day of an interval rule (local)."
+              }
+            }
+          },
+          "durations_s": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Seconds per zone; index 0 is zone 1. 0 leaves the zone out."
+          },
+          "seasonal": {
+            "type": "boolean",
+            "description": "Scale by schedule.seasonal_percent."
+          },
+          "obey_sensor": {
+            "type": "boolean",
+            "description": "Skip while the rain sensor is active."
+          }
+        },
+        "description": "Same as Program. `id` is optional on create and must match the path on replace."
+      },
+      "QueueItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "zone": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "duration_s": {
+            "type": "integer"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "schedule",
+              "manual_program",
+              "manual_zone"
+            ]
+          },
+          "program_id": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      },
+      "Queue": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "idle",
+              "running",
+              "paused"
+            ]
+          },
+          "length": {
+            "type": "integer"
+          },
+          "current_remaining_s": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "$ref": "#/components/schemas/QueueItem"
+            },
+            "description": "Head first; first 8."
+          }
+        }
+      },
+      "RainDelay": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "until_utc": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "remaining_s": {
+            "type": "integer"
+          }
+        }
+      },
+      "RainDelayRequest": {
+        "type": "object",
+        "description": "Exactly one of the two fields.",
+        "properties": {
+          "hours": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 720
+          },
+          "until_utc": {
+            "type": "integer",
+            "description": "Unix seconds, within the next 30 days."
+          }
+        }
+      },
+      "RainDelayAccepted": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Accepted"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "until_utc": {
+                "type": "integer"
+              }
+            }
+          }
+        ]
+      },
+      "Sensors": {
+        "type": "object",
+        "properties": {
+          "rain": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "active": {
+                "type": "boolean"
+              }
+            }
+          },
+          "spare": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "active": {
+                "type": "boolean"
+              }
+            }
+          },
+          "flow": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "rate_lpm": {
+                "type": "number"
+              },
+              "total_l": {
+                "type": "number"
+              }
+            }
+          },
+          "ac_present": {
+            "type": "boolean"
+          },
+          "valve_current_ma": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      },
+      "Faults": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "zone_open_circuit",
+                "zone_over_current",
+                "short_circuit",
+                "current_while_idle",
+                "ac_lost",
+                "flow_without_zones",
+                "config_invalid",
+                "time_invalid",
+                "storage_error"
+              ]
+            }
+          },
+          "zones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "zone": {
+                  "type": "integer"
+                },
+                "fault": {
+                  "type": "string"
+                },
+                "locked_out": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Status": {
+        "type": "object",
+        "properties": {
+          "sequence": {
+            "type": "integer"
+          },
+          "utc": {
+            "type": "integer"
+          },
+          "time_status": {
+            "type": "string",
+            "enum": [
+              "unset",
+              "rtc",
+              "synced"
+            ]
+          },
+          "uptime_s": {
+            "type": "integer"
+          },
+          "zones": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Zone"
+            }
+          },
+          "master": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "on": {
+                "type": "boolean"
+              }
+            }
+          },
+          "queue": {
+            "$ref": "#/components/schemas/Queue"
+          },
+          "sensors": {
+            "$ref": "#/components/schemas/Sensors"
+          },
+          "rain_delay": {
+            "$ref": "#/components/schemas/RainDelay"
+          },
+          "inhibit": {
+            "type": "object",
+            "properties": {
+              "sensor": {
+                "type": "boolean"
+              },
+              "no_ac": {
+                "type": "boolean"
+              },
+              "maintenance": {
+                "type": "boolean"
+              }
+            }
+          },
+          "faults": {
+            "$ref": "#/components/schemas/Faults"
+          },
+          "maintenance": {
+            "type": "boolean"
+          },
+          "config_revision": {
+            "type": "integer"
+          },
+          "network": {
+            "$ref": "#/components/schemas/Network"
+          },
+          "ota": {
+            "$ref": "#/components/schemas/OtaStatus"
+          }
+        }
+      },
+      "Config": {
+        "type": "object",
+        "required": [
+          "schema"
+        ],
+        "description": "The configuration document described in the firmware architecture, section 6. Missing fields take defaults; unknown fields are ignored.",
+        "properties": {
+          "schema": {
+            "type": "integer",
+            "const": 1
+          },
+          "device_name": {
+            "type": "string",
+            "maxLength": 31
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 63
+          },
+          "zone_count": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "zones": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "type": "object"
+            }
+          },
+          "master": {
+            "type": "object"
+          },
+          "driver": {
+            "type": "object"
+          },
+          "sensors": {
+            "type": "object"
+          },
+          "diagnostics": {
+            "type": "object"
+          },
+          "schedule": {
+            "type": "object",
+            "properties": {
+              "seasonal_percent": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 250
+              },
+              "missed_start_grace_min": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 720
+              },
+              "programs": {
+                "type": "array",
+                "maxItems": 16,
+                "items": {
+                  "$ref": "#/components/schemas/Program"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Backup": {
+        "type": "object",
+        "required": [
+          "format",
+          "config"
+        ],
+        "properties": {
+          "format": {
+            "type": "string",
+            "const": "zoneflow-backup"
+          },
+          "format_version": {
+            "type": "integer",
+            "const": 1
+          },
+          "created_utc": {
+            "type": "integer"
+          },
+          "firmware_version": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "config": {
+            "$ref": "#/components/schemas/Config"
+          }
+        }
+      },
+      "Time": {
+        "type": "object",
+        "properties": {
+          "utc": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "unset",
+              "rtc",
+              "synced"
+            ]
+          },
+          "rtc_present": {
+            "type": "boolean"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "local": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Local wall-clock time, ISO 8601 without offset."
+          },
+          "utc_offset_s": {
+            "type": "integer"
+          },
+          "dst": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TimeUpdate": {
+        "type": "object",
+        "properties": {
+          "utc": {
+            "type": "integer",
+            "minimum": 1735689600,
+            "maximum": 4102444800
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 63,
+            "examples": [
+              "CET-1CEST,M3.5.0,M10.5.0/3"
+            ]
+          }
+        }
+      },
+      "Network": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "off",
+              "provisioning",
+              "connecting",
+              "connected",
+              "waiting_retry"
+            ]
+          },
+          "provisioned": {
+            "type": "boolean"
+          },
+          "provisioning": {
+            "type": "string",
+            "enum": [
+              "none",
+              "ble",
+              "softap"
+            ]
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "mac": {
+            "type": "string"
+          },
+          "ssid": {
+            "type": "string"
+          },
+          "bssid": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "integer"
+          },
+          "rssi": {
+            "type": "integer"
+          },
+          "ip": {
+            "type": "string"
+          },
+          "netmask": {
+            "type": "string"
+          },
+          "gateway": {
+            "type": "string"
+          },
+          "reconnect_attempt": {
+            "type": "integer"
+          },
+          "retry_in_ms": {
+            "type": "integer"
+          },
+          "last_disconnect_reason": {
+            "type": "integer",
+            "description": "ESP-IDF wifi_err_reason_t."
+          },
+          "disconnects": {
+            "type": "integer"
+          },
+          "mdns": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ReprovisionRequest": {
+        "type": "object",
+        "properties": {
+          "transport": {
+            "type": "string",
+            "enum": [
+              "ble",
+              "softap"
+            ],
+            "default": "ble"
+          }
+        }
+      },
+      "ProvisioningState": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "transport": {
+            "type": "string",
+            "enum": [
+              "none",
+              "ble",
+              "softap"
+            ]
+          },
+          "state": {
+            "type": "string"
+          },
+          "provisioned": {
+            "type": "boolean"
+          },
+          "password_set": {
+            "type": "boolean"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "ip": {
+            "type": "string"
+          }
+        }
+      },
+      "WifiNetwork": {
+        "type": "object",
+        "properties": {
+          "ssid": {
+            "type": "string"
+          },
+          "rssi": {
+            "type": "integer"
+          },
+          "secure": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ProvisionWifiRequest": {
+        "type": "object",
+        "required": [
+          "ssid"
+        ],
+        "properties": {
+          "ssid": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "password": {
+            "type": "string",
+            "description": "Empty or absent for an open network; else 8 to 64."
+          },
+          "admin_password": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 64,
+            "description": "Sets the first admin password if none exists."
+          }
+        }
+      },
+      "FactoryResetRequest": {
+        "type": "object",
+        "required": [
+          "confirm"
+        ],
+        "properties": {
+          "confirm": {
+            "type": "string",
+            "const": "factory-reset"
+          }
+        }
+      },
+      "OtaStatus": {
+        "type": "object",
+        "properties": {
+          "phase": {
+            "type": "string",
+            "enum": [
+              "idle",
+              "preparing",
+              "receiving",
+              "verifying",
+              "rebooting",
+              "failed"
+            ]
+          },
+          "error": {
+            "type": "string",
+            "enum": [
+              "none",
+              "busy",
+              "zones_active",
+              "outputs_not_off",
+              "bad_image",
+              "wrong_chip",
+              "wrong_project",
+              "too_large",
+              "truncated",
+              "flash_error",
+              "verify_failed",
+              "download_failed",
+              "bad_url",
+              "aborted"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "none",
+              "upload",
+              "pull"
+            ]
+          },
+          "forced": {
+            "type": "boolean"
+          },
+          "received_bytes": {
+            "type": "integer"
+          },
+          "total_bytes": {
+            "type": "integer"
+          },
+          "new_version": {
+            "type": "string"
+          }
+        }
+      },
+      "Firmware": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "idf_version": {
+            "type": "string"
+          },
+          "build_date": {
+            "type": "string"
+          },
+          "running_slot": {
+            "type": "string"
+          },
+          "running_state": {
+            "type": "string",
+            "enum": [
+              "new",
+              "pending_verify",
+              "valid",
+              "invalid",
+              "aborted",
+              "undefined"
+            ]
+          },
+          "next_slot": {
+            "type": "string"
+          },
+          "other_slot_version": {
+            "type": "string"
+          },
+          "ota": {
+            "$ref": "#/components/schemas/OtaStatus"
+          }
+        }
+      },
+      "PullRequest": {
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://",
+            "maxLength": 512
+          },
+          "force": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Invalid body or parameter; `error.path` names the field",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "No valid session (`unauthorized`), or no admin password yet (`password_not_set`)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Host not this device (`bad_host`), cross-origin write (`bad_origin`) or missing CSRF header (`csrf`)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "No such zone, program or route",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Refused in the current state (zone disabled, inhibited, update running, ...)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "TooLarge": {
+        "description": "Body larger than the route allows (checked before reading)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "UnsupportedMediaType": {
+        "description": "Wrong Content-Type",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Too many failed attempts; see Retry-After",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "ServerError": {
+        "description": "Storage or internal error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Busy": {
+        "description": "Command queue full; see Retry-After",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  }
+}

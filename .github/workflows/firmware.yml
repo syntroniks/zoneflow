@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - "firmware/**"
+      - "docs/firmware/openapi.json"
       - ".github/workflows/firmware.yml"
   pull_request:
     paths:
       - "firmware/**"
+      - "docs/firmware/openapi.json"
       - ".github/workflows/firmware.yml"
 
 permissions:
