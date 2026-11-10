@@ -397,7 +397,8 @@ again before an order.
   board from a clean checkout changed 29 files under `output/` and nothing
   else. The STEP file renumbers its entities. The PNG renders differ by a
   few hundred pixels. The BOM and CPL are stable. For the schematic outputs
-  `STABLE := 1` in a board Makefile removes the timestamps (section 12.5).
+  `STABLE := 1` in a board Makefile removes the timestamps and keeps a plot
+  that draws the same as before (section 12.5).
 - **No 3D model for the USB-C receptacle** in the stock library, so the render
   shows only its outline.
 - **An LCSC number is only as good as the lookup.** Of the 23 numbers I first
@@ -613,13 +614,52 @@ Result on revision A: "20 plotted pages, no text or symbol collides".
 
 ### 12.5 Committed outputs and CI
 
-With `STABLE := 1`, `hwflow.stable` replaces the time of export in the PDF,
-the SVGs and the ERC reports by the date of the title block. Two builds in a
-row then leave every file byte-identical (checked on 2026-11-10 by comparing
-SHA-256 sums of the board directory before and after a second `make
-schematic`), so a diff under `hardware/zoneflow-a/` always means a change.
+The generated files are committed, so a rebuild that changes nothing must
+leave no diff. Two things stood in the way.
 
-Two CI jobs in `.github/workflows/hardware.yml` use that:
+**The time of export.** KiCad stamps every PDF, SVG and report with the second
+it was written. With `STABLE := 1`, `hwflow.stable` replaces that stamp by the
+date of the title block. On one machine, two builds in a row then leave every
+file of the board directory byte-identical. Checked on 2026-11-10 by comparing
+SHA-256 sums before and after a second `make schematic`.
+
+**Two builds of the same KiCad release.** The files were made with the Arch
+package of KiCad 10.0.8. CI regenerates them in the KiCad project's own
+`kicad/kicad:10.0.8` container image. The first CI run showed what differs
+between the two builds, and I compared the files:
+
+| Files | Arch package against container image |
+|---|---|
+| All 12 `.kicad_sch`, `.kicad_pro`, `.kicad_dru`, both library tables, `lib/` | Byte-identical |
+| Both JLCPCB BOMs, both ERC reports | Byte-identical |
+| `output/zoneflow-a.net` | One line. The three multi-unit parts (U6, U7, U8) list the id of each unit, and for U7 the two builds give two of its five ids in the other order |
+| The 20 SVG plots | Different on nearly every line, and the same picture. Each page has exactly the same drawing elements, with the same coordinates, styles and text, written in a different order |
+| The PDF | Different bytes and size, as it holds the same 20 pages in the other order |
+
+So it is not a font, a library or a rounding difference. Where KiCad sorts the
+items of a page for plotting, items of equal rank end up in an order that
+depends on the build. Byte-identity of the plots across builds is therefore
+not something the flow can promise, and the comparison is by content:
+
+- `parity.normalise_netlist` sorts the unit ids of each part before the
+  netlist is committed. The committed netlist is then the same from both
+  builds.
+- `hwflow.plotcmp` reduces an SVG to the multiset of what it draws: every
+  drawing element with the style it inherits from its groups and its
+  attributes, and every text string. The time of export and the order of
+  drawing are left out and nothing else is. All 20 pages from the container
+  compare equal to the 20 pages from the Arch package.
+- With `STABLE := 1` the build sets the old plots aside, plots again, and
+  **keeps the old file of every page whose new plot draws the same**. A plot
+  changes in git only when the picture changes. The PDF holds all pages; it
+  keeps its old file only when no page was redrawn, added or removed. Its
+  content is not compared separately.
+
+What this does not cover: a different KiCad **release** may change the sheet
+files themselves. The CI image is pinned to the release the files were made
+with, and both must move together.
+
+Two CI jobs in `.github/workflows/hardware.yml` use this:
 
 - **design consistency**, with Python only. `make -C hardware design-check`
   runs `tools/designsync` (netlist, design document, BOM, pin map) and then
@@ -627,11 +667,13 @@ Two CI jobs in `.github/workflows/hardware.yml` use that:
   `netlist.yaml` pin for pin, and both committed JLCPCB BOMs against the
   netlist's build variants. An edit to `netlist.yaml` or `parts.toml` without
   a rebuild fails here.
-- **regenerate the rev A schematic**, in the KiCad project's `kicad/kicad`
-  container image at the version the files were made with. It runs `make
-  schematic` (parity, lint, ERC) and fails if any generated file other than
-  the PDF differs from what is committed. An edit to `circuit.py` without a
-  rebuild, or a hand edit of a generated file, fails here.
+- **regenerate the rev A schematic**, in the `kicad/kicad:10.0.8` image. It
+  runs `make schematic` (parity, lint, ERC) and then `git diff --exit-code`
+  on the whole board directory. Sheets, project file, libraries, netlist,
+  BOMs and reports must be byte-identical to what is committed. A plot shows
+  up as changed only if it draws something else. An edit to `circuit.py`
+  without a rebuild, or a hand edit of a generated file, fails here. The job
+  uploads everything it generated, so a failure can be compared file by file.
 
 ### 12.6 Limits found on revision A
 
