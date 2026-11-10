@@ -37,6 +37,10 @@ export PYTHONDONTWRITEBYTECODE := 1
 
 SCH := $(NAME).kicad_sch
 STABILISE = $(if $(STABLE),$(KICAD_PY) -m hwflow.stable $(SCH) $(OUT),@true)
+# With STABLE, a plot whose new version draws the same elements keeps its old
+# file: two builds of one KiCad release write a page's items in a different order.
+PLOTS_STASH = $(if $(STABLE),$(KICAD_PY) -m hwflow.plotcmp stash $(OUT) build/previous-plots,@true)
+PLOTS_KEEP = $(if $(STABLE),$(KICAD_PY) -m hwflow.plotcmp keep build/previous-plots $(OUT),@true)
 PCB := $(NAME).kicad_pcb
 # kicad-cli prints wxWidgets debug lines on stderr. They go to a log file so
 # that the exit code of kicad-cli still decides whether the step passed.
@@ -109,6 +113,7 @@ BOM_EXPORT = $(KICAD_CLI) sch export bom --fields 'Value,Reference,Footprint,LCS
 
 # Schematic deliverables: the PDF, one SVG per page, and a JLCPCB BOM for each build.
 sch-outputs: erc
+	$(PLOTS_STASH)
 	$(KICAD_CLI) sch export pdf -o $(OUT)/$(NAME)-schematic.pdf $(SCH) $(LOG)
 	$(KICAD_CLI) sch export svg -o $(OUT)/schematic-svg/ $(SCH) $(LOG)
 	$(BOM_EXPORT) -o build/$(NAME)-bom.csv $(SCH) $(LOG)
@@ -116,6 +121,7 @@ sch-outputs: erc
 	$(foreach v,$(VARIANTS),$(BOM_EXPORT) --variant $(v) -o build/$(NAME)-bom-$(v).csv $(SCH) $(LOG) && \
 		$(KICAD_PY) -m hwflow.fab bom build/$(NAME)-bom-$(v).csv $(OUT)/$(NAME)-bom-jlcpcb-$(v).csv &&) true
 	$(STABILISE)
+	$(PLOTS_KEEP)
 
 # The committed netlist and BOMs against the design netlist. Needs Python only,
 # no KiCad, and builds nothing: CI runs it on every pull request.

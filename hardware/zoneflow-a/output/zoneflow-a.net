@@ -15827,9 +15827,7 @@
 				(names "/Failsafe/")
 				(tstamps "/c8090421-e4d9-51bd-b806-aa951cb2172e/")
 			)
-			(tstamps "83a6a6e6-cac6-5074-aa92-20eee067523a" "7666f5b5-273d-5903-aa03-c8e02ac06a2f"
-				"3ecee8f0-6d37-5cc2-bb92-fb51b00e2ed2" "20d7689f-4156-5351-b65d-b10aeb1d19aa"
-			)
+			(tstamps "20d7689f-4156-5351-b65d-b10aeb1d19aa" "3ecee8f0-6d37-5cc2-bb92-fb51b00e2ed2" "7666f5b5-273d-5903-aa03-c8e02ac06a2f" "83a6a6e6-cac6-5074-aa92-20eee067523a")
 			(units
 				(unit
 					(name "A")
@@ -15955,10 +15953,7 @@
 				(names "/Failsafe/")
 				(tstamps "/c8090421-e4d9-51bd-b806-aa951cb2172e/")
 			)
-			(tstamps "9b4b3991-50ce-5839-a3ae-c81dc0c62efe" "8f799d31-040a-5e07-9874-db34fd9a1719"
-				"391e8978-4e27-511e-a19b-5884af5289cd" "e55e1585-d02d-583c-a168-b3f3538b063f"
-				"363c7be6-8930-59fa-b0d7-92133d0c1d71"
-			)
+			(tstamps "363c7be6-8930-59fa-b0d7-92133d0c1d71" "391e8978-4e27-511e-a19b-5884af5289cd" "8f799d31-040a-5e07-9874-db34fd9a1719" "9b4b3991-50ce-5839-a3ae-c81dc0c62efe" "e55e1585-d02d-583c-a168-b3f3538b063f")
 			(units
 				(unit
 					(name "A")
@@ -18435,9 +18430,7 @@
 				(names "/CurrentSense/")
 				(tstamps "/cfd7788f-1501-5daa-93df-24bc28772453/")
 			)
-			(tstamps "f19063ce-09db-530a-abcd-e75f31956fe2" "dcf28f8d-e8f3-5846-8c52-08b00d3c511e"
-				"bc032239-0783-515f-9b80-02b361b1784c"
-			)
+			(tstamps "bc032239-0783-515f-9b80-02b361b1784c" "dcf28f8d-e8f3-5846-8c52-08b00d3c511e" "f19063ce-09db-530a-abcd-e75f31956fe2")
 			(units
 				(unit
 					(name "A")

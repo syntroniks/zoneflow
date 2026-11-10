@@ -233,8 +233,12 @@ def normalise_netlist(text: str) -> str:
     """KiCad's netlist with the build machine's path and the export time taken out.
 
     The result is what is committed, so that it does not change from one
-    machine or one minute to the next.
+    machine, one build of KiCad or one minute to the next.
     """
     text = re.sub(r'\(source "[^"]*[/\\]([^"/\\]+)"\)', r'(source "\1")', text)
     text = re.sub(r'\(date "[^"]*"\)', '(date "")', text, count=1)
+    # A multi-unit part lists the id of each of its units. Two builds of one
+    # KiCad release give them in a different order; the set is what matters.
+    text = re.sub(r'\(tstamps((?:\s+"[0-9a-f-]{36}"){2,})\s*\)',
+                  lambda m: "(tstamps " + " ".join(sorted(m.group(1).split())) + ")", text)
     return text

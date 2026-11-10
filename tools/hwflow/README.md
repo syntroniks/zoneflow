@@ -15,6 +15,7 @@ Read `docs/design/hardware-toolchain.md` for how to use it. Run it through
 | `fpgen` | system Python with `pcbnew` | write a project-local footprint library |
 | `committed` | `uv run`, no KiCad | check a board's committed netlist and BOMs against the design netlist (CI) |
 | `stable` | either | take the time of export out of PDFs, SVGs and reports |
+| `plotcmp` | either | compare two SVG plots by what they draw; keep a committed plot that draws the same |
 | `pcbbuild` | system Python with `pcbnew` | board outline, placement, pre-routes, zones, DSN export, session import |
 | `route` | either | Freerouting download, run and session cache |
 | `fab`, `report` | either | JLCPCB BOM and pick-and-place CSV, build summary |
