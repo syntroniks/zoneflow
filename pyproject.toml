@@ -12,4 +12,6 @@ default-groups = ["docs"]
 docs = [
     "mkdocs>=1.6,<2",
     "mkdocs-material>=9.5,<10",
+    # Renders docs/firmware/openapi.json on the API reference page.
+    "mkdocs-swagger-ui-tag>=0.8,<0.9",
 ]

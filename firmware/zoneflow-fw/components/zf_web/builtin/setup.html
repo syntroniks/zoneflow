@@ -1,0 +1,76 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: Apache-2.0
+     Captive setup page, served while the setup access point runs. The access
+     point is WPA2 with the setup code as passphrase, so the form travels
+     encrypted on the air. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZoneFlow setup</title>
+<style>
+body{font:16px/1.4 system-ui,sans-serif;margin:0 auto;max-width:28rem;padding:1rem;color:#1b2b2b;background:#f6f8f8}
+h1{font-size:1.3rem}label{display:block;margin:.7rem 0 .2rem}
+input,select,button{font:inherit;width:100%;box-sizing:border-box;padding:.5rem;margin:0}
+button{margin-top:1rem;cursor:pointer}.muted{color:#5a6b6b}.err{color:#a01818}
+@media (prefers-color-scheme:dark){body{background:#101616;color:#dde8e8}.muted{color:#93a5a5}}
+</style>
+</head>
+<body>
+<h1>Connect ZoneFlow to your WiFi</h1>
+<p class="muted">2.4 GHz networks only. The controller keeps watering on its schedule while it is offline.</p>
+<label for="ssid">Network</label>
+<select id="ssid"><option value="">scanning…</option></select>
+<label for="other">or type the name</label>
+<input id="other" autocomplete="off" maxlength="32">
+<label for="pw">WiFi password</label>
+<input id="pw" type="password" maxlength="64" autocomplete="off">
+<div id="adminbox">
+<label for="admin">Admin password for the controller (8 to 64 characters)</label>
+<input id="admin" type="password" maxlength="64" autocomplete="new-password">
+</div>
+<button id="go">Connect</button>
+<p id="msg" class="muted"></p>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+async function call(method, path, body) {
+  const r = await fetch("/api/v1" + path, {method, headers: body ? {"Content-Type": "application/json"} : {},
+    body: body ? JSON.stringify(body) : undefined});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error((j.error && j.error.message) || r.status);
+  return j;
+}
+call("GET", "/provision").then((p) => { if (p.password_set) $("adminbox").style.display = "none"; });
+call("GET", "/provision/networks").then((list) => {
+  const sel = $("ssid");
+  sel.innerHTML = "";
+  for (const n of list) {
+    const o = document.createElement("option");
+    o.value = n.ssid; o.textContent = n.ssid + (n.secure ? "" : " (open)") + "  " + n.rssi + " dBm";
+    sel.appendChild(o);
+  }
+}).catch(() => { $("ssid").innerHTML = '<option value="">scan failed: type the name</option>'; });
+$("go").onclick = async () => {
+  const ssid = $("other").value || $("ssid").value;
+  const body = {ssid, password: $("pw").value};
+  if ($("admin").value) body.admin_password = $("admin").value;
+  $("msg").className = "muted";
+  $("msg").textContent = "Trying…";
+  try {
+    await call("POST", "/provision/wifi", body);
+    const t0 = Date.now();
+    const poll = async () => {
+      const p = await call("GET", "/provision").catch(() => null);
+      if (p && p.state === "connected" || p && !p.active) {
+        $("msg").textContent = "Connected. The setup network closes now; find the controller at http://" + p.hostname + ".local/";
+      } else if (Date.now() - t0 > 30000) {
+        $("msg").className = "err"; $("msg").textContent = "No connection yet. Check the password and try again.";
+      } else { setTimeout(poll, 2000); }
+    };
+    setTimeout(poll, 2000);
+  } catch (e) { $("msg").className = "err"; $("msg").textContent = e.message; }
+};
+</script>
+</body>
+</html>

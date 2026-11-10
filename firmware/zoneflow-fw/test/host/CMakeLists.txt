@@ -29,6 +29,27 @@ target_include_directories(cjson PUBLIC "${cjson_src_SOURCE_DIR}")
 
 add_subdirectory(../../components/zf_core zf_core)
 
+# Host-testable logic of the network, web and OTA modules. These sources
+# include no ESP-IDF headers; the device glue in the same components does.
+set(ZF_COMPONENTS "${CMAKE_CURRENT_LIST_DIR}/../../components")
+add_library(zf_ext STATIC
+    ${ZF_COMPONENTS}/zf_net/src/net_logic.cpp
+    ${ZF_COMPONENTS}/zf_ota/src/ota_logic.cpp
+    ${ZF_COMPONENTS}/zf_web/src/api.cpp
+    ${ZF_COMPONENTS}/zf_web/src/auth.cpp
+    ${ZF_COMPONENTS}/zf_web/src/command_watch.cpp
+    ${ZF_COMPONENTS}/zf_web/src/crypto.cpp
+    ${ZF_COMPONENTS}/zf_web/src/http_util.cpp
+    ${ZF_COMPONENTS}/zf_web/src/json_map.cpp
+    ${ZF_COMPONENTS}/zf_web/src/routes.cpp
+)
+target_include_directories(zf_ext PUBLIC
+    ${ZF_COMPONENTS}/zf_net/include
+    ${ZF_COMPONENTS}/zf_ota/include
+    ${ZF_COMPONENTS}/zf_web/include)
+target_compile_options(zf_ext PRIVATE -Wall -Wextra -Wpedantic -Werror -fno-exceptions -fno-rtti)
+target_link_libraries(zf_ext PUBLIC zf_core cjson)
+
 add_executable(zf_host_tests
     civil_test.cpp
     config_test.cpp
@@ -42,9 +63,18 @@ add_executable(zf_host_tests
     time_zone_test.cpp
     zero_cross_test.cpp
     zone_driver_test.cpp
+    crypto_test.cpp
+    net_logic_test.cpp
+    ota_logic_test.cpp
+    web_api_test.cpp
+    web_auth_test.cpp
+    web_http_test.cpp
+    web_openapi_test.cpp
 )
 target_compile_options(zf_host_tests PRIVATE -Wall -Wextra)
-target_link_libraries(zf_host_tests PRIVATE zf_core cjson GTest::gtest_main)
+target_compile_definitions(zf_host_tests PRIVATE
+    ZF_OPENAPI_PATH="${CMAKE_CURRENT_LIST_DIR}/../../../../docs/firmware/openapi.json")
+target_link_libraries(zf_host_tests PRIVATE zf_core zf_ext cjson GTest::gtest_main)
 
 enable_testing()
 include(GoogleTest)
