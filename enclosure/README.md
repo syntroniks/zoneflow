@@ -27,9 +27,12 @@ To look at one part:
 openscad -D 'part="fascia"' zoneflow.scad
 ```
 
-Values for `part`: `assembly`, `open`, `exploded`, `section`, `board`,
+Values for `part`: `assembly`, `open`, `exploded`, `section`, `section_side`, `board`,
 `zones`, `base`, `fascia`, `cover`, `bridge`, `knob`, `button_back`,
 `button_home`, `lightpipe`, `template`, and `print_` plus any part name.
+
+Add `-D 'panel="2.4"'` to see the fascia and carrier for the 2.4 inch panel
+option.
 
 The reasoning is in `docs/design/mechanical.md` and `docs/enclosure/`.
 

@@ -26,7 +26,7 @@ PARTS := base fascia cover bridge knob button-back button-home lightpipe
 
 STL   := $(PARTS:%=$(OUT)/zoneflow-%.stl)
 3MF   := $(PARTS:%=$(OUT)/zoneflow-%.3mf)
-VIEWS := front three-quarter exploded wiring-open section-display section board
+VIEWS := front three-quarter rear-top exploded wiring-open section section-side board front-2.4
 PNG   := $(VIEWS:%=$(OUT)/render-%.png)
 
 RENDER := $(XVFB) $(OSC) --render --colorscheme=Tomorrow
@@ -49,19 +49,23 @@ $(OUT)/zoneflow-%.3mf: $(SRC) | $(OUT)
 # on a wall: x right, z up, the front faces -y.
 renders: $(PNG)
 $(OUT)/render-front.png: $(SRC) | $(OUT)
-	$(RENDER) -q $(WALL) -D 'part="assembly"' --projection=o --camera=57,-560,31,57,0,31 --imgsize=1200,1500 -o $@ zoneflow.scad
+	$(RENDER) -q $(WALL) -D 'part="assembly"' --projection=o --camera=57,-600,39,57,0,39 --imgsize=1200,1600 -o $@ zoneflow.scad
+$(OUT)/render-front-2.4.png: $(SRC) | $(OUT)
+	$(RENDER) -q $(WALL) -D 'part="assembly"' -D 'panel="2.4"' --projection=o --camera=57,-600,39,57,0,39 --imgsize=1200,1600 -o $@ zoneflow.scad
 $(OUT)/render-three-quarter.png: $(SRC) | $(OUT)
-	$(RENDER) -q $(WALL) -D 'part="assembly"' --projection=p --camera=330,-470,190,57,0,28 --imgsize=1500,1500 -o $@ zoneflow.scad
+	$(RENDER) -q $(WALL) -D 'part="assembly"' --projection=p --camera=340,-490,200,57,0,36 --imgsize=1500,1600 -o $@ zoneflow.scad
+$(OUT)/render-rear-top.png: $(SRC) | $(OUT)
+	$(RENDER) -q $(WALL) -D 'part="assembly"' --projection=p --camera=270,330,330,57,-5,60 --imgsize=1500,1300 -o $@ zoneflow.scad
 $(OUT)/render-exploded.png: $(SRC) | $(OUT)
-	$(RENDER) -q $(WALL) -D 'part="exploded"' --projection=p --camera=640,-400,200,57,-70,12 --imgsize=1800,1500 -o $@ zoneflow.scad
+	$(RENDER) -q $(WALL) -D 'part="exploded"' --projection=p --camera=680,-420,220,57,-75,22 --imgsize=1800,1600 -o $@ zoneflow.scad
 $(OUT)/render-wiring-open.png: $(SRC) | $(OUT)
-	$(RENDER) -q $(WALL) -D 'part="open"' --projection=p --camera=250,-500,-150,57,0,22 --imgsize=1500,1500 -o $@ zoneflow.scad
-$(OUT)/render-section-display.png: $(SRC) | $(OUT)
-	$(RENDER) -q -D 'part="section"' --projection=o --camera=50,-50,2,50,78,2 --imgsize=2000,900 -o $@ zoneflow.scad
+	$(RENDER) -q $(WALL) -D 'part="open"' --projection=p --camera=250,-520,-150,57,0,30 --imgsize=1500,1600 -o $@ zoneflow.scad
 $(OUT)/render-section.png: $(SRC) | $(OUT)
-	$(RENDER) -q -D 'part="section"' --projection=o --camera=57,-95,2,57,78,2 --imgsize=2000,900 -o $@ zoneflow.scad
+	$(RENDER) -q -D 'part="section"' --projection=o --camera=57,-95,2,57,88,2 --imgsize=2000,900 -o $@ zoneflow.scad
+$(OUT)/render-section-side.png: $(SRC) | $(OUT)
+	$(RENDER) -q $(WALL) -D 'part="section_side"' --projection=o --camera=520,3,39,15,3,39 --imgsize=1000,1900 -o $@ zoneflow.scad
 $(OUT)/render-board.png: $(SRC) | $(OUT)
-	$(RENDER) -q $(WALL) -D 'part="board"' --projection=p --camera=300,-400,250,57,-8,45 --imgsize=1500,1300 -o $@ zoneflow.scad
+	$(RENDER) -q $(WALL) -D 'part="board"' --projection=p --camera=300,-400,250,57,-8,50 --imgsize=1500,1400 -o $@ zoneflow.scad
 
 # 1:1 drilling template.
 template: $(OUT)/drill-template.svg $(OUT)/drill-template.pdf

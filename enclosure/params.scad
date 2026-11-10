@@ -16,8 +16,9 @@ back_chamfer = 0.8;  // edge of the back, also hides elephant foot
 reveal      = 0.6;   // shadow gap between base and front parts
 reveal_h    = 0.8;
 z_split     = 6.0;   // top of the base walls, above the board's top surface
-cover_proud = 2.5;   // wiring cover stands this far in front of the fascia
-cover_overlap = 1.5; // and laps this far over the fascia's lower edge
+cover_proud = 2.0;   // wiring cover stands this far in front of the fascia
+cover_overlap = 21.9; // and laps this far over it, past the fuse well
+flap_cham   = 0.8;   // edge of that flap
 part_wall   = 1.6;   // partition between electronics and wiring
 part_gap    = 0.4;   // partition to the bottom board edge
 bay_h       = 46.0;  // inside height of the wiring compartment
@@ -45,6 +46,11 @@ boss_d       = 8.0;
 lip_t  = 1.6;
 lip_z0 = 0.6;         // stays above the board, which it overhangs
 
+// ---- Display panel ------------------------------------------------------
+// "2.0" is the panel the board is laid out for. "2.4" rebuilds the fascia
+// and the carrier for the larger panel; see display_options in the contract.
+panel = panel_fitted;
+
 // ---- Display bezel -----------------------------------------------------
 bezel_lip   = 1.0;    // plastic left in front of the glass
 bezel_cham  = 1.0;    // 45 degree chamfer of the window, widening outward
@@ -58,12 +64,18 @@ foot_size    = 4.0;
 
 // ---- Encoder and knob --------------------------------------------------
 enc_hole_d   = 14.0;  // large so the fascia can swing shut over the shaft
-knob_d       = 30;
 knob_gap     = 2.0;   // knob underside above the fascia at rest
 knob_roof    = 2.0;
 knob_wall    = 2.4;
 knob_bore_fit = 0.1;  // per side on the D shaft; push fit
-knob_flutes  = 36;
+knob_skirt_d = 34;    // foot of the knob; hides the hole in the fascia
+knob_skirt_h = 1.6;
+knob_body_d  = [31, 29];   // waist and top: 5 degrees of taper
+knob_top_cham = 1.2;
+knob_scallops = 12;   // finger scallops; no pointer, the encoder has no end stop
+knob_scallop_d = 11;
+knob_scallop_depth = 0.9;
+knob_ring_d  = 16;    // engraved ring on the top face
 
 // ---- Buttons -----------------------------------------------------------
 btn_size     = [16, 8];   // pill, visible face
@@ -83,19 +95,22 @@ lp_fit       = 0.1;   // per side between rail and channel: press fit
 
 // ---- Label and markings ------------------------------------------------
 // Recess for a standard address label: 28 x 89 mm (Dymo 99010) or
-// 29 x 90 mm (Brother DK-11201).
+// 29 x 90 mm (Brother DK-11201). It is on the wiring cover.
 label_size   = [90.5, 29.5];
-label_y0     = 4.5;
+label_y0     = -32.0;
 label_depth  = 0.4;
 mark_depth   = 0.4;
 mark_size    = 3.6;
-mark_y       = 37.2;
+mark_y       = 36.6;
 mark_font    = "Liberation Sans:style=Bold";
 wordmark     = "ZoneFlow";
+wordmark_size = 4.6;
+wordmark_at  = [103.4, 26.5];   // right end and baseline centre, on the fascia
+fuse_text    = "2 x 3 A T";
 
 // ---- Wall mounting -----------------------------------------------------
 keyhole_x    = [19.5, 94.5];   // 75 mm apart, centred
-keyhole_y    = 78;             // centre of the large opening
+keyhole_y    = 88;             // centre of the large opening
 keyhole_slot = 8;              // the narrow slot runs this far up
 keyhole_big  = 9.5;            // for screw heads up to 9 mm
 keyhole_small = 4.6;           // for screws up to 4.5 mm (No. 8)
@@ -117,15 +132,35 @@ hook_w       = 3.0;
 toe_x        = [8.0, 109.25];  // cover toes, above USB and Qwiic
 toe_w        = 6.0;
 
-// ---- Fascia screws (through the top wall of the base) -------------------
+// ---- Fascia screws (through the roof and the top wall of the base) ------
 top_screw_x  = [20, 70];       // both more than 15 mm from the antenna
 top_screw_z  = 2.4;
 
 // ---- Ventilation -------------------------------------------------------
-louvre_gap   = 1.4;   // measured square to the slit: the insect limit
+// Air comes in low and leaves high. Every opening is at most vent_gap wide.
+vent_gap     = 1.4;   // the insect limit
 louvre_pitch = 4.5;
-louvre_y     = [12, 98];
 louvre_z     = [-18.5, -2.5];
+// Slanted slits in the side walls, as y ranges: wiring compartment (inlet),
+// low on the electronics compartment (inlet), high on it (outlet).
+louvre_groups = [[-42, -10], [12, 43.5], [76.5, 108]];
+// The fascia carries a roof over the top wall. Hot air leaves through slits
+// in the top wall into the gap under the roof, and out at the back.
+roof_gap     = 3.5;
+roof_t       = 2.0;
+roof_z0      = -15;   // rear edge of the roof
+top_slit_pitch = 3.4;
+top_slit_z   = [-12.5, -2.5];   // 2.5 mm inside the roof's rear edge
+// Slits in the partition, below the board, let air in from the wiring
+// compartment; slits in the bottom wall let it in there.
+part_slit_pitch = 3.2;
+part_slit_z  = [-18.5, -4.5];
+bottom_slit_x = [21, 24.2, 47.2, 50.4, 63.6, 66.8, 89.8, 93];
+bottom_slit_z = [-17, -3];
+
+// ---- Support for C1 -------------------------------------------------------
+c1_rib_dx    = 7;     // two ribs, this far each side of the can's centre
+c1_rib_gap   = 0.3;   // ribs stop this far under the can
 
 // ---- Colours for renders -----------------------------------------------
 col_base   = "#d8d6d0";

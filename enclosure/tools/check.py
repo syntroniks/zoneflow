@@ -43,6 +43,16 @@ PAIRS: list[tuple[str, str]] = (
     + [("bridge", p) for p in PRINTED[4:]]
     + [("knob", "buttons"), ("knob", "lightpipe"), ("buttons", "lightpipe")]
 )
+# The same checks that matter for the larger panel option. The board model
+# is laid out for the fitted panel, so only the display itself, the carrier
+# and the fascia are tested against each other and against the free zones.
+VARIANT = "2.4"
+VARIANT_PAIRS: list[tuple[str, str]] = [
+    ("display", "fascia"), ("display", "bridge"), ("display", "buttons"), ("display", "base"),
+    ("display", "knob"), ("display", "lightpipe"), ("fascia", "bridge"), ("fascia", "buttons"),
+    ("bridge", "buttons"), ("bridge", "base"), ("bridge", "knob"), ("bridge", "lightpipe"),
+    ("zones", "fascia"), ("zones", "bridge"),
+]
 # The knob's bore has a flat and the placeholder shaft is a plain cylinder, so
 # these two overlap by the missing flat. Anything larger is a real clash.
 EXPECTED = {("board", "knob"): 36.5}
@@ -115,10 +125,13 @@ def main() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         tmpd = Path(tmp)
 
-        def pair(ab):
+        def pair(ab, panel=None):
             a, b = ab
-            out = tmpd / f"x_{a}_{b}.stl"
-            if not run(args.openscad, {"part": "check", "check_a": a, "check_b": b}, out):
+            out = tmpd / f"x_{a}_{b}_{panel}.stl"
+            defs = {"part": "check", "check_a": a, "check_b": b}
+            if panel:
+                defs["panel"] = panel
+            if not run(args.openscad, defs, out):
                 return ab, 0.0, None
             vol, lo, hi = measure(read_stl(out))
             return ab, vol, (lo, hi)
@@ -130,6 +143,7 @@ def main() -> None:
 
         with concurrent.futures.ThreadPoolExecutor(8) as ex:
             pairs = list(ex.map(pair, PAIRS))
+            vpairs = list(ex.map(lambda ab: pair(ab, VARIANT), VARIANT_PAIRS))
             prints = list(ex.map(printed, PRINTS))
 
     lines = [
@@ -150,18 +164,34 @@ def main() -> None:
         "|---|---|---|---|",
     ]
     failed = []
-    for (a, b), vol, box in pairs:
-        allow = EXPECTED.get((a, b))
-        if vol < LIMIT:
-            res = "pass"
-        elif allow is not None and vol <= allow:
-            res = f"pass (expected: flat on the shaft, allowed {allow:g})"
-        else:
-            lo, hi = box
-            where = " ".join(f"{k}={lo[i]:.1f}..{hi[i]:.1f}" for i, k in enumerate("xyz"))
-            res = f"**FAIL** at {where}"
-            failed.append(f"{a} / {b}: {vol:.2f} mm3 at {where}")
-        lines.append(f"| {a} | {b} | {vol:.2f} | {res} |")
+
+    def rows(results, tag=""):
+        for (a, b), vol, box in results:
+            allow = EXPECTED.get((a, b))
+            if vol < LIMIT:
+                res = "pass"
+            elif allow is not None and vol <= allow:
+                res = f"pass (expected: flat on the shaft, allowed {allow:g})"
+            else:
+                lo, hi = box
+                where = " ".join(f"{k}={lo[i]:.1f}..{hi[i]:.1f}" for i, k in enumerate("xyz"))
+                res = f"**FAIL** at {where}"
+                failed.append(f"{tag}{a} / {b}: {vol:.2f} mm3 at {where}")
+            lines.append(f"| {a} | {b} | {vol:.2f} | {res} |")
+
+    rows(pairs)
+    lines += [
+        "",
+        f"## Interference with the {VARIANT} inch panel option",
+        "",
+        f"Fascia and display carrier rebuilt with `panel = \"{VARIANT}\"`. The board",
+        "placeholder is not part of this: it is laid out for the fitted panel.",
+        "The panel's folded cable is a guessed box.",
+        "",
+        "| A | B | Overlap, mm3 | Result |",
+        "|---|---|---|---|",
+    ]
+    rows(vpairs, f"{VARIANT}: ")
 
     lines += [
         "",
@@ -192,8 +222,9 @@ def main() -> None:
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text("\n".join(lines))
-    n_ok = sum(1 for ab, v, _ in pairs if v < LIMIT or EXPECTED.get(ab, 0) >= v)
-    print(f"{args.out}: {n_ok} of {len(pairs)} pairs clear, {len(prints)} parts measured")
+    everything = pairs + vpairs
+    n_ok = sum(1 for ab, v, _ in everything if v < LIMIT or EXPECTED.get(ab, 0) >= v)
+    print(f"{args.out}: {n_ok} of {len(everything)} pairs clear, {len(prints)} parts measured")
     if failed:
         print("FAILED:\n  " + "\n  ".join(failed), file=sys.stderr)
         raise SystemExit(1)
