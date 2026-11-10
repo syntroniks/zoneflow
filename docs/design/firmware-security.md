@@ -1,7 +1,7 @@
 # ZoneFlow firmware: network security
 
-Status: **phase 2 draft**. Covers the standalone firmware's network surface:
-WiFi provisioning, the REST API and event stream, the web UI and OTA. None of
+Status: **phase 3 draft**. Covers the standalone firmware's network surface:
+WiFi provisioning, the REST API and event stream, the web UI, OTA and MQTT. None of
 it has run on a board. The logic named here is covered by host tests
 (`firmware/zoneflow-fw/test/host`); the ESP-IDF glue around it is only
 compiled.
@@ -143,6 +143,38 @@ compiled.
   firmware that passes those checks. Secure Boot v2 would close this; it is
   not enabled (section 7).
 
+### 4.7 MQTT (A2)
+
+MQTT is off by default. When it is on, **whoever may publish to the
+controller's command topics on the broker controls the valves**, exactly
+like an admin session. The broker's authentication and access control are
+the protection; the controller cannot tell clients apart.
+
+- **Broker access.** Use a broker user for the controller and ACLs that let
+  only it and Home Assistant use `<root>/#`. Mosquitto: `allow_anonymous
+  false`, `password_file`, `acl_file`.
+- **Credentials.** The MQTT password and a custom CA certificate are
+  write-only in the API (`PUT /api/v1/mqtt`; `GET` shows only
+  `password_set`), stored in NVS namespace `zf_mqtt`, never logged and
+  never in the configuration document or its backup.
+- **On the wire.** Plain MQTT (port 1883) sends the password and every
+  message in clear text, readable by A2 on the LAN. `tls: true` encrypts
+  and checks the broker against the ESP-IDF certificate bundle or a stored
+  CA. There is no client certificate support.
+- **What a command can do.** The same commands as the REST API, through the
+  same queue and the same core limits: a run is clamped to the zone's
+  maximum and run-time budget, locked-out and resting zones are refused.
+  MQTT cannot change the configuration beyond a zone's default run time
+  and a program's enabled flag, cannot install firmware (the Home
+  Assistant `update` entity has no install command), and cannot reach the
+  password, network or security settings.
+- **Accidental starts.** Retained command messages and empty messages are
+  ignored, so a stale retained "run" on the broker, or clearing one, starts
+  nothing.
+- **Floods.** At most 10 commands at once and 5 per second; the rest are
+  answered `rate_limited`. Incoming payloads over 256 bytes and JSON nested
+  more than two levels are refused before parsing.
+
 ## 5. HTTPS, plainly
 
 The device can serve HTTPS with a certificate it creates itself (EC P-256,
@@ -185,6 +217,8 @@ login.
 | Captive DNS parser | `captiveDnsAnswer` | `net_logic_test.cpp` |
 | OTA header check and safety gate | `zf_ota/src/ota_logic.cpp` | `ota_logic_test.cpp` |
 | No secrets in backup or network status | `Api::configBackup`, `Api::networkGet` | `web_api_test.cpp` |
+| MQTT password and CA write-only, outside the configuration | `Api::mqttGet`, `Api::mqttPut`, `zf_mqtt/src/mqtt.cpp` | `web_mqtt_api_test.cpp`, `mqtt_config_test.cpp` |
+| MQTT command validation, retained and empty messages, rate limit | `zf_mqtt/src/mqtt_logic.cpp` | `mqtt_logic_test.cpp`; broker test `test/broker/run.sh` |
 
 ## 7. Known gaps
 
@@ -203,3 +237,6 @@ login.
    point). Someone in range who also has the setup code could provision it.
 7. **Nothing here has been tested against a real browser, phone app or
    attacker.** The checks above are unit tests of the logic.
+8. **MQTT trusts the broker.** Anyone allowed to publish to the command
+   topics can water; MQTT without TLS exposes the broker password on the
+   LAN. No client certificates.

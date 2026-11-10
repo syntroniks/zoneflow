@@ -14,6 +14,7 @@
 
 #include <cstdint>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -21,6 +22,7 @@
 
 #include "zf/app/services.hpp"
 #include "zf/time/clock.hpp"
+#include "zf_mqtt/mqtt_logic.hpp"
 #include "zf_net/net_logic.hpp"
 #include "zf_ota/ota_logic.hpp"
 #include "zf_web/auth.hpp"
@@ -97,6 +99,11 @@ struct SlotInfo {
     std::string otherVersion; // version in the other slot, empty if none
 };
 
+struct MqttSecretsInfo {
+    bool passwordSet = false;
+    bool caCertSet = false;
+};
+
 struct WifiNetwork {
     std::string ssid;
     int8_t rssi = 0;
@@ -121,6 +128,17 @@ public:
     virtual std::string tlsFingerprint() const = 0;
     // Blocks the calling (API) task; used while waiting for a command outcome.
     virtual void sleepMs(uint32_t ms) = 0;
+
+    // MQTT module (zf_mqtt). The defaults describe a build without it.
+    virtual mqtt::MqttStatus mqttStatus() const { return {}; }
+    virtual MqttSecretsInfo mqttSecrets() const { return {}; }
+    // nullopt leaves a value unchanged, an empty string removes it.
+    virtual bool setMqttSecrets(std::optional<std::string_view> password, std::optional<std::string_view> caPem)
+    {
+        (void)password;
+        (void)caPem;
+        return false;
+    }
 };
 
 struct Admission {
@@ -207,6 +225,8 @@ private:
     ApiResponse systemFactoryReset(const ApiRequest &req);
     ApiResponse firmwareGet();
     ApiResponse firmwarePull(const ApiRequest &req);
+    ApiResponse mqttGet();
+    ApiResponse mqttPut(const ApiRequest &req);
 
     ApiResponse post(const Command &cmd);
     // Posts a command that the controller may reject (RunZone, RunProgram)

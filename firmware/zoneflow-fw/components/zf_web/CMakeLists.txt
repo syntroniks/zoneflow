@@ -11,7 +11,7 @@ idf_component_register(SRCS src/api.cpp
                             src/tls.cpp
                             src/web.cpp
                        INCLUDE_DIRS include
-                       REQUIRES zf_core zf_net zf_ota esp_common
+                       REQUIRES zf_core zf_net zf_ota zf_mqtt esp_common
                        PRIV_REQUIRES zf_board zf_platform esp_http_server esp_https_server http_parser json mbedtls
                                      esp_timer esp_system esp_hw_support esp_app_format heap freertos lwip log vfs
                        EMBED_TXTFILES builtin/fallback.html builtin/setup.html)

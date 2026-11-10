@@ -393,6 +393,10 @@ ApiResponse Api::dispatch(const ApiRequest &req, const Admission &a)
         return firmwareGet();
     case RouteId::FirmwarePull:
         return firmwarePull(req);
+    case RouteId::MqttGet:
+        return mqttGet();
+    case RouteId::MqttPut:
+        return mqttPut(req);
     case RouteId::Events:
     case RouteId::FirmwareUpload:
     case RouteId::FirmwareAssets:
@@ -788,7 +792,8 @@ ApiResponse Api::zonePatch(std::string_view id, const ApiRequest &req)
     if (zone == nullptr) {
         return error(404, "not_found", "no such zone");
     }
-    static constexpr std::string_view kAllowed[] = {"name", "enabled", "max_run_s", "current_min_ma", "current_max_ma"};
+    static constexpr std::string_view kAllowed[] = {"name",           "enabled",        "max_run_s",
+                                                    "current_min_ma", "current_max_ma", "default_run_s"};
     const cJSON *item = nullptr;
     cJSON_ArrayForEach(item, body.get())
     {
@@ -1347,6 +1352,135 @@ ApiResponse Api::firmwarePull(const ApiRequest &req)
         return error(409, ota::toString(e), "update not started");
     }
     return json(202, "{\"accepted\":true}");
+}
+
+// ---- MQTT ------------------------------------------------------------------------------------------------------
+
+namespace {
+
+// Settings in Config::mqtt that PUT /mqtt may change; the same names as in
+// the configuration document.
+constexpr std::string_view kMqttFields[] = {
+    "enabled",   "host",       "port",      "username",         "tls",           "ca",
+    "client_id", "base_topic", "discovery", "discovery_prefix", "ha_zone_entity"};
+constexpr std::size_t kMaxMqttPassword = 128;
+constexpr std::size_t kMaxCaPem = 6144;
+
+cJSON *mqttStatusToJson(const mqtt::MqttStatus &s, MonoMs now)
+{
+    cJSON *o = cJSON_CreateObject();
+    cJSON_AddStringToObject(o, "state", mqtt::toString(s.state));
+    cJSON_AddStringToObject(o, "broker", s.broker.c_str());
+    cJSON_AddStringToObject(o, "root_topic", s.root.c_str());
+    if (s.state == mqtt::ConnState::Connected && now >= s.connectedSinceMs) {
+        cJSON_AddNumberToObject(o, "connected_for_s", static_cast<double>((now - s.connectedSinceMs) / 1000));
+    } else {
+        cJSON_AddNullToObject(o, "connected_for_s");
+    }
+    cJSON_AddNumberToObject(o, "connects", s.connects);
+    cJSON_AddNumberToObject(o, "reconnect_attempt", s.reconnectAttempt);
+    cJSON_AddNumberToObject(o, "retry_in_ms", s.retryInMs);
+    cJSON_AddStringToObject(o, "last_error", s.lastError.c_str());
+    cJSON_AddNumberToObject(o, "published", s.published);
+    cJSON_AddNumberToObject(o, "publish_failed", s.publishFailed);
+    cJSON_AddNumberToObject(o, "commands_received", s.commandsReceived);
+    cJSON_AddNumberToObject(o, "commands_rejected", s.commandsRejected);
+    cJSON_AddNumberToObject(o, "events_dropped", s.eventsDropped);
+    cJSON_AddBoolToObject(o, "discovery_published", s.discoveryPublished);
+    return o;
+}
+
+// Write-only secret: a string (empty removes it) or null (removes it).
+bool secretField(const cJSON *item, std::size_t max, std::optional<std::string_view> &out)
+{
+    if (item == nullptr) {
+        return true;
+    }
+    if (cJSON_IsNull(item)) {
+        out = std::string_view{};
+        return true;
+    }
+    if (!cJSON_IsString(item) || item->valuestring == nullptr) {
+        return false;
+    }
+    const std::string_view v(item->valuestring);
+    if (v.size() > max) {
+        return false;
+    }
+    out = v;
+    return true;
+}
+
+} // namespace
+
+ApiResponse Api::mqttGet()
+{
+    JsonPtr doc = parseJson(services_.config.toJson());
+    cJSON *settings = cJSON_GetObjectItemCaseSensitive(doc.get(), "mqtt");
+    cJSON *o = settings != nullptr ? cJSON_Duplicate(settings, true) : cJSON_CreateObject();
+    const MqttSecretsInfo secrets = platform_.mqttSecrets();
+    // The password is write-only: only whether one is stored.
+    cJSON_AddBoolToObject(o, "password_set", secrets.passwordSet);
+    cJSON_AddBoolToObject(o, "ca_cert_set", secrets.caCertSet);
+    cJSON_AddItemToObject(o, "status", mqttStatusToJson(platform_.mqttStatus(), clock_.monoMs()));
+    return json(200, bodyOf(o));
+}
+
+ApiResponse Api::mqttPut(const ApiRequest &req)
+{
+    ApiResponse err;
+    JsonPtr body = parseObject(req.body, false, err);
+    if (!body) {
+        return err;
+    }
+    std::optional<std::string_view> password;
+    std::optional<std::string_view> caPem;
+    JsonPtr doc = parseJson(services_.config.toJson());
+    cJSON *settings = cJSON_GetObjectItemCaseSensitive(doc.get(), "mqtt");
+    if (settings == nullptr) {
+        settings = cJSON_AddObjectToObject(doc.get(), "mqtt");
+    }
+    bool configChanged = false;
+    const cJSON *item = nullptr;
+    cJSON_ArrayForEach(item, body.get())
+    {
+        const std::string_view key(item->string);
+        if (key == "password") {
+            if (!secretField(item, kMaxMqttPassword, password)) {
+                return error(400, "invalid_body", "password must be a string of at most 128 bytes, or null",
+                             "password");
+            }
+        } else if (key == "ca_cert") {
+            if (!secretField(item, kMaxCaPem, caPem) ||
+                (!caPem->empty() && caPem->find("-----BEGIN CERTIFICATE-----") == std::string_view::npos)) {
+                return error(400, "invalid_body", "ca_cert must be a PEM certificate (at most 6144 bytes), or null",
+                             "ca_cert");
+            }
+        } else if (std::find(std::begin(kMqttFields), std::end(kMqttFields), key) != std::end(kMqttFields)) {
+            setItem(settings, item->string, cJSON_Duplicate(item, true));
+            configChanged = true;
+        } else {
+            return error(400, "invalid_body", "unknown field", item->string);
+        }
+    }
+    if (configChanged) {
+        const ValidationResult v = services_.config.updateFromJson(printJson(doc.get()));
+        if (!v.ok) {
+            if (v.path.empty() && v.message == "storage write failed") {
+                return error(500, "storage_error", v.message);
+            }
+            return error(400, "invalid_config", v.message, relativePath(v.path, "mqtt"));
+        }
+        if (!services_.commands.post(Command::simple(CommandType::ReloadConfig))) {
+            return error(503, "busy", "configuration stored; reload not queued, retry any write");
+        }
+    }
+    if ((password || caPem) && !platform_.setMqttSecrets(password, caPem)) {
+        return error(500, "storage_error",
+                     configChanged ? "settings stored, but the password or certificate was not"
+                                   : "password or certificate not stored");
+    }
+    return mqttGet();
 }
 
 } // namespace zf::web

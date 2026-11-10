@@ -91,6 +91,7 @@ cJSON *zoneToJson(std::size_t index, const ZoneStatus &st, const ZoneConfig &cfg
     cJSON_AddStringToObject(o, "name", cfg.name.c_str());
     cJSON_AddBoolToObject(o, "enabled", cfg.enabled);
     cJSON_AddNumberToObject(o, "max_run_s", cfg.maxRunSec);
+    cJSON_AddNumberToObject(o, "default_run_s", cfg.defaultRunSec);
     cJSON_AddNumberToObject(o, "current_min_ma", cfg.current.minMa);
     cJSON_AddNumberToObject(o, "current_max_ma", cfg.current.maxMa);
     cJSON_AddStringToObject(o, "state", toString(st.state));

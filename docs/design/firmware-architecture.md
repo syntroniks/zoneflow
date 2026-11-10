@@ -11,7 +11,8 @@ Phase 1 delivered the structure, the safety-critical core and tests. Phase 2
 hardens the core (section 11) and adds WiFi and provisioning (`zf_net`,
 section 12), the REST API, event stream and static web serving (`zf_web`,
 section 13) and OTA with rollback (`zf_ota`, section 14). The network security design is in
-[firmware security](firmware-security.md). MQTT, the display UI and the web
+[firmware security](firmware-security.md). Phase 3 adds MQTT with Home
+Assistant discovery (`zf_mqtt`, section 17). The display UI and the web
 UI itself are later work. Every module plugs into the interfaces in
 section 4 and does not reach around them.
 
@@ -90,7 +91,8 @@ flowchart TB
 | `zf_net` | WiFi station, BLE and SoftAP provisioning, hostname and mDNS, captive DNS, factory reset. Logic in `net_logic.cpp` (host-tested). |
 | `zf_web` | HTTP(S) server, REST API, SSE stream, static files, admin authentication. Logic in `api.cpp`, `auth.cpp`, `crypto.cpp`, `routes.cpp`, `http_util.cpp`, `json_map.cpp` (host-tested). |
 | `zf_ota` | Firmware upload and pull, web UI image upload, post-boot self-test and rollback. Logic in `ota_logic.cpp` (host-tested). |
-| `zf_mqtt`, `zf_display` | Stubs here (the display is on another branch). Each header lists what the module must do. |
+| `zf_mqtt` | MQTT client, topic tree, commands, Home Assistant discovery. Logic in `mqtt_logic.cpp` (host-tested). |
+| `zf_display` | Stub here (the display is on another branch). The header lists what the module must do. |
 
 ## 2. Threading model
 
@@ -108,6 +110,8 @@ flowchart TB
 | `zf_web_sse` | 3 | 0 | 250 ms or on event, 6 KB | Formats and sends event-stream messages from its own event queue. |
 | `zf_ota_pull` | 4 | any | while pulling, 8 KB | HTTPS download into the passive slot. |
 | `zf_ota_test` | 2 | any | 500 ms, at most 60 s after an update | Post-boot self-test, then confirm or roll back. |
+| `zf_mqtt` | 3 | 0 | 250 ms or on message, 6 KB | MQTT state, commands, discovery, coalesced config edits (section 17). |
+| `mqtt_task` (esp-mqtt) | 5 | any | on socket, 6 KB (IDF default) | MQTT protocol; its event handler only copies into the `zf_mqtt` inbox. |
 
 Rules:
 
@@ -440,12 +444,12 @@ the REST and backup format. Abbreviated example:
 
 ```json
 {
-  "schema": 1,
+  "schema": 2,
   "device_name": "zoneflow",
   "timezone": "CET-1CEST,M3.5.0,M10.5.0/3",
   "zone_count": 8,
   "zones": [{"name": "Lawn", "enabled": true, "max_run_s": 3600,
-             "current_min_ma": 80, "current_max_ma": 700}],
+             "current_min_ma": 80, "current_max_ma": 700, "default_run_s": 600}],
   "master": {"enabled": true, "pre_open_ms": 1000, "post_close_ms": 2000,
              "fault_lockout_count": 3,
              "current_min_ma": 80, "current_max_ma": 700},
@@ -465,7 +469,10 @@ the REST and backup format. Abbreviated example:
     "programs": [{"id": 1, "name": "Lawn", "enabled": true, "starts": ["06:00"],
                   "days": {"type": "weekdays", "weekdays": ["mon", "wed", "fri"]},
                   "durations_s": [600, 0, 300], "seasonal": true, "obey_sensor": true}]
-  }
+  },
+  "mqtt": {"enabled": false, "host": "", "port": 1883, "username": "", "tls": false,
+           "ca": "bundle", "client_id": "", "base_topic": "", "discovery": true,
+           "discovery_prefix": "homeassistant", "ha_zone_entity": "valve"}
 }
 ```
 
@@ -476,13 +483,19 @@ the REST and backup format. Abbreviated example:
   16 levels deep is rejected before parsing: cJSON recurses once per level.
 - **Migration.** `schema` is required. An older schema runs the steps in
   `kMigrations` (`config_json.cpp`), one version at a time, and the result
-  is written back. Schema 1 is the first, so the table is empty; the
-  mechanism is tested with injected steps.
+  is written back. Schema 2 (phase 3) added the `mqtt` object and
+  `zones[].default_run_s`; step 1 to 2 writes both with their defaults.
+  Tested in `mqtt_config_test.cpp` (a stored schema 1 document loads as
+  `Migrated` and is written back as schema 2; a schema 1 backup restores).
+  A firmware older than phase 3 reads a schema 2 document best-effort
+  (newer schema) and refuses to write it, so after a rollback past phase 3
+  configuration edits fail until the newer firmware is back or the
+  configuration is reset.
 - **Newer schema** (firmware rolled back after an OTA): parsed best-effort,
   used, and not written back, so the newer firmware finds its data intact.
   The same document sent through `updateFromJson()` (REST, MQTT, restore)
   is rejected with path `schema` and "schema N is newer than this firmware
-  supports (1)": writing it would drop every field this firmware does not
+  supports (2)": writing it would drop every field this firmware does not
   know.
 - **New fields in this phase** (schema stays 1; absent fields take their
   defaults, so older documents still load):
@@ -867,3 +880,109 @@ must be measured on the first board: `GET /api/v1/info` reports `heap.free` and
 - **Managed components** `espressif/mdns` 1.14.1 and `joltwallet/littlefs`
   1.22.3, pinned exactly in each component's `idf_component.yml`. mDNS left
   ESP-IDF core in v5.0; LittleFS was never in it.
+
+## 17. MQTT (`zf_mqtt`)
+
+User guide, topic reference and examples: [MQTT and Home
+Assistant](../firmware/mqtt.md). Pure logic in `mqtt_logic.hpp`
+(host-tested), ESP-IDF glue in `mqtt.cpp`.
+
+### Structure
+
+- **Only `AppServices`.** State from `state.snapshot()`, events from an
+  `EventQueueSubscriber` (32 entries), commands through `commands.post()`,
+  settings from `config.get()`, configuration edits through
+  `config.update()` followed by `ReloadConfig`. Network facts (IP, RSSI,
+  MAC) come from `net::status()`, update progress from `ota::status()`.
+- **Two tasks.** esp-mqtt runs the protocol on its own task. Its event
+  handler copies each message (topic up to 160 bytes, payload up to 256)
+  or connection event into an 8-entry inbox with zero timeout and returns;
+  a full inbox drops the message and counts it. The `zf_mqtt` task does
+  everything else.
+- **Settings.** `Config::mqtt` (schema 2), validated by the core like every
+  other field. The password and a custom CA certificate live in NVS
+  namespace `zf_mqtt` and are set only through `PUT /api/v1/mqtt`, so the
+  configuration document, `GET /config` and the backup never carry them.
+  A change of connection settings or secrets stops and recreates the
+  client; any other configuration change resends discovery and state.
+
+### Connection
+
+- The client is created once the station has an IPv4 address.
+- esp-mqtt's fixed-delay reconnect is off; `ConnectionPolicy` (the
+  `net::Backoff` of section 12) retries after 2 s, doubling to 5 min,
+  scaled by 80 to 120 %, reset on every connection.
+- Last will: `offline`, retained, QoS 1 on `<root>/status`; `online` is
+  published retained on connect. Keep-alive 60 s, network timeout 5 s.
+- TLS: `esp_crt_bundle_attach` or the stored PEM CA.
+
+### Bounded memory
+
+The broker can be slow or away for days. Nothing grows with that time:
+
+- Retained state is not queued. `markChanges()` sets one bit per topic
+  (`Dirty`); when a topic is sent, its payload is built from the newest
+  snapshot. A failed publish leaves its bit set.
+- Events and command results go out only while connected and are dropped
+  otherwise.
+- QoS 0 publishes are written straight to the socket (at most the 5 s
+  network timeout, on the `zf_mqtt` task only). QoS 1 messages (availability,
+  discovery) wait in the esp-mqtt outbox, capped at 64 KB (`outbox.limit`).
+- The discovery document is built once per send: about 15 KB with the
+  default configuration, 26.5 KB with 8 zones, 16 programs and every
+  sensor (measured on the host). Blocks of 16 KB or more go to PSRAM
+  (section 15).
+
+### Commands and the control loop
+
+- `parseCommand()` validates topic and payload against the configuration
+  (zone number, enabled zone, program id, 1 to 14 400 s, 0 to 720 h) and
+  maps them to `Command`s. The zone driver still clamps every run to the
+  zone's maximum and remaining budget (section 3, rule 4).
+- **Retained and empty messages are never commands.** A retained run
+  would start watering at every reconnect. An empty message is what every
+  subscriber receives when someone clears a retained message; the broker
+  test found that it started the zone with its default run time before
+  this rule.
+- A token bucket (10 at once, 5 per second) answers the rest with
+  `rate_limited`. The control task drains at most 8 commands per 50 ms tick
+  from a 16-entry queue, so MQTT can never hold it up; a full queue is
+  answered `busy`. Host test `MqttRateLimiter.FloodNeverFillsTheCommandQueue`.
+- Every command gets a `<root>/result` message. Refusals by the controller
+  come from the `CommandRejected` event, so they are reported whichever
+  interface sent the command.
+- Configuration edits from MQTT (zone run time, program enable) are
+  collected and written at most every 2 s (`PendingEdits`): each write
+  erases flash.
+
+### Home Assistant discovery
+
+One device discovery message (Home Assistant 2026.11.1 documentation,
+`<prefix>/device/zoneflow_<id>/config`), not retained, sent on every
+connect and 1 to 5 s after a Home Assistant birth message. Components that
+are no longer wanted are sent once as `{"platform": ...}` and then
+omitted (`DiscoveryPlanner`), the removal procedure the documentation
+gives. `mqtt_discovery_test.cpp` checks the document against the options
+and device classes documented for each platform
+(`test/host/data/ha_mqtt_discovery.json`, with its source).
+
+Why `valve` for zones: Home Assistant's valve entity has open, close and
+stop and an `opening` state, which matches a zone that waits for the
+master or the inter-zone delay. `ha_zone_entity: switch` is offered for
+dashboards and automations built on switches.
+
+The `update` entity has no `command_topic`: Home Assistant shows the
+version and the progress of an update started elsewhere but cannot
+install one. Firmware installs stay behind the admin login of the REST API
+([firmware security](firmware-security.md), section 4.7).
+
+### Verification
+
+- Host tests: `mqtt_logic_test.cpp`, `mqtt_discovery_test.cpp`,
+  `mqtt_config_test.cpp`, `web_mqtt_api_test.cpp`.
+- Broker test (`test/broker/run.sh`, not in CI): the logic and the real
+  `Controller` against Mosquitto 2.1.2, through libmosquitto. It replaces
+  `mqtt.cpp` with a short loop of its own, so esp-mqtt and the glue are
+  only compiled, never run.
+- `idf.py build`: image 1 561 027 bytes (37.2 % of a 4 MB slot), 59 044
+  bytes more than phase 2; DIRAM used 174 387 bytes (phase 2: 171 623).

@@ -29,7 +29,7 @@ target_include_directories(cjson PUBLIC "${cjson_src_SOURCE_DIR}")
 
 add_subdirectory(../../components/zf_core zf_core)
 
-# Host-testable logic of the network, web and OTA modules. These sources
+# Host-testable logic of the network, web, OTA and MQTT modules. These sources
 # include no ESP-IDF headers; the device glue in the same components does.
 set(ZF_COMPONENTS "${CMAKE_CURRENT_LIST_DIR}/../../components")
 add_library(zf_ext STATIC
@@ -42,11 +42,13 @@ add_library(zf_ext STATIC
     ${ZF_COMPONENTS}/zf_web/src/http_util.cpp
     ${ZF_COMPONENTS}/zf_web/src/json_map.cpp
     ${ZF_COMPONENTS}/zf_web/src/routes.cpp
+    ${ZF_COMPONENTS}/zf_mqtt/src/mqtt_logic.cpp
 )
 target_include_directories(zf_ext PUBLIC
     ${ZF_COMPONENTS}/zf_net/include
     ${ZF_COMPONENTS}/zf_ota/include
-    ${ZF_COMPONENTS}/zf_web/include)
+    ${ZF_COMPONENTS}/zf_web/include
+    ${ZF_COMPONENTS}/zf_mqtt/include)
 target_compile_options(zf_ext PRIVATE -Wall -Wextra -Wpedantic -Werror -fno-exceptions -fno-rtti)
 target_link_libraries(zf_ext PUBLIC zf_core cjson)
 
@@ -70,10 +72,15 @@ add_executable(zf_host_tests
     web_auth_test.cpp
     web_http_test.cpp
     web_openapi_test.cpp
+    mqtt_config_test.cpp
+    mqtt_logic_test.cpp
+    mqtt_discovery_test.cpp
+    web_mqtt_api_test.cpp
 )
 target_compile_options(zf_host_tests PRIVATE -Wall -Wextra)
 target_compile_definitions(zf_host_tests PRIVATE
-    ZF_OPENAPI_PATH="${CMAKE_CURRENT_LIST_DIR}/../../../../docs/firmware/openapi.json")
+    ZF_OPENAPI_PATH="${CMAKE_CURRENT_LIST_DIR}/../../../../docs/firmware/openapi.json"
+    ZF_HA_SCHEMA_PATH="${CMAKE_CURRENT_LIST_DIR}/data/ha_mqtt_discovery.json")
 target_link_libraries(zf_host_tests PRIVATE zf_core zf_ext cjson GTest::gtest_main)
 
 enable_testing()
