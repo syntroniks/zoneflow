@@ -1,0 +1,27 @@
+# ZoneFlow ESPHome package, 4-zone build. Use it from your own device file:
+#
+#   substitutions:
+#     name: garden
+#     zoneflow_ref: v1.0.0        # the same tag as below
+#     zone_1_name: Front lawn
+#   packages:
+#     zoneflow: github://syntroniks/zoneflow/firmware/esphome/zoneflow-4zone.yaml@v1.0.0
+#
+# See docs/firmware/esphome.md. An 4-zone image on a 8-zone board is safe: the
+# firmware reads the build strap on the expander and uses zones 1 to 4 only.
+substitutions:
+  zoneflow_ref: main
+
+packages:
+  zoneflow: !include zoneflow/package-4.yaml
+
+# The C++ components, from the same repository and tag. ESPHome clones the
+# whole repository, which the zoneflow component needs: it builds the code it
+# shares with the standalone firmware from firmware/zoneflow-fw/components/zf_core.
+external_components:
+  - source:
+      type: git
+      url: https://github.com/syntroniks/zoneflow
+      ref: ${zoneflow_ref}
+      path: firmware/esphome/components
+    components: [zoneflow, zoneflow_schedule]

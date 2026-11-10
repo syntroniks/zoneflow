@@ -1,0 +1,337 @@
+# ZoneFlow rev A: everything except the zones, the schedule and the display.
+# Included by ../zoneflow.yaml and ../zoneflow-4zone.yaml. Pins, I2C addresses
+# and expander bits come from board-rev-a.yaml, which is generated from
+# hardware/pinmap.yaml.
+substitutions:
+  name: zoneflow
+  friendly_name: ZoneFlow
+  name_add_mac_suffix: "false"
+  timezone: UTC
+  zoneflow_ref: main
+
+  # Hard limits. No automation, schedule or Home Assistant call gets past them
+  # (spec section 2 rule 4): a zone that has been open this long in total stays
+  # closed for the rest time before it may open again.
+  max_run_time: 60min
+  rest_time: 30min
+  max_run_minutes: "60"
+  # Flow meter K-factor in pulses per litre, from the meter's datasheet.
+  flow_pulses_per_litre: "450"
+  leak_threshold_lpm: "0.5"
+  zone_1_name: Zone 1
+  zone_2_name: Zone 2
+  zone_3_name: Zone 3
+  zone_4_name: Zone 4
+  zone_5_name: Zone 5
+  zone_6_name: Zone 6
+  zone_7_name: Zone 7
+  zone_8_name: Zone 8
+
+packages:
+  board: !include board-rev-a.yaml
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  name_add_mac_suffix: ${name_add_mac_suffix}
+  min_version: 2026.10.0
+  project:
+    name: syntroniks.zoneflow
+    version: ${zoneflow_ref}
+  on_boot:
+    - priority: 600
+      then:
+        # Hardware design 19.1 rule 11: the PCF8563 powers up with its 32 kHz
+        # output on, which doubles its back-up current. Register 0x0D = 0.
+        - lambda: id(zf_rtc).write_byte(0x0D, 0x00);
+        # The clock before the network: schedules run after a power cut with
+        # no WiFi.
+        - pcf8563.read_time: zf_rtc
+
+esp32:
+  variant: esp32s3
+  board: esp32-s3-devkitc-1
+  flash_size: 16MB
+  cpu_frequency: 240MHZ
+  framework:
+    type: esp-idf
+
+# N16R8 module: octal PSRAM. The zoneflow component turns on PSRAM ECC
+# (hardware design 19.1 rule 7).
+psram:
+  mode: octal
+  speed: 80MHz
+
+logger:
+  level: INFO
+  hardware_uart: USB_SERIAL_JTAG
+
+# The controller keeps working with Home Assistant down. Never restart because
+# the API or WiFi is gone: a restart would stop a running zone.
+api:
+  reboot_timeout: 0s
+
+ota:
+  - platform: esphome
+    id: zf_ota
+
+safe_mode:
+  num_attempts: 10
+  reboot_timeout: 5min
+
+wifi:
+  reboot_timeout: 0s
+  ap:
+    ssid: ${friendly_name} setup
+
+captive_portal:
+
+# WiFi provisioning: Improv over USB (the web installer offers it after the
+# flash) and Improv over Bluetooth LE. Over BLE a person must press Home on
+# the controller to authorise it.
+improv_serial:
+
+esp32_ble:
+
+improv_ble:
+  authorizer: zf_button_home
+  authorized_duration: 2min
+
+time:
+  - platform: pcf8563
+    id: zf_rtc
+    address: ${zf_rtc_address}
+    i2c_id: zf_i2c
+    update_interval: never
+    timezone: ${timezone}
+  - platform: sntp
+    id: zf_time
+    timezone: ${timezone}
+    on_time_sync:
+      - pcf8563.write_time: zf_rtc
+
+i2c:
+  - id: zf_i2c
+    sda: ${zf_pin_i2c_sda}
+    scl: ${zf_pin_i2c_scl}
+    frequency: 400kHz
+    scan: false
+  - id: zf_qwiic
+    sda: ${zf_pin_qwiic_sda}
+    scl: ${zf_pin_qwiic_scl}
+    frequency: 100kHz
+    scan: false
+
+zoneflow:
+  id: zf_hub
+  i2c_id: zf_i2c
+  address: ${zf_expander_address}
+  keepalive_pin: ${zf_pin_keepalive}
+  drive_readback_pin: ${zf_pin_drive_readback}
+  relay_readback_pin: ${zf_pin_relay_readback}
+  overcurrent_pin: ${zf_pin_overcurrent}
+  zero_cross_pin: ${zf_pin_zero_cross}
+  current_high_pin: ${zf_pin_isense_hi}
+  current_low_pin: ${zf_pin_isense_lo}
+  sensor_supply_pin: ${zf_pin_sensor_supply}
+  expander_bits:
+    zones:
+      - ${zf_bit_zone1}
+      - ${zf_bit_zone2}
+      - ${zf_bit_zone3}
+      - ${zf_bit_zone4}
+      - ${zf_bit_zone5}
+      - ${zf_bit_zone6}
+      - ${zf_bit_zone7}
+      - ${zf_bit_zone8}
+    master: ${zf_bit_master}
+    relay: ${zf_bit_relay}
+    variant_8zone_n: ${zf_bit_variant_8zone_n}
+    sensor_fault_n: ${zf_bit_sensor_fault_n}
+  zone_count: ${zone_count}
+  max_run_time: ${max_run_time}
+  rest_time: ${rest_time}
+  master_valve:
+    enabled: true
+    pre_open: 1s
+    post_close: 2s
+  flow_rate_sensor: zf_flow_rate
+  leak:
+    threshold: ${leak_threshold_lpm}
+    delay: 60s
+  sprinkler_id: zf_sprinkler
+  on_fault:
+    - logger.log:
+        level: WARN
+        format: "ZoneFlow fault: %s"
+        args: [fault.c_str()]
+
+status_led:
+  pin:
+    number: ${zf_pin_status_led}
+    ignore_strapping_warning: true
+
+globals:
+  - id: zf_flow_k
+    type: float
+    initial_value: ${flow_pulses_per_litre}
+
+sensor:
+  - platform: zoneflow
+    type: valve_current
+    name: Valve current
+  - platform: zoneflow
+    type: mains_frequency
+    name: Mains frequency
+  - platform: zoneflow
+    type: noise_floor
+    name: Current noise floor
+  - platform: zoneflow
+    type: self_tests_passed
+    name: Self-tests passed
+  # Flow meter on the FLOW terminal (pulses, up to 200 Hz).
+  - platform: pulse_meter
+    id: zf_flow_rate
+    name: Flow rate
+    pin:
+      number: ${zf_pin_flow}
+      mode: input
+    internal_filter: 2ms
+    timeout: 30s
+    unit_of_measurement: L/min
+    device_class: volume_flow_rate
+    state_class: measurement
+    accuracy_decimals: 2
+    filters:
+      - lambda: return x / id(zf_flow_k);
+    total:
+      name: Water used
+      unit_of_measurement: L
+      device_class: water
+      state_class: total_increasing
+      accuracy_decimals: 1
+      filters:
+        - lambda: return x / id(zf_flow_k);
+  - platform: wifi_signal
+    name: WiFi signal
+    update_interval: 60s
+  - platform: uptime
+    name: Uptime
+
+binary_sensor:
+  - platform: zoneflow
+    type: any_fault
+    name: Fault
+  - platform: zoneflow
+    type: hardware_fault
+    name: Valve board fault
+  - platform: zoneflow
+    type: ac_present
+    name: 24 VAC present
+  - platform: zoneflow
+    type: leak
+    name: Unscheduled flow
+  - platform: zoneflow
+    type: master_valve
+    name: Master valve
+  - platform: zoneflow
+    type: relay_closed
+    name: Valve common relay
+  - platform: zoneflow
+    type: sensor_supply_fault
+    name: Sensor supply fault
+  - platform: zoneflow
+    type: current_sense_fault
+    name: Current sense fault
+  # Rain sensor on the RAIN terminal. Contact closed reads low.
+  - platform: gpio
+    id: zf_rain_contact
+    internal: true
+    pin:
+      number: ${zf_pin_rain}
+      mode: input
+      inverted: true
+    filters:
+      - delayed_on_off: 2s
+  - platform: template
+    id: zf_rain
+    name: Rain
+    device_class: moisture
+    lambda: |-
+      // Most rain sensors open their contact when wet (normally closed).
+      const bool closed = id(zf_rain_contact).state;
+      return id(zf_rain_type).active_index() == 0 ? !closed : closed;
+  - platform: gpio
+    name: Aux input
+    pin:
+      number: ${zf_pin_aux}
+      mode: input
+      inverted: true
+    filters:
+      - delayed_on_off: 100ms
+  - platform: status
+    name: Status
+
+text_sensor:
+  - platform: zoneflow
+    type: faults
+    name: Faults
+  - platform: zoneflow
+    type: output_stage
+    name: Output stage
+  - platform: version
+    name: Firmware version
+
+select:
+  - platform: template
+    id: zf_rain_type
+    name: Rain sensor type
+    entity_category: config
+    options: [Normally closed, Normally open]
+    initial_option: Normally closed
+    optimistic: true
+    restore_value: true
+
+switch:
+  # Off by default: a rain input with nothing connected would read "wet" for a
+  # normally-closed sensor and stop every schedule.
+  - platform: template
+    id: zf_rain_enabled
+    name: Rain sensor enabled
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+number:
+  - platform: template
+    id: zf_rain_delay
+    name: Rain delay
+    icon: mdi:weather-pouring
+    unit_of_measurement: h
+    min_value: 0
+    max_value: 168
+    step: 1
+    mode: box
+    optimistic: false
+    lambda: return id(zf_schedule).rain_delay_remaining_hours();
+    set_action:
+      - zoneflow_schedule.set_rain_delay:
+          hours: !lambda return x;
+
+button:
+  - platform: zoneflow
+    type: stop_all
+    name: Stop all
+  - platform: zoneflow
+    type: clear_faults
+    name: Clear faults
+  - platform: zoneflow
+    type: acknowledge_repair
+    name: Acknowledge repair (press twice)
+  - platform: zoneflow
+    type: self_test
+    name: Run self-test
+  - platform: restart
+    name: Restart
+  - platform: safe_mode
+    name: Restart in safe mode

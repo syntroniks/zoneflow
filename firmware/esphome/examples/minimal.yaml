@@ -1,0 +1,9 @@
+substitutions:
+  name: garden
+  zoneflow_ref: v0.2.0
+  zone_1_name: Front lawn
+  zone_2_name: Back lawn
+  zone_3_name: Vegetables
+packages:
+  zoneflow: github://syntroniks/zoneflow/firmware/esphome/zoneflow.yaml@v0.2.0
+# No wifi: block. WiFi is set over Improv (USB, or Bluetooth LE after pressing Home).

@@ -40,6 +40,23 @@ test("standalone does not promise Improv", () => {
   assert.match(s.text, /Bluetooth LE/);
 });
 
+test("the ESPHome flavour offers Improv", () => {
+  const s = lib.nextStep({ next_step: "improv", improv: true });
+  assert.equal(s.improv, true);
+  assert.match(s.text, /Improv Serial/);
+  assert.match(s.text, /ESPHome dashboard/);
+  assert.equal(s.link, "../esphome/");
+  const e = lib.find(release, "esphome");
+  if (e) {
+    // A real release (CI dry run): the flavour is listed with a factory image at 0.
+    assert.equal(e.improv, true);
+    assert.equal(e.images.factory.offset, 0);
+    const c = lib.commands(release, "esphome", base);
+    assert.ok(c.factory.includes(`write-flash 0x0 ${e.images.factory.file}`));
+    assert.equal(c.parts, ""); // no per-partition layout for a prebuilt flavour
+  }
+});
+
 test("an unknown next step is not guessed", () => {
   const s = lib.nextStep({ next_step: "carrier-pigeon", improv: false });
   assert.equal(s.link, "");

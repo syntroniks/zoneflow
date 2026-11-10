@@ -1547,3 +1547,24 @@ detector times, and the interrupt load.
    `VIN_MON` is not read yet.
 9. **DC component.** What size of mean shift should count? The firmware
    uses 30 % of the RMS current and at least 20 mA, and stops the zone.
+
+## 21. Shared with the ESPHome package
+
+The [ESPHome package](../firmware/esphome.md) (`firmware/esphome/`, issue #7) builds
+`components/zf_core` from this tree as an ESP-IDF component, by path, and uses these
+parts unchanged: `hw::OutputStage`, `OutputEnableGuard`, `ZoneDriver`, `CurrentSense`,
+`CurrentMonitor`, `ZeroCrossTracker`, `AcMonitor`, `RetainedRecord` and `DayRule`.
+Its own glue (`firmware/esphome/components/zoneflow/supervisor.*`) does the hardware part
+of `Controller` for it, and its host tests run on `test/host/fake_board.hpp`.
+
+What this means for changes here:
+
+- A change to `zf_core` changes both firmwares. The `esphome` workflow runs on changes
+  to `zf_core`, `zf_board`, the board header generator, `fake_board.hpp` and `fakes.hpp`.
+- `zf_core`'s `CMakeLists.txt` must keep building as a plain ESP-IDF component with no
+  other ZoneFlow component: ESPHome adds it with nothing else from this tree.
+- The ESPHome build differs on the device in three places: AC_ZC is sampled every 1 ms in
+  the keep-alive interrupt (ESPHome installs the GPIO interrupt service without the IRAM
+  flag), there is no panic-handler wrap (ESPHome's crash handler already wraps it), and
+  the expander is reached through ESPHome's I2C bus, which offers no bus clear after
+  start-up. The guide lists the consequences.

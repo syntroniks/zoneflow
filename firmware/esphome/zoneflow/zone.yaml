@@ -1,0 +1,35 @@
+# One zone's entities. Included once per zone with vars `n` (1 to 8) and
+# `zone_name`. The sprinkler controller's own per-zone entities (run switch,
+# enable switch, run duration) are in sprinkler-*.yaml.
+switch:
+  # The output itself: the sprinkler controller's valve_switch_id. Internal,
+  # so Home Assistant shows the valve entity and the sprinkler switch instead.
+  - platform: zoneflow
+    id: zf_zone_${n}
+    zone: ${n}
+    internal: true
+
+valve:
+  - platform: zoneflow
+    id: zf_valve_${n}
+    name: ${zone_name}
+    zone: ${n}
+    sprinkler_id: zf_sprinkler
+
+binary_sensor:
+  - platform: zoneflow
+    type: zone_fault
+    zone: ${n}
+    name: ${zone_name} fault
+
+sensor:
+  - platform: zoneflow
+    type: zone_current
+    zone: ${n}
+    name: ${zone_name} current
+
+text_sensor:
+  - platform: zoneflow
+    type: zone_status
+    zone: ${n}
+    name: ${zone_name} status

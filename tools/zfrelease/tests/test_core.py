@@ -1,5 +1,6 @@
 import hashlib
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -170,10 +171,28 @@ def test_package_refuses_table_that_differs_from_csv(tmp_path, build_dir, csv_pa
 # ---- assemble and verify ----------------------------------------------------
 
 
+def flavours_with(tmp_path: Path, **enabled: bool) -> Path:
+    """The repository's flavours.toml with some flavours switched on or off."""
+    text = (REPO / "tools/zfrelease/flavours.toml").read_text()
+    for fid, on in enabled.items():
+        text, n = re.subn(rf"(\[{fid}\]\nenabled = )(true|false)", rf"\g<1>{'true' if on else 'false'}", text)
+        assert n == 1, fid
+    path = tmp_path / f"flavours-{'-'.join(f'{k}{int(v)}' for k, v in enabled.items())}.toml"
+    path.write_text(text)
+    return path
+
+
 @pytest.fixture
 def released(tmp_path, build_dir, csv_path):
     out, _ = pkg(tmp_path, build_dir, csv_path)
-    release.assemble(directory=out, version=VERSION, tag=f"v{VERSION}", commit="abc1234", prerelease=False)
+    release.assemble(
+        directory=out,
+        version=VERSION,
+        tag=f"v{VERSION}",
+        commit="abc1234",
+        prerelease=False,
+        flavours_toml=flavours_with(tmp_path, standalone=True, esphome=False),
+    )
     return out
 
 
@@ -245,9 +264,7 @@ def test_verify_detects_manifest_pointing_elsewhere(released, csv_path):
 
 def test_assemble_requires_every_enabled_flavour(tmp_path, build_dir, csv_path):
     out, _ = pkg(tmp_path, build_dir, csv_path)
-    toml = tmp_path / "flavours.toml"
-    base = (REPO / "tools/zfrelease/flavours.toml").read_text()
-    toml.write_text(base.replace("[esphome]\nenabled = false", "[esphome]\nenabled = true"))
+    toml = flavours_with(tmp_path, standalone=True, esphome=True)
     with pytest.raises(release.ReleaseError, match="esphome.*missing"):
         release.assemble(directory=out, version=VERSION, tag="", commit="", prerelease=False, flavours_toml=toml)
 
@@ -255,23 +272,18 @@ def test_assemble_requires_every_enabled_flavour(tmp_path, build_dir, csv_path):
 def test_assemble_rejects_fragment_of_disabled_flavour(tmp_path, build_dir, csv_path):
     out, _ = pkg(tmp_path, build_dir, csv_path)
     (out / "flavour-esphome.json").write_text("{}")
+    toml = flavours_with(tmp_path, standalone=True, esphome=False)
     with pytest.raises(release.ReleaseError, match="not enabled"):
-        release.assemble(directory=out, version=VERSION, tag="", commit="", prerelease=False)
+        release.assemble(directory=out, version=VERSION, tag="", commit="", prerelease=False, flavours_toml=toml)
 
 
 def test_prebuilt_flavour_packages_and_verifies(tmp_path, csv_path):
     """The path a second flavour takes: a merged image and an OTA image from another build tool."""
-    toml = tmp_path / "flavours.toml"
-    toml.write_text(
-        (REPO / "tools/zfrelease/flavours.toml")
-        .read_text()
-        .replace("[standalone]\nenabled = true", "[standalone]\nenabled = false")
-        .replace("[esphome]\nenabled = false", "[esphome]\nenabled = true")
-        .replace('project_name = ""', 'project_name = "zoneflow-esphome"')
-    )
+    toml = flavours_with(tmp_path, standalone=False, esphome=True)
     factory, app = tmp_path / "f.bin", tmp_path / "a.bin"
     factory.write_bytes(image(payload=300) + b"\xff" * 4096)
-    app.write_bytes(image(desc=("1.2.3", "zoneflow-esphome")))
+    # ESPHome names the application after the node: `zoneflow` in factory.yaml.
+    app.write_bytes(image(desc=("2026.10.2", "zoneflow")))
     out = tmp_path / "dist"
     package.package_prebuilt(
         flavour_id="esphome", factory=factory, app=app, version=VERSION, out_dir=out, flavours_toml=toml

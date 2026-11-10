@@ -1,0 +1,48 @@
+# GENERATED from hardware/pinmap.yaml by firmware/esphome/tools/gen_board_yaml.py.
+# Do not edit. Change the pin map and run the script; CI fails when this file is stale.
+# Board: zoneflow revision A, ESP32-S3-WROOM-1-N16R8.
+substitutions:
+  zf_pin_isense_lo: "GPIO1"  # ISENSE_LO
+  zf_pin_isense_hi: "GPIO2"  # ISENSE_HI
+  zf_pin_rain: "GPIO4"  # SENS_RAIN
+  zf_pin_flow: "GPIO5"  # SENS_FLOW
+  zf_pin_aux: "GPIO6"  # SENS_AUX
+  zf_pin_relay_readback: "GPIO7"  # RLY_B_RB
+  zf_pin_i2c_sda: "GPIO8"  # I2C0_SDA
+  zf_pin_i2c_scl: "GPIO9"  # I2C0_SCL
+  zf_pin_tft_cs: "GPIO10"  # TFT_CS
+  zf_pin_tft_mosi: "GPIO11"  # TFT_MOSI
+  zf_pin_tft_sclk: "GPIO12"  # TFT_SCLK
+  zf_pin_tft_dc: "GPIO13"  # TFT_DC
+  zf_pin_tft_reset: "GPIO14"  # TFT_RST
+  zf_pin_encoder_a: "GPIO15"  # ENC_A
+  zf_pin_encoder_b: "GPIO16"  # ENC_B
+  zf_pin_encoder_switch: "GPIO17"  # ENC_SW
+  zf_pin_button_back: "GPIO18"  # BTN_BACK
+  zf_pin_backlight: "GPIO21"  # TFT_BL
+  zf_pin_keepalive: "GPIO38"  # KEEPALIVE
+  zf_pin_button_home: "GPIO39"  # BTN_HOME
+  zf_pin_overcurrent: "GPIO40"  # OC_FAULT_N
+  zf_pin_zero_cross: "GPIO41"  # AC_ZC
+  zf_pin_drive_readback: "GPIO42"  # DRV_EN_RB
+  zf_pin_sensor_supply: "GPIO45"  # SENS_PWR_EN
+  zf_pin_status_led: "GPIO46"  # STATUS_LED
+  zf_pin_qwiic_sda: "GPIO47"  # QWIIC_SDA
+  zf_pin_qwiic_scl: "GPIO48"  # QWIIC_SCL
+  zf_bit_zone1: "0.0"  # ZONE1, expander port.bit
+  zf_bit_zone2: "0.1"  # ZONE2, expander port.bit
+  zf_bit_zone3: "0.2"  # ZONE3, expander port.bit
+  zf_bit_zone4: "0.3"  # ZONE4, expander port.bit
+  zf_bit_zone5: "1.0"  # ZONE5, expander port.bit
+  zf_bit_zone6: "1.1"  # ZONE6, expander port.bit
+  zf_bit_zone7: "1.2"  # ZONE7, expander port.bit
+  zf_bit_zone8: "1.3"  # ZONE8, expander port.bit
+  zf_bit_master: "0.4"  # MASTER, expander port.bit
+  zf_bit_relay: "0.5"  # COM_RELAY, expander port.bit
+  zf_bit_variant_8zone_n: "1.4"  # VARIANT_8ZONE_N, expander port.bit
+  zf_bit_sensor_fault_n: "1.5"  # SENS_PWR_FAULT_N, expander port.bit
+  zf_i2c_frequency: "400000"
+  zf_expander_address: "0x74"  # TCA9539PWR
+  zf_rtc_address: "0x51"  # PCF8563T
+  zf_max_outputs_on: "3"
+  zf_adc_attenuation: "6dB"

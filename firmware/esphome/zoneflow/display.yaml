@@ -1,0 +1,292 @@
+# Display, encoder and buttons. A status screen and manual runs; it is not the
+# standalone firmware's menu interface.
+#
+#   Turn the encoder   choose: All zones, each zone, Program A to C
+#   Push the encoder   start what is chosen (a zone for its run duration)
+#   Back               cancel the choice; with nothing chosen: stop everything
+#   Home               back to the status screen
+#   Home held 3 s      clear faults (not a keep-alive detector fault: that
+#                      needs "Acknowledge repair" pressed twice in Home Assistant)
+#
+# The backlight dims to 30 % after 1 minute without input and turns off after
+# 5 minutes. Any input wakes it; the first input after it was off only wakes it.
+globals:
+  - id: zf_ui_sel
+    type: int
+    initial_value: "-1"
+  - id: zf_ui_last_input
+    type: uint32_t
+    initial_value: "0"
+  - id: zf_ui_backlight_state
+    type: int
+    initial_value: "0"  # 0 full, 1 dimmed, 2 off
+
+script:
+  - id: zf_ui_input
+    mode: queued
+    then:
+      - lambda: |-
+          id(zf_ui_last_input) = millis();
+      - if:
+          condition:
+            lambda: return id(zf_ui_backlight_state) != 0;
+          then:
+            - lambda: id(zf_ui_backlight_state) = 0;
+            - light.turn_on:
+                id: zf_backlight
+                brightness: 100%
+      - component.update: zf_display
+
+interval:
+  - interval: 5s
+    then:
+      - lambda: |-
+          const uint32_t idle = millis() - id(zf_ui_last_input);
+          if (id(zf_ui_sel) >= 0 && idle > 15000)
+            id(zf_ui_sel) = -1;  // an unconfirmed choice times out
+      - if:
+          condition:
+            lambda: return id(zf_ui_backlight_state) == 0 && millis() - id(zf_ui_last_input) > 60000;
+          then:
+            - lambda: id(zf_ui_backlight_state) = 1;
+            - light.turn_on:
+                id: zf_backlight
+                brightness: 30%
+      - if:
+          condition:
+            lambda: return id(zf_ui_backlight_state) == 1 && millis() - id(zf_ui_last_input) > 300000;
+          then:
+            - lambda: id(zf_ui_backlight_state) = 2;
+            - light.turn_off: zf_backlight
+
+output:
+  # Hardware design 19.1 rule 9: PWM between 1 and 20 kHz.
+  - platform: ledc
+    id: zf_backlight_pwm
+    pin: ${zf_pin_backlight}
+    frequency: 5000Hz
+
+light:
+  - platform: monochromatic
+    id: zf_backlight
+    name: Display backlight
+    output: zf_backlight_pwm
+    restore_mode: ALWAYS_ON
+    default_transition_length: 250ms
+
+spi:
+  id: zf_spi
+  clk_pin: ${zf_pin_tft_sclk}
+  mosi_pin: ${zf_pin_tft_mosi}
+  interface: hardware
+
+font:
+  - file: gfonts://Roboto
+    id: zf_font_s
+    size: 16
+  - file: gfonts://Roboto
+    id: zf_font_m
+    size: 22
+  - file:
+      type: gfonts
+      family: Roboto
+      weight: bold
+    id: zf_font_l
+    size: 36
+
+color:
+  - id: zf_white
+    hex: FFFFFF
+  - id: zf_grey
+    hex: 8A8A8A
+  - id: zf_line
+    hex: 3A3A3A
+  - id: zf_blue
+    hex: 3DA5F5
+  - id: zf_green
+    hex: 4CC66A
+  - id: zf_amber
+    hex: F5B53D
+  - id: zf_red
+    hex: F0524F
+
+display:
+  # HS20HS072RX, ST7789V, 240 x 320, mounted landscape (hardware design 19.3
+  # item 8). The ST7789V is guaranteed to 15 MHz (hardware design 15.3), which
+  # the ESP32-S3 SPI divider cannot make here; the next step up is 16 MHz, so
+  # 10 MHz. A full frame is 240 x 320 x 16 bit = 1.23 Mbit: 123 ms of the main
+  # loop, inside the 500 ms keep-alive heartbeat timeout. Orientation and
+  # inversion follow the standalone firmware's board header, which says they
+  # are a guess until a panel has been seen.
+  - platform: mipi_spi
+    id: zf_display
+    model: ST7789V
+    spi_id: zf_spi
+    cs_pin: ${zf_pin_tft_cs}
+    dc_pin: ${zf_pin_tft_dc}
+    reset_pin: ${zf_pin_tft_reset}
+    data_rate: 10MHz
+    # Landscape, as drawn: the panel is 240 x 320 native and swap_xy turns it.
+    dimensions:
+      width: 320
+      height: 240
+      offset_width: 0
+      offset_height: 0
+    invert_colors: true
+    transform:
+      swap_xy: true
+      mirror_x: false
+      mirror_y: true
+    update_interval: 1s
+    lambda: |-
+      auto *hub = id(zf_hub);
+      const int zones = ${zone_count};
+      const int items = 1 + zones + 3;
+      it.fill(Color::BLACK);
+
+      // Header: name and clock.
+      it.print(10, 6, id(zf_font_m), id(zf_white), "${friendly_name}");
+      auto now = id(zf_time).now();
+      if (now.is_valid())
+        it.strftime(310, 6, id(zf_font_m), id(zf_white), TextAlign::TOP_RIGHT, "%H:%M", now);
+      else
+        it.print(310, 6, id(zf_font_m), id(zf_amber), TextAlign::TOP_RIGHT, "--:--");
+      it.horizontal_line(0, 36, 320, id(zf_line));
+
+      // Main area: the running zone, or idle and the next run.
+      int active = -1;
+      for (int z = 0; z < zones; ++z) {
+        if (hub->zone_active(z)) { active = z; break; }
+      }
+      if (active >= 0) {
+        const uint32_t left = hub->zone_remaining_s(active);
+        it.printf(10, 44, id(zf_font_m), id(zf_blue), "Zone %d", active + 1);
+        it.print(10, 70, id(zf_font_l), id(zf_white), hub->zone_name(active));
+        if (left > 0 && left < 4 * 3600)
+          it.printf(10, 114, id(zf_font_m), id(zf_white), "%u:%02u left", (unsigned) (left / 60), (unsigned) (left % 60));
+        else
+          it.print(10, 114, id(zf_font_m), id(zf_white), "starting");
+      } else {
+        it.print(10, 44, id(zf_font_m), id(zf_grey), "Idle");
+        it.print(10, 70, id(zf_font_l), id(zf_white), "Next run");
+        it.print(10, 114, id(zf_font_m), id(zf_white), id(zf_schedule).next_run_text().c_str());
+      }
+
+      // Measurements.
+      const int32_t ma = hub->current_ma();
+      if (ma >= 0) it.printf(10, 146, id(zf_font_s), id(zf_grey), "Valves %d mA", (int) ma);
+      else it.print(10, 146, id(zf_font_s), id(zf_grey), "Valves -- mA");
+      const float flow = id(zf_flow_rate).state;
+      if (!std::isnan(flow)) it.printf(170, 146, id(zf_font_s), id(zf_grey), "Flow %.1f L/min", flow);
+
+      // Conditions and faults, most important first.
+      std::string line;
+      Color c = id(zf_green);
+      if (hub->any_fault()) { line = "Fault: " + hub->faults_text(); c = id(zf_red); }
+      else if (!hub->ac_present()) { line = "No 24 VAC: valves cannot run"; c = id(zf_amber); }
+      else if (id(zf_rain_enabled).state && id(zf_rain).state) { line = "Rain: schedules paused"; c = id(zf_amber); }
+      else if (id(zf_schedule).rain_delay_remaining_hours() > 0) {
+        char buf[48];
+        snprintf(buf, sizeof buf, "Rain delay: %.0f h left", std::ceil(id(zf_schedule).rain_delay_remaining_hours()));
+        line = buf; c = id(zf_amber);
+      } else line = "Ready";
+      if (line.size() > 38) line = line.substr(0, 37) + "...";
+      it.print(10, 172, id(zf_font_s), c, line.c_str());
+
+      // Bottom bar: the manual-run choice, or help.
+      it.horizontal_line(0, 200, 320, id(zf_line));
+      const int sel = id(zf_ui_sel);
+      if (sel >= 0 && sel < items) {
+        char buf[64];
+        if (sel == 0) snprintf(buf, sizeof buf, "> All zones");
+        else if (sel <= zones) snprintf(buf, sizeof buf, "> %d %s", sel, hub->zone_name(sel - 1));
+        else snprintf(buf, sizeof buf, "> Program %c", 'A' + (sel - zones - 1));
+        it.print(10, 208, id(zf_font_m), id(zf_white), buf);
+        it.print(310, 212, id(zf_font_s), id(zf_grey), TextAlign::TOP_RIGHT, "push: start");
+      } else {
+        it.print(10, 212, id(zf_font_s), id(zf_grey), "Turn to choose a run. Back stops all.");
+      }
+
+sensor:
+  # 30 detents and 15 pulses per turn: two quadrature edges per detent, so
+  # resolution 2 gives one step per detent (hardware design 19.3 item 8).
+  - platform: rotary_encoder
+    id: zf_encoder
+    internal: true
+    resolution: 2
+    pin_a:
+      number: ${zf_pin_encoder_a}
+      mode: input
+    pin_b:
+      number: ${zf_pin_encoder_b}
+      mode: input
+    on_clockwise:
+      - lambda: |-
+          if (id(zf_ui_backlight_state) == 2) return;
+          const int items = 1 + ${zone_count} + 3;
+          id(zf_ui_sel) = (id(zf_ui_sel) + 1) % items;
+      - script.execute: zf_ui_input
+    on_anticlockwise:
+      - lambda: |-
+          if (id(zf_ui_backlight_state) == 2) return;
+          const int items = 1 + ${zone_count} + 3;
+          id(zf_ui_sel) = id(zf_ui_sel) <= 0 ? items - 1 : id(zf_ui_sel) - 1;
+      - script.execute: zf_ui_input
+
+binary_sensor:
+  # Controls are active low with external pull-ups and RC filters on the board.
+  - platform: gpio
+    id: zf_button_select
+    internal: true
+    pin:
+      number: ${zf_pin_encoder_switch}
+      mode: input
+      inverted: true
+    filters:
+      - delayed_on: 20ms
+    on_press:
+      - lambda: |-
+          const int zones = ${zone_count};
+          const int sel = id(zf_ui_sel);
+          if (id(zf_ui_backlight_state) == 2 || sel < 0) return;
+          if (sel == 0) id(zf_sprinkler).start_full_cycle();
+          else if (sel <= zones) id(zf_sprinkler).start_single_valve(sel - 1);
+          else id(zf_schedule).run_program(sel - zones - 1);
+          id(zf_ui_sel) = -1;
+      - script.execute: zf_ui_input
+  - platform: gpio
+    id: zf_button_back
+    internal: true
+    pin:
+      number: ${zf_pin_button_back}
+      mode: input
+      inverted: true
+    filters:
+      - delayed_on: 20ms
+    on_press:
+      - lambda: |-
+          if (id(zf_ui_backlight_state) == 2) return;
+          if (id(zf_ui_sel) >= 0) id(zf_ui_sel) = -1;
+          else id(zf_hub).stop_all();
+      - script.execute: zf_ui_input
+  - platform: gpio
+    id: zf_button_home
+    name: Home button
+    entity_category: diagnostic
+    pin:
+      number: ${zf_pin_button_home}
+      mode: input
+      inverted: true
+    filters:
+      - delayed_on: 20ms
+    on_click:
+      - min_length: 20ms
+        max_length: 1s
+        then:
+          - lambda: id(zf_ui_sel) = -1;
+          - script.execute: zf_ui_input
+      - min_length: 3s
+        max_length: 10s
+        then:
+          - lambda: id(zf_hub).clear_faults();
+          - script.execute: zf_ui_input
