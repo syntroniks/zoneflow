@@ -188,6 +188,15 @@ es.addEventListener("state", (m) => render(JSON.parse(m.data)));
 es.addEventListener("event", (m) => console.log(JSON.parse(m.data)));
 ```
 
+## MQTT settings
+
+`GET /api/v1/mqtt` returns the MQTT settings (the `mqtt` object of the
+configuration), `password_set`, `ca_cert_set` and the client's connection
+state. `PUT /api/v1/mqtt` changes them; `password` and `ca_cert` are
+write-only and are stored outside the configuration, so a backup never
+contains them. Topics and Home Assistant discovery:
+[MQTT and Home Assistant](mqtt.md).
+
 ## Firmware updates
 
 - `POST /api/v1/firmware/upload` with the raw `zoneflow-fw.bin` as
