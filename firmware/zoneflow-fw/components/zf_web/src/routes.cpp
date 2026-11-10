@@ -78,6 +78,8 @@ constexpr std::array kRoutes = {
     Route{"POST", "/firmware/assets", FirmwareAssets, A, Body::Binary, kAssets},
     Route{"GET", "/mqtt", MqttGet, R, Body::None, 0},
     Route{"PUT", "/mqtt", MqttPut, A, Body::Json, kMqtt},
+    Route{"GET", "/history", HistoryGet, R, Body::None, 0},
+    Route{"PUT", "/setup", SetupPut, A, Body::Json, kEmpty},
 };
 
 // Matches one pattern; fills params.

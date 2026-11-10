@@ -80,6 +80,8 @@ add_executable(zf_host_tests
     web_http_test.cpp
     web_openapi_test.cpp
     schedule_vectors_test.cpp
+    history_test.cpp
+    web_openapi_schema_test.cpp
     mqtt_config_test.cpp
     mqtt_logic_test.cpp
     mqtt_discovery_test.cpp

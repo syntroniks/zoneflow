@@ -6,6 +6,7 @@
 //   zf_control    prio 10,    core 1  commands -> Controller::tick(), TWDT
 //   zf_persist    prio 3,     core 0  stores runtime state (JSON, NVS)
 //   zf_evlog      prio 2,     core 0  logs events
+//   zf_history    prio 2,     core 0  stores the event history (NVS, batched)
 //   main          prio 1             status LED and a periodic state log
 #include <cinttypes>
 
@@ -47,6 +48,7 @@ EventBus gEvents;
 StateStore gState;
 CommandQueue gCommands;
 ConfigStore gConfig(gStorage);
+HistoryLog gHistory(gStorage);
 platform::ZeroCrossInput gZeroCross;
 TimeService *gTime = nullptr;
 Controller *gController = nullptr;
@@ -128,7 +130,18 @@ extern "C" void app_main(void)
     }
     ESP_ERROR_CHECK(platform::installSafetyHooks(controller, gOutputEnable));
     ESP_ERROR_CHECK(platform::startEventLogger(gEvents));
+    gHistory.load();
+    setHistoryLog(&gHistory);
+    {
+        HistoryRecord boot;
+        boot.utc = gClock.nowUtc();
+        boot.kind = HistoryKind::Boot;
+        boot.a = static_cast<uint8_t>(platform::historyResetReason());
+        gHistory.append(boot, gClock.monoMs(), true);
+    }
     controller.begin();
+    // After begin(): the start-up fault and configuration are not news.
+    ESP_ERROR_CHECK(platform::startHistoryRecorder(gEvents, gHistory));
     ESP_ERROR_CHECK(platform::startPersistWriter(controller.persistMailbox(), gStorage));
     if (loaded.status == ConfigStore::LoadStatus::InvalidDefaults) {
         controller.reportFault(FaultCode::ConfigInvalid);

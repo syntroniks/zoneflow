@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "zf/app/services.hpp"
+#include "zf/history/history.hpp"
 #include "zf/time/clock.hpp"
 #include "zf_mqtt/mqtt_logic.hpp"
 #include "zf_net/net_logic.hpp"
@@ -71,6 +72,9 @@ struct WebSettings {
     bool protectReads = false; // GET routes need a session too
     bool https = false;        // serve on 443 with the self-signed certificate; port 80 redirects
     bool checkHost = true;     // DNS-rebinding guard (hostAllowed)
+    // The first-run steps (time zone, zones) were finished or skipped in the
+    // web UI. Only a UI hint; it gates nothing.
+    bool setupComplete = false;
 
     std::string encode() const;
     static WebSettings decode(std::string_view json);
@@ -131,6 +135,9 @@ public:
     virtual std::string tlsFingerprint() const = 0;
     // Blocks the calling (API) task; used while waiting for a command outcome.
     virtual void sleepMs(uint32_t ms) = 0;
+
+    // Persistent history (zf/history). nullptr in a build without it.
+    virtual const HistoryLog *history() const { return nullptr; }
 
     // MQTT module (zf_mqtt). The defaults describe a build without it.
     virtual mqtt::MqttStatus mqttStatus() const { return {}; }
@@ -237,6 +244,8 @@ private:
     ApiResponse firmwarePull(const ApiRequest &req);
     ApiResponse mqttGet();
     ApiResponse mqttPut(const ApiRequest &req);
+    ApiResponse historyGet(const ApiRequest &req);
+    ApiResponse setupPut(const ApiRequest &req);
 
     ApiResponse post(const Command &cmd);
     // Posts a command that the controller may reject (RunZone, RunProgram)

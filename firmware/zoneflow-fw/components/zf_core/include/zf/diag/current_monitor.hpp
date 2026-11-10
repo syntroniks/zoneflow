@@ -71,6 +71,21 @@ public:
     // learned current in a later phase.
     uint16_t observedMa(uint8_t bit) const { return bit <= kMasterBit ? observed_[bit] : 0; }
 
+    // Per-run measurement: beginRun() when the output opens, runMeanMa()
+    // when it closes. Mean of the samples learn() could attribute to this
+    // output alone in between; 0 if there were none.
+    void beginRun(uint8_t bit)
+    {
+        if (bit <= kMasterBit) {
+            runSum_[bit] = 0;
+            runCount_[bit] = 0;
+        }
+    }
+    uint16_t runMeanMa(uint8_t bit) const
+    {
+        return bit <= kMasterBit && runCount_[bit] > 0 ? static_cast<uint16_t>(runSum_[bit] / runCount_[bit]) : 0;
+    }
+
 private:
     void learn(int32_t measuredMa, uint16_t mask);
 
@@ -80,6 +95,8 @@ private:
     uint8_t count_ = 0;
     CurrentFault reported_ = CurrentFault::None; // condition reported for lastMask_
     std::array<uint16_t, kMaxZones + 1> observed_{};
+    std::array<uint32_t, kMaxZones + 1> runSum_{};
+    std::array<uint32_t, kMaxZones + 1> runCount_{};
 };
 
 } // namespace zf

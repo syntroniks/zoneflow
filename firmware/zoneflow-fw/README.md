@@ -123,7 +123,10 @@ CI checks formatting with the same clang-format version.
 - Web UI (`web/`): unit tests (vitest) and Playwright end-to-end tests on a
   phone, a 320 px and a desktop viewport, all against the mock controller in
   `web/mock/`, not against firmware. The schedule preview and the C++
-  scheduler agree on the shared vectors in `test/vectors/`.
+  scheduler agree on the shared vectors in `test/vectors/`. The firmware's
+  GET answers (`web_openapi_schema_test.cpp`) and the mock's
+  (`web/tests/unit/mock-contract.test.ts`) are both checked against the
+  response schemas in `docs/firmware/openapi.json`.
 - Broker test: `test/broker/run.sh` builds Mosquitto 2.1.2 and runs the
   MQTT logic with the real core against it; all checks pass. It does not
   run the ESP-IDF MQTT glue. See

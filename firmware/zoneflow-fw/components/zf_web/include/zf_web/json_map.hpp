@@ -12,6 +12,7 @@
 #include "zf/config/config.hpp"
 #include "zf/events/event.hpp"
 #include "zf/events/state.hpp"
+#include "zf/history/history.hpp"
 #include "zf_net/net_logic.hpp"
 #include "zf_ota/ota_logic.hpp"
 
@@ -45,6 +46,9 @@ cJSON *rainDelayToJson(const SystemState &s);
 // Everything a UI needs for its main screen. `cfg` supplies zone names.
 cJSON *stateToJson(const SystemState &s, const Config &cfg);
 cJSON *eventToJson(const Event &e);
+// GET /history body. capacity: records the log holds at most.
+cJSON *historyPageToJson(const HistoryPage &page, std::size_t capacity);
+cJSON *historyRecordToJson(uint64_t id, const HistoryRecord &r);
 cJSON *netStatusToJson(const net::NetStatus &n);
 cJSON *otaStatusToJson(const ota::OtaStatus &o);
 

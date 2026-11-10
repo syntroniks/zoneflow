@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "zf/app/controller.hpp"
 
+#include <algorithm>
+
 #include "zf/config/config_json.hpp"
 #include "zf/time/time_zone.hpp"
 
@@ -484,6 +486,7 @@ void Controller::publishSnapshot(MonoMs now)
         zs.enabled = driver_.config().zoneEnabled[i];
         zs.lockedOut = driver_.lockedOut(z);
         zs.restRemainingSec = (driver_.restRemainingMs(z) + 999u) / 1000u;
+        zs.learnedCurrentMa = current_.observedMa(static_cast<uint8_t>(i));
     }
     st.masterEnabled = config_.master.enabled;
     st.masterOn = driver_.masterOn();
@@ -491,6 +494,7 @@ void Controller::publishSnapshot(MonoMs now)
     st.masterFaultCount = masterFaults_;
 
     st.queue.state = scheduler_.queueState();
+    st.queue.pausedForSec = scheduler_.pausedForMs() / 1000u;
     st.queue.length = static_cast<uint8_t>(scheduler_.queueSize());
     for (std::size_t i = 0; i < scheduler_.queueSize() && i < QueueStatus::kShown; ++i) {
         const RunEntry *e = scheduler_.entry(i);
@@ -538,7 +542,53 @@ void Controller::onZoneChanged(ZoneIndex zone, ValveState state, StopReason reas
     Event e = makeEvent(EventType::ZoneChanged);
     e.zone = {zone, state, reason};
     publish(e);
+    trackRun(zone, state, reason);
     stateDirty_ = true;
+}
+
+void Controller::trackRun(ZoneIndex zone, ValveState state, StopReason reason)
+{
+    if (zone >= kMaxZones) {
+        return;
+    }
+    OpenRun &r = runs_[zone];
+    const MonoMs now = deps_.clock.monoMs();
+    if (state == ValveState::Open && !r.open) {
+        r = OpenRun{};
+        r.open = true;
+        r.openedMs = now;
+        r.plannedSec = static_cast<uint16_t>(std::min<uint32_t>((driver_.remainingMs(zone) + 999u) / 1000u, 0xFFFFu));
+        // The queue feeds the driver one entry at a time: the entry for this
+        // zone nearest the head is the one that opened it.
+        for (std::size_t i = 0; i < scheduler_.queueSize(); ++i) {
+            const RunEntry *q = scheduler_.entry(i);
+            if (q->zone == zone) {
+                r.source = q->source;
+                r.programId = q->programId;
+                break;
+            }
+        }
+        r.startPulses = flow_.totalPulses();
+        current_.beginRun(static_cast<uint8_t>(zone));
+        return;
+    }
+    if (state != ValveState::Off || !r.open) {
+        return;
+    }
+    r.open = false;
+    Event e = makeEvent(EventType::RunEnded);
+    RunEndedData &d = e.run;
+    d.zone = zone;
+    d.source = r.source;
+    d.reason = reason;
+    d.programId = r.programId;
+    d.plannedSec = r.plannedSec;
+    d.actualSec = static_cast<uint16_t>(std::min<MonoMs>((now - r.openedMs + 500u) / 1000u, 0xFFFFu));
+    d.currentMa = current_.runMeanMa(static_cast<uint8_t>(zone));
+    // Two zones open together share the volume measured meanwhile.
+    d.centilitres =
+        config_.flow.enabled ? static_cast<int32_t>(std::min(flow_.litresSince(r.startPulses) * 100.0f, 2.0e9f)) : -1;
+    publish(e);
 }
 
 void Controller::onMasterChanged(bool on)

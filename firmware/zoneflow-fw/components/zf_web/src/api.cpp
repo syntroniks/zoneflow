@@ -17,6 +17,9 @@ namespace zf::web {
 namespace {
 
 constexpr int64_t kMaxRainDelaySec = 30 * 86400;
+// Records per history page: about 150 bytes of JSON each, so a page stays
+// near 15 KB (PSRAM) on the HTTP task.
+constexpr uint64_t kHistoryMaxLimit = 100;
 
 bool isWrite(std::string_view method) { return method != "GET" && method != "HEAD"; }
 
@@ -149,6 +152,7 @@ std::string WebSettings::encode() const
     cJSON_AddBoolToObject(o.get(), "protect_reads", protectReads);
     cJSON_AddBoolToObject(o.get(), "https", https);
     cJSON_AddBoolToObject(o.get(), "check_host", checkHost);
+    cJSON_AddBoolToObject(o.get(), "setup_complete", setupComplete);
     return printJson(o.get());
 }
 
@@ -168,6 +172,7 @@ WebSettings WebSettings::decode(std::string_view json)
     flag("protect_reads", s.protectReads);
     flag("https", s.https);
     flag("check_host", s.checkHost);
+    flag("setup_complete", s.setupComplete);
     return s;
 }
 
@@ -413,6 +418,10 @@ ApiResponse Api::dispatch(const ApiRequest &req, const Admission &a)
         return mqttGet();
     case RouteId::MqttPut:
         return mqttPut(req);
+    case RouteId::HistoryGet:
+        return historyGet(req);
+    case RouteId::SetupPut:
+        return setupPut(req);
     case RouteId::Events:
     case RouteId::FirmwareUpload:
     case RouteId::FirmwareAssets:
@@ -587,6 +596,7 @@ ApiResponse Api::authStatus(const ApiRequest &req)
     cJSON_AddBoolToObject(o.get(), "password_set", auth_.passwordSet());
     cJSON_AddBoolToObject(o.get(), "authenticated", p.authenticated);
     cJSON_AddBoolToObject(o.get(), "protect_reads", settings().protectReads);
+    cJSON_AddBoolToObject(o.get(), "setup_complete", settings().setupComplete);
     if (p.authenticated && p.viaCookie) {
         // Lets a reloaded page recover its CSRF token from the cookie session.
         cJSON_AddStringToObject(o.get(), "csrf", p.csrf.c_str());
@@ -707,6 +717,111 @@ ApiResponse Api::securityPut(const ApiRequest &req)
         r.body = printJson(o.get());
     }
     return r;
+}
+
+ApiResponse Api::setupPut(const ApiRequest &req)
+{
+    ApiResponse err;
+    JsonPtr body = parseObject(req.body, false, err);
+    if (!body) {
+        return err;
+    }
+    const cJSON *item = nullptr;
+    WebSettings s = settings();
+    bool seen = false;
+    cJSON_ArrayForEach(item, body.get())
+    {
+        if (std::string_view(item->string) != "complete") {
+            return error(400, "invalid_body", "unknown field", item->string);
+        }
+        if (!cJSON_IsBool(item)) {
+            return error(400, "invalid_body", "must be true or false", "complete");
+        }
+        s.setupComplete = cJSON_IsTrue(item);
+        seen = true;
+    }
+    if (!seen) {
+        return error(400, "invalid_body", "complete is required", "complete");
+    }
+    if (!settingsStore_.write(kSettingsKey, s.encode())) {
+        return error(500, "storage_error", "settings not stored");
+    }
+    {
+        std::lock_guard<std::mutex> lock(settingsMutex_);
+        settings_ = s;
+    }
+    return json(200, s.setupComplete ? "{\"setup_complete\":true}" : "{\"setup_complete\":false}");
+}
+
+// ---- history ------------------------------------------------------------------------------------
+
+namespace {
+
+// Unsigned decimal query parameter in [min, max]; absent leaves `out`.
+bool numberParam(std::string_view query, const char *key, uint64_t min, uint64_t max, uint64_t &out, bool &bad)
+{
+    std::string v;
+    if (!queryParam(query, key, v)) {
+        return false;
+    }
+    uint64_t n = 0;
+    if (v.empty() || v.size() > 19) {
+        bad = true;
+        return false;
+    }
+    for (char c : v) {
+        if (c < '0' || c > '9') {
+            bad = true;
+            return false;
+        }
+        n = n * 10 + static_cast<uint64_t>(c - '0');
+    }
+    if (n < min || n > max) {
+        bad = true;
+        return false;
+    }
+    out = n;
+    return true;
+}
+
+} // namespace
+
+ApiResponse Api::historyGet(const ApiRequest &req)
+{
+    const HistoryLog *log = platform_.history();
+    if (log == nullptr) {
+        return error(503, "busy", "history not available");
+    }
+    HistoryQuery q;
+    uint64_t v = 0;
+    bool bad = false;
+    if (numberParam(req.query, "limit", 1, kHistoryMaxLimit, v, bad)) {
+        q.limit = static_cast<std::size_t>(v);
+    } else if (bad) {
+        return error(400, "invalid_body", "must be 1 to 100", "limit");
+    }
+    if (numberParam(req.query, "before", 1, UINT64_MAX / 2, v, bad)) {
+        q.before = v;
+    } else if (bad) {
+        return error(400, "invalid_body", "must be a record id", "before");
+    }
+    if (numberParam(req.query, "after", 0, UINT64_MAX / 2, v, bad)) {
+        q.after = v;
+    } else if (bad) {
+        return error(400, "invalid_body", "must be a record id", "after");
+    }
+    if (numberParam(req.query, "since", 0, 4102444800ull, v, bad)) {
+        q.since = static_cast<UtcSeconds>(v);
+    } else if (bad) {
+        return error(400, "invalid_body", "must be Unix seconds", "since");
+    }
+    if (numberParam(req.query, "zone", 1, kMaxZones, v, bad)) {
+        q.zone = static_cast<uint8_t>(v - 1);
+    } else if (bad) {
+        return error(400, "invalid_body", "must be 1 to 8", "zone");
+    }
+    const HistoryPage page = log->query(q);
+    return json(200, bodyOf(historyPageToJson(page, HistoryLog::kCapacity)));
 }
 
 // ---- device -----------------------------------------------------------------------------------

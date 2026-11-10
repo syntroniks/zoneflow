@@ -57,6 +57,10 @@ void logEvent(const Event &e)
     case EventType::PauseExpired:
         ESP_LOGW(kTag, "queue paused too long: stopped");
         break;
+    case EventType::RunEnded:
+        ESP_LOGI(kTag, "zone %u ran %us of %us (%s)", e.run.zone + 1u, e.run.actualSec, e.run.plannedSec,
+                 toString(e.run.reason));
+        break;
     case EventType::QueueChanged:
     case EventType::ConfigApplied:
     case EventType::Count:

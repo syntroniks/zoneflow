@@ -119,6 +119,7 @@ public:
     ota::OtaError startPull(std::string_view url, bool force) override { return ota::startPull(url, force); }
     std::string tlsFingerprint() const override;
     void sleepMs(uint32_t ms) override { vTaskDelay(pdMS_TO_TICKS(ms) > 0 ? pdMS_TO_TICKS(ms) : 1); }
+    const HistoryLog *history() const override { return historyLog(); }
     mqtt::MqttStatus mqttStatus() const override { return mqtt::status(); }
     MqttSecretsInfo mqttSecrets() const override
     {

@@ -1149,3 +1149,125 @@ TEST(EventJson, NewEventTypesCarryTheirData)
     JsonPtr q(eventToJson(x));
     EXPECT_STREQ(cJSON_GetObjectItem(q.get(), "type")->valuestring, "pause_expired");
 }
+
+// ---- history, setup flag, pause time, learned current --------------------------------
+
+TEST_F(ApiTest, HistoryPagesNewestFirstWithTypedRecords)
+{
+    MemoryStorage histStorage;
+    HistoryLog log(histStorage);
+    log.load();
+    platform.historyLog = &log;
+    for (uint32_t i = 0; i < 7; ++i) {
+        HistoryRecord r;
+        r.utc = 1780000000 + i;
+        r.kind = HistoryKind::Run;
+        r.zone = static_cast<uint8_t>(i % 2);
+        r.programId = i == 0 ? 0 : 3;
+        r.a = static_cast<uint8_t>(RunSource::Schedule);
+        r.b = static_cast<uint8_t>(StopReason::Completed);
+        r.c = 600;
+        r.d = 590;
+        r.e = 280u | (1234u << 16);
+        log.append(r, 0);
+    }
+    HistoryRecord f;
+    f.utc = 100; // before the clock was set
+    f.kind = HistoryKind::FaultRaised;
+    f.zone = 2;
+    f.a = static_cast<uint8_t>(FaultCode::ZoneOpenCircuit);
+    log.append(f, 0);
+
+    ApiResponse r = get("/api/v1/history?limit=3");
+    ASSERT_EQ(r.status, 200) << r.body;
+    JsonPtr o = parseJson(r.body);
+    const cJSON *records = cJSON_GetObjectItem(o.get(), "records");
+    ASSERT_EQ(cJSON_GetArraySize(records), 3);
+    const cJSON *first = cJSON_GetArrayItem(records, 0);
+    EXPECT_EQ(cJSON_GetObjectItem(first, "id")->valueint, 8);
+    EXPECT_STREQ(cJSON_GetObjectItem(first, "type")->valuestring, "fault_raised");
+    EXPECT_STREQ(cJSON_GetObjectItem(first, "code")->valuestring, "zone_open_circuit");
+    EXPECT_EQ(cJSON_GetObjectItem(first, "zone")->valueint, 3);
+    EXPECT_TRUE(cJSON_IsFalse(cJSON_GetObjectItem(first, "time_valid")));
+    const cJSON *run = cJSON_GetArrayItem(records, 1);
+    EXPECT_STREQ(cJSON_GetObjectItem(run, "type")->valuestring, "run");
+    EXPECT_STREQ(cJSON_GetObjectItem(run, "source")->valuestring, "schedule");
+    EXPECT_STREQ(cJSON_GetObjectItem(run, "end")->valuestring, "completed");
+    EXPECT_EQ(cJSON_GetObjectItem(run, "planned_s")->valueint, 600);
+    EXPECT_EQ(cJSON_GetObjectItem(run, "actual_s")->valueint, 590);
+    EXPECT_EQ(cJSON_GetObjectItem(run, "current_ma")->valueint, 280);
+    EXPECT_DOUBLE_EQ(cJSON_GetObjectItem(run, "litres")->valuedouble, 123.4);
+    EXPECT_EQ(cJSON_GetObjectItem(o.get(), "next_before")->valueint, 6);
+    EXPECT_EQ(cJSON_GetObjectItem(o.get(), "newest_id")->valueint, 8);
+    EXPECT_EQ(cJSON_GetObjectItem(o.get(), "capacity")->valueint, static_cast<int>(HistoryLog::kCapacity));
+
+    r = get("/api/v1/history?before=6&limit=100");
+    o = parseJson(r.body);
+    EXPECT_EQ(cJSON_GetArraySize(cJSON_GetObjectItem(o.get(), "records")), 5);
+    EXPECT_TRUE(cJSON_IsNull(cJSON_GetObjectItem(o.get(), "next_before")));
+    r = get("/api/v1/history?zone=2");
+    o = parseJson(r.body);
+    EXPECT_EQ(cJSON_GetArraySize(cJSON_GetObjectItem(o.get(), "records")), 3) << "runs on zone 2 (index 1)";
+    r = get("/api/v1/history?since=1780000005");
+    o = parseJson(r.body);
+    EXPECT_EQ(cJSON_GetArraySize(cJSON_GetObjectItem(o.get(), "records")), 2);
+
+    for (const char *bad : {"limit=0", "limit=101", "limit=x", "before=0", "zone=9", "since=-1", "after=1e3"}) {
+        EXPECT_EQ(get(std::string("/api/v1/history?") + bad).status, 400) << bad;
+    }
+}
+
+TEST_F(ApiTest, HistoryFollowsProtectReadsAndIsAbsentWithoutALog)
+{
+    EXPECT_EQ(get("/api/v1/history").status, 503);
+    MemoryStorage histStorage;
+    HistoryLog log(histStorage);
+    log.load();
+    platform.historyLog = &log;
+    EXPECT_EQ(get("/api/v1/history").status, 200);
+    login();
+    ASSERT_EQ(admin("PUT", "/api/v1/security", R"({"protect_reads":true})").status, 200);
+    EXPECT_EQ(get("/api/v1/history").status, 401);
+    EXPECT_EQ(call({.path = "/api/v1/history", .authorization = "Bearer " + token}).status, 200);
+}
+
+TEST_F(ApiTest, SetupCompleteIsStoredAndNeedsASession)
+{
+    EXPECT_EQ(field(get("/api/v1/auth"), "setup_complete"), "false");
+    EXPECT_EQ(call({.method = "PUT", .path = "/api/v1/setup", .body = R"({"complete":true})"}).status, 401);
+    login();
+    EXPECT_EQ(admin("PUT", "/api/v1/setup", R"({"complete":"yes"})").status, 400);
+    EXPECT_EQ(admin("PUT", "/api/v1/setup", R"({"other":true})").status, 400);
+    EXPECT_EQ(admin("PUT", "/api/v1/setup", "{}").status, 400);
+    const ApiResponse r = admin("PUT", "/api/v1/setup", R"({"complete":true})");
+    ASSERT_EQ(r.status, 200) << r.body;
+    EXPECT_EQ(field(get("/api/v1/auth"), "setup_complete"), "true");
+    // Stored with the web settings: a restarted API reads it back.
+    AppServices services{bus, state, sink, config, time};
+    Api again(services, auth, platform, webStorage, clock);
+    again.begin();
+    EXPECT_TRUE(again.settings().setupComplete);
+    EXPECT_TRUE(WebSettings::decode(WebSettings{}.encode()).setupComplete == false);
+}
+
+TEST_F(ApiTest, QueueReportsPauseTimeAndZonesTheirLearnedCurrent)
+{
+    publishState([](SystemState &s) {
+        s.queue.state = QueueState::Paused;
+        s.queue.length = 2;
+        s.queue.pausedForSec = 600;
+        s.zones[1].learnedCurrentMa = 287;
+    });
+    JsonPtr q = parseJson(get("/api/v1/queue").body);
+    EXPECT_EQ(cJSON_GetObjectItem(q.get(), "paused_s")->valueint, 600);
+    EXPECT_EQ(cJSON_GetObjectItem(q.get(), "stop_in_s")->valueint, 120 * 60 - 600);
+    JsonPtr z = parseJson(get("/api/v1/zones/2").body);
+    EXPECT_EQ(cJSON_GetObjectItem(z.get(), "learned_current_ma")->valueint, 287);
+    z = parseJson(get("/api/v1/zones/1").body);
+    EXPECT_TRUE(cJSON_IsNull(cJSON_GetObjectItem(z.get(), "learned_current_ma")));
+
+    publishState();
+    q = parseJson(get("/api/v1/queue").body);
+    EXPECT_EQ(cJSON_GetObjectItem(q.get(), "paused_s")->valueint, 0);
+    EXPECT_TRUE(cJSON_IsNull(cJSON_GetObjectItem(q.get(), "stop_in_s")));
+}

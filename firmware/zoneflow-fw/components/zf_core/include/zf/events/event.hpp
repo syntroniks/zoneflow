@@ -60,6 +60,7 @@ enum class EventType : uint8_t {
     CommandRejected, // Controller::handle() refused a command; data: rejected
     RunDropped,      // a queued run could not start and was dropped; data: dropped
     PauseExpired,    // the queue stayed paused for schedule.pause_timeout_min and was stopped
+    RunEnded,        // a zone that was open closed; data: run (for the history log)
     Count,
 };
 static_assert(static_cast<unsigned>(EventType::Count) <= 32, "event mask is 32 bits");
@@ -115,6 +116,19 @@ struct RunDroppedData {
     StartError reason;
 };
 
+// One opening of one zone, from open to close. A pause and resume gives two
+// runs. Current and volume are measured while the run was open.
+struct RunEndedData {
+    ZoneIndex zone;
+    RunSource source;
+    StopReason reason;
+    uint16_t programId;  // 0 for a manual zone run
+    uint16_t plannedSec; // what was left to run when it opened
+    uint16_t actualSec;  // how long it was open
+    uint16_t currentMa;  // mean valve current of this zone alone; 0 = not measured
+    int32_t centilitres; // flow-meter volume while open; -1 = no flow meter
+};
+
 struct Event {
     EventType type;
     MonoMs monoMs;
@@ -130,6 +144,7 @@ struct Event {
         FlagData flag;
         CommandRejectedData rejected;
         RunDroppedData dropped;
+        RunEndedData run;
     };
 };
 static_assert(std::is_trivially_copyable_v<Event>, "events are copied with memcpy into RTOS queues");
