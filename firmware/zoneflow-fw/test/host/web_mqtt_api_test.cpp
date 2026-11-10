@@ -216,3 +216,62 @@ TEST_F(MqttApiTest, ZonePatchAcceptsDefaultRunTime)
     EXPECT_EQ(field(p.body, "default_run_s"), "900");
     EXPECT_EQ(config.get().zones[1].defaultRunSec, 900u);
 }
+
+// The MQTT routes go through Api::admit() like every other route
+// (security review, pull request #23).
+TEST_F(MqttApiTest, ReadsFollowProtectReads)
+{
+    EXPECT_EQ(call("GET", "", false).status, 200);
+    ApiRequest r;
+    const std::string body = R"({"protect_reads":true})";
+    r.method = "PUT";
+    r.path = "/api/v1/security";
+    r.body = body;
+    r.contentLength = body.size();
+    r.contentType = "application/json";
+    r.host = "192.168.1.30";
+    r.authorization = token;
+    ASSERT_EQ(api->handle(r).status, 200);
+    EXPECT_EQ(call("GET", "", false).status, 401);
+    EXPECT_EQ(call("GET").status, 200);
+}
+
+TEST_F(MqttApiTest, WritesNeedCsrfOriginAndHost)
+{
+    const std::string raw = token.substr(std::string("Bearer ").size());
+    const auto put = [&](std::string cookie, std::string csrf, std::string origin, std::string host) {
+        ApiRequest r;
+        const std::string body = R"({"password":"x"})";
+        r.method = "PUT";
+        r.path = "/api/v1/mqtt";
+        r.body = body;
+        r.contentLength = body.size();
+        r.contentType = "application/json";
+        r.host = host;
+        r.origin = origin;
+        r.cookie = cookie;
+        r.csrf = csrf;
+        return api->handle(r);
+    };
+    const std::string cookie = "zf_session=" + raw;
+    EXPECT_EQ(put(cookie, "", "", "192.168.1.30").status, 403) << "cookie session without the CSRF header";
+    EXPECT_EQ(put("", "", "http://evil.example", "192.168.1.30").status, 403) << "cross-origin write";
+    EXPECT_EQ(put("", "", "", "evil.example").status, 403) << "DNS rebinding guard";
+    EXPECT_EQ(platform.mqttSecretWrites, 0);
+}
+
+TEST_F(MqttApiTest, BodyLimitAndContentType)
+{
+    std::string big = "{\"ca_cert\":\"" + std::string(9000, 'A') + "\"}";
+    EXPECT_EQ(call("PUT", big).status, 413);
+    ApiRequest r;
+    const std::string body = "password=x";
+    r.method = "PUT";
+    r.path = "/api/v1/mqtt";
+    r.body = body;
+    r.contentLength = body.size();
+    r.contentType = "application/x-www-form-urlencoded";
+    r.host = "192.168.1.30";
+    r.authorization = token;
+    EXPECT_EQ(api->handle(r).status, 415);
+}

@@ -4,10 +4,12 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <memory>
 
 #include "cJSON.h"
 #include "zf/time/time_zone.hpp"
+#include "zf_web/crypto.hpp"
 #include "zf_web/http_util.hpp"
 #include "zf_web/json_map.hpp"
 
@@ -1447,6 +1449,19 @@ ApiResponse Api::mqttPut(const ApiRequest &req)
     if (!body) {
         return err;
     }
+    // The parsed body holds the broker password and cJSON frees without
+    // clearing: wipe it on every way out. Declared after `body`, so it runs
+    // first. (The request buffer itself belongs to the HTTP glue.)
+    struct WipePassword {
+        cJSON *doc;
+        ~WipePassword()
+        {
+            cJSON *pw = cJSON_GetObjectItemCaseSensitive(doc, "password");
+            if (cJSON_IsString(pw) && pw->valuestring != nullptr) {
+                secureZero(pw->valuestring, std::strlen(pw->valuestring));
+            }
+        }
+    } wipe{body.get()};
     std::optional<std::string_view> password;
     std::optional<std::string_view> caPem;
     JsonPtr doc = parseJson(services_.config.toJson());

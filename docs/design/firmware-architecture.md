@@ -1135,19 +1135,21 @@ dashboards and automations built on switches.
 The `update` entity has no `command_topic`: Home Assistant shows the
 version and the progress of an update started elsewhere but cannot
 install one. Firmware installs stay behind the admin login of the REST API
-([firmware security](firmware-security.md), section 4.7).
+([firmware security](firmware-security.md), section 4.8).
 
 ### Verification
 
 - Host tests: `mqtt_logic_test.cpp`, `mqtt_discovery_test.cpp`,
   `mqtt_config_test.cpp`, `web_mqtt_api_test.cpp`.
-- Broker test (`test/broker/run.sh`, not in CI): the logic and the real
+- Broker test (`test/broker/run.sh`, not in CI, 22 checks): the logic and the real
   `Controller` against Mosquitto 2.1.2, through libmosquitto. It replaces
   `mqtt.cpp` with a short loop of its own, so esp-mqtt and the glue are
   only compiled, never run.
-- `idf.py build` (ESP-IDF v5.5.6, after merging the display): default
-  configuration `zoneflow-fw.bin` 1,562,688 bytes (37.3 % of a 4 MB slot),
-  58,960 bytes more than `main` (1,503,728); internal RAM left for heap
-  and stacks 167,261 bytes, 2,764 less than `main` (170,025). With
-  `-D ZF_DISPLAY=1`: 2,025,696 bytes, 58,704 more than `main`. No warnings
-  in ZoneFlow code in either build.
+- `idf.py build` (ESP-IDF v5.5.6, fresh `sdkconfig`, after merging the
+  display and the security review): default configuration
+  `zoneflow-fw.bin` 1,564,624 bytes (37.3 % of a 4 MB slot), 58,672 bytes
+  more than `main` at f4514de (1,505,952, built the same way); internal RAM
+  left for heap and stacks 167,109 bytes, 2,764 less than `main` (169,873).
+  With `-D ZF_DISPLAY=1`: 2,027,648 bytes, 58,432 more than the 1,969,216
+  reported for `main` in pull request #23. No warnings in ZoneFlow code in
+  either build.

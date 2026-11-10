@@ -39,6 +39,7 @@
 #include "zf_net/nvs_store.hpp"
 #include "zf_ota/ota.hpp"
 #include "zf_platform/platform.hpp"
+#include "zf_web/crypto.hpp"
 
 namespace zf::mqtt {
 namespace {
@@ -104,6 +105,14 @@ struct Module {
 };
 
 Module *gm = nullptr;
+
+// Overwrites a string that held the broker password before it is freed or
+// reused (zf_web secureZero, as for the admin password hash).
+void wipe(std::string &s)
+{
+    web::secureZero(s.data(), s.size());
+    s.clear();
+}
 
 // ---- esp-mqtt event handler (esp-mqtt task): copy and return ------------------------------
 
@@ -306,7 +315,7 @@ bool sameSettings(const MqttConfig &a, const MqttConfig &b)
 void loadSecrets()
 {
     std::lock_guard<std::mutex> lock(gm->secretsMutex);
-    gm->password.clear();
+    wipe(gm->password);
     gm->caPem.clear();
     gm->store.read(kPasswordKey, gm->password);
     gm->store.read(kCaKey, gm->caPem);
@@ -372,6 +381,8 @@ void startClient(const Config &cfg)
     c.buffer.out_size = 2048; // longer publishes (discovery) are written in fragments
     c.outbox.limit = kOutboxLimit;
     gm->client = esp_mqtt_client_init(&c);
+    // esp-mqtt keeps its own copy (strdup); ours is not needed any more.
+    wipe(gm->password);
     if (gm->client == nullptr) {
         setError("esp_mqtt_client_init failed");
         return;
@@ -630,6 +641,7 @@ esp_err_t start(const AppServices &services)
     }
     std::string v;
     gm->passwordSet = gm->store.read(kPasswordKey, v) && !v.empty();
+    wipe(v);
     gm->caSet = gm->store.read(kCaKey, v) && !v.empty();
     gm->inbox = xQueueCreate(kInboxDepth, sizeof(Inbound));
     if (gm->inbox == nullptr) {

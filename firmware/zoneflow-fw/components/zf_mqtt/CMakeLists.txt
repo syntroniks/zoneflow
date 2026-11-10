@@ -3,5 +3,5 @@
 idf_component_register(SRCS src/mqtt.cpp src/mqtt_logic.cpp
                        INCLUDE_DIRS include
                        REQUIRES zf_core zf_net zf_ota esp_common
-                       PRIV_REQUIRES zf_board zf_platform mqtt mbedtls json esp_app_format esp_system freertos log)
+                       PRIV_REQUIRES zf_board zf_platform zf_web mqtt mbedtls json esp_app_format esp_system freertos log)
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wall -Wextra)
