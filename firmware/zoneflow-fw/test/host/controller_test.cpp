@@ -570,3 +570,36 @@ TEST(Config, PauseTimeout)
     c.schedule.pauseTimeoutMin = 1441;
     EXPECT_EQ(validate(c).path, "schedule.pause_timeout_min");
 }
+
+// ---- current sense unavailable ------------------------------------------------------
+
+// Policy: watering matters more than diagnostics. Zones still run, but the
+// condition is raised, stays visible through ClearFaults, and clears only
+// when readings come back.
+TEST_F(ControllerTest, CurrentSenseUnavailableIsReportedAndZonesStillRun)
+{
+    sensors.sample.currentSenseAvailable = false;
+    start();
+    EXPECT_TRUE(hasFault(FaultCode::CurrentSenseUnavailable));
+    EXPECT_STREQ(toString(FaultCode::CurrentSenseUnavailable), "current_sense_unavailable");
+    ASSERT_TRUE(ctrl->handle(Command::runZone(0, 60)));
+    tick();
+    EXPECT_TRUE(out.zone[0]);
+    ctrl->handle(Command::simple(CommandType::ClearFaults));
+    tick();
+    EXPECT_TRUE(hasFault(FaultCode::CurrentSenseUnavailable));
+    EXPECT_NE(state.snapshot().activeFaults & (1u << static_cast<unsigned>(FaultCode::CurrentSenseUnavailable)), 0u);
+    sensors.sample.currentSenseAvailable = true;
+    tick();
+    EXPECT_FALSE(hasFault(FaultCode::CurrentSenseUnavailable));
+}
+
+TEST_F(ControllerTest, CurrentSenseUnavailableIgnoredWhenDiagnosticsDisabled)
+{
+    Config c = config.get();
+    c.diag.currentEnabled = false;
+    ASSERT_TRUE(config.update(c).ok);
+    sensors.sample.currentSenseAvailable = false;
+    start();
+    EXPECT_FALSE(hasFault(FaultCode::CurrentSenseUnavailable));
+}

@@ -36,7 +36,8 @@ constexpr uint32_t faultBit(FaultCode c) { return 1u << static_cast<unsigned>(c)
 
 // Conditions clear by themselves when the cause goes away; everything else
 // latches until ClearFaults.
-constexpr uint32_t kSelfClearing = faultBit(FaultCode::AcLost) | faultBit(FaultCode::TimeInvalid);
+constexpr uint32_t kSelfClearing =
+    faultBit(FaultCode::AcLost) | faultBit(FaultCode::TimeInvalid) | faultBit(FaultCode::CurrentSenseUnavailable);
 
 } // namespace
 
@@ -232,6 +233,17 @@ void Controller::tick()
     } else if (now - leakSinceMs_ >= static_cast<MonoMs>(config_.flow.leakDetectSec) * 1000u &&
                (activeFaults_ & faultBit(FaultCode::FlowWithoutZones)) == 0) {
         raiseFault(FaultCode::FlowWithoutZones, kNoZone);
+    }
+
+    // No current sense: report it, keep watering (policy in
+    // firmware-architecture.md, sensors and diagnostics). Short-circuit
+    // protection then rests on the hardware trip and the output protection.
+    const bool senseLost = config_.diag.currentEnabled && !s.currentSenseAvailable;
+    const bool senseFault = (activeFaults_ & faultBit(FaultCode::CurrentSenseUnavailable)) != 0;
+    if (senseLost && !senseFault) {
+        raiseFault(FaultCode::CurrentSenseUnavailable, kNoZone);
+    } else if (!senseLost && senseFault) {
+        clearCondition(FaultCode::CurrentSenseUnavailable);
     }
 
     // Without 24 VAC the current reading means nothing.

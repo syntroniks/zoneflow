@@ -30,6 +30,8 @@ const char *toString(FaultCode f)
         return "storage_error";
     case FaultCode::MasterLockedOut:
         return "master_locked_out";
+    case FaultCode::CurrentSenseUnavailable:
+        return "current_sense_unavailable";
     case FaultCode::Count:
         break;
     }

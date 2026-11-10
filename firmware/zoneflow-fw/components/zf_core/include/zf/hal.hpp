@@ -28,7 +28,10 @@ struct SensorSample {
     bool spareContactClosed = false;
     bool acPresent = false;
     uint32_t flowPulses = 0;     // free-running counter, wraps at 2^32
-    int32_t valveCurrentMa = -1; // total valve current, RMS estimate; -1 if unavailable
+    int32_t valveCurrentMa = -1; // total valve current, RMS estimate; -1 if no reading this tick
+    // False when the current-sense path could not be initialised or
+    // calibrated, or gave no reading: raises current_sense_unavailable.
+    bool currentSenseAvailable = true;
 };
 
 class ISensorHal {

@@ -90,14 +90,16 @@ esp_err_t SensorInputs::init()
             if (adc_cali_create_scheme_curve_fitting(&cali, &caliHandle) == ESP_OK) {
                 cali_ = caliHandle;
             } else {
-                ESP_LOGW(kTag, "ADC calibration unavailable; current readings disabled");
+                ESP_LOGE(kTag, "ADC calibration unavailable: current_sense_unavailable, zones still run");
             }
         }
     }
     if (err != ESP_OK) {
         ESP_LOGE(kTag, "valve current ADC init failed: %s", esp_err_to_name(err));
     }
-    return ESP_OK; // a missing sensor is reported as "unavailable", not fatal
+    // A missing current sense is not fatal: read() reports it, and the
+    // controller raises current_sense_unavailable while zones keep running.
+    return ESP_OK;
 }
 
 SensorSample SensorInputs::read()
@@ -115,6 +117,7 @@ SensorSample SensorInputs::read()
         }
     }
 
+    s.currentSenseAvailable = false;
     if (adc_ != nullptr && cali_ != nullptr) {
         int64_t sumMv = 0;
         int n = 0;
@@ -129,6 +132,7 @@ SensorSample SensorInputs::read()
             }
         }
         if (n > 0) {
+            s.currentSenseAvailable = true;
             const float mv = static_cast<float>(sumMv) / static_cast<float>(n) - board::kValveCurrentOffsetMv;
             s.valveCurrentMa = mv <= 0.0f ? 0 : static_cast<int32_t>(mv * board::kValveCurrentMaPerMv);
         }
