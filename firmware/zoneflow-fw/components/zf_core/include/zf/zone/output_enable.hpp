@@ -36,7 +36,8 @@ public:
     void heartbeat(uint32_t nowMs)
     {
         lastBeatMs_.store(nowMs, std::memory_order_relaxed);
-        beaten_.store(true, std::memory_order_release);
+        // Single writer: a plain load and store, no read-modify-write.
+        beats_.store(beats_.load(std::memory_order_relaxed) + 1, std::memory_order_release);
     }
 
     // Latches OE off until reset(). Used on faults and before a restart.
@@ -47,19 +48,27 @@ public:
     // True when OE may be driven active.
     bool allowed(uint32_t nowMs) const
     {
-        if (tripped() || !demand_.load(std::memory_order_relaxed) || !beaten_.load(std::memory_order_acquire)) {
+        if (tripped() || !demand_.load(std::memory_order_relaxed) || beats_.load(std::memory_order_acquire) == 0) {
             return false;
         }
-        // The heartbeat may come from the other core with a slightly later
-        // timestamp; a negative age counts as fresh.
-        const auto age = static_cast<int32_t>(nowMs - lastBeatMs_.load(std::memory_order_relaxed));
-        return age < 0 || static_cast<uint32_t>(age) <= timeoutMs_;
+        return fresh(nowMs);
     }
 
     // Keep-alive task only: the level to drive now.
     bool nextLevel(uint32_t nowMs)
     {
-        if (!allowed(nowMs)) {
+        // A heartbeat that went stale stays stale until the next one arrives.
+        // The 32-bit age of a heartbeat that stopped keeps growing and wraps
+        // after 2^31 ms; without this latch it would read as fresh again.
+        const uint32_t beats = beats_.load(std::memory_order_acquire);
+        if (beats != seenBeats_) {
+            seenBeats_ = beats;
+            stale_ = false;
+        }
+        if (beats != 0 && !fresh(nowMs)) {
+            stale_ = true;
+        }
+        if (stale_ || !allowed(nowMs)) {
             level_ = false;
         } else if (mode_ == OutputEnableMode::Toggle) {
             level_ = !level_;
@@ -72,13 +81,25 @@ public:
     OutputEnableMode mode() const { return mode_; }
 
 private:
+    bool fresh(uint32_t nowMs) const
+    {
+        // The heartbeat may carry a timestamp slightly later than nowMs (read
+        // on another core or just before a preemption). Up to the timeout
+        // ahead counts as fresh; further ahead is a wrapped, stale age.
+        const auto age = static_cast<int32_t>(nowMs - lastBeatMs_.load(std::memory_order_relaxed));
+        const auto limit = static_cast<int32_t>(timeoutMs_);
+        return age >= -limit && age <= limit;
+    }
+
     const OutputEnableMode mode_;
     const uint32_t timeoutMs_;
     std::atomic<bool> demand_{false};
     std::atomic<bool> tripped_{false};
-    std::atomic<bool> beaten_{false};
+    std::atomic<uint32_t> beats_{0}; // heartbeats so far; 0 = never
     std::atomic<uint32_t> lastBeatMs_{0};
-    bool level_ = false; // keep-alive task only
+    uint32_t seenBeats_ = 0; // keep-alive task only
+    bool stale_ = false;     // keep-alive task only
+    bool level_ = false;     // keep-alive task only
 };
 
 } // namespace zf
