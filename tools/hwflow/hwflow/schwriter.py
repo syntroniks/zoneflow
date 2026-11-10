@@ -20,6 +20,7 @@ from .design import (
     Sheet,
     offset_ref,
     stable_uuid,
+    symbol_uuid,
     transform,
 )
 from .sexpr import Sym, dumps, fmt
@@ -37,8 +38,11 @@ _POWER_ROT = {
 }
 
 
-def _effects(justify: tuple[str, ...] = (), hide: bool = False, size: float = 1.27) -> list:
-    e = [S("effects"), [S("font"), [S("size"), fmt(size), fmt(size)]]]
+def _effects(justify: tuple[str, ...] = (), hide: bool = False, size: float = 1.27, bold: bool = False) -> list:
+    font = [S("font"), [S("size"), fmt(size), fmt(size)]]
+    if bold:
+        font.append([S("bold"), YES])
+    e = [S("effects"), font]
     if justify:
         e.append([S("justify"), *[S(j) for j in justify]])
     if hide:
@@ -120,10 +124,12 @@ class _SheetWriter:
                 [S("at"), fmt(part.at[0]), fmt(part.at[1]), S(str(part.rot))]]
         if part.mirror:
             node.append([S("mirror"), S(part.mirror)])
-        node += [[S("unit"), S("1")], [S("body_style"), S("1")], [S("exclude_from_sim"), NO],
+        unit = S(str(part.unit))
+        pin_key = (part.ref,) if part.unit == 1 else (part.ref, f"unit{part.unit}")
+        node += [[S("unit"), unit], [S("body_style"), S("1")], [S("exclude_from_sim"), NO],
                  [S("in_bom"), YES if part.in_bom else NO], [S("on_board"), YES if part.on_board else NO],
                  [S("in_pos_files"), YES], [S("dnp"), YES if part.dnp else NO],
-                 [S("uuid"), stable_uuid(self.d.name, self.s.name, "sym", part.ref)]]
+                 [S("uuid"), symbol_uuid(part)]]
         first_ref = refs[0][1] if refs else part.ref
         node.append(_prop("Reference", first_ref, places[0][0], places[0][1], fa[0], places[0][3],
                           hide=not ref_visible or part.virtual))
@@ -134,11 +140,17 @@ class _SheetWriter:
         node.append(_prop("Description", sym.props.get("Description", ""), part.at[0], part.at[1], hide=True))
         for k, v in part.fields.items():
             node.append(_prop(k, v, part.at[0], part.at[1], hide=True))
-        for pin in sym.pins:
+        for pin in sym.pins_of(part.unit):
             node.append([S("pin"), pin.number,
-                         [S("uuid"), stable_uuid(self.d.name, self.s.name, "pin", part.ref, pin.number)]])
-        paths = [[S("path"), "/" + "/".join((self.d.root_uuid,) + path),
-                  [S("reference"), ref], [S("unit"), S("1")]] for path, ref in refs]
+                         [S("uuid"), stable_uuid(self.d.name, self.s.name, "pin", *pin_key, pin.number)]])
+        paths = []
+        for path, ref in refs:
+            inst = [S("path"), "/" + "/".join((self.d.root_uuid,) + path), [S("reference"), ref], [S("unit"), unit]]
+            # KiCad 10 assembly variants: what differs from the base design, per sheet instance.
+            for name, v in self.d.variants.items():
+                if ref in v["dnp"] and not part.dnp:
+                    inst.append([S("variant"), [S("name"), name], [S("dnp"), YES]])
+            paths.append(inst)
         node.append([S("instances"), [S("project"), self.d.name, *paths]])
         self.items.append(node)
 
@@ -303,10 +315,15 @@ class _SheetWriter:
         for inst in s.instances:
             self.sheet_symbol(inst, page_of)
         self.emit_wires()
-        for text, at, size in s.texts:
+        for text, at, size, justify, bold in s.texts:
+            key = text if justify == ("left", "bottom") and not bold else f"{text}@{at}"
             self.items.append([S("text"), text, [S("exclude_from_sim"), NO],
                                [S("at"), fmt(at[0]), fmt(at[1]), S("0")],
-                               _effects(("left", "bottom"), size=size), [S("uuid"), self.uid("text", text)]])
+                               _effects(justify, size=size, bold=bold), [S("uuid"), self.uid("text", key)]])
+        for pts, style in s.lines:
+            self.items.append([S("polyline"), [S("pts"), *[[S("xy"), fmt(x), fmt(y)] for x, y in pts]],
+                               [S("stroke"), [S("width"), S("0")], [S("type"), S(style)]],
+                               [S("fill"), [S("type"), S("none")]], [S("uuid"), self.uid("line", f"{pts}")]])
         for x0, y0, x1, y1, title in s.frames:
             self.items.append([S("rectangle"), [S("start"), fmt(x0), fmt(y0)], [S("end"), fmt(x1), fmt(y1)],
                                [S("stroke"), [S("width"), S("0")], [S("type"), S("dash")]],
@@ -322,6 +339,8 @@ class _SheetWriter:
         if self.d.company:
             title.append([S("company"), self.d.company])
         title.append([S("comment"), S("1"), self.d.title])
+        for n, text in sorted(self.d.comments.items()):
+            title.append([S("comment"), S(str(n)), text])
         libs = [S("lib_symbols")] + [symlib.load(i, self.d.symbol_dirs).node for i in sorted(self.lib_ids)]
         root = [S("kicad_sch"), [S("version"), S(SCH_VERSION)], [S("generator"), "hwflow"],
                 [S("generator_version"), "10.0"],

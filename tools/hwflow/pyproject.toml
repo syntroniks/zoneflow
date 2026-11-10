@@ -5,9 +5,11 @@ description = "Text-to-KiCad flow for ZoneFlow hardware: schematic generator, bo
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.12"
-# No runtime dependencies on purpose. The board steps run under the system
-# interpreter that carries KiCad's pcbnew module, which cannot install wheels.
-dependencies = []
+# PyYAML is for the schematic half only: a circuit description reads
+# hardware/netlist.yaml under `uv run`. The board steps run under the system
+# interpreter that carries KiCad's pcbnew module, which cannot install
+# wheels, so no hwflow module that they import may need a third-party package.
+dependencies = ["pyyaml>=6,<7"]
 
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.8"]

@@ -47,12 +47,24 @@ class LibSymbol:
     is_power: bool
     props: dict[str, str]
     prop_nodes: dict[str, list]
+    units: tuple[int, ...] = (1,)  # unit numbers the symbol has; pins and graphics of unit 0 are in every unit
+    unit_bbox: dict = None  # unit number -> bbox of the graphics that unit shows
 
-    def pins_named(self, key: str) -> list[LibPin]:
-        by_number = [p for p in self.pins if p.number == key]
+    def pins_of(self, unit: int) -> list[LibPin]:
+        """Pins drawn when ``unit`` is placed: its own and the ones common to all units."""
+        return [p for p in self.pins if p.unit in (0, unit)]
+
+    def bbox_of(self, unit: int) -> tuple[float, float, float, float]:
+        if self.unit_bbox and unit in self.unit_bbox:
+            return self.unit_bbox[unit]
+        return self.bbox
+
+    def pins_named(self, key: str, unit: int | None = None) -> list[LibPin]:
+        pins = self.pins if unit is None else self.pins_of(unit)
+        by_number = [p for p in pins if p.number == key]
         if by_number:
             return by_number
-        return [p for p in self.pins if p.name == key]
+        return [p for p in pins if p.name == key]
 
 
 @lru_cache(maxsize=None)
@@ -173,11 +185,13 @@ def load(lib_id: str, extra_dirs: tuple[str, ...] = ()) -> LibSymbol:
 
     pins: list[LibPin] = []
     pts: list[tuple[float, float]] = []
+    unit_pts: dict[int, list[tuple[float, float]]] = {}
     for unit in find_all(node, "symbol"):
         m = re.match(r".*_(\d+)_(\d+)$", unit[1])
         unit_no, style = int(m.group(1)), int(m.group(2))
         if style > 1:
             continue  # alternate (De Morgan) body style is not used
+        unit_pts.setdefault(unit_no, [])
         for item in unit[2:]:
             if not isinstance(item, list):
                 continue
@@ -198,17 +212,32 @@ def load(lib_id: str, extra_dirs: tuple[str, ...] = ()) -> LibSymbol:
                     )
                 )
             else:
-                pts += _graphic_points(item)
+                g = _graphic_points(item)
+                pts += g
+                unit_pts[unit_no] += g
     if not pts:
         pts = [(p.x, p.y) for p in pins] or [(0.0, 0.0)]
-    xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+
+    def box(points):
+        xs, ys = [p[0] for p in points], [p[1] for p in points]
+        return (min(xs), min(ys), max(xs), max(ys))
+
+    units = tuple(sorted(u for u in unit_pts if u > 0)) or (1,)
+    unit_bbox = {}
+    for u in units:
+        own = unit_pts.get(0, []) + unit_pts.get(u, [])
+        if not own:
+            own = [(p.x, p.y) for p in pins if p.unit in (0, u)] or [(0.0, 0.0)]
+        unit_bbox[u] = box(own)
     prop_nodes = {p[1]: p for p in find_all(node, "property")}
     return LibSymbol(
         lib_id=lib_id,
         node=node,
         pins=pins,
-        bbox=(min(xs), min(ys), max(xs), max(ys)),
+        bbox=box(pts),
         is_power=find(node, "power") is not None,
         props={k: v[2] for k, v in prop_nodes.items()},
         prop_nodes=prop_nodes,
+        units=units,
+        unit_bbox=unit_bbox,
     )
