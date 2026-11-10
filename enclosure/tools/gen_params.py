@@ -100,6 +100,11 @@ def check(m: dict) -> list[str]:
     j7 = by["J7"]
     if abs(j7["y"] - tail_c) > 0.011:
         bad.append("J7: not centred on the FPC tail")
+    if abs(j7["x"] + j7["body"][0] / 2 - j7["fpc_entry_x"]) > 0.011:
+        bad.append("J7: fpc_entry_x is not the +x face of the body")
+    fitted = [o for o in m["display_options"] if o["fitted"]]
+    if len(fitted) != 1 or fitted[0]["outline"] != d["outline"] or fitted[0]["centre"] != [d["x"], d["y"]]:
+        bad.append("display_options: the fitted option does not match DS1")
     if abs(j7["pin1_y"] - (oy + 15.28 + 0.5)) > 0.011:
         bad.append("J7: pin1_y does not follow from the outline")
     st = m["stack"]
@@ -119,6 +124,26 @@ def check(m: dict) -> list[str]:
         dy = max(ay0 - hole["y"], 0, hole["y"] - ay1)
         if (dx * dx + dy * dy) ** 0.5 < clr:
             bad.append(f"hole {hole['id']}: screw within {clr} mm of the antenna")
+
+    # Fuse holders stand inside their well, clear of its 1.2 mm walls.
+    well = next(z for z in m["zones"] if z["id"] == "T_FUSEWELL")["rect"]
+    for ref in ("F1", "F4"):
+        _, cx, cy, sx, sy, _, _ = part_prims(by[ref])[0]
+        if (cx - sx / 2 < well[0] + 1.6 or cx + sx / 2 > well[2] - 1.6
+                or cy - sy / 2 < well[1] + 1.6 or cy + sy / 2 > well[3] - 1.6):
+            bad.append(f"{ref}: closer than 0.4 mm to the wall of the fuse well")
+    a, b = (part_prims(by[r])[0] for r in ("F4", "F1"))
+    if (b[1] - b[3] / 2) - (a[1] + a[3] / 2) < 1.0:
+        bad.append("F1 and F4: pads closer than 1.0 mm")
+
+    # C1 lies on the bottom side with its pads beyond the end of the can.
+    c1 = by["C1"]
+    can = part_prims(c1)[0]
+    for px, py in c1["pads"]:
+        if not (px > can[1] + can[3] / 2 + 2.0 and abs(py - c1["y"]) == 2.5):
+            bad.append("C1: pads do not sit 5.0 mm apart beyond the end of the can")
+    if m["assembly"]["through_hole"][2]["refs"] != "C1" or c1["side"] != "bottom":
+        bad.append("C1: assembly section and part disagree")
 
     # Everything on the board stays on the board, except edge connectors.
     edge_ok = {"J1", "J2", "J3", "J4", "J5", "J6", "U4"}
@@ -151,6 +176,8 @@ def main() -> None:
     xs = [pt[0] for pt in b["outline"]]
     ys = [pt[1] for pt in b["outline"]]
     d, enc, usb, qw, u4 = by["DS1"], by["SW3"], by["J5"], by["J6"], by["U4"]
+    well = next(z for z in m["zones"] if z["id"] == "T_FUSEWELL")["rect"]
+    c1 = by["C1"]
     leds = [p for p in m["parts"] if "label" in p]
 
     prims = []
@@ -180,12 +207,19 @@ def main() -> None:
         # id, x, y, hole diameter, kind, top keep-out, bottom keep-out
         "holes": [[h["id"], h["x"], h["y"], h["d"], h["kind"],
                    h["top_keepout"], h["bottom_keepout"]] for h in m["holes"]],
-        "disp_c": [d["x"], d["y"]],
-        "disp_aa": d["active_area"],
-        "disp_origin": d["outline_origin"],
-        "disp_outline": d["outline"],
         "disp_window_margin": d["window_margin"],
-        "disp_fpc_root_y": d["fpc_root_y"],
+        # id, active x, active y, outline x, outline y, active area to the
+        # edge opposite the FPC, to each long edge, thickness, centre x,
+        # centre y, FPC root from and to (measured from the outline's y origin)
+        "panel_options": [[o["id"], *o["active_area"], *o["outline"],
+                           o["aa_to_edge_opposite_fpc"], o["aa_to_long_edge"], o["thickness"],
+                           *o["centre"], *o["fpc_root_y_from_origin"]]
+                          for o in m["display_options"]],
+        "panel_fitted": next(o["id"] for o in m["display_options"] if o["fitted"]),
+        "fuse_well": well,
+        "fuse_c": [[by[r]["x"], by[r]["y"]] for r in ("F4", "F1")],
+        "c1_c": [c1["x"], c1["y"]],
+        "c1_can": [part_prims(c1)[0][3], part_prims(c1)[0][4]],
         "j7_c": [by["J7"]["x"], by["J7"]["y"]],
         "j7_entry_x": by["J7"]["fpc_entry_x"],
         "enc_c": [enc["x"], enc["y"]],
