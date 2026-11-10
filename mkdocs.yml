@@ -110,3 +110,5 @@ nav:
       - Firmware security: design/firmware-security.md
       - Display interface: design/display-ui.md
       - Hardware toolchain: design/hardware-toolchain.md
+      - Hardware design: design/hardware-design.md
+      - Hardware review A1: design/hardware-review-a1.md

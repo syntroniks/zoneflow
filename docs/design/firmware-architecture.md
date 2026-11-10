@@ -575,6 +575,14 @@ the REST and backup format. Abbreviated example:
 
 ## 9. Open questions for the hardware team
 
+The hardware team answered questions 1 to 14 in
+[hardware design](hardware-design.md) section 19.3, and
+`hardware/pinmap.yaml` now exists. The independent
+[hardware review A1](hardware-review-a1.md) then compared the answers with this document and
+with the circuit. Question 2 is settled: the agreed contract follows it
+below. Questions 12 and 13 have answers that change code and are noted in
+place. The questions themselves are kept as they were asked.
+
 1. **Pin map.** Everything in `zoneflow_rev_a.hpp` is provisional. Please
    publish `hardware/pinmap.yaml`; the board header will follow it. The
    `static_assert`s will flag any pin that breaks the rules above.
@@ -588,6 +596,66 @@ the REST and backup format. Abbreviated example:
    loop stalls for that long; if it can exceed about 450 ms (the 500 ms
    heartbeat timeout minus one control period), OE drops during the erase
    and `CONFIG_ZF_OE_HEARTBEAT_TIMEOUT_MS` has to be raised.
+
+   **Agreed with hardware in review A1.** The same contract is in hardware
+   design section 19.4. The decisions taken on that review added a second
+   keep-alive detector for the valve-common relay and two read-back pins.
+   The points below marked "changed" follow from that. None of them changes
+   what the keep-alive interrupt itself has to do.
+
+   - **The timer interrupt is accepted.** The hardware document said the
+     keep-alive must never come from a timer. What that rule forbids is a
+     peripheral that toggles the pin with no code deciding each edge: LEDC,
+     RMT, MCPWM, a timer with a pin output. The interrupt of section 3
+     decides every edge from the heartbeat, so it is consistent with the
+     rule. GPIO38 stays a plain GPIO output with no peripheral signal routed
+     to it.
+   - **Edge interval.** 5 ms is right. The circuit needs an edge at least
+     every 20 ms.
+   - **The circuit does not check the rate.** It has no upper frequency
+     limit, and anything from about 3 Hz to at least 1 MHz enables drive.
+     Only a steady level is certain to disable it. A keep-alive that runs
+     at the wrong rate is not caught in hardware.
+   - **Enable delay, changed.** Gate drive is on 14 to 41 ms after the
+     first edge and the relay transistor after 22 to 82 ms. Wait until
+     GPIO42 reads high, GPIO7 reads low and the output expander
+     acknowledges, 150 ms at most, before writing the expander.
+   - **Hold-up, changed.** Gate drive is gone 0.45 to 0.9 s after the last
+     edge when the pin stops low, and within 1.2 s if a fault leaves it
+     high. The relay transistor lets go between 0.12 and 0.95 s after the
+     last edge, 1.4 s if the pin is high. From a dead control loop to no
+     gate drive is therefore at most 500 ms + 5 ms + 0.9 s = 1.4 s, and to
+     an open relay 1.5 s.
+   - **Flash.** Espressif does not fix the module's flash part. A
+     representative 16 MB part, the Winbond W25Q128JV, erases a 4 kB sector
+     in 45 ms typically and 400 ms at most. 400 ms plus one 50 ms control
+     period is 450 ms, inside the 500 ms heartbeat timeout by 50 ms. Keep
+     `CONFIG_ZF_OE_HEARTBEAT_TIMEOUT_MS` at 500 and do not lower it. A
+     64 kB block erase can take 2 s and will drop the outputs, so block
+     erases stay out of watering, as OTA already does.
+   - **What stopping does.** Holding the keep-alive low for 1.5 s resets
+     the output expander, opens the valve-common relay and clears the
+     over-current latch. Every start must set the expander up again.
+   - **Self-test, changed.** Hardware design section 19.7 has the exact
+     sequence and limits. In short: before every run, with the keep-alive
+     low, GPIO42 must read low, GPIO7 must read high and the expander at
+     0x74 must not answer. At start-up and at least once a day, holding
+     the pin high for 1.0 s must not change either read-back. After
+     starting, both read-backs must flip and the expander must answer
+     within 150 ms. Before the relay is closed, the output about to run
+     is switched on for one 100 ms window and must draw no current, which
+     finds a welded relay contact. After every run, both read-backs must
+     return within 1.0 s of the last edge. A failure means one of the two
+     detectors is broken: write every expander pin back to input, raise a
+     fault, refuse to run valves. Hardware design section 8.5 has the
+     reason.
+   - **New pins.** GPIO42 reads the drive-enable signal and GPIO7 the
+     relay transistor. Both are inputs for the life of the firmware. The
+     sensor supply enable moved from GPIO7 to GPIO45, a strapping pin
+     that firmware must leave alone until the application runs.
+   - **Still open.** None of this is in the firmware yet: hardware design
+     section 19.5. The longest control-loop stall during a flash erase
+     should be measured on real modules.
 3. **Pull-downs.** Firmware assumes external pull-downs on every output and
    on OE so outputs stay off in reset and while unpowered. Confirm.
 4. **Current-sense front end.** Spec v0.2: low-side shunt in the shared
@@ -627,10 +695,25 @@ the REST and backup format. Abbreviated example:
     circuit, its trip threshold, whether it removes gate drive from every
     output or only the faulty one (firmware assumes all), and its minimum
     release pulse.
+
+    **Answer.** Status is on GPIO40, low when tripped, driven by a logic
+    gate through 10 kohm, so no pull-up and not open drain. There is no
+    release pin and no release pulse: the latch clears when the keep-alive
+    has been low for 1.5 s, so `clearOverCurrentTrip()` becomes "stop the
+    keep-alive and wait". It trips at 4.6 A peak nominal, 4.0 to 5.4 A over
+    tolerances, and removes drive from every output. Outputs must not be
+    switched on within 100 ms of each other, or two inrush currents can
+    trip it.
 13. **Zero-cross detector.** Firmware expects one pulse per zero crossing
     (two per mains period) on GPIO48, rising edge at the crossing, offset
     0 us. Needed: the circuit, the edge that marks the crossing and the
     detector's lead or lag (`kZeroCrossOffsetUs`).
+
+    **Answer.** GPIO41 carries a square wave at mains frequency, not a
+    pulse per crossing. At 24 VAC the rising edge is 0.30 ms after the
+    upward zero crossing and the falling edge 0.09 ms before the downward
+    one. `zeroCrossWaitUs()` accepts intervals of 7 to 11 ms, so it needs
+    both edges, and a separate offset for each.
 14. **Pin budget.** The firmware wants 30 signals and the pin rules of the
     board header leave 27 GPIO (the count is in the header, "pin budget").
     The display needs five that the map did not have: SPI clock, SPI data,

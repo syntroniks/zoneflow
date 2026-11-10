@@ -1,0 +1,147 @@
+* ZoneFlow current-sense front end and over-current latch
+* (docs/design/hardware-design.md sections 9 and 10)
+*
+* Shunt R37 (0.1 ohm) in the common triac return. Two difference amplifiers
+* (U8A gain 1.333, U8B gain 6.653) referenced to VB = 0.81 V feed ADC1.
+* Window comparators U6B/U6C on ISENSE_LO pull OC_TRIP_N low above
+* +/-4.6 A peak. U7 (74HC00) latches the trip and removes DRV_EN.
+*
+* Run:  ngspice -b isense.cir
+*
+* Models are generic: the op-amp is a single-pole, 1 MHz GBW, rail-limited
+* block (MCP6002-like), comparators are ideal open-collector switches, the
+* NAND gates are behavioural with a 20 ns RC delay. Component tolerances are
+* not swept here; the error budget in the design document covers them.
+
+.param irms=0.5 freq=50 ifault=0 tfault=1 vgshift=0
+.param ipk={irms*1.41421356}
+
+* --- load current through the shunt ---------------------------------------
+* Normal load: sine. Fault: extra sine of ifault (rms) from tfault for 0.2 s.
+BLOAD 0 isns I = {ipk}*sin(6.2831853*{freq}*time) + ((time > {tfault} && time < {tfault}+0.2) ? {ifault}*1.41421356*sin(6.2831853*{freq}*time) : 0)
+R37   isns kn 0.1
+* kn = Kelvin ground of the shunt; vgshift models ground bounce against AGND
+VGS   kn 0 SIN(0 {vgshift} 50)
+
+* --- bias and threshold chain (R48..R51 from 3V3) --------------------------
+V3V3  v3v3 0 DC 3.3
+R48   v3v3 vh  1k
+R49   vh   vb  330
+R50   vb   vl  330
+R51   vl   0   100
+C32   vb   0   1u
+
+* --- U8A: difference amplifier, gain 10k/7.5k = 1.333 ----------------------
+R38   isns a_n 7.5k
+R39   a_n  isense_lo 10k
+C26   a_n  isense_lo 1n
+R40   kn   a_p 7.5k
+R41   a_p  vb  10k
+C27   a_p  vb  1n
+XU8A  a_p a_n isense_lo OPA
+
+* --- U8B: difference amplifier, gain 49.9k/7.5k = 6.653 --------------------
+R42   isns b_n 7.5k
+R43   b_n  isense_hi 49.9k
+C28   b_n  isense_hi 220p
+R44   kn   b_p 7.5k
+R45   b_p  vb  49.9k
+C29   b_p  vb  220p
+XU8B  b_p b_n isense_hi OPA
+
+* --- ADC input filters ------------------------------------------------------
+R46   isense_lo adc_lo 1k
+C30   adc_lo 0 100n
+R47   isense_hi adc_hi 1k
+C31   adc_hi 0 100n
+
+* --- window comparators on ISENSE_LO (filtered by R52/C33) ------------------
+R52   isense_lo cmp_in 10k
+C33   cmp_in 0 4.7n
+R53   v3v3 oc_trip_n 10k
+* U6B: output low when cmp_in > vh ; U6C: output low when cmp_in < vl
+S2    oc_trip_n 0 cmp_in vh CMP
+S3    oc_trip_n 0 vl cmp_in CMP
+.model CMP SW(VT=0 VH=0.5m RON=50 ROFF=1G)
+
+* --- U7 74HC00: SR latch and drive enable -----------------------------------
+* KA_OK held high here (keep-alive alive); it is released low at 0.6 s in the
+* fault run to show the latch being cleared.
+VKA   ka_ok 0 PWL(0 0 1m 0 1.001m 3.3 0.6 3.3 0.600001 0 0.75 0 0.750001 3.3)
+XG1   oc_trip_n fault_n fault     NAND2
+XG2   ka_ok     fault   fault_n   NAND2
+XG3   ka_ok     fault_n drv_en_n  NAND2
+XG4   drv_en_n  drv_en_n drv_en   NAND2
+
+.subckt OPA inp inn out
+* single-pole op-amp, Aol = 1e5, pole at 10 Hz (GBW 1 MHz), output clipped
+* 25 mV from each rail of a 3.3 V supply
+E1  x 0 inp inn 1e5
+R1  x y 1k
+C1  y 0 15.9u
+B1  out 0 V = min(max(V(y) + 1.65, 0.025), 3.275)
+.ends
+.subckt NAND2 a b y
+B1  y1 0 V = (V(a) > 1.65 && V(b) > 1.65) ? 0 : 3.3
+R1  y1 y 1k
+C1  y 0 20p
+.ends
+
+.options method=gear reltol=1e-4
+.ic v(fault)=0 v(fault_n)=3.3
+.tran 20u 0.4 0.2 20u
+
+.control
+set noaskquit
+* --- gain and linearity: steady state, last 10 cycles at 50 Hz -------------
+foreach i 0.05 0.2 0.5 1.5 2.5
+  alterparam irms = $i
+  reset
+  run
+  meas tran lo_rms rms v(adc_lo) from=0.2 to=0.4
+  meas tran lo_avg avg v(adc_lo) from=0.2 to=0.4
+  meas tran hi_rms rms v(adc_hi) from=0.2 to=0.4
+  meas tran hi_avg avg v(adc_hi) from=0.2 to=0.4
+  meas tran lo_max max v(adc_lo) from=0.2 to=0.4
+  meas tran lo_min min v(adc_lo) from=0.2 to=0.4
+  meas tran hi_max max v(adc_hi) from=0.2 to=0.4
+  meas tran hi_min min v(adc_hi) from=0.2 to=0.4
+  meas tran trip min v(oc_trip_n) from=0.2 to=0.4
+  let lo_ac = sqrt(lo_rms*lo_rms - lo_avg*lo_avg)
+  let hi_ac = sqrt(hi_rms*hi_rms - hi_avg*hi_avg)
+  let lo_gain = lo_ac/$i
+  let hi_gain = hi_ac/$i
+  echo "RESULT I=$i A rms: ADC_LO ac {$&lo_ac} V rms ({$&lo_gain} V/A), swing {$&lo_min}..{$&lo_max} V; ADC_HI ac {$&hi_ac} V rms ({$&hi_gain} V/A), swing {$&hi_min}..{$&hi_max} V; min OC_TRIP_N {$&trip} V"
+end
+* --- ground-shift rejection: no load current, 20 mV peak ground bounce -----
+alterparam irms = 0
+reset
+alterparam vgshift = 0.02
+reset
+run
+meas tran lo_pp pp v(adc_lo) from=0.2 to=0.4
+meas tran hi_pp pp v(adc_hi) from=0.2 to=0.4
+echo "RESULT 20 mV pk ground shift, no load: ADC_LO ripple {$&lo_pp} V pp, ADC_HI ripple {$&hi_pp} V pp"
+alterparam vgshift = 0
+reset
+* --- fault: 1 A rms load, 10 A rms short added at t = 0.3031 s --------------
+* (0.3031 s is 3.1 ms into a cycle, a point where the fault current is rising)
+alterparam irms = 1
+reset
+alterparam ifault = 10
+reset
+alterparam tfault = 0.3031
+reset
+tran 2u 0.8 0.29 2u
+meas tran t_trip when v(oc_trip_n)=1.65 fall=1
+meas tran t_off  when v(drv_en_n)=1.65 rise=1
+meas tran t_clr  when v(fault)=1.65 fall=1
+meas tran t_re   when v(drv_en_n)=1.65 fall=last
+let d_trip = (t_trip - 0.3031)*1e6
+let d_off = (t_off - 0.3031)*1e6
+let d_latch = (t_off - t_trip)*1e9
+echo "RESULT fault 10 A rms at 0.3031 s: OC_TRIP_N low after {$&d_trip} us, DRV_EN_N high after {$&d_off} us (latch delay {$&d_latch} ns)"
+echo "RESULT latch: FAULT stays set after the short ends at 0.503 s; cleared at {$&t_clr} s (KA_OK taken low at 0.600 s); DRV_EN_N low again at {$&t_re} s (KA_OK back at 0.750 s)"
+quit
+.endc
+.end

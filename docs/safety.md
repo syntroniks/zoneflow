@@ -49,6 +49,32 @@ An unloaded transformer can output more than its rated 24 V. The 32 VAC RMS
 figure covers that case. Check the open-circuit voltage of the transformer you
 choose. These limits are design requirements, not measured results.
 
+## USB and the transformer
+
+The board's ground is one of the two 24 VAC wires. A USB cable joins that
+ground to the computer, and a desktop computer's ground is earth. The reasons
+and the fault paths are in
+[hardware design section 5.3](design/hardware-design.md#53-the-ground-question).
+
+- Use a transformer whose 24 V output is not connected to earth on either
+  side. Sprinkler transformers normally are not. If you are not sure, unplug
+  it and check for continuity between each output terminal and the earth pin.
+- If either output terminal is connected to earth, do not connect a
+  mains-powered computer by USB while the 24 VAC plug is in. This holds
+  whichever way round the two wires are connected.
+- Do not connect a computer by USB while the controller shares its transformer
+  with any other device, unless you have checked that both use the same
+  transformer wire as ground.
+- For work on an installed controller, use a laptop on battery, or pull the
+  24 VAC plug block first. The board runs from USB alone.
+- The sensor GND terminals and the expansion connector's ground are the same
+  net as one transformer wire. Do not join them to other equipment that has
+  its own connection to the transformer.
+- The board has a fuse in each of its two 24 VAC wires. They limit the
+  damage in these cases. They do not make them safe for the USB cable or the
+  computer: a 3 A fuse can take up to a minute to open at the current a
+  small transformer delivers into a short.
+
 ## Outdoor wiring and surges
 
 Valve wires usually run tens of metres outdoors. Long outdoor cables pick up

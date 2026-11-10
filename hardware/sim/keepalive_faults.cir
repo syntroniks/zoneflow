@@ -1,0 +1,1960 @@
+* ZoneFlow keep-alive detector: single faults, toggle rates, corners
+* (docs/design/hardware-design.md section 8, review A1)
+*
+* Same circuit as keepalive.cir. Added by the independent review to answer
+* three questions that file does not ask:
+*   1. What does each single component fault do? (FAULT lines)
+*   2. Which toggle rates and duty cycles enable drive? (RATE lines)
+*   3. How do the times move with tolerance and temperature? (CORNER lines)
+*
+* Run:  ngspice -b keepalive_faults.cir
+*
+* Every run powers up at t = 0, toggles KA from t = 50 ms until t = ton
+* (1 s unless stated), then holds KA at vstuck. Each result line gives the
+* highest KA_OK seen, KA_OK at the end of the run, the delay from the first
+* edge to KA_OK high and the delay from the last edge to KA_OK low. An empty
+* delay means that event did not happen; ngspice then also prints an "out of
+* interval" error for that measurement, which is expected.
+*
+* Since the review the bleed is two 110 kohm resistors, R30 and R91, in
+* parallel (55 kohm). One of them open leaves 110 kohm, and that is the
+* fault simulated here. "R30 -1 %" in a corner line means the pair.
+*
+* Fault parameters: a resistor is opened by making it 1e12 ohm. A capacitor
+* or diode is shorted by a 1 milliohm resistor across it. tr31 opens R31 at
+* that time. cmpdead = 1 is a comparator output that never pulls low.
+*
+* Models are generic, as in keepalive.cir. The Schottky has EG and XTI set
+* so that its leakage rises with temperature (0.22 uA at 27 C, about 4 uA at
+* 60 C, about 19 uA at 85 C). The BAT54S data sheet limit is 2 uA at 25 V
+* and 25 C; it gives no figure at other temperatures.
+
+.param fka=100 ton=1 duty=0.5 vhi=3.3 vstuck=0 cr=10u cp=4.7u
+.param r29v=220 r30v=55k r31v=100k r32v=510k r33v=10k r34v=15k r35v=10k r36v=10k
+.param rc22sh=1G rd7ash=1G rd7bsh=1G rd7bser=1m rc23sh=1G rc24sh=1G
+.param vos=0 ib=500n tramp=1m v33=3.3 tr31=1e9 cmpdead=0
+.param per={1/fka}
+
+VKA   ka_src 0  PULSE(0 {vhi} 50m 1u 1u {per*duty} {per})
+VEN   en     0  PWL(0 1 {ton} 1 {ton+1u} 0)
+BKA   ka_drv 0  V = V(ka_src)*V(en) + (1-V(en))*min({vstuck}, V(v3v3))
+RGPIO ka_drv ka 30
+R33   ka 0 {r33v}
+R29   ka  n0  {r29v}
+C22   n0  n1  {cp}
+RC22S n0  n1  {rc22sh}
+D7A   0   n1  SCH
+RD7AS 0   n1  {rd7ash}
+D7B   n1  n1b SCH
+RD7BX n1b n2  {rd7bser}
+RD7BS n1  n2  {rd7bsh}
+C23   n2  0   {cr}
+RC23S n2  0   {rc23sh}
+* R30 and R91, 110 kohm each, in parallel: r30v is the pair
+R30   n2  0   {r30v}
+R31   n2  n2x {r31v}
+VT31  t31 0 PWL(0 1 {tr31} 1 {tr31+1u} 0)
+S31   n2x inp t31 0 SWO
+R32   inp ka_ok {r32v}
+C24   inp 0   10n
+RC24S inp 0   {rc24sh}
+R34   v3v3 ref {r34v}
+R35   ref 0   {r35v}
+IB1   0 inp DC {ib}
+IB2   0 ref DC {ib}
+V3V3  v3v3 0 PWL(0 0 {tramp} {v33})
+R36   v3v3 ka_ok {r36v}
+* U6A: open-collector output, low while (-) > (+); vos is its input offset
+B1    cmp 0 V = ((V(ref) - V(inp) - {vos}) > 0 && {cmpdead} < 0.5) ? 1 : 0
+S1    ka_ok 0 cmp 0 CMP
+.model CMP SW(VT=0.5 VH=0.1 RON=50 ROFF=1G)
+.model SWO SW(VT=0.5 VH=0.1 RON=1m ROFF=1T)
+.model SCH D(IS=2.2e-7 N=1.05 RS=2.5 CJO=10p BV=30 IBV=2u EG=0.69 XTI=2)
+.options method=gear reltol=1e-4
+.tran 100u 3 uic
+
+.control
+set noaskquit
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT FAULT none (reference) [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 110k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT FAULT R30 or R91 open, 110 kohm left [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 110k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 60
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT FAULT R30 or R91 open, 110 kohm left, 60 C [60 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 0.5
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT FAULT R31 opens at 0.5 s while enabled [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 1e12
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT FAULT R31 open from power-up [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 0
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 1e12
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 0
+echo "RESULT FAULT R34 open, KA never toggles [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 1e12
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT FAULT R35 open [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 0
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 3.3
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1m
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 0
+echo "RESULT FAULT C22 short, KA high from power-up, no edges [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1m
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT FAULT C22 short, toggling then low [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 0
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 1
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 0
+echo "RESULT FAULT U6A output never pulls low, KA never toggles [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1m
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT FAULT D7A short [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1m
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT FAULT D7B short [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1e12
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT FAULT D7B open [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 1p
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT FAULT C23 open [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1m
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT FAULT C23 short [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1m
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT FAULT C24 short [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 1e12
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT FAULT R29 open [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 1e12
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT FAULT R32 open [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 1e12
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT FAULT R33 open [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 1e12
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT FAULT R36 open [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 1
+alterparam ton = 2.4
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 2.4
+echo "RESULT RATE 1 Hz [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 2
+alterparam ton = 2.4
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 2.4
+echo "RESULT RATE 2 Hz [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 3
+alterparam ton = 2
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 2
+echo "RESULT RATE 3 Hz [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 5
+alterparam ton = 2
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 2
+echo "RESULT RATE 5 Hz [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 10
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT RATE 10 Hz [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 25
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT RATE 25 Hz [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 1000
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT RATE 1000 Hz [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 50000
+alterparam ton = 0.3
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 0.3
+echo "RESULT RATE 50000 Hz [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 1e6
+alterparam ton = 0.2
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 0.2
+echo "RESULT RATE 1e6 Hz [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 2
+alterparam ton = 2.4
+alterparam duty = 0.5
+alterparam vhi = 3.4
+alterparam vstuck = 0
+alterparam cr = 7u
+alterparam cp = 5.6u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = -15m
+alterparam ib = 25n
+alterparam tramp = 1m
+alterparam v33 = 3.4
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 2.4
+echo "RESULT RATE 2 Hz, C23 -30 %, C22 +20 %, offset -15 mV, 3V3 3.4 V [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.02
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT RATE 100 Hz, 2 % duty [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.98
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT RATE 100 Hz, 98 % duty [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = -20
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT CORNER nominal parts [-20 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT CORNER nominal parts [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 60
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT CORNER nominal parts [60 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 0
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 85
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT CORNER nominal parts [85 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.2
+alterparam vstuck = 0
+alterparam cr = 7u
+alterparam cp = 3.3u
+alterparam r29v = 220
+alterparam r30v = 54.45k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 15m
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.2
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = -20
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT CORNER shortest hold-up: C23 7 uF, C22 3.3 uF, R30 -1 %, 3V3 3.2 V, offset +15 mV [-20 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.2
+alterparam vstuck = 0
+alterparam cr = 7u
+alterparam cp = 3.3u
+alterparam r29v = 220
+alterparam r30v = 54.45k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 15m
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.2
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 60
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT CORNER shortest hold-up: C23 7 uF, C22 3.3 uF, R30 -1 %, 3V3 3.2 V, offset +15 mV [60 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.2
+alterparam vstuck = 0
+alterparam cr = 7u
+alterparam cp = 3.3u
+alterparam r29v = 220
+alterparam r30v = 54.45k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 15m
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.2
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 85
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT CORNER shortest hold-up: C23 7 uF, C22 3.3 uF, R30 -1 %, 3V3 3.2 V, offset +15 mV [85 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.4
+alterparam vstuck = 0
+alterparam cr = 12u
+alterparam cp = 5.6u
+alterparam r29v = 220
+alterparam r30v = 55.55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = -15m
+alterparam ib = 25n
+alterparam tramp = 1m
+alterparam v33 = 3.4
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = -20
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT CORNER longest hold-up: C23 12 uF, C22 5.6 uF, R30 +1 %, 3V3 3.4 V, offset -15 mV [-20 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 3.4
+alterparam vstuck = 3.4
+alterparam cr = 12u
+alterparam cp = 5.6u
+alterparam r29v = 220
+alterparam r30v = 55.55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = -15m
+alterparam ib = 25n
+alterparam tramp = 1m
+alterparam v33 = 3.4
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = -20
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT CORNER longest hold-up, KA stops high [-20 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 2.9
+alterparam vstuck = 0
+alterparam cr = 12u
+alterparam cp = 3.3u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 15m
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = -20
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT CORNER slowest enable at 100 Hz: C23 12 uF, C22 3.3 uF, KA high level 2.9 V, offset +15 mV [-20 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 25
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 2.9
+alterparam vstuck = 0
+alterparam cr = 12u
+alterparam cp = 3.3u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 15m
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = -20
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT CORNER slowest enable at 25 Hz: C23 12 uF, C22 3.3 uF, KA high level 2.9 V, offset +15 mV [-20 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 10
+alterparam ton = 1
+alterparam duty = 0.5
+alterparam vhi = 2.9
+alterparam vstuck = 0
+alterparam cr = 12u
+alterparam cp = 3.3u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = 15m
+alterparam ib = 500n
+alterparam tramp = 1m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = -20
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 1
+echo "RESULT CORNER slowest enable at 10 Hz: C23 12 uF, C22 3.3 uF, KA high level 2.9 V, offset +15 mV [-20 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 0
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = -15m
+alterparam ib = 500n
+alterparam tramp = 100m
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 0
+echo "RESULT CORNER 3V3 ramps in 100 ms, KA low [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 0
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 0
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = -15m
+alterparam ib = 500n
+alterparam tramp = 1
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 0
+echo "RESULT CORNER 3V3 ramps in 1 s, KA low [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+alterparam fka = 100
+alterparam ton = 0
+alterparam duty = 0.5
+alterparam vhi = 3.3
+alterparam vstuck = 3.3
+alterparam cr = 10u
+alterparam cp = 4.7u
+alterparam r29v = 220
+alterparam r30v = 55k
+alterparam r31v = 100k
+alterparam r32v = 510k
+alterparam r33v = 10k
+alterparam r34v = 15k
+alterparam r35v = 10k
+alterparam r36v = 10k
+alterparam rc22sh = 1G
+alterparam rd7ash = 1G
+alterparam rd7bsh = 1G
+alterparam rd7bser = 1m
+alterparam rc23sh = 1G
+alterparam rc24sh = 1G
+alterparam vos = -15m
+alterparam ib = 500n
+alterparam tramp = 1
+alterparam v33 = 3.3
+alterparam tr31 = 1e9
+alterparam cmpdead = 0
+reset
+set temp = 27
+run
+unlet t_on t_off
+meas tran vokmax max v(ka_ok)
+meas tran vokend find v(ka_ok) at=2.99
+meas tran vn2max max v(n2)
+meas tran t_on when v(ka_ok)=1.65 rise=1
+meas tran t_off when v(ka_ok)=1.65 fall=last
+let d_on = t_on - 0.05
+let d_off = t_off - 0
+echo "RESULT CORNER 3V3 ramps in 1 s, KA follows the rail [27 C]: KA_OK max {$&vokmax} V, at end {$&vokend} V, reservoir peak {$&vn2max} V, high {$&d_on} s after first edge, low {$&d_off} s after last edge"
+unlet d_on d_off
+quit
+.endc
+.end
