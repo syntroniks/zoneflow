@@ -2,9 +2,14 @@
 // Route matching, header helpers and static-file resolution.
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <random>
 #include <set>
+#include <string>
 
+#include "cJSON.h"
 #include "zf_web/http_util.hpp"
+#include "zf_web/json_map.hpp"
 #include "zf_web/routes.hpp"
 
 using namespace zf::web;
@@ -161,4 +166,119 @@ TEST(StaticFiles, EmptyPartitionFindsNothing)
     auto none = [](const std::string &) { return false; };
     EXPECT_EQ(resolveStatic("/", true, none).kind, StaticTarget::Kind::NotFound);
     EXPECT_EQ(resolveStatic("/zones", true, none).kind, StaticTarget::Kind::NotFound);
+}
+
+// ---- Security review: the JSON depth pre-check -------------------------------------
+
+namespace {
+
+// Nesting depth of a parsed document: what cJSON recursed through.
+int treeDepth(const cJSON *n)
+{
+    int deepest = 0;
+    for (const cJSON *c = n->child; c != nullptr; c = c->next) {
+        deepest = std::max(deepest, treeDepth(c));
+    }
+    return (cJSON_IsArray(n) || cJSON_IsObject(n)) ? deepest + 1 : deepest;
+}
+
+// Random JSON-like text: nested arrays and objects, and strings that hold
+// brackets, quotes and backslashes, some escaped correctly and some not.
+void randomValue(std::mt19937 &rng, int depth, std::string &out)
+{
+    static constexpr std::string_view kInString = "[]{}\"\\a";
+    switch (depth > 6 ? 3 : rng() % 5) {
+    case 0:
+        out += '[';
+        for (unsigned i = rng() % 3; i > 0; --i) {
+            randomValue(rng, depth + 1, out);
+            out += i > 1 ? "," : "";
+        }
+        out += ']';
+        break;
+    case 1:
+        out += '{';
+        for (unsigned i = rng() % 3; i > 0; --i) {
+            out += "\"k\":";
+            randomValue(rng, depth + 1, out);
+            out += i > 1 ? "," : "";
+        }
+        out += '}';
+        break;
+    case 2:
+        out += '"';
+        for (unsigned i = rng() % 6; i > 0; --i) {
+            const char c = kInString[rng() % kInString.size()];
+            if ((c == '"' || c == '\\') && rng() % 4 != 0) {
+                out += '\\';
+            }
+            out += c;
+        }
+        out += '"';
+        break;
+    default:
+        out += std::to_string(rng() % 100);
+        break;
+    }
+}
+
+} // namespace
+
+// cJSON recurses once per array or object it parses, and its own limit (1000
+// levels at about 64 bytes each) is far beyond the 12 KB HTTP task stack, so
+// the pre-check must hold for every input, including malformed ones. 200 000
+// random documents, then each with one random byte changed, inserted or
+// removed: whenever the pre-check accepts and cJSON parses, the parsed tree
+// is no deeper than the limit. (Where cJSON fails, it has recursed only
+// through brackets it consumed, which the pre-check counted the same way.)
+TEST(JsonDepth, PreCheckBoundsWhatCJsonParses)
+{
+    std::mt19937 rng(20261110);
+    constexpr int kLimit = 4;
+    constexpr std::string_view kMutations = "[]{}\"\\,:a1 ";
+    int parsedDeep = 0;
+    for (int i = 0; i < 200000; ++i) {
+        std::string text;
+        randomValue(rng, 0, text);
+        if (i % 2 == 1 && !text.empty()) {
+            const std::size_t at = rng() % text.size();
+            const char c = kMutations[rng() % kMutations.size()];
+            switch (rng() % 3) {
+            case 0:
+                text[at] = c;
+                break;
+            case 1:
+                text.insert(text.begin() + static_cast<std::ptrdiff_t>(at), c);
+                break;
+            default:
+                text.erase(at, 1);
+                break;
+            }
+        }
+        JsonPtr doc(cJSON_ParseWithLength(text.data(), text.size()));
+        if (!doc) {
+            continue;
+        }
+        const int depth = treeDepth(doc.get());
+        parsedDeep += depth > kLimit ? 1 : 0;
+        if (jsonDepthOk(text, kLimit)) {
+            ASSERT_LE(depth, kLimit) << text;
+        }
+    }
+    EXPECT_GT(parsedDeep, 500); // the generator does reach past the limit
+}
+
+// Security review F7 (low). Closing brackets with nothing open drove the
+// counter negative, so the opening brackets after them were not counted:
+// "]]]...]" followed by 20 levels passed the check. cJSON 1.7.19 stops at
+// the first value and so never parses those levels, but the check must not
+// depend on that. A closer at depth 0 now fails the check (it is not JSON).
+TEST(JsonDepth, UnbalancedClosersCannotHideNesting)
+{
+    const std::string deep = std::string(20, '[') + std::string(20, ']');
+    EXPECT_FALSE(jsonDepthOk(deep));
+    EXPECT_FALSE(jsonDepthOk(std::string(30, ']') + deep));
+    EXPECT_FALSE(jsonDepthOk("[1]" + std::string(30, ']') + deep));
+    EXPECT_TRUE(jsonDepthOk(R"({"a":"[[[[[[[[[[[[[[[[[[[[[["})")); // brackets in strings do not count
+    EXPECT_TRUE(jsonDepthOk(R"({"a":"\\\"]]]]"})"));               // escaped quote keeps the string open
 }
