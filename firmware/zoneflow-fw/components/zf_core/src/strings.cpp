@@ -34,6 +34,22 @@ const char *toString(FaultCode f)
         return "current_sense_unavailable";
     case FaultCode::OverCurrentTrip:
         return "over_current_trip";
+    case FaultCode::KeepAliveDetector:
+        return "keepalive_detector";
+    case FaultCode::OutputExpander:
+        return "output_expander";
+    case FaultCode::RelayWelded:
+        return "relay_welded";
+    case FaultCode::OutputShorted:
+        return "output_shorted";
+    case FaultCode::TripLatchStuck:
+        return "trip_latch_stuck";
+    case FaultCode::SensorSupply:
+        return "sensor_supply";
+    case FaultCode::ZoneDcCurrent:
+        return "zone_dc_current";
+    case FaultCode::MainsSignal:
+        return "mains_signal";
     case FaultCode::Count:
         break;
     }
@@ -119,6 +135,8 @@ const char *toString(CommandType t)
         return "set_maintenance";
     case CommandType::ReloadConfig:
         return "reload_config";
+    case CommandType::AcknowledgeRepair:
+        return "acknowledge_repair";
     }
     return "?";
 }

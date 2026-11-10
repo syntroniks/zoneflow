@@ -10,6 +10,7 @@
 #include <mutex>
 
 #include "zf/events/event.hpp"
+#include "zf/hal.hpp"
 
 namespace zf {
 
@@ -54,6 +55,29 @@ struct SensorStatus {
     int32_t valveCurrentMa = -1;
 };
 
+// The board's output stage (rev A: expander, relay, keep-alive detectors)
+// and the current measurement. Hardware design section 19.
+struct HardwareStatus {
+    StagePhase phase = StagePhase::None;
+    uint8_t zonesFitted = 0; // from the board's variant strap; 0 = not read yet
+    bool relayClosed = false;
+    bool sensorSupplyOn = false;
+    bool sensorSupplyFault = false;
+    HwCheck check = HwCheck::None; // latched output-stage fault
+    uint8_t step = 0;              // its self-test step (hardware design 19.7)
+    bool repairNeeded = false;     // acknowledging it needs a confirmed repair
+    uint32_t selfTestsPassed = 0;
+    uint16_t enableDriveMs = 0;  // last start: detector A on after the first edge
+    uint16_t enableRelayMs = 0;  // detector B
+    uint16_t releaseDriveMs = 0; // last stop: detector A off after the last edge
+    uint16_t releaseRelayMs = 0; // detector B
+    uint32_t mainsMilliHz = 0;   // 0 = unknown
+    int32_t noiseFloorMa = 0;    // learned with the relay open
+    CurrentChannel currentChannel = CurrentChannel::None;
+    int32_t currentDcMa = 0;        // DC component of the latest window
+    int32_t lastTripCurrentMa = -1; // current window before the last over-current trip
+};
+
 struct SystemState {
     uint32_t sequence = 0;
     MonoMs monoMs = 0;
@@ -72,6 +96,7 @@ struct SystemState {
     uint32_t activeFaults = 0; // bit n = FaultCode n
     bool maintenance = false;
     uint32_t configRevision = 0;
+    HardwareStatus hardware{};
 };
 
 class StateStore {

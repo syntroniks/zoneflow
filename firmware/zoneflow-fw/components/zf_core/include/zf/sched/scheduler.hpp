@@ -44,6 +44,7 @@ enum class SkipReason : uint8_t {
     QueueFull,
     NothingToRun,
     MasterLockedOut,
+    HardwareFault, // the output stage has a fault a person must acknowledge
 };
 
 enum class RunError : uint8_t {
@@ -58,6 +59,7 @@ enum class RunError : uint8_t {
     LockedOut,   // zone locked out by a latched fault (RunZone)
     ZoneResting, // zone reached its maximum run time and is resting (RunZone)
     MasterLockedOut,
+    HardwareFault, // the output stage has a fault a person must acknowledge
 };
 
 // Inhibit flags (bitmask).
@@ -66,6 +68,7 @@ enum InhibitFlag : uint8_t {
     kInhibitNoAc = 1u << 1,          // no 24 VAC: everything
     kInhibitMaintenance = 1u << 2,   // OTA or service mode: everything
     kInhibitMasterLockout = 1u << 3, // master valve locked out: everything
+    kInhibitHardware = 1u << 4,      // output-stage fault (hardware design 19.7): everything
 };
 
 const char *toString(RunSource s);

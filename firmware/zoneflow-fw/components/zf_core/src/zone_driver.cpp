@@ -97,8 +97,10 @@ void ZoneDriver::init(const ZoneDriverConfig &cfg)
         z = Zone{};
     }
     masterOn_ = false;
+    masterPending_ = false;
     masterCloseArmed_ = false;
     anyClosed_ = false;
+    anyOn_ = false;
     lastChangeMs_ = clock_.monoMs();
     applyConfig(cfg);
     updateDemand();
@@ -115,6 +117,7 @@ void ZoneDriver::applyConfig(const ZoneDriverConfig &cfg)
     cfg_ = cfg;
     cfg_.zoneCount = std::min<uint8_t>(cfg_.zoneCount, kMaxZones);
     cfg_.maxConcurrent = std::clamp<uint8_t>(cfg_.maxConcurrent, 1, kMaxConcurrentZonesLimit);
+    cfg_.staggerMs = std::max(cfg_.staggerMs, kMinStaggerMs);
     for (std::size_t z = cfg_.zoneCount; z < kMaxZones; ++z) {
         cfg_.zoneEnabled[z] = false;
     }
@@ -170,8 +173,9 @@ StartResult ZoneDriver::start(ZoneIndex zone, uint32_t durationSec)
     MonoMs openAt = now;
     if (cfg_.masterEnabled) {
         if (!masterOn_) {
-            setMaster(true, now);
-            openAt = now + cfg_.masterPreOpenMs;
+            masterPending_ = true; // opens first, when power is ready
+        } else if (masterOnAtMs_ + cfg_.masterPreOpenMs > now) {
+            openAt = masterOnAtMs_ + cfg_.masterPreOpenMs;
         }
         masterCloseArmed_ = false;
     }
@@ -184,9 +188,8 @@ StartResult ZoneDriver::start(ZoneIndex zone, uint32_t durationSec)
     z.openAtMs = openAt;
     z.lastStop = StopReason::None;
     updateDemand();
-    if (openAt <= now) {
-        openZone(zone, now);
-    } else if (listener_ != nullptr) {
+    tryOpen(now);
+    if (z.state == ValveState::Waiting && listener_ != nullptr) {
         listener_->onZoneChanged(zone, ValveState::Waiting, StopReason::None);
     }
     return {StartError::Ok, accepted};
@@ -206,7 +209,86 @@ void ZoneDriver::emergencyOff()
 {
     emergency_.store(true, std::memory_order_release);
     oe_.trip();
-    hal_.allOff();
+    hal_.emergencyAllOff();
+}
+
+void ZoneDriver::tryOpen(MonoMs now)
+{
+    if (!hal_.powerReady() || inhibit_ || emergency_.load(std::memory_order_acquire)) {
+        return;
+    }
+    if (masterPending_) {
+        if (!staggerOk(now)) {
+            return;
+        }
+        masterPending_ = false;
+        setMaster(true, now);
+        for (Zone &z : zones_) {
+            if (z.state == ValveState::Waiting) {
+                z.openAtMs = std::max<MonoMs>(z.openAtMs, now + cfg_.masterPreOpenMs);
+            }
+        }
+    }
+    for (std::size_t i = 0; i < cfg_.zoneCount; ++i) {
+        Zone &z = zones_[i];
+        if (z.state != ValveState::Waiting || now < z.openAtMs) {
+            continue;
+        }
+        if (!staggerOk(now)) {
+            return; // one output per stagger interval; the next tick tries again
+        }
+        openZone(static_cast<ZoneIndex>(i), now);
+    }
+}
+
+uint8_t ZoneDriver::firstPendingBit() const
+{
+    if (masterPending_) {
+        return kMasterBit;
+    }
+    uint8_t best = 0xFF;
+    MonoMs bestAt = 0;
+    for (std::size_t i = 0; i < kMaxZones; ++i) {
+        const Zone &z = zones_[i];
+        if (z.state == ValveState::Waiting && (best == 0xFF || z.openAtMs < bestAt)) {
+            best = static_cast<uint8_t>(i);
+            bestAt = z.openAtMs;
+        }
+    }
+    return best;
+}
+
+std::array<ZoneBudget, kMaxZones> ZoneDriver::exportBudget() const
+{
+    const MonoMs now = clock_.monoMs();
+    std::array<ZoneBudget, kMaxZones> out{};
+    for (std::size_t i = 0; i < kMaxZones; ++i) {
+        const Zone &z = zones_[i];
+        MonoMs burst = z.burstMs;
+        MonoMs closed = 0;
+        if (z.state == ValveState::Open) {
+            burst += now - z.openedAtMs;
+        } else if (burst > 0) {
+            closed = closedFor(z, now);
+        }
+        out[i].burstMs = static_cast<uint32_t>(std::min<MonoMs>(burst, 0xFFFFFFFFu));
+        out[i].closedForMs = static_cast<uint32_t>(std::min<MonoMs>(closed, 0xFFFFFFFFu));
+    }
+    return out;
+}
+
+void ZoneDriver::restoreBudget(const std::array<ZoneBudget, kMaxZones> &budget)
+{
+    const MonoMs now = clock_.monoMs();
+    for (std::size_t i = 0; i < kMaxZones; ++i) {
+        Zone &z = zones_[i];
+        if (z.state != ValveState::Off) {
+            continue;
+        }
+        z.burstMs = budget[i].burstMs;
+        z.closedAtMs = now;
+        z.restCreditMs = budget[i].closedForMs;
+    }
 }
 
 void ZoneDriver::tick()
@@ -221,12 +303,18 @@ void ZoneDriver::tick()
         hal_.allOff();
     }
 
+    // Power withdrawn under open outputs (rev A: the output stage tripped
+    // or failed; the controller normally reacts first).
+    if (hal_.ownsKeepAlive() && anyOutputOn() && !hal_.powerReady()) {
+        forceAllOff(StopReason::Fault, now);
+    }
+    updateDemand();
+    tryOpen(now);
+
     for (std::size_t i = 0; i < cfg_.zoneCount; ++i) {
         const auto zone = static_cast<ZoneIndex>(i);
         Zone &z = zones_[i];
-        if (z.state == ValveState::Waiting && now >= z.openAtMs) {
-            openZone(zone, now);
-        } else if (z.state == ValveState::Open) {
+        if (z.state == ValveState::Open) {
             const MonoMs elapsed = now - z.openedAtMs;
             if (z.burstMs + elapsed >= maxRunMs(zone)) {
                 // The zone's maximum is used up (spec section 2 rule 4). Also
@@ -263,6 +351,8 @@ void ZoneDriver::openZone(ZoneIndex zone, MonoMs now)
     z.openedAtMs = now;
     lastChangeMs_ = now;
     lastOpenedBit_ = zone;
+    anyOn_ = true;
+    lastOnMs_ = now;
     updateDemand();
     if (listener_ != nullptr) {
         listener_->onZoneChanged(zone, ValveState::Open, StopReason::None);
@@ -279,6 +369,7 @@ void ZoneDriver::closeZone(ZoneIndex zone, StopReason reason, MonoMs now)
         lastCloseMs_ = now;
         z.burstMs += now - z.openedAtMs;
         z.closedAtMs = now;
+        z.restCreditMs = 0;
     }
     z.state = ValveState::Off;
     z.lastStop = reason;
@@ -300,6 +391,8 @@ void ZoneDriver::setMaster(bool on, MonoMs now)
     if (on) {
         lastOpenedBit_ = kMasterBit;
         masterOnAtMs_ = now;
+        anyOn_ = true;
+        lastOnMs_ = now;
     }
     updateDemand();
     if (listener_ != nullptr) {
@@ -309,6 +402,9 @@ void ZoneDriver::setMaster(bool on, MonoMs now)
 
 void ZoneDriver::updateMaster(MonoMs now)
 {
+    if (masterPending_ && activeCount() == 0) {
+        masterPending_ = false; // the zone that wanted it went away first
+    }
     if (!masterOn_) {
         return;
     }
@@ -339,6 +435,7 @@ void ZoneDriver::forceAllOff(StopReason reason, MonoMs now)
             lastCloseMs_ = now;
             z.burstMs += now - z.openedAtMs;
             z.closedAtMs = now;
+            z.restCreditMs = 0;
         }
         z.state = ValveState::Off;
         z.lastStop = reason;
@@ -347,6 +444,7 @@ void ZoneDriver::forceAllOff(StopReason reason, MonoMs now)
         }
     }
     masterCloseArmed_ = false;
+    masterPending_ = false;
     lastChangeMs_ = now;
     if (masterOn_) {
         masterOn_ = false;
@@ -357,7 +455,14 @@ void ZoneDriver::forceAllOff(StopReason reason, MonoMs now)
     updateDemand();
 }
 
-void ZoneDriver::updateDemand() { oe_.setDemand(masterOn_ || activeCount() > 0); }
+void ZoneDriver::updateDemand()
+{
+    const bool want = masterOn_ || masterPending_ || activeCount() > 0;
+    hal_.requestPower(want, firstPendingBit());
+    if (!hal_.ownsKeepAlive()) {
+        oe_.setDemand(want);
+    }
+}
 
 void ZoneDriver::setLockout(ZoneIndex zone, bool locked)
 {
@@ -415,8 +520,9 @@ MonoMs ZoneDriver::budgetMs(ZoneIndex zone, MonoMs now)
 {
     Zone &z = zones_[zone];
     if (z.state == ValveState::Off && z.burstMs > 0 &&
-        now - z.closedAtMs >= static_cast<MonoMs>(cfg_.minRestSec) * 1000u) {
+        closedFor(z, now) >= static_cast<MonoMs>(cfg_.minRestSec) * 1000u) {
         z.burstMs = 0;
+        z.restCreditMs = 0;
     }
     const MonoMs max = maxRunMs(zone);
     return z.burstMs >= max ? 0 : max - z.burstMs;
@@ -428,8 +534,9 @@ MonoMs ZoneDriver::restLeftMs(ZoneIndex zone, MonoMs now) const
     if (z.state != ValveState::Off || z.burstMs + kMinRunMs <= maxRunMs(zone)) {
         return 0;
     }
-    const MonoMs restEnd = z.closedAtMs + static_cast<MonoMs>(cfg_.minRestSec) * 1000u;
-    return now >= restEnd ? 0 : restEnd - now;
+    const MonoMs rest = static_cast<MonoMs>(cfg_.minRestSec) * 1000u;
+    const MonoMs closed = closedFor(z, now);
+    return closed >= rest ? 0 : rest - closed;
 }
 
 uint32_t ZoneDriver::restRemainingMs(ZoneIndex zone) const

@@ -201,8 +201,9 @@ TEST(MqttDiscovery, DocumentMatchesTheDocumentedShape)
         EXPECT_EQ(std::string(uid->valuestring).rfind("zoneflow_a1b2c3d4e5f6_", 0), 0u);
     }
     // 7 enabled zones x 3, 2 programs x 2, 5 buttons, rain delay, rain, spare,
-    // flow x 2, current, AC, problem, queue, WiFi, firmware, update.
-    EXPECT_EQ(count, 7u * 3 + 2 * 2 + 5 + 1 + 2 + 2 + 1 + 1 + 1 + 1 + 1 + 1 + 1);
+    // flow x 2, current, AC, problem, valve board, sensor supply, queue,
+    // WiFi, firmware, update.
+    EXPECT_EQ(count, 7u * 3 + 2 * 2 + 5 + 1 + 2 + 2 + 1 + 1 + 1 + 2 + 1 + 1 + 1 + 1);
     // Size check: published in one message (esp-mqtt fragments it on the
     // socket); this bounds the buffer the glue builds.
     EXPECT_LT(text.size(), 32u * 1024u) << "discovery document is " << text.size() << " bytes";

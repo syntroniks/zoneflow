@@ -100,6 +100,8 @@ TEST_F(ZoneDriverTest, ConcurrencyLimitDefaultsToTwo)
     EXPECT_TRUE(drv.start(0, 60).ok());
     EXPECT_TRUE(drv.start(1, 60).ok());
     EXPECT_EQ(drv.start(2, 60).error, StartError::TooManyActive);
+    EXPECT_EQ(out.openCount(), 1); // the second waits out the stagger time
+    run(100, 50);
     EXPECT_EQ(out.openCount(), 2);
 }
 

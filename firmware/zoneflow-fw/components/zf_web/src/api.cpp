@@ -384,6 +384,8 @@ ApiResponse Api::dispatch(const ApiRequest &req, const Admission &a)
         return faultsList();
     case RouteId::FaultsClear:
         return queueCommand(CommandType::ClearFaults);
+    case RouteId::FaultsAcknowledgeRepair:
+        return faultsAcknowledgeRepair(req);
     case RouteId::ConfigGet:
         return configGet();
     case RouteId::ConfigPut:
@@ -468,6 +470,9 @@ ApiResponse runErrorResponse(RunError e)
         return Api::error(409, toString(e), "zone reached its maximum run time and is resting");
     case RunError::MasterLockedOut:
         return Api::error(409, toString(e), "master valve locked out by repeated faults; clear faults first");
+    case RunError::HardwareFault:
+        return Api::error(409, toString(e),
+                          "the valve board failed a self-test; see hardware.check and acknowledge the fault");
     case RunError::Ok:
         break;
     }
@@ -1206,6 +1211,27 @@ ApiResponse Api::rainDelayPut(const ApiRequest &req)
 }
 
 ApiResponse Api::rainDelayDelete() { return post(Command::rainDelay(0)); }
+
+// A keep-alive detector fault (hardware design 19.7 steps 1, 2 and 9) is not
+// cleared by POST /faults/clear: the caller must state that the board was
+// repaired. A second, deliberate request, never one press.
+ApiResponse Api::faultsAcknowledgeRepair(const ApiRequest &req)
+{
+    ApiResponse err;
+    JsonPtr body = parseObject(req.body, false, err);
+    if (!body) {
+        return err;
+    }
+    const cJSON *repaired = cJSON_GetObjectItemCaseSensitive(body.get(), "repaired");
+    if (!cJSON_IsTrue(repaired)) {
+        return error(400, "invalid_body", "set repaired to true to confirm the board was repaired", "repaired");
+    }
+    const SystemState s = services_.state.snapshot();
+    if (!s.hardware.repairNeeded) {
+        return error(409, "no_repair_fault", "no fault that needs a confirmed repair is active");
+    }
+    return post(Command::acknowledgeRepair());
+}
 
 ApiResponse Api::sensors()
 {

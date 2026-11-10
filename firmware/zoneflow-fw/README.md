@@ -27,17 +27,18 @@ idf.py -p /dev/ttyACM0 flash monitor
 ```
 
 `sdkconfig` is generated from `sdkconfig.defaults` and is not committed.
-Board options (output-enable type, keep-alive period, control period) are in
+Board options (keep-alive period, heartbeat timeout, control period) are in
 `idf.py menuconfig` under "ZoneFlow board". The first build downloads LVGL
 9.6.0 into `managed_components/` (ESP-IDF component manager).
 
-The provisional pin map is three GPIO short, so this default build does not
-start the display (see `components/zf_board`, "pin budget"). To build with
-the display on the pins of the over-current trip and zero-cross inputs:
-
-```sh
-idf.py -B build-display -D SDKCONFIG=build-display/sdkconfig -D ZF_DISPLAY=1 build
-```
+There is one build, for the rev A board, display included. Its pin numbers
+come from `hardware/pinmap.yaml`: every build (firmware, host tests,
+simulator) runs `tools/gen_board_header.py`, which checks the map and writes
+`zf_board/pinmap_generated.hpp` into the build directory. The firmware build
+uses ESP-IDF's Python, which has PyYAML; the host builds use
+`uv run --script` (or a `python3` with PyYAML). The hand-written
+`components/zf_board/include/zf_board/zoneflow_rev_a.hpp` names the signals
+and checks the pin rules at compile time.
 
 ## Release builds
 
@@ -124,10 +125,10 @@ CI checks formatting with the same clang-format version.
 ## What is verified
 
 - Host tests: `test/host/run.sh`, all suites pass under ASan and UBSan.
-- Display simulator: `sim/run.sh --screenshots <dir>` draws all 65 scenes.
+- Display simulator: `sim/run.sh --screenshots <dir>` draws all 69 scenes.
   The pictures in `docs/design/display-ui/` are its output.
 - `idf.py build` with ESP-IDF v5.5.6 for esp32s3 completes with no warnings
-  in ZoneFlow code, in the default configuration and with `-D ZF_DISPLAY=1`.
+  in ZoneFlow code.
   Image sizes are in the firmware architecture document.
 - Web UI (`web/`): unit tests (vitest) and Playwright end-to-end tests on a
   phone, a 320 px and a desktop viewport, all against the mock controller in

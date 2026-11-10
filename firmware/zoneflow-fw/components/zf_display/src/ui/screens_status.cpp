@@ -32,6 +32,15 @@ public:
             add(Icon::Flow, Str::SensFlow, flowText(s.flowLpm), s.flowLpm > 0.05f ? Tone::Running : Tone::Normal);
             add(Icon::Drop, Str::SensTotal, litresText(s.flowTotalLitres), Tone::Normal);
         }
+        if (c.state.hardware.phase != StagePhase::None) {
+            const StagePhase p = c.state.hardware.phase;
+            const Str text = p == StagePhase::Ready   ? Str::BoardReady
+                             : p == StagePhase::Idle  ? Str::BoardIdle
+                             : p == StagePhase::Fault ? Str::BoardFault
+                             : p == StagePhase::NoAc  ? Str::BoardNoAc
+                                                      : Str::BoardTesting;
+            add(Icon::Bolt, Str::SensBoard, tr(text), p == StagePhase::Fault ? Tone::Fault : Tone::Normal);
+        }
         if (!c.state.masterEnabled) {
             add(Icon::Sprinkler, Str::SensMaster, tr(Str::NotUsed), Tone::Muted);
         } else {
@@ -93,10 +102,12 @@ private:
     std::vector<FaultItem> items_;
 };
 
-// One fault: what happened and what to check.
+// One fault: what happened and what to check. A keep-alive detector fault
+// is not cleared with one press: "Repaired" asks again before it posts
+// AcknowledgeRepair (hardware design 19.7, the fault state).
 class FaultScreen final : public Screen {
 public:
-    enum : int { kBack = 1, kClear };
+    enum : int { kBack = 1, kClear, kRepaired, kAskRepaired = 1 };
 
     explicit FaultScreen(const FaultItem &item) : item_(item) {}
     FrameKind kind() const override { return FrameKind::Detail; }
@@ -109,8 +120,15 @@ public:
         d.tone = faultTone(item_.code);
         d.headline = faultTitle(item_);
         d.body = tr(faultBody(item_.code));
+        const std::string step = faultStepText(item_);
+        if (!step.empty()) {
+            d.body += "\n";
+            d.body += step;
+        }
         d.buttons.push_back(button(kBack, Str::Ok));
-        if (!faultClearsItself(item_.code)) {
+        if (item_.repairNeeded) {
+            d.buttons.push_back(button(kRepaired, Str::FaultRepaired, Icon::Check));
+        } else if (!faultClearsItself(item_.code)) {
             d.buttons.push_back(button(kClear, Str::FaultClear, Icon::Check));
         } else {
             d.body += "\n";
@@ -121,10 +139,29 @@ public:
 
     void activate(Ctx &c, int id) override
     {
+        if (id == kRepaired) {
+            DetailModel q;
+            q.icon = Icon::Fault;
+            q.tone = Tone::Fault;
+            q.headline = tr(Str::FaultRepairedAsk);
+            q.body = tr(Str::FaultRepairedAskBody);
+            // Cancel first: a stray press does not confirm a repair.
+            q.buttons = {button(kChoiceNo, Str::Cancel), button(kChoiceYes, Str::FaultRepairedYes, Icon::Check)};
+            c.ui.confirm(kAskRepaired, q);
+            return;
+        }
         if (id == kClear && c.ui.post(Command::simple(CommandType::ClearFaults))) {
             c.ui.toast(tr(Str::ToastFaultsCleared), Tone::Ok, Icon::Check);
         }
         c.ui.pop();
+    }
+
+    void confirmed(Ctx &c, int request, int choice) override
+    {
+        if (request == kAskRepaired && choice == kChoiceYes && c.ui.post(Command::acknowledgeRepair())) {
+            c.ui.toast(tr(Str::ToastRepairConfirmed), Tone::Ok, Icon::Check);
+            c.ui.pop();
+        }
     }
 
 private:

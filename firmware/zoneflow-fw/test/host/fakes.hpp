@@ -71,15 +71,6 @@ public:
         return n;
     }
     bool anyOn() const { return master || openCount() > 0; }
-
-    int tripClears = 0;
-    bool anyOnAtClear = false;
-    void clearOverCurrentTrip() override
-    {
-        ++tripClears;
-        anyOnAtClear = anyOnAtClear || anyOn();
-        log.push_back("clear");
-    }
 };
 
 class FakeSensors final : public ISensorHal {

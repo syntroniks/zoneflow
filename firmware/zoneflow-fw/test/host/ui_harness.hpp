@@ -10,6 +10,7 @@
 #include <memory>
 #include <string>
 
+#include "fake_board.hpp"
 #include "fakes.hpp"
 #include "zf/app/controller.hpp"
 #include "zf/app/services.hpp"
@@ -114,6 +115,16 @@ public:
     int32_t masterMa = 180;
     // The control task stopped publishing (to test the stale-state display).
     bool controllerFrozen = false;
+    // With useRevABoard() before start(): the simulated rev A output stage
+    // (expander, relay, keep-alive detectors) instead of direct outputs, so
+    // runs go through its self-test and its faults reach the display.
+    std::unique_ptr<FakeBoard> board;
+    std::unique_ptr<hw::OutputStage> stage;
+    void useRevABoard()
+    {
+        board = std::make_unique<FakeBoard>(oe, clock);
+        stage = std::make_unique<hw::OutputStage>(*board, oe, clock, revALayout());
+    }
 
     UiHarness()
     {
@@ -132,7 +143,8 @@ public:
         systemTime.t = clockValid ? clock.utc : 0;
         lastSystemTime_ = systemTime.t;
         time.boot();
-        ctrl = std::make_unique<Controller>(ControllerDeps{clock, out, sensors, oe, bus, state, config, &storage});
+        IOutputHal &outputs = stage ? static_cast<IOutputHal &>(*stage) : static_cast<IOutputHal &>(out);
+        ctrl = std::make_unique<Controller>(ControllerDeps{clock, outputs, sensors, oe, bus, state, config, &storage});
         ctrl->begin();
         ctrl->setTimeStatus(time.status());
         display::UiSettings s;
@@ -149,7 +161,14 @@ public:
     // One 50 ms control tick, then the display.
     void step()
     {
-        clock.advanceMs(50);
+        if (board) {
+            for (int i = 0; i < 10; ++i) {
+                clock.advanceMs(5);
+                board->step5ms();
+            }
+        } else {
+            clock.advanceMs(50);
+        }
         if (systemTime.t != lastSystemTime_) {
             clock.utc = systemTime.t; // the user set the clock
             lastSystemTime_ = systemTime.t;
@@ -164,6 +183,11 @@ public:
                 ma += out.zone[z] ? zoneMa[z] : 0;
             }
             sensors.sample.valveCurrentMa = ma;
+            if (board) {
+                sensors.sample.valveCurrentMa = board->currentMa();
+                sensors.sample.acPresent = board->acPresent;
+                sensors.sample.sensorSupplyOn = true;
+            }
             ctrl->setTimeStatus(time.status());
             ctrl->tick();
         }

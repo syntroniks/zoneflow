@@ -27,6 +27,16 @@ enum class FaultCode : uint8_t {
     MasterLockedOut,         // repeated current faults on the master output; latched
     CurrentSenseUnavailable, // no valve current readings; zones still run; clears itself
     OverCurrentTrip,         // hardware over-current comparator tripped; latched
+    // Rev A output stage (hardware design 19.7, 19.8). Latched until a person
+    // acknowledges; nothing runs meanwhile. FaultData::detail is the HwCheck.
+    KeepAliveDetector, // a keep-alive detector failed its test (steps 1, 2, 3, 7, 9)
+    OutputExpander,    // the I/O expander did not answer or read back as written
+    RelayWelded,       // current with the valve-common relay open (step 5)
+    OutputShorted,     // current with the relay closed and no valve on (step 6, rule 6)
+    TripLatchStuck,    // the over-current latch did not clear (19.8)
+    SensorSupply,      // the 5 V sensor supply reports over-current or over-temperature; clears itself
+    ZoneDcCurrent,     // a zone's current has a DC component: one triac polarity not conducting; latched
+    MainsSignal,       // the zero-cross signal is not at mains frequency (bridged to the keep-alive?); clears itself
     Count,
 };
 static_assert(static_cast<unsigned>(FaultCode::Count) <= 32, "fault bitmask is 32 bits");
@@ -93,6 +103,7 @@ struct SensorData {
 struct FaultData {
     FaultCode code;
     ZoneIndex zone; // kNoZone when not zone-specific
+    uint8_t detail; // HwCheck for the output-stage faults, else 0
 };
 struct RainDelayData {
     UtcSeconds until; // 0 = none

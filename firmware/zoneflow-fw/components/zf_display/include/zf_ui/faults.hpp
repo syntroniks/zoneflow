@@ -15,6 +15,10 @@ namespace zf::ui {
 struct FaultItem {
     FaultCode code = FaultCode::None;
     ZoneIndex zone = kNoZone; // kNoZone: system fault, or the master valve
+    // Output-stage faults: the self-test check that failed, and whether
+    // acknowledging it needs the repair confirmed (hardware design 19.7).
+    HwCheck check = HwCheck::None;
+    bool repairNeeded = false;
 };
 
 // Zone faults first (zone order), then system faults in FaultCode order.
@@ -31,5 +35,7 @@ Str faultBody(FaultCode code);
 bool faultClearsItself(FaultCode code);
 // Fault for latched faults, Warn for conditions.
 Tone faultTone(FaultCode code);
+// "Self-test step 9 failed: stop_drive_release." Empty if not a self-test fault.
+std::string faultStepText(const FaultItem &item);
 
 } // namespace zf::ui

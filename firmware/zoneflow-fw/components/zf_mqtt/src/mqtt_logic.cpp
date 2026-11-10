@@ -451,6 +451,7 @@ std::string sensorsPayload(const SystemState &st)
     }
     cJSON_AddBoolToObject(o, "current_sense_available", !faultActive(st, FaultCode::CurrentSenseUnavailable));
     cJSON_AddBoolToObject(o, "over_current_tripped", faultActive(st, FaultCode::OverCurrentTrip));
+    cJSON_AddBoolToObject(o, "sensor_supply_fault", st.hardware.sensorSupplyFault);
     return print(o);
 }
 
@@ -490,6 +491,19 @@ std::string faultsPayload(const SystemState &s)
     }
     cJSON_AddBoolToObject(o, "master_locked_out", s.masterLockedOut);
     any = any || s.masterLockedOut;
+    // The output stage's failed self-test check (hardware design 19.7). A
+    // detector fault (repair_needed) is not cleared by the clear_faults
+    // command; it needs the repair confirmed on the display or the REST API.
+    cJSON *hw = cJSON_AddObjectToObject(o, "hardware");
+    cJSON_AddBoolToObject(hw, "fault", s.hardware.check != HwCheck::None);
+    if (s.hardware.check == HwCheck::None) {
+        cJSON_AddNullToObject(hw, "check");
+        cJSON_AddNullToObject(hw, "step");
+    } else {
+        cJSON_AddStringToObject(hw, "check", toString(s.hardware.check));
+        cJSON_AddNumberToObject(hw, "step", s.hardware.step);
+    }
+    cJSON_AddBoolToObject(hw, "repair_needed", s.hardware.repairNeeded);
     cJSON_AddBoolToObject(o, "any", any);
     return print(o);
 }
@@ -642,6 +656,7 @@ void markChanges(const SystemState &a, const SystemState &b, bool periodic, Dirt
                                (1u << static_cast<unsigned>(FaultCode::OverCurrentTrip));
     if (x.rainEnabled != y.rainEnabled || x.rainActive != y.rainActive || x.spareEnabled != y.spareEnabled ||
         x.spareActive != y.spareActive || x.acPresent != y.acPresent ||
+        a.hardware.sensorSupplyFault != b.hardware.sensorSupplyFault ||
         (a.activeFaults & senseBits) != (b.activeFaults & senseBits) ||
         (x.valveCurrentMa < 0) != (y.valveCurrentMa < 0) || (periodic && x.valveCurrentMa != y.valveCurrentMa)) {
         d.sensors = true;
@@ -650,7 +665,8 @@ void markChanges(const SystemState &a, const SystemState &b, bool periodic, Dirt
         (periodic && (x.flowLpm != y.flowLpm || x.flowTotalLitres != y.flowTotalLitres))) {
         d.flow = true;
     }
-    bool faults = a.activeFaults != b.activeFaults || a.masterLockedOut != b.masterLockedOut;
+    bool faults = a.activeFaults != b.activeFaults || a.masterLockedOut != b.masterLockedOut ||
+                  a.hardware.check != b.hardware.check;
     for (std::size_t i = 0; !faults && i < kMaxZones; ++i) {
         faults = a.zones[i].fault != b.zones[i].fault || a.zones[i].lockedOut != b.zones[i].lockedOut;
     }
@@ -1182,6 +1198,21 @@ void addDeviceEntities(Builder &b, const Config &cfg, const Identity &id)
     Builder::str(pr, "state_topic", t.faults());
     Builder::str(pr, "value_template", "{{ 'ON' if value_json.any else 'OFF' }}");
     Builder::str(pr, "json_attributes_topic", t.faults());
+
+    // The valve board's self-test (hardware design 19.7): nothing runs while ON.
+    cJSON *board = b.add("board_fault", kBinarySensor, "Valve board fault");
+    Builder::str(board, "device_class", "problem");
+    Builder::str(board, "state_topic", t.faults());
+    Builder::str(board, "value_template", "{{ 'ON' if value_json.hardware.fault else 'OFF' }}");
+    Builder::str(board, "json_attributes_topic", t.faults());
+    Builder::str(board, "json_attributes_template", "{{ value_json.hardware | tojson }}");
+    Builder::str(board, "entity_category", "diagnostic");
+
+    cJSON *supply = b.add("sensor_supply", kBinarySensor, "Sensor supply fault");
+    Builder::str(supply, "device_class", "problem");
+    Builder::str(supply, "state_topic", t.sensors());
+    Builder::str(supply, "value_template", "{{ 'ON' if value_json.sensor_supply_fault else 'OFF' }}");
+    Builder::str(supply, "entity_category", "diagnostic");
 
     cJSON *q = b.add("queue", kSensor, "Queue");
     Builder::str(q, "device_class", "enum");

@@ -107,13 +107,15 @@ TEST_F(ZeroCrossDriverTest, TurnOnWaitsForTheCrossingWhenEnabled)
     drv.init(cfg(true));
     out.log.clear();
     ASSERT_TRUE(drv.start(0, 60).ok());
-    clock.advanceMs(10);
+    ASSERT_TRUE(out.master);
+    clock.advanceMs(100); // stagger rule: the zone follows 100 ms later
     drv.tick();
     ASSERT_TRUE(out.zone[0]);
     ASSERT_EQ(zc.waits.size(), 1u);
     EXPECT_EQ(zc.waits[0], 7'000u);
-    // The master waits for the crossing; the zone that follows at once is
-    // already on it and does not wait a further half cycle.
+    // The master waits for the crossing; the zone follows a whole number of
+    // half cycles later (the fake's clock only moves while waiting), so it
+    // is already on a crossing and does not wait again.
     const std::vector<std::string> expected = {"wait", "m+", "z0+"};
     EXPECT_EQ(out.log, expected);
 }
@@ -123,7 +125,7 @@ TEST_F(ZeroCrossDriverTest, TurnOffAndAllOffNeverWait)
     drv.setZeroCross(&zc, 0);
     drv.init(cfg(true));
     ASSERT_TRUE(drv.start(0, 60).ok());
-    clock.advanceMs(10);
+    clock.advanceMs(100);
     drv.tick();
     zc.waits.clear();
     drv.stop(0, StopReason::Requested);
@@ -144,8 +146,12 @@ TEST_F(ZeroCrossDriverTest, DisabledOrNoSignalSwitchesAsBefore)
     drv.reconfigure(cfg(true));
     zc.present = false;
     ASSERT_TRUE(drv.start(1, 60).ok());
-    clock.advanceMs(10);
-    drv.tick();
+    // The master switched on in the first part at this instant: the second
+    // master start and then the zone each wait out the stagger time.
+    for (int i = 0; i < 2; ++i) {
+        clock.advanceMs(100);
+        drv.tick();
+    }
     EXPECT_TRUE(out.zone[1]);
     EXPECT_TRUE(zc.waits.empty());
 }
@@ -154,7 +160,7 @@ TEST_F(ZeroCrossDriverTest, NoHalAttachedSwitchesAsBefore)
 {
     drv.init(cfg(true));
     ASSERT_TRUE(drv.start(0, 60).ok());
-    clock.advanceMs(10);
+    clock.advanceMs(100);
     drv.tick();
     EXPECT_TRUE(out.zone[0]);
 }
@@ -167,4 +173,75 @@ TEST(Config, ZeroCrossSwitchingFlag)
     Config back;
     ASSERT_TRUE(configFromJson(configToJson(c), back).ok());
     EXPECT_TRUE(back.driver.zeroCrossSwitching);
+}
+
+// ---- the rev A square wave (hardware design 19.9) ----------------------------------------------
+
+namespace {
+// Feeds a square wave: rising edge lagUs after each upward crossing, falling
+// edge leadUs before each downward one.
+void feed(ZeroCrossTracker &t, double hz, uint32_t startUs, int periods, uint32_t lagUs = 300, uint32_t leadUs = 90)
+{
+    const auto period = static_cast<uint32_t>(1e6 / hz);
+    for (int i = 0; i < periods; ++i) {
+        const uint32_t up = startUs + static_cast<uint32_t>(i) * period;
+        t.onEdge(up + lagUs, true);
+        t.onEdge(up + period / 2 - leadUs, false);
+    }
+}
+} // namespace
+
+TEST(ZeroCrossTracker, FrequencyFromRisingEdges)
+{
+    ZeroCrossTracker t(300, 90);
+    feed(t, 50.0, 1'000'000, 10);
+    EXPECT_EQ(t.milliHz(1'200'000), 50'000u);
+    ZeroCrossTracker u(300, 90);
+    feed(u, 60.0, 1'000'000, 10);
+    EXPECT_NEAR(u.milliHz(1'170'000), 60'000, 10);
+    EXPECT_TRUE(u.plausible(1'170'000));
+}
+
+TEST(ZeroCrossTracker, PresenceIsAnEdgeWithin25Ms)
+{
+    ZeroCrossTracker t(300, 90);
+    EXPECT_FALSE(t.present(0));
+    feed(t, 50.0, 1'000'000, 5);
+    const uint32_t last = 1'000'000 + 4 * 20'000 + 10'000 - 90;
+    EXPECT_TRUE(t.present(last + 24'000));
+    EXPECT_FALSE(t.present(last + 25'000));
+}
+
+TEST(ZeroCrossTracker, SampleGivesTheUpwardCrossingAndHalfPeriod)
+{
+    ZeroCrossTracker t(300, 90);
+    feed(t, 50.0, 1'000'000, 5);
+    const ZeroCrossSample s = t.sample(1'093'000);
+    ASSERT_TRUE(s.present);
+    EXPECT_EQ(s.intervalUs, 10'000u);
+    EXPECT_EQ(s.lastEdgeUs, 1'080'000u); // rising edge at 1 080 300 less the 300 us lag
+    // The next crossing is the downward one at 1 100 000: 7 ms away.
+    EXPECT_EQ(zeroCrossWaitUs(s, 0), 7'000u);
+}
+
+TEST(ZeroCrossTracker, HundredHertzIsNotMains)
+{
+    // AC_ZC bridged to the keep-alive: edges every 5 ms (19.9).
+    ZeroCrossTracker t(300, 90);
+    for (uint32_t i = 0; i < 40; ++i) {
+        t.onEdge(1'000'000 + i * 5'000, (i % 2) == 0);
+    }
+    EXPECT_EQ(t.milliHz(1'200'000), 100'000u);
+    EXPECT_FALSE(t.plausible(1'200'000));
+    EXPECT_FALSE(t.sample(1'200'000).present); // no zero-cross switching on it
+}
+
+TEST(ZeroCrossTracker, NoiseEdgesAreIgnored)
+{
+    ZeroCrossTracker t(300, 90);
+    feed(t, 50.0, 1'000'000, 3);
+    t.onEdge(1'050'000, true); // 90 us after the previous edge: bounce
+    EXPECT_EQ(t.noiseEdges(), 1u);
+    feed(t, 50.0, 1'060'000, 3);
+    EXPECT_EQ(t.milliHz(1'130'000), 50'000u);
 }

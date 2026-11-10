@@ -87,8 +87,11 @@ bool Screen::savePng(const std::string &path, int scale, int backlightPercent) c
     return ok;
 }
 
-World::World(bool wizardDone, bool clockValid, bool wifi)
+World::World(bool wizardDone, bool clockValid, bool wifi, bool revA)
 {
+    if (revA) {
+        h.useRevABoard();
+    }
     h.clock.utc = test::utcOf(2026, 11, 10, 13, 32); // 14:32 CET
     h.system.graphics = std::to_string(LVGL_VERSION_MAJOR) + "." + std::to_string(LVGL_VERSION_MINOR) + "." +
                         std::to_string(LVGL_VERSION_PATCH);

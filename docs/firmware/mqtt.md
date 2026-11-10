@@ -155,7 +155,7 @@ words (`closed`, `opening`, `open`).
 ```json
 {"rain": {"enabled": true, "active": false}, "spare": {"enabled": false, "active": false},
  "ac_present": true, "valve_current_ma": 310, "current_sense_available": true,
- "over_current_tripped": false}
+ "over_current_tripped": false, "sensor_supply_fault": false}
 ```
 
 `valve_current_ma` is `null` when there is no reading.
@@ -172,8 +172,16 @@ words (`closed`, `opening`, `open`).
 
 ```json
 {"active": ["zone_open_circuit"], "zones": [{"zone": 4, "fault": "zone_open_circuit",
- "locked_out": false}], "master_locked_out": false, "any": true}
+ "locked_out": false}], "master_locked_out": false,
+ "hardware": {"fault": false, "check": null, "step": null, "repair_needed": false}, "any": true}
 ```
+
+`hardware` is the valve board's self-test (hardware design section 19.7).
+While `fault` is true nothing runs. The `clear_faults` command acknowledges
+it, except when `repair_needed` is true: a safety circuit failed its test,
+and only a person can confirm the repair, on the controller's display or
+through `POST /api/v1/faults/acknowledge-repair`. MQTT has no command for
+it on purpose.
 
 `<root>/rain_delay`:
 
@@ -289,6 +297,8 @@ discovery.
 | Valve current | `sensor`, current, mA, measurement | Diagnostic. |
 | 24 VAC supply | `binary_sensor`, power | Diagnostic. |
 | Fault | `binary_sensor`, problem | Any fault; the list is in its attributes. |
+| Valve board fault | `binary_sensor`, problem | The board's self-test failed; check, step and repair needed in its attributes. Diagnostic. |
+| Sensor supply fault | `binary_sensor`, problem | The 5 V sensor terminal is overloaded or too hot. Diagnostic. |
 | Queue | `sensor`, enum: idle, running, paused | Queue items in its attributes. |
 | WiFi signal | `sensor`, signal strength, dBm | Diagnostic. |
 | Firmware version | `sensor` | Diagnostic. |
