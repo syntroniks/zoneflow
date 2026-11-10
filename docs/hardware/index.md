@@ -19,7 +19,7 @@
 | Current sense | One isolated measurement of total valve current |
 | AC presence | A signal that tells firmware 24 VAC is present |
 | RTC | I2C RTC with backup |
-| Display | 128x64 monochrome OLED on I2C |
+| Display | 2.0 to 2.4 inch colour IPS TFT, 320x240, SPI, no touch |
 | Controls | Rotary encoder with push switch, plus one Back/Manual button |
 | Expansion | One I2C connector (Qwiic/STEMMA QT pinout) |
 | PCB | 2 or 4 layers, JLCPCB standard capabilities |

@@ -42,7 +42,7 @@ requirements, not shipped features.
 - Valve current monitoring: detects an open valve, a shorted valve and loss of 24 VAC.
 - Outputs are off by default, enforced in hardware.
 - Maximum run time per zone, enforced in firmware.
-- OLED display, local controls for manual run, and one LED per output.
+- 2.0 to 2.4 inch colour display with a rotary encoder and buttons, and one LED per output.
 - Battery-backed or supercap-backed real-time clock, so schedules survive a power cut with no network.
 - USB-C for flashing and logs. USB alone powers the logic, so you can flash on a desk.
 - I2C expansion connector (Qwiic/STEMMA QT pinout).

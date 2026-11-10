@@ -12,6 +12,6 @@ Planned scope, from the [specification](../design/system-spec.md):
 - Local web UI, a documented REST API and a live status stream
 - MQTT with Home Assistant discovery
 - OTA update with rollback
-- OLED and local controls: status, manual run, network info
+- Colour display interface driven by the encoder and buttons: zone status, manual run, schedule viewing and editing, rain delay, faults, network setup
 - Flow and current diagnostics: per-zone learned current, fault reporting
 - Host-side unit tests for the scheduler and other pure logic

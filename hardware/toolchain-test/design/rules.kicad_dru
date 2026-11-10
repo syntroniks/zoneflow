@@ -1,0 +1,9 @@
+(version 1)
+
+# Rules that belong to this board, appended to the JLCPCB rules.
+
+# The autorouter narrows a track where it enters a pad. Accept that down to
+# 0.75 mm on the 24 VAC nets (net class width is 1.0 mm) and no further.
+(rule "AC24 minimum track width"
+	(condition "A.NetClass == 'AC24'")
+	(constraint track_width (min 0.75mm)))

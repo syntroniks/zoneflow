@@ -1,0 +1,117 @@
+# Board description for the toolchain test. Lengths in millimetres.
+# Board coordinates: x right, y down, origin at the top-left corner of the outline.
+
+[netclass.Default]
+track_width = 0.2
+clearance = 0.2
+via_diameter = 0.6
+via_drill = 0.3
+
+[netclass.AC24]
+track_width = 1.0
+clearance = 0.5
+via_diameter = 1.0
+via_drill = 0.5
+
+[netclass.Power]
+track_width = 0.4
+clearance = 0.2
+via_diameter = 0.8
+via_drill = 0.4
+
+[board]
+origin = [100.0, 60.0]   # where the outline's top-left corner sits on the KiCad page
+size = [80.0, 60.0]
+corner_radius = 2.0
+layers = 2
+thickness = 1.6
+
+# Copper pours. Without "outline" a zone covers the whole board.
+[[zone]]
+net = "GND"
+layers = ["F.Cu", "B.Cu"]
+clearance = 0.3
+min_width = 0.25
+thermal_gap = 0.3
+thermal_width = 0.5
+
+# Placement: reference = [x, y, rotation in degrees, side]. Side is "F" (default) or "B".
+# x, y is the footprint anchor in board coordinates.
+[place]
+U31 = [40.0, 12.75, 0]       # antenna overhang side at the top edge; keepout covers y < 6
+C31 = [24.5, 9.5, 90]
+C32 = [27.5, 8.8, 90]
+R31 = [27.5, 13.5, 90]
+C33 = [25.0, 13.5, 90]
+SW31 = [12.0, 12.0, 0]
+SW32 = [12.0, 20.0, 0]
+J11 = [4.4, 36.0, 270]       # USB-C, opening at the left edge
+U11 = [14.0, 36.0, 0]
+R11 = [12.5, 30.0, 0]
+R12 = [12.5, 42.0, 0]
+U12 = [17.0, 51.0, 0]
+C11 = [10.0, 50.0, 90]
+C12 = [24.5, 51.0, 90]
+J31 = [24.0, 30.0, 0]
+R33 = [19.5, 31.0, 0]
+R34 = [19.5, 34.0, 0]
+J1 = [74.0, 12.0, 270]       # 24 VAC input
+H1 = [76.0, 4.0, 0]
+H2 = [4.0, 56.0, 0]
+
+# A group places every instance of one schematic sheet the same way.
+# Offsets are relative to the group origin; "at" gives the origin of each
+# sheet instance as [x, y] or [x, y, rotation].
+[group.ac_channel.at]
+"/CH1/" = [29.5, 28.0]
+"/CH2/" = [29.5, 44.0]
+
+[group.ac_channel.parts]
+R1 = [2.5, 3.5, 0]
+U1 = [11.0, 6.0, 0]
+R2 = [2.5, 12.0, 0]
+D1 = [6.5, 12.0, 0]
+R3 = [20.0, 3.5, 0]
+Q1 = [27.0, 7.5, 0]
+R4 = [35.0, 3.0, 0]
+C1 = [35.0, 6.5, 180]
+D2 = [35.5, 11.0, 0]
+J1 = [44.5, 4.5, 270]
+
+# Reference text on the silkscreen. "hide" takes shell-style patterns. "move"
+# gives the text position as an offset from the footprint anchor, in board
+# axes: reference = [dx, dy] or [dx, dy, text angle].
+[silk]
+hide = ["H*"]                # mounting holes need no reference
+
+[silk.move]
+R31 = [1.45, 0.0]            # default position lands on C33
+J1 = [2.54, -4.0, 0]         # default position hangs over the board edge
+
+[group.ac_channel.silk_move]
+D2 = [0.0, 3.0]              # default position lands on C1's reference
+J1 = [2.54, -4.0, 0]         # default position hangs over the board edge
+
+# Pre-routed tracks, laid before the autorouter runs and locked. A point is a
+# pad ("REF.PAD"), a board coordinate [x, y], or a via {via = [x, y]}. The net
+# and, unless "width" is given, the width come from the pad's net class.
+[[track]]
+layer = "F.Cu"
+points = ["J11.A6", [11.5, 35.75], [12.2, 35.05], "U11.1"]
+
+[[group.ac_channel.track]]
+layer = "F.Cu"
+points = ["R4.2", [36.46, 4.6], "C1.1"]
+
+[[text]]
+text = "ZoneFlow toolchain test - not a product"
+layer = "F.SilkS"
+at = [40.0, 58.3]
+size = 1.0
+thickness = 0.15
+
+# DRC checks whose severity differs from KiCad's default, with the reason.
+[drc_severity]
+# The ESP32 antenna, the USB-C shell and the terminal blocks sit on the board
+# edge on purpose; their silkscreen outlines cross it and the fab clips them.
+silk_edge_clearance = "ignore"
