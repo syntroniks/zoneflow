@@ -366,3 +366,16 @@ TEST_F(ControllerTest, ClearingIdleCurrentFaultWhileItPersistsRaisesItAgain)
     runMs(1000);
     EXPECT_TRUE(hasFault(FaultCode::CurrentWhileIdle));
 }
+
+// ---- phase 2 hardening ---------------------------------------------------------
+
+TEST_F(ControllerTest, IdleCurrentRisingToShortRaisesShortCircuit)
+{
+    start();
+    sensors.sample.valveCurrentMa = 300;
+    runMs(1000);
+    ASSERT_TRUE(hasFault(FaultCode::CurrentWhileIdle));
+    sensors.sample.valveCurrentMa = 5000;
+    runMs(200);
+    EXPECT_TRUE(hasFault(FaultCode::ShortCircuit));
+}
