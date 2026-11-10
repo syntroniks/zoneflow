@@ -15,8 +15,10 @@ menu "ZoneFlow board"
         default ZF_OE_MODE_TOGGLE
         help
             How the hardware output-enable (OE) gate expects to be driven.
-            Toggle: a retriggerable monostable that needs edges (watchdog style).
-            Static: a plain enable level, held while outputs may be on.
+            Toggle: a retriggerable keep-alive that needs edges (watchdog
+            style). Required by system spec v0.2 for rev A.
+            Static: a plain enable level, held while outputs may be on. For
+            other hardware only.
             Either way OE goes inactive when the control loop stops.
 
         config ZF_OE_MODE_TOGGLE

@@ -41,9 +41,9 @@ inline constexpr int kMasterGpio = 12;
 inline constexpr bool kOutputActiveHigh = true;
 
 // ---- hardware output enable --------------------------------------------------
-// Gates every output driver. Default assumption: a retriggerable monostable
-// that holds outputs enabled only while it sees edges. Select the static
-// level variant with CONFIG_ZF_OE_MODE_STATIC (menuconfig, ZoneFlow).
+// Keep-alive input of the fail-safe gate (spec v0.2 section 2 rule 3): gate
+// drive is removed within about 1 s after the toggling stops. A static-level
+// variant for other hardware is CONFIG_ZF_OE_MODE_STATIC (menuconfig).
 inline constexpr int kOutputEnableGpio = 13;
 inline constexpr bool kOutputEnableActiveHigh = true;
 
@@ -81,9 +81,10 @@ inline constexpr int kAcPresentGpio = 2;
 inline constexpr bool kAcPresentActiveLow = true;
 
 // ---- valve current sense (total of all outputs) --------------------------------------
-// Assumed front end: CT or Hall sensor, rectified and filtered to a DC voltage
-// proportional to RMS current. Scale is a placeholder until the hardware lead
-// fixes the burden/gain: 1 mV at the ADC = 1 mA.
+// Spec v0.2: low-side shunt in the shared triac return, rectifying/averaging
+// front end, biased away from the non-linear ADC region near 0 V. Scale and
+// bias are placeholders until the hardware lead fixes shunt, gain and bias:
+// 1 mV above the bias at the ADC = 1 mA.
 inline constexpr int kValveCurrentGpio = 1; // ADC1_CH0
 inline constexpr float kValveCurrentMaPerMv = 1.0f;
 inline constexpr int kValveCurrentOffsetMv = 0;

@@ -6,7 +6,10 @@
 //
 // To implement (phase 2):
 //  - WiFi station with credentials from NVS; reconnect with backoff.
-//  - BLE provisioning (ESP-IDF wifi_provisioning, security 1 or 2).
+//  - BLE provisioning with ESP-IDF unified provisioning, Security 2 (spec
+//    v0.2). Release BLE memory after setup.
+//  - No lock to one access point BSSID or channel; reconnect must work on
+//    mesh networks. Never send or store credentials in plain text.
 //  - Fallback SoftAP when unprovisioned or the station cannot connect.
 //  - Publish connectivity in the StateStore: extend SystemState with a
 //    network block (one writer: post a command or add a NetworkStatus
