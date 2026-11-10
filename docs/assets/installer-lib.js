@@ -34,9 +34,12 @@
       return {
         improv: true,
         title: "Connect it to your WiFi",
-        text: "After the flash the installer offers to set up WiFi over the USB cable (Improv Serial).",
-        link: "",
-        linkText: "",
+        text:
+          "After the flash the installer offers to set up WiFi over the USB cable (Improv Serial). You can also " +
+          "do it later over Bluetooth LE with Improv (press Home on the controller to allow it) or through the " +
+          "controller's fallback access point. Then adopt it in the ESPHome dashboard of Home Assistant.",
+        link: "../esphome/",
+        linkText: "ESPHome package guide",
       };
     }
     return { improv: !!flavour.improv, title: "Next step", text: "See the firmware's own documentation.", link: "", linkText: "" };

@@ -25,6 +25,9 @@ on:
       - "hardware/pinmap.yaml"
       - "firmware/zoneflow-fw/tools/gen_board_header.py"
       - "firmware/zoneflow-fw/components/zf_board/**"
+      # The ESPHome flavour: its package, and the shared code it builds.
+      - "firmware/esphome/**"
+      - "firmware/zoneflow-fw/components/zf_core/**"
       - ".github/workflows/release.yml"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
@@ -152,22 +155,45 @@ jobs:
           path: dist
           if-no-files-found: error
 
-  # ---- Slot for the second flavour: the ESPHome build (issue #7) ----------------------
-  # Write the job here, set `enabled = true` for `esphome` in tools/zfrelease/flavours.toml,
-  # and add the job to `needs` of `assemble`. The job builds the ESPHome package, then
-  # runs `zfrelease package-prebuilt --flavour esphome --factory <firmware.factory.bin>
-  # --app <firmware.ota.bin> --version <version> --out dist` and uploads `dist` as the
-  # artefact `flavour-esphome`. Nothing else changes: `assemble` merges every `flavour-*`
-  # artefact and the installer page lists what `release.json` lists.
-  #
-  # build-esphome:
-  #   needs: [version]
-  #   runs-on: ubuntu-24.04
-  #   steps: [...]
+  # The ESPHome flavour (issue #7): firmware/esphome/factory.yaml, the 8-zone package
+  # with the components from this checkout. ESPHome makes its own merged image, so
+  # `zfrelease package-prebuilt` checks the image headers and writes the manifest.
+  build-esphome:
+    name: ESPHome firmware (esp32s3)
+    needs: [version]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10.3.3
+      - name: ESPHome toolchain cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/esphome
+          key: esphome-idf-${{ hashFiles('firmware/esphome/uv.lock') }}
+      # zoneflow_ref names the tag in the dashboard import URL and the project version;
+      # a dry run (no tag) points them at main.
+      - name: esphome compile factory.yaml
+        working-directory: firmware/esphome
+        run: |
+          ref="${{ needs.version.outputs.tag }}"
+          [ -n "$ref" ] || ref=main
+          uv sync --locked
+          uv run esphome -s zoneflow_ref "$ref" compile factory.yaml
+      - name: Package
+        run: |
+          build=firmware/esphome/.esphome/build/zoneflow/build
+          uv run --project tools/zfrelease --locked zfrelease package-prebuilt --flavour esphome \
+            --factory "$build/firmware.factory.bin" --app "$build/firmware.ota.bin" \
+            --version "${{ needs.version.outputs.version }}" --commit "$GITHUB_SHA" --out dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flavour-esphome
+          path: dist
+          if-no-files-found: error
 
   assemble:
     name: Assemble and verify (dry run)
-    needs: [version, build-standalone]
+    needs: [version, build-standalone, build-esphome]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
