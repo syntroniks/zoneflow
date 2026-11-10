@@ -120,7 +120,10 @@ void Scheduler::configure(const SchedulerConfig &cfg, const TimeZone &tz)
     for (std::size_t i = 0; i < sched.programCount; ++i) {
         Program &p = sched.programs[i];
         p.startCount = std::min<uint8_t>(p.startCount, kMaxStartTimes);
-        std::sort(p.startMinutes.begin(), p.startMinutes.begin() + p.startCount);
+        const auto first = p.startMinutes.begin();
+        std::sort(first, first + p.startCount);
+        // A start listed twice is one start, not one run plus one "missed".
+        p.startCount = static_cast<uint8_t>(std::unique(first, first + p.startCount) - first);
     }
 
     const bool advance = configured_ && timeValid_;
@@ -281,6 +284,9 @@ RunError Scheduler::runZone(ZoneIndex zone, uint32_t durationSec)
     if (durationSec == 0) {
         return RunError::ZeroDuration;
     }
+    // The driver clamps again to the zone's limit; this keeps the
+    // millisecond value below from wrapping.
+    durationSec = std::min(durationSec, kHardMaxRunSec);
     RunEntry e;
     e.zone = zone;
     e.durationSec = durationSec;
@@ -511,6 +517,20 @@ void Scheduler::evaluate(UtcSeconds now)
         // look back so starts missed during a power cut are found.
         cursor_ = now - kLookBackSec;
         cursorValid_ = true;
+        // A key more than kLargeBackJumpSec ahead of the clock was stored
+        // while the clock was wrong. The clamp below only sees a jump within
+        // one boot, so check the restored keys here.
+        const int64_t k = keyAt(now);
+        bool clamped = false;
+        for (std::size_t i = 0; i < cfg_.schedule.programCount; ++i) {
+            if (keys_[i] > k + kLargeBackJumpSec / 60) {
+                keys_[i] = k;
+                clamped = true;
+            }
+        }
+        if (clamped && listener_ != nullptr) {
+            listener_->onPersistDirty();
+        }
     } else if (now < cursor_) {
         if (cursor_ - now > kLargeBackJumpSec) {
             const int64_t k = keyAt(now);

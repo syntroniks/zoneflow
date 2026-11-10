@@ -70,3 +70,22 @@ TEST(OutputEnable, MillisecondCounterWrap)
     EXPECT_TRUE(g.nextLevel(0x20u));
     EXPECT_FALSE(g.nextLevel(0x80u));
 }
+
+// Review finding: a heartbeat that stopped 2^31 ms (24.8 days) ago has a
+// negative 32-bit age and used to count as fresh again; after 2^32 ms it
+// reads as a few milliseconds old. Once stale, OE stays low until the control
+// loop beats again.
+TEST(OutputEnable, StaleHeartbeatNeverBecomesFreshAgain)
+{
+    OutputEnableGuard g(OutputEnableMode::StaticLevel, 100);
+    g.setDemand(true);
+    g.heartbeat(0);
+    EXPECT_TRUE(g.nextLevel(50));
+    EXPECT_FALSE(g.nextLevel(1000));
+    EXPECT_FALSE(g.allowed(0x80000000u));
+    EXPECT_FALSE(g.nextLevel(0x80000000u));
+    EXPECT_FALSE(g.nextLevel(0xFFFFFFF6u)); // age reads as -10 ms
+    EXPECT_FALSE(g.nextLevel(0x00000005u)); // age reads as +5 ms
+    g.heartbeat(0x10u);                     // the control loop is back
+    EXPECT_TRUE(g.nextLevel(0x12u));
+}

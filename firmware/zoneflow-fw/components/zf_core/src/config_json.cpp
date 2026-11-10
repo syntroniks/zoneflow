@@ -20,6 +20,40 @@ using JsonPtr = std::unique_ptr<cJSON, JsonDeleter>;
 
 constexpr std::array<const char *, 7> kWeekdayNames = {"sun", "mon", "tue", "wed", "thu", "fri", "sat"};
 
+// cJSON parses and frees recursively, one call per nesting level, and allows
+// 1000 levels. On the ESP32-S3 parse_value takes 64 bytes of stack per level
+// (-fstack-usage, ESP-IDF v5.5.6 toolchain), so a few hundred bytes of
+// brackets would overflow a task stack. The config nests six levels deep.
+constexpr int kMaxJsonDepth = 16;
+
+// Counts bracket depth outside strings, before cJSON sees the text.
+bool nestingWithinLimit(std::string_view json)
+{
+    int depth = 0;
+    bool inString = false;
+    bool escaped = false;
+    for (const char c : json) {
+        if (inString) {
+            if (escaped) {
+                escaped = false;
+            } else if (c == '\\') {
+                escaped = true;
+            } else if (c == '"') {
+                inString = false;
+            }
+        } else if (c == '"') {
+            inString = true;
+        } else if (c == '[' || c == '{') {
+            if (++depth > kMaxJsonDepth) {
+                return false;
+            }
+        } else if (c == ']' || c == '}') {
+            --depth;
+        }
+    }
+    return true;
+}
+
 // Schema migrations, oldest first. Version 1 is the first schema, so the
 // table is empty. Example of a future step:
 //   bool v1ToV2(cJSON *root) { /* rename or reshape fields */ return true; }
@@ -619,6 +653,10 @@ bool migrateConfigJson(cJSON *root, int targetVersion, const ConfigMigration *st
 ConfigParseResult configFromJson(std::string_view json, Config &out)
 {
     ConfigParseResult res;
+    if (!nestingWithinLimit(json)) {
+        res.validation = ValidationResult::bad("", "nested more than " + std::to_string(kMaxJsonDepth) + " levels");
+        return res;
+    }
     JsonPtr root(cJSON_ParseWithLength(json.data(), json.size()));
     if (!root || !cJSON_IsObject(root.get())) {
         res.validation = ValidationResult::bad("", "not a JSON object");
@@ -680,6 +718,9 @@ std::string persistToJson(const SchedulerPersist &state)
 
 bool persistFromJson(std::string_view json, SchedulerPersist &out)
 {
+    if (!nestingWithinLimit(json)) {
+        return false;
+    }
     JsonPtr root(cJSON_ParseWithLength(json.data(), json.size()));
     if (!root || !cJSON_IsObject(root.get())) {
         return false;

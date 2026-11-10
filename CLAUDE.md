@@ -37,6 +37,21 @@ request and say so in the description.
 - `enclosure/` OpenSCAD source; exports in `enclosure/output/`.
 - `docs/` site source. `docs/design/` holds design documents.
 
+## Hardware flow
+
+Boards are generated from text. Read `docs/design/hardware-toolchain.md`
+before touching anything under `hardware/`.
+
+- Edit only `design/circuit.py`, `design/board.toml` and
+  `design/rules.kicad_dru` in a board directory, and the files in
+  `hardware/rules/`. Run `make` there. It fails if ERC or DRC fail.
+- The `.kicad_sch`, `.kicad_pcb`, `.kicad_pro`, library tables, `route/` and
+  `output/` in a board directory are generated and committed, so that a
+  reviewer can open the project and see the outputs without the tools. Never
+  edit them by hand; the next `make` overwrites them.
+- `hardware/toolchain-test/` is a test of the flow, not the product. Do not
+  reuse its part choices.
+
 ## Tools on the build machine
 
 KiCad 10 (`kicad-cli`, `pcbnew` Python module), ngspice, OpenSCAD, `uv`,

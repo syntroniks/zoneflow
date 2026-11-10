@@ -126,7 +126,7 @@ How the firmware implements spec section 2:
 |---|---|
 | 1. Outputs off by default | `GpioOutputs::init()` is the first call in `app_main`: it sets the output latch to off, then enables the drivers (pin goes from high impedance straight to driven off). `ZoneDriver::init()` forces all off again. Hardware pull-downs must hold outputs off before that (see open questions). |
 | 2. No strapping or glitching pins on outputs | `zf_board` `static_assert`s: no strapping (0, 3, 45, 46), USB (19, 20) or flash/PSRAM (26 to 37) pins, no output or OE on a pin with a high-level power-up glitch (18, 19, 20; ESP32-S3 datasheet v2.2 table 2-2), no duplicates. |
-| 3. Hardware output enable | Spec v0.2: firmware keeps toggling a keep-alive signal, and hardware removes gate drive within about 1 s after toggling stops. `OutputEnableGuard` toggles only while (a) an output is on or about to be, (b) the control loop heartbeat is younger than `CONFIG_ZF_OE_HEARTBEAT_TIMEOUT_MS` (500 ms), (c) it is not tripped. The keep-alive task produces an edge every 5 ms. A stuck control loop, a stuck keep-alive task or a halted CPU all stop the toggling. A static-level variant exists as a Kconfig option for other hardware; rev A uses toggle mode. |
+| 3. Hardware output enable | Spec v0.2: firmware keeps toggling a keep-alive signal, and hardware removes gate drive within about 1 s after toggling stops. `OutputEnableGuard` toggles only while (a) an output is on or about to be, (b) the control loop heartbeat is younger than `CONFIG_ZF_OE_HEARTBEAT_TIMEOUT_MS` (500 ms), (c) it is not tripped. A heartbeat that went stale stays stale until the next one arrives, so a 32-bit age that wraps cannot read as fresh. The keep-alive task produces an edge every 5 ms. A stuck control loop, a stuck keep-alive task or a halted CPU all stop the toggling. A static-level variant exists as a Kconfig option for other hardware; rev A uses toggle mode. |
 | 4. Maximum run time | `ZoneDriver::start()` clamps every request to min(zone `max_run_s`, 4 h). The driver times the run itself and closes the valve; a second independent check in `tick()` closes any zone open longer than its limit. Callers cannot pass a longer time through any path. |
 
 Other limits enforced in the zone driver:
@@ -144,7 +144,7 @@ Fault paths, each ending with outputs off:
 | Event | Action |
 |---|---|
 | Short circuit (above `short_circuit_ma`, 2 samples, checked even during inrush) | All off, queue stopped, zone locked out, fault latched. |
-| Over-current (above the summed window after settling, 3 samples) | Same as short circuit. |
+| Over-current (above the summed window after settling, 3 samples; short-circuit samples count towards them) | Same as short circuit. |
 | Open circuit (below the summed window) | That zone off, queue moves to the next entry, fault latched. Master or unattributable: all off. |
 | Current with every output off | Fault only. Firmware already has everything off; the output stage needs a human. |
 | 24 VAC lost (60 ms debounce) | All off, queue cleared, starts blocked until AC returns (500 ms debounce). |
@@ -154,6 +154,8 @@ Fault paths, each ending with outputs off:
 | Brownout | Brownout interrupt callback (IRAM) forces outputs off before the reset. |
 
 Latched faults clear with the `ClearFaults` command. Lockouts clear with it.
+A current fault whose cause is still present is raised again on the next
+sample.
 
 ## 4. Interfaces for later modules
 
@@ -192,7 +194,7 @@ Modules do not write `StateStore` themselves.
 ### Programs
 
 A program has an id (stable, non-zero), name, enabled flag, up to 4 start
-times (local "HH:MM"), a day rule, per-zone durations, a seasonal-adjust flag
+times (local "HH:MM"; a time listed twice counts once), a day rule, per-zone durations, a seasonal-adjust flag
 and an obey-sensor flag. Day rules:
 
 - **weekdays**: any set of days.
@@ -238,7 +240,8 @@ instants.
   repeat never runs a start twice.
 - **Clock set back by more than 24 h** (for example an RTC that was in the
   future, corrected by SNTP): the stored keys are clamped to the new time so
-  the schedule resumes.
+  the schedule resumes. The same check runs on the first valid time after
+  boot, for keys stored while the clock was wrong.
 - **No valid clock.** If the RTC is missing or reports lost time and SNTP has
   not synced, no scheduled start runs. Manual runs still work.
 
@@ -299,7 +302,8 @@ the REST and backup format. Abbreviated example:
 - **Missing fields** take their defaults; unknown fields are ignored.
 - **Validation** rejects the whole document on the first error and returns
   its JSON path (for example `schedule.programs[0].starts[1]`) and a message.
-  Range limits are in `zf_core/src/config.cpp`.
+  Range limits are in `zf_core/src/config.cpp`. A document nested more than
+  16 levels deep is rejected before parsing: cJSON recurses once per level.
 - **Migration.** `schema` is required. An older schema runs the steps in
   `kMigrations` (`config_json.cpp`), one version at a time, and the result
   is written back. Schema 1 is the first, so the table is empty; the
@@ -324,7 +328,8 @@ the REST and backup format. Abbreviated example:
   A shorted valve or wire shuts the zone off and is reported (spec 1).
   Expected window = sum of
   the min/max of every output that is on. Comparisons start `settle_ms` after
-  any output change; the short-circuit limit applies at all times. A fault
+  any output change; the short-circuit limit applies at all times. A config
+  reload does not restart a confirmation in progress. A fault
   is attributed to the output switched on most recently. Per-output current
   observed when the output runs alone (or with the master, minus the
   master's share) is recorded as the basis for learned limits later.

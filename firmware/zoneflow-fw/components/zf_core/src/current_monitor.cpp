@@ -22,15 +22,22 @@ const char *toString(CurrentFault f)
     return "?";
 }
 
+namespace {
+// Over-current and short circuit are both "too much current"; a reading that
+// straddles short_circuit_ma alternates between them from sample to sample.
+bool tooHigh(CurrentFault f) { return f == CurrentFault::OverCurrent || f == CurrentFault::ShortCircuit; }
+} // namespace
+
 void CurrentMonitor::configure(const CurrentMonitorConfig &cfg)
 {
+    // New limits apply from the next sample. The confirmation state is kept:
+    // reloading the config while a fault is being confirmed must not restart
+    // the count.
     cfg_ = cfg;
     cfg_.confirmSamples = std::max<uint8_t>(cfg_.confirmSamples, 1);
-    lastMask_ = 0xFFFF;
-    pending_ = CurrentFault::None;
-    count_ = 0;
-    reported_ = false;
 }
+
+void CurrentMonitor::rearm() { reported_ = false; }
 
 CurrentVerdict CurrentMonitor::evaluate(int32_t measuredMa, uint16_t outputMask, uint8_t lastOpenedBit,
                                         MonoMs lastChangeMs, MonoMs now)
@@ -78,8 +85,10 @@ CurrentVerdict CurrentMonitor::evaluate(int32_t measuredMa, uint16_t outputMask,
     }
 
     if (cond != pending_) {
+        if (!(tooHigh(cond) && tooHigh(pending_))) {
+            count_ = 0;
+        }
         pending_ = cond;
-        count_ = 0;
     }
     if (cond == CurrentFault::None || reported_) {
         return {};

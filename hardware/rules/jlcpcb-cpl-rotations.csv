@@ -1,0 +1,16 @@
+# Rotation corrections for JLCPCB pick-and-place files.
+#
+# JLCPCB's part library does not always use KiCad's zero-rotation orientation.
+# Each row adds "rotation" degrees (and an offset in mm) to every placement
+# whose footprint name matches the regular expression. First match wins.
+#
+# Rows below are copied from the Fabrication-Toolkit project (Apache-2.0),
+# plugins/transformations.csv, read 2026-11-10:
+# https://github.com/bennymeg/Fabrication-Toolkit
+# They have NOT been checked against JLCPCB's placement preview for the parts
+# in this repository. Check the preview when ordering and correct this file.
+footprint_regex,rotation,dx,dy
+^SOT-223,180,0,0
+^SOT-23,180,0,0
+^SOIC-,270,0,0
+^QFN-,90,0,0

@@ -322,6 +322,7 @@ void Controller::clearCondition(FaultCode code)
 void Controller::clearFaults()
 {
     driver_.clearLockouts();
+    current_.rearm(); // a current fault that is still present is raised again
     zoneFault_.fill(FaultCode::None);
     const uint32_t latched = activeFaults_ & ~kSelfClearing;
     activeFaults_ &= kSelfClearing;

@@ -9,7 +9,7 @@ The plan, from the [specification](../design/system-spec.md):
 - 3D-printable indoor wall-mount enclosure, parametric source in the repository
 - Prints without supports on a 220 x 220 mm bed in PLA or PETG
 - Separate wiring compartment cover, so the user wires valves without exposing the electronics
-- Window or opening for the OLED, access to the controls, light pipes or openings for the LEDs
+- Window or opening for the display, access to the controls, light pipes or openings for the LEDs
 - Wall-mount keyholes, cable entry at the bottom, strain relief
 - Deliverables: source, STL and 3MF exports, STEP if the tool allows, assembly drawing or renders, print settings
 
