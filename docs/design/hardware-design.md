@@ -1047,10 +1047,18 @@ thresholds stay centred on the amplifier's bias.
 | Trip current | 0.619 V / 0.1333 V/A | 4.64 A peak, either polarity |
 
 Tolerances: 1 % resistors in the chain and the gain, 1 % shunt, 3 % on `3V3`,
-15 mV of comparator offset and 10 mV of amplifier offset. Added as worst case
-they give 4.2 to 5.1 A peak. The largest legitimate current is two zones
-holding at 0.5 A and a third in inrush at 1.5 A, which is 2.5 A rms or 3.54 A
-peak if all are in phase. The trip level clears it.
+15 mV of comparator offset and 10 mV of amplifier offset. I added these as
+worst case and got 4.2 to 5.1 A peak. Review A1 ran the corners in
+`hardware/sim/isense_corners.cir`, which also moves the two resistors that
+set the amplifier's rest level: 4.0 to 5.4 A peak. The nominal trip is 4.56 A
+for one polarity and 4.67 A for the other, not 4.64 A for both, because the
+amplifier's bias network loads the chain. The largest legitimate current is
+two zones holding at 0.5 A and a third in inrush at 1.5 A, which is 2.5 A rms
+or 3.54 A peak if all are in phase. The lowest trip level clears that by
+13 %. It does not clear two outputs in inrush together, and switching on at
+a random point of the cycle can add up to a fifth to the first peak of an
+inductive load. So firmware must stagger starts, rule 10 of section 19.1, and
+nuisance trips at the specification's load limit are a bench item.
 
 The latch is two NAND gates of U7. `OC_TRIP_N` low sets `FAULT`. `KA_OK` low
 clears it. The red LED D8 shows it.
@@ -1931,7 +1939,7 @@ For the first prototype. Stop at the first step that fails.
 4. **Keep-alive.** Test firmware toggles `KA` at 100 Hz. `KA_N2` rises to about 2.9 V and `DRV_EN` goes high within 20 ms. Stop toggling and time the fall on a scope: 0.45 to 0.9 s. Repeat stuck high, which must fall within 1.2 s, and at 25 Hz. Then try 1 Hz, which must not enable, and 2 Hz, 1 kHz and 100 kHz, and record what each does.
 5. **Expander and LEDs.** Turn each output on in turn. Its LED lights. The voltage across R101 is about 1.8 V, 12 mA. `V_DRV` falls when the keep-alive stops, and the expander stops answering.
 6. **Current channels.** Pass a known 50 or 60 Hz current through `ISNS` to `GND` from a low-voltage source. Check 133 mV/A and 665 mV/A and the 0.79 V bias.
-7. **Over-current latch.** Raise that current. `FAULT` sets between 4.2 and 5.1 A peak, D8 lights, `DRV_EN` falls. It stays set until the keep-alive stops.
+7. **Over-current latch.** Raise that current. `FAULT` sets between 4.0 and 5.4 A peak, D8 lights, `DRV_EN` falls. It stays set until the keep-alive stops.
 8. **First AC power.** Unplug USB. Feed J1 from a variable 0 to 32 VAC isolated source. The buck starts at about 9 V on `VIN_DC`. At 24 VAC: `VIN_DC` 28 to 31 V, `V_BUCK` 5.16 to 5.40 V, `AC_ZC` a clean square wave, `VIN_MON` about 0.97 V. Raise to 32 VAC for 30 minutes: `VIN_DC` under 45 V, D1 cold.
 9. **Both supplies.** Add USB from a battery laptop. No current flows back into VBUS beyond 1 mA.
 10. **Relay.** Command K1 closed. `COM` is live. Stop the keep-alive: time K1 opening against `DRV_EN` falling. As drawn it opens within 10 ms, see section 7.2.

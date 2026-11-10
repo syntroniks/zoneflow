@@ -181,3 +181,27 @@ three values.
 What it showed:
 
 - **The hold does not hold**: Q2's gate stays up for 46 ms as designed, but Q1 is in series and turns off in 0.1 ms, because resetting the expander releases its gate. The coil has lost its current within 4 ms. K1 opens within its own release time, 10 ms at most, not 30 to 50 ms later.
+
+## isense_corners.cir
+
+Added by review A1. The amplifier U8A, the threshold chain and the window
+comparators of `isense.cir`, with every tolerance as a parameter. A slow
+current ramp of each polarity finds the trip current. `ISENSE_LO` falls for
+positive shunt current, so U6C and `VL` trip that polarity and U6B and `VH`
+the other. U8B and its small load on `VB` are left out.
+
+| Corner | Positive current | Negative current |
+|---|---|---|
+| Nominal | 4.56 A | 4.67 A |
+| Lowest trip | 4.05 A | 4.03 A |
+| Highest trip | 5.10 A | 5.36 A |
+
+The lowest-trip corner is 1 % resistors and shunt all in the direction of
+more gain and a narrower window, `3V3` at 3.2 V, 4.5 mV of op-amp offset and
+15 mV of comparator offset towards the threshold. The highest-trip corner is
+the opposite.
+
+What it showed:
+
+- **Trip window**: 4.0 to 5.4 A peak, wider than the 4.2 to 5.1 A of the hand calculation, which left out the resistors that set the amplifier's rest level.
+- **Margin**: the lowest trip is 13 % above the largest current the specification allows, 3.54 A peak.

@@ -1,0 +1,138 @@
+* ZoneFlow over-current trip level at tolerance corners
+* (docs/design/hardware-design.md section 9.1, review A1)
+*
+* Same circuit as isense.cir with every tolerance exposed as a parameter:
+* shunt, the four gain resistors of U8A, the threshold chain R48..R51, the
+* 3.3 V rail, the offset of the op-amp and the offset of each comparator.
+* A slow current ramp of each polarity finds the current at which
+* OC_TRIP_N falls.
+*
+* Run:  ngspice -b isense_corners.cir
+*
+* Corners: resistors 1 %, shunt 1 %, rail 3.2 to 3.4 V, MCP6002 offset
+* 4.5 mV (data sheet maximum at 25 C), LM2901 offset 15 mV (data sheet
+* maximum over temperature). Each corner sets every tolerance in the
+* direction that moves the trip the same way, which no real board does.
+
+.param rsh=0.1 r38v=7.5k r39v=10k r40v=7.5k r41v=10k
+.param r48v=1k r49v=330 r50v=330 r51v=100 v33=3.3
+.param vosa=0 vosh=0 vosl=0 pol=1
+
+* current ramp: 0 to 7 A in 70 ms, sign set by pol
+ILOAD 0 isns PWL(0 0 10m 0 80m {7*pol})
+R37   isns shx {rsh}
+* 0 V source to read the load current
+VIM   shx 0 DC 0
+V3V3  v3v3 0 DC {v33}
+R48   v3v3 vh  {r48v}
+R49   vh   vb  {r49v}
+R50   vb   vl  {r50v}
+R51   vl   0   {r51v}
+C32   vb   0   1u
+R38   isns a_n {r38v}
+R39   a_n  isense_lo {r39v}
+C26   a_n  isense_lo 1n
+R40   0    a_p {r40v}
+R41   a_p  vb  {r41v}
+C27   a_p  vb  1n
+* op-amp input offset in series with the + input
+VOSA  a_px a_p DC {vosa}
+XU8A  a_px a_n isense_lo OPA
+R52   isense_lo cmp_in 10k
+C33   cmp_in 0 4.7n
+R53   v3v3 oc_trip_n 10k
+* U6B trips when cmp_in > vh + vosh ; U6C trips when cmp_in < vl - vosl
+B2    c2 0 V = (V(cmp_in) - V(vh) - {vosh}) > 0 ? 1 : 0
+S2    oc_trip_n 0 c2 0 CMP
+B3    c3 0 V = (V(vl) - V(cmp_in) - {vosl}) > 0 ? 1 : 0
+S3    oc_trip_n 0 c3 0 CMP
+.model CMP SW(VT=0.5 VH=0.1 RON=50 ROFF=1G)
+.subckt OPA inp inn out
+E1  x 0 inp inn 1e5
+R1  x y 1k
+C1  y 0 15.9u
+B1  out 0 V = min(max(V(y) + 1.65, 0.025), 3.275)
+.ends
+.options method=gear reltol=1e-4
+.tran 20u 80m 0 20u
+
+.control
+set noaskquit
+* ---- nominal ----
+foreach p 1 -1
+  alterparam pol = $p
+  reset
+  run
+  meas tran itrip find i(VIM) when v(oc_trip_n)=1.65 fall=1
+  meas tran vbias find v(isense_lo) at=5m
+  echo "RESULT nominal, polarity $p: trips at {$&itrip} A, ISENSE_LO at rest {$&vbias} V"
+end
+* ISENSE_LO falls for positive shunt current (U6C and VL trip it) and rises
+* for negative current (U6B and VH).
+* ---- lowest trip: high gain, narrow window, low rail, offsets towards the threshold ----
+alterparam rsh = 0.101
+alterparam r38v = 7.425k
+alterparam r39v = 10.1k
+alterparam r48v = 1.01k
+alterparam r49v = 326.7
+alterparam r50v = 326.7
+alterparam r51v = 101
+alterparam v33 = 3.2
+reset
+alterparam pol = 1
+alterparam r40v = 7.425k
+alterparam r41v = 10.1k
+alterparam vosa = -4.5m
+alterparam vosh = 0
+alterparam vosl = -15m
+reset
+run
+meas tran itrip find i(VIM) when v(oc_trip_n)=1.65 fall=1
+meas tran vbias find v(isense_lo) at=5m
+echo "RESULT lowest trip, positive current: trips at {$&itrip} A, ISENSE_LO at rest {$&vbias} V"
+alterparam pol = -1
+alterparam r40v = 7.575k
+alterparam r41v = 9.9k
+alterparam vosa = 4.5m
+alterparam vosh = -15m
+alterparam vosl = 0
+reset
+run
+meas tran itrip find i(VIM) when v(oc_trip_n)=1.65 fall=1
+meas tran vbias find v(isense_lo) at=5m
+echo "RESULT lowest trip, negative current: trips at {$&itrip} A, ISENSE_LO at rest {$&vbias} V"
+* ---- highest trip: low gain, wide window, high rail, offsets away from the threshold ----
+alterparam rsh = 0.099
+alterparam r38v = 7.575k
+alterparam r39v = 9.9k
+alterparam r48v = 0.99k
+alterparam r49v = 333.3
+alterparam r50v = 333.3
+alterparam r51v = 99
+alterparam v33 = 3.4
+reset
+alterparam pol = 1
+alterparam r40v = 7.575k
+alterparam r41v = 9.9k
+alterparam vosa = 4.5m
+alterparam vosh = 0
+alterparam vosl = 15m
+reset
+run
+meas tran itrip find i(VIM) when v(oc_trip_n)=1.65 fall=1
+meas tran vbias find v(isense_lo) at=5m
+echo "RESULT highest trip, positive current: trips at {$&itrip} A, ISENSE_LO at rest {$&vbias} V"
+alterparam pol = -1
+alterparam r40v = 7.425k
+alterparam r41v = 10.1k
+alterparam vosa = -4.5m
+alterparam vosh = 15m
+alterparam vosl = 0
+reset
+run
+meas tran itrip find i(VIM) when v(oc_trip_n)=1.65 fall=1
+meas tran vbias find v(isense_lo) at=5m
+echo "RESULT highest trip, negative current: trips at {$&itrip} A, ISENSE_LO at rest {$&vbias} V"
+quit
+.endc
+.end

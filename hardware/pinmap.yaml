@@ -56,7 +56,8 @@ gpio:
     notes: >-
       Total valve current, low gain. AC waveform centred on about 0.79 V.
       Scale 133.3 mV per A (7.50 mA per mV). Linear to +/-5.8 A peak.
-      Hardware over-current trip at +/-4.6 A peak.
+      Hardware over-current trip at +/-4.6 A peak nominal, 4.0 to 5.4 A
+      over tolerances.
 
   - gpio: 2
     signal: ISENSE_HI
