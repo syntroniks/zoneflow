@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 470" width="980" height="470" font-family="Helvetica, Arial, sans-serif" font-size="12" role="img" aria-labelledby="t d">
+<title id="t">How ZoneFlow turns valves off without firmware</title>
+<desc id="d">Firmware sends keep-alive pulses only while its control loop is healthy. Detector A turns the opto LED supply on and lets the expander out of reset. Detector B holds the valve-common relay. When the pulses stop, gate drive is gone after 0.45 to 0.9 s and the relay opens within 0.95 s. An over-current latch removes drive within about 70 microseconds of a short.</desc>
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f2933"/></marker><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b91c1c"/></marker></defs>
+<rect x="0" y="0" width="980" height="470" fill="#ffffff"/>
+<rect x="20" y="40" width="190" height="80" rx="5" fill="#eef6ff" stroke="#1f2933" stroke-width="1.3"/>
+<text x="115.0" y="61.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Firmware</text>
+<text x="115.0" y="76.7" text-anchor="middle" font-size="10.5" fill="#52606d">control loop proves it</text>
+<text x="115.0" y="91.7" text-anchor="middle" font-size="10.5" fill="#52606d">is alive every 500 ms;</text>
+<text x="115.0" y="106.7" text-anchor="middle" font-size="10.5" fill="#52606d">pulse every 5 ms</text>
+<rect x="290" y="20" width="210" height="60" rx="5" fill="#fef2f2" stroke="#1f2933" stroke-width="1.3"/>
+<text x="395.0" y="46.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Detector A</text>
+<text x="395.0" y="61.7" text-anchor="middle" font-size="10.5" fill="#52606d">charge pump, comparator</text>
+<rect x="290" y="100" width="210" height="60" rx="5" fill="#fef2f2" stroke="#1f2933" stroke-width="1.3"/>
+<text x="395.0" y="126.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Detector B</text>
+<text x="395.0" y="141.7" text-anchor="middle" font-size="10.5" fill="#52606d">separate charge pump</text>
+<rect x="290" y="190" width="210" height="60" rx="5" fill="#fef2f2" stroke="#1f2933" stroke-width="1.3"/>
+<text x="395.0" y="216.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Over-current latch</text>
+<text x="395.0" y="231.7" text-anchor="middle" font-size="10.5" fill="#52606d">shunt, comparator, gates</text>
+<rect x="580" y="20" width="180" height="60" rx="5" fill="#f0fdf4" stroke="#1f2933" stroke-width="1.3"/>
+<text x="670.0" y="46.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Gate drive on</text>
+<text x="670.0" y="61.7" text-anchor="middle" font-size="10.5" fill="#52606d">opto LED supply V_DRV</text>
+<rect x="580" y="100" width="180" height="60" rx="5" fill="#f0fdf4" stroke="#1f2933" stroke-width="1.3"/>
+<text x="670.0" y="126.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Relay K1 closed</text>
+<text x="670.0" y="141.7" text-anchor="middle" font-size="10.5" fill="#52606d">COM terminals live</text>
+<rect x="820" y="50" width="140" height="80" rx="5" fill="#f0fdf4" stroke="#1f2933" stroke-width="1.3"/>
+<text x="890.0" y="79.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Valve</text>
+<text x="890.0" y="94.2" text-anchor="middle" font-size="10.5" fill="#52606d">opens only if</text>
+<text x="890.0" y="109.2" text-anchor="middle" font-size="10.5" fill="#52606d">both are on</text>
+<path d="M210,70 L250,70 L250,50 L290,50" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<text x="230" y="44" font-size="10.5" fill="#52606d" text-anchor="middle">pulses</text>
+<path d="M250,70 L250,130 L290,130" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M500,50 L580,50" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M500,130 L580,130" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M760,50 L790,50 L790,80 L820,80" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M760,130 L790,130 L790,100 L820,100" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M500,220 L540,220 L540,60 L580,60" fill="none" stroke="#b91c1c" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="546" y="205" font-size="10.5" fill="#b91c1c" text-anchor="start">removes drive</text>
+<path d="M520,220 L520,140 L580,140" fill="none" stroke="#b91c1c" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="20" y="300" font-size="13" fill="#1f2933" text-anchor="start" font-weight="bold">When the pulses stop (crash, hang, reset, flashing, power loss):</text>
+<line x1="60" y1="360" x2="900" y2="360" stroke="#1f2933" stroke-width="1.5"/>
+<line x1="60.0" y1="355" x2="60.0" y2="365" stroke="#1f2933"/>
+<text x="60.0" y="380" font-size="10.5" fill="#52606d" text-anchor="middle">0.0 s</text>
+<line x1="165.0" y1="355" x2="165.0" y2="365" stroke="#1f2933"/>
+<text x="165.0" y="380" font-size="10.5" fill="#52606d" text-anchor="middle">0.2 s</text>
+<line x1="270.0" y1="355" x2="270.0" y2="365" stroke="#1f2933"/>
+<text x="270.0" y="380" font-size="10.5" fill="#52606d" text-anchor="middle">0.4 s</text>
+<line x1="375.0" y1="355" x2="375.0" y2="365" stroke="#1f2933"/>
+<text x="375.0" y="380" font-size="10.5" fill="#52606d" text-anchor="middle">0.6 s</text>
+<line x1="480.0" y1="355" x2="480.0" y2="365" stroke="#1f2933"/>
+<text x="480.0" y="380" font-size="10.5" fill="#52606d" text-anchor="middle">0.8 s</text>
+<line x1="585.0" y1="355" x2="585.0" y2="365" stroke="#1f2933"/>
+<text x="585.0" y="380" font-size="10.5" fill="#52606d" text-anchor="middle">1.0 s</text>
+<line x1="690.0" y1="355" x2="690.0" y2="365" stroke="#1f2933"/>
+<text x="690.0" y="380" font-size="10.5" fill="#52606d" text-anchor="middle">1.2 s</text>
+<line x1="795.0" y1="355" x2="795.0" y2="365" stroke="#1f2933"/>
+<text x="795.0" y="380" font-size="10.5" fill="#52606d" text-anchor="middle">1.4 s</text>
+<line x1="900.0" y1="355" x2="900.0" y2="365" stroke="#1f2933"/>
+<text x="900.0" y="380" font-size="10.5" fill="#52606d" text-anchor="middle">1.6 s</text>
+<text x="60" y="316" font-size="11" fill="#1f2933" text-anchor="middle">last pulse</text>
+<line x1="60" y1="322" x2="60" y2="360" stroke="#1f2933" stroke-dasharray="3 3"/>
+<rect x="296.25" y="326" width="236.25" height="14" rx="3" fill="#b91c1c" opacity="0.35"/>
+<text x="540.5" y="337" font-size="11" fill="#1f2933" text-anchor="start">gate drive removed: 0.45 to 0.9 s</text>
+<rect x="123.0" y="344" width="435.75" height="14" rx="3" fill="#c2410c" opacity="0.35"/>
+<text x="566.75" y="355" font-size="11" fill="#1f2933" text-anchor="start">relay open: 0.12 to 0.95 s</text>
+<text x="20" y="410" font-size="11.5" fill="#1f2933" text-anchor="start">From a stuck control loop to no drive: at most 1.4 s (500 ms heartbeat timeout plus the times above); relay open by 1.5 s.</text>
+<text x="20" y="430" font-size="11.5" fill="#52606d" text-anchor="start">Times are simulation results from hardware design sections 8.4 and 19.4. No board has been measured.</text>
+</svg>

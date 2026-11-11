@@ -41,8 +41,9 @@ mosquitto_passwd -c /etc/mosquitto/passwd zoneflow
 
 ### 2. The controller
 
-Set the broker with the [REST API](api.md) (`PUT /api/v1/mqtt`, admin
-login needed) or in the web UI once it exists:
+Set the broker in the web interface, **Settings → MQTT and Home Assistant**
+(see [the web interface](standalone.md#settings)), or with the
+[REST API](api.md) (`PUT /api/v1/mqtt`, admin login needed):
 
 ```sh
 curl -X PUT http://zoneflow-xxxx.local/api/v1/mqtt \

@@ -1,70 +1,49 @@
-# Hardware
+# Hardware reference
 
-!!! warning "Design only"
-    This hardware has not been built. Nothing on these pages has been
-    bench-tested. The decisions below come from the
-    [system specification](../design/system-spec.md). The circuit behind them,
-    with part numbers and calculations, is in the
-    [hardware design](../design/hardware-design.md). Tracked in [issue #4](https://github.com/syntroniks/zoneflow/issues/4) (schematic and parts) and
-    [issue #5](https://github.com/syntroniks/zoneflow/issues/5) (layout and fabrication outputs).
+!!! warning "Design values; not yet verified on hardware"
+    The revision A board exists as a reviewed circuit design and a captured
+    schematic. The PCB layout is not finished and nothing has been built or
+    measured. Every figure in this section is a design value, a calculation
+    or a simulation result, from the
+    [hardware design](../design/hardware-design.md).
 
-## Baseline decisions
+## Block diagram
 
-| Block | Decision |
-|---|---|
-| MCU module | ESP32-S3-WROOM-1-N16R8, PCB antenna, 16 MB flash, 8 MB PSRAM |
-| Output stage | One triac per output, fired through an opto-triac. One 24 VAC leg is circuit ground and all triacs return through one current shunt |
-| Logic supply | Half-wave rectifier, bulk capacitor, 100 V buck converter to a 5 V bus, linear regulator to 3.3 V |
-| USB | USB-C, native ESP32-S3 USB for flashing and logs |
-| Protection | A fuse in each 24 VAC wire and a surge clamp on the AC input. Snubber, TVS and PTC on every output. TVS on every sensor terminal and on the valve common. A relay in the valve common |
-| Current sense | One low-side shunt measures total valve current. A hardware comparator cuts drive on a short |
-| AC presence | A signal that tells firmware 24 VAC is present |
-| RTC | I2C RTC with coin-cell backup |
-| Display | 2.0 to 2.4 inch colour IPS TFT, 320x240, SPI, no touch |
-| Controls | Rotary encoder with push switch, plus Back and Manual/Home buttons |
-| Expansion | One I2C connector (Qwiic/STEMMA QT pinout) |
-| PCB | 2 or 4 layers, JLCPCB standard capabilities |
+[![ZoneFlow rev A block diagram](../assets/diagrams/block-diagram.svg)](../assets/diagrams/block-diagram.svg)
 
-The logic supply input range follows from the supply requirement: the board
-must survive 32 VAC RMS continuous, which is about 45 V peak (32 x 1.414).
+Select the diagram to open it full size.
 
-## Electrical requirements
+In words:
 
-| Item | Requirement |
-|---|---|
-| Supply | 24 VAC nominal, Class 2 transformer, 50/60 Hz. Survive 32 VAC RMS continuous |
-| Zones | 8 switched 24 VAC outputs |
-| Master / pump | 1 additional switched 24 VAC output |
-| Load per output | 0.5 A continuous, 1.5 A inrush for 100 ms |
-| Total | Up to 2 zones plus master on at once (1.5 A total continuous) |
-| Sensors | Rain sensor (dry contact, NO or NC). Flow meter (pulse, up to 200 Hz). One spare input |
-
-## Terminals {#terminals}
-
-Pluggable 3.81 mm screw terminal blocks, left to right: 24VAC x2, then COM x2,
-MV and Z1 to Z4, then Z5 to Z8, then the sensor block 5V, FLOW, GND, RAIN,
-GND, AUX, GND. The order and the reasons are in
-[hardware design section 16](../design/hardware-design.md#16-connectors-and-test-points).
-
-## Safety rules built into the design
-
-1. Outputs are off by default. With the MCU in reset, unpowered, crashed or being flashed, every valve output is off. This is enforced in hardware, not only in firmware.
-2. A valve output never shares an ESP32 strapping pin or a pin that glitches at boot.
-3. A hardware output-enable gates all output drivers. Firmware must keep toggling a keep-alive signal or drive is removed. A second, independent detector on the same signal opens the valve common relay, so that a single failed part in either cannot leave a valve on.
-4. Firmware enforces a per-zone maximum run time.
-5. Only Class 2 circuits are on the board. No mains.
-
-These are design rules. None has been verified on hardware.
-
-## Pin map
-
-The pin map is `hardware/pinmap.yaml`. Firmware reads pin numbers from one
-board header only. The net on every component pin is in
-`hardware/netlist.yaml`.
+- **Power.** The 24 VAC input passes a fuse in each wire and a surge clamp. A diode and a 470 uF capacitor rectify it. A buck regulator rated for 100 V makes 5.3 V, and a linear regulator makes 3.3 V. USB-C feeds the same 5 V bus through a diode, so USB alone runs the logic, the display and the radio, but not the valves.
+- **Control.** An ESP32-S3-WROOM-1 module with WiFi and Bluetooth LE runs the firmware. A real-time clock with a CR2032 cell keeps time through power cuts. The display, knob and two buttons, the sensor inputs and a Qwiic connector connect to it.
+- **Outputs.** Nine identical channels, eight zones and the master. Each has a triac that switches the valve, fired through an opto-triac, with a resettable fuse, a surge clamp and a snubber. The processor reaches them only through an I2C expander, which is held in reset whenever drive is off.
+- **Valve common.** A relay feeds the COM terminals. It closes only while firmware asks for it and two independent conditions allow it.
+- **Fail-safe.** Two keep-alive detectors and an over-current latch can each remove drive without firmware. See [how the fail-safe works](fail-safe.md).
+- **Measurement.** All triacs return through one 0.1 ohm shunt. Two amplifiers feed the processor's ADC, and firmware computes the true RMS current. A comparator on the same signal trips the over-current latch. A square wave at mains frequency tells firmware that 24 VAC is present.
 
 ## Pages
 
-- [Schematic](schematic.md)
-- [Bill of materials](bom.md)
-- [Ordering from a fab](ordering.md)
-- [Design notes](design-notes.md)
+- [Specifications](specifications.md): ratings, interfaces and sizes, as designed.
+- [How the fail-safe works](fail-safe.md): why a crashed controller cannot hold a valve open.
+- [Schematic](schematic.md): the 20-page KiCad schematic, sheet by sheet.
+- [Bill of materials](bom.md): every part, with LCSC numbers and data sheets.
+- [The 4-zone build](four-zone.md): what is left off.
+- [Ordering boards](ordering.md): what is missing before anyone can order.
+- [Design notes](design-notes.md): where the calculations are.
+
+## Safety rules built into the design
+
+From the [specification](../design/system-spec.md), section 2:
+
+1. Outputs are off by default. With the processor in reset, unpowered, crashed or being flashed, every valve output is off. This is enforced in hardware.
+2. No valve output shares an ESP32 strapping pin or a pin that glitches at boot. In this design no valve is on a processor pin at all.
+3. A hardware output-enable gates all output drivers. Firmware must keep toggling a keep-alive signal. A second detector on the same signal, sharing no part with the first, releases the valve-common relay.
+4. Firmware enforces a maximum run time per zone, counted across back-to-back runs.
+5. Only Class 2 circuits are on the board. No mains.
+6. A relay in the valve common removes power from every valve when an output device has failed short.
+
+## Pin map and netlist
+
+- `hardware/pinmap.yaml`: every processor pin, I2C address and expander bit. Both firmwares generate their pin definitions from it.
+- `hardware/netlist.yaml`: every component, its value, package, LCSC number and the net on every pin. The schematic is generated from it and checked against it.

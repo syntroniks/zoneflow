@@ -83,9 +83,8 @@ keeps watering on schedule when the network is down.
 ### 3.2 Pin map
 
 The pin map lives in `hardware/pinmap.yaml`.
-Firmware reads pin numbers only from one board header generated from, or kept
-in step with, that file. Until then firmware uses a provisional map and must
-not scatter pin numbers through the code.
+Firmware reads pin numbers only from one board header generated from that
+file, and must not scatter pin numbers through the code.
 
 ### 3.3 Hardware deliverables
 
@@ -140,6 +139,13 @@ hardware keep-alive signal.
 A browser-based installer on the project site (WebSerial) that flashes either
 firmware option onto a board over USB, and release builds produced by CI.
 
+### 4.4 Options kept open, not in the first release
+
+- A board profile for the OpenSprinkler firmware (GPL-3.0), which would bring
+  its app and Home Assistant integration. Nothing in the hardware should
+  prevent it.
+- A Matter Water Valve / Irrigation System endpoint.
+
 ## 5. Enclosure
 
 3D-printable indoor wall-mount enclosure, parametric source in the repo.
@@ -163,13 +169,6 @@ Published with GitHub Pages from this repository.
 - Firmware guides for both options, API reference.
 - Enclosure printing and assembly.
 - Troubleshooting and safety notes.
-
-### 4.4 Options kept open, not in the first release
-
-- A board profile for the OpenSprinkler firmware (GPL-3.0), which would bring
-  its app and Home Assistant integration. Nothing in the hardware should
-  prevent it.
-- A Matter Water Valve / Irrigation System endpoint.
 
 ## 7. Licences
 

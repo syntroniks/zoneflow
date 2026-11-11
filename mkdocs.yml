@@ -1,5 +1,5 @@
 site_name: ZoneFlow
-site_description: Open-source 24 VAC irrigation controller. Early design, not yet built.
+site_description: Open-source 24 VAC irrigation controller. Designed on paper; not yet built or tested.
 site_url: https://syntroniks.github.io/zoneflow/
 repo_url: https://github.com/syntroniks/zoneflow
 repo_name: syntroniks/zoneflow
@@ -50,9 +50,11 @@ plugins:
   - search
   - swagger-ui-tag
 
-# Publishes the generated schematic of the rev A board from hardware/zoneflow-a/output.
+# Publish generated hardware and enclosure files (schematic, BOMs, drilling
+# template) with the site, and render the BOM table from its CSV.
 hooks:
   - tools/mkdocs_hooks/hardware_outputs.py
+  - tools/mkdocs_hooks/bom_table.py
 
 extra_css:
   - stylesheets/extra.css
@@ -60,6 +62,7 @@ extra_css:
 markdown_extensions:
   - admonition
   - attr_list
+  - def_list
   - md_in_html
   - tables
   - toc:
@@ -79,42 +82,55 @@ validation:
 
 nav:
   - Home: index.md
+  - Status and roadmap: status.md
+  - Safety: safety.md
   - Getting started:
       - getting-started/index.md
+      - What you need: getting-started/what-you-need.md
+      - Mounting: getting-started/mounting.md
       - Wiring: getting-started/wiring.md
+      - Installing firmware: firmware/web-installer.md
       - First power-up: getting-started/first-power-up.md
-      - Provisioning: getting-started/provisioning.md
+      - Joining your network: getting-started/provisioning.md
       - First schedule: getting-started/first-schedule.md
-  - Hardware:
+      - Testing each zone: getting-started/testing-zones.md
+  - User guide:
+      - Choosing a firmware: firmware/index.md
+      - The display: guide/display.md
+      - The web interface: firmware/standalone.md
+      - MQTT and Home Assistant: firmware/mqtt.md
+      - ESPHome: firmware/esphome.md
+      - Updating firmware: firmware/releases.md
+      - Backup and restore: guide/backup-restore.md
+      - Factory reset: guide/factory-reset.md
+      - Security for home users: guide/security.md
+      - REST API reference: firmware/api.md
+  - Troubleshooting: troubleshooting.md
+  - Hardware reference:
       - hardware/index.md
+      - Specifications: hardware/specifications.md
+      - How the fail-safe works: hardware/fail-safe.md
       - Schematic: hardware/schematic.md
       - Bill of materials: hardware/bom.md
-      - Ordering from a fab: hardware/ordering.md
+      - The 4-zone build: hardware/four-zone.md
+      - Ordering boards: hardware/ordering.md
       - Design notes: hardware/design-notes.md
-  - Firmware:
-      - firmware/index.md
-      - Standalone firmware: firmware/standalone.md
-      - ESPHome: firmware/esphome.md
-      - Web installer: firmware/web-installer.md
-      - Releases and updating: firmware/releases.md
-      - API reference: firmware/api.md
-      - MQTT and Home Assistant: firmware/mqtt.md
-      - Web UI contract: firmware/web-ui-contract.md
   - Enclosure:
       - enclosure/index.md
       - Printing: enclosure/printing.md
       - Assembly: enclosure/assembly.md
-  - Troubleshooting: troubleshooting.md
-  - Safety: safety.md
+  - FAQ: faq.md
+  - Glossary: glossary.md
   - Contributing: contributing.md
   - Design documents:
       - design/index.md
       - System specification: design/system-spec.md
       - Prior-art survey: design/prior-art.md
+      - Hardware design: design/hardware-design.md
+      - Hardware review A1: design/hardware-review-a1.md
+      - Hardware toolchain: design/hardware-toolchain.md
+      - Mechanical design: design/mechanical.md
       - Firmware architecture: design/firmware-architecture.md
       - Firmware security: design/firmware-security.md
       - Display interface: design/display-ui.md
-      - Hardware toolchain: design/hardware-toolchain.md
-      - Hardware design: design/hardware-design.md
-      - Mechanical design: design/mechanical.md
-      - Hardware review A1: design/hardware-review-a1.md
+      - Web UI contract: firmware/web-ui-contract.md

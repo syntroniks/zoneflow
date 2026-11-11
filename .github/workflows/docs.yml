@@ -30,6 +30,11 @@ jobs:
       - name: Build site
         run: uv run mkdocs build --strict
 
+      # mkdocs --strict checks Markdown links between pages. This also checks
+      # raw HTML links and images, generated files and anchors in the built site.
+      - name: Check internal links
+        run: python3 tools/docs/check_links.py site
+
       # WebSerial cannot download GitHub release assets (other origin, no CORS), so the newest
       # release is copied into the site. Its checksums are checked first. No release yet: skip,
       # and the installer page says so.

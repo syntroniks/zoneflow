@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 650" width="1060" height="650" font-family="Helvetica, Arial, sans-serif" font-size="12" role="img" aria-labelledby="t d">
+<title id="t">ZoneFlow rev A block diagram</title>
+<desc id="d">24 VAC enters through two fuses and a surge clamp, is half-wave rectified and stepped down to 5.3 V and 3.3 V. USB-C also feeds the 5 V bus. The ESP32-S3 drives nine triac outputs through an I2C expander and opto-triacs. A relay feeds the valve common. Two keep-alive detectors and an over-current latch can remove drive without firmware. A shunt measures total valve current. Sensor inputs, an RTC, the display, the encoder and buttons, and a Qwiic connector complete the board.</desc>
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f2933"/></marker><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b91c1c"/></marker></defs>
+<rect x="0" y="0" width="1060" height="650" fill="#ffffff"/>
+<rect x="10" y="10" width="300" height="360" rx="8" fill="none" stroke="#c2410c" stroke-width="1.2" stroke-dasharray="6 4"/>
+<text x="18" y="25" font-size="11" font-weight="bold" fill="#c2410c">Power</text>
+<rect x="30" y="40" width="120" height="50" rx="5" fill="#fff7ed" stroke="#1f2933" stroke-width="1.3"/>
+<text x="90.0" y="61.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">24 VAC in</text>
+<text x="90.0" y="76.7" text-anchor="middle" font-size="10.5" fill="#52606d">J1, Class 2 only</text>
+<rect x="170" y="40" width="120" height="50" rx="5" fill="#fff7ed" stroke="#1f2933" stroke-width="1.3"/>
+<text x="230.0" y="61.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">2 fuses</text>
+<text x="230.0" y="76.7" text-anchor="middle" font-size="10.5" fill="#52606d">F1, F4, 3 A time-lag</text>
+<rect x="170" y="110" width="120" height="44" rx="5" fill="#fff7ed" stroke="#1f2933" stroke-width="1.3"/>
+<text x="230.0" y="128.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Surge clamp</text>
+<text x="230.0" y="143.7" text-anchor="middle" font-size="10.5" fill="#52606d">TVS D1</text>
+<rect x="30" y="130" width="120" height="50" rx="5" fill="#fff7ed" stroke="#1f2933" stroke-width="1.3"/>
+<text x="90.0" y="151.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">24 VAC present</text>
+<text x="90.0" y="166.7" text-anchor="middle" font-size="10.5" fill="#52606d">zero-cross signal</text>
+<rect x="170" y="174" width="120" height="50" rx="5" fill="#fff7ed" stroke="#1f2933" stroke-width="1.3"/>
+<text x="230.0" y="195.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Half-wave rectifier</text>
+<text x="230.0" y="210.7" text-anchor="middle" font-size="10.5" fill="#52606d">and 470 uF</text>
+<rect x="170" y="244" width="120" height="50" rx="5" fill="#fff7ed" stroke="#1f2933" stroke-width="1.3"/>
+<text x="230.0" y="265.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Buck converter</text>
+<text x="230.0" y="280.7" text-anchor="middle" font-size="10.5" fill="#52606d">100 V rated, 5.3 V</text>
+<rect x="30" y="244" width="120" height="50" rx="5" fill="#fff7ed" stroke="#1f2933" stroke-width="1.3"/>
+<text x="90.0" y="265.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">USB-C</text>
+<text x="90.0" y="280.7" text-anchor="middle" font-size="10.5" fill="#52606d">flash, logs, power</text>
+<rect x="100" y="314" width="120" height="44" rx="5" fill="#fff7ed" stroke="#1f2933" stroke-width="1.3"/>
+<text x="160.0" y="332.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">5 V bus</text>
+<text x="160.0" y="347.7" text-anchor="middle" font-size="10.5" fill="#52606d">LDO to 3.3 V</text>
+<path d="M150,65 L170,65" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M230,90 L230,110" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M230,154 L230,174" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M230,224 L230,244" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M230,294 L230,304 L190,304 L190,314" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M90,294 L90,304 L130,304 L130,314" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<rect x="330" y="10" width="300" height="360" rx="8" fill="none" stroke="#0369a1" stroke-width="1.2" stroke-dasharray="6 4"/>
+<text x="338" y="25" font-size="11" font-weight="bold" fill="#0369a1">Control</text>
+<rect x="370" y="40" width="230" height="64" rx="5" fill="#eef6ff" stroke="#1f2933" stroke-width="1.3"/>
+<text x="485.0" y="61.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">ESP32-S3-WROOM-1</text>
+<text x="485.0" y="76.2" text-anchor="middle" font-size="10.5" fill="#52606d">WiFi 2.4 GHz, Bluetooth LE</text>
+<text x="485.0" y="91.2" text-anchor="middle" font-size="10.5" fill="#52606d">16 MB flash, 8 MB PSRAM</text>
+<rect x="360" y="130" width="120" height="50" rx="5" fill="#eef6ff" stroke="#1f2933" stroke-width="1.3"/>
+<text x="420.0" y="151.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Real-time clock</text>
+<text x="420.0" y="166.7" text-anchor="middle" font-size="10.5" fill="#52606d">PCF8563, CR2032</text>
+<rect x="495" y="130" width="125" height="64" rx="5" fill="#eef6ff" stroke="#1f2933" stroke-width="1.3"/>
+<text x="557.5" y="151.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Display 2.0 inch</text>
+<text x="557.5" y="166.2" text-anchor="middle" font-size="10.5" fill="#52606d">320x240 IPS</text>
+<text x="557.5" y="181.2" text-anchor="middle" font-size="10.5" fill="#52606d">encoder, 2 buttons</text>
+<rect x="360" y="210" width="120" height="44" rx="5" fill="#eef6ff" stroke="#1f2933" stroke-width="1.3"/>
+<text x="420.0" y="228.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Qwiic</text>
+<text x="420.0" y="243.7" text-anchor="middle" font-size="10.5" fill="#52606d">I2C, 80 mA</text>
+<rect x="360" y="274" width="260" height="64" rx="5" fill="#eef6ff" stroke="#1f2933" stroke-width="1.3"/>
+<text x="490.0" y="295.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Sensor inputs</text>
+<text x="490.0" y="310.2" text-anchor="middle" font-size="10.5" fill="#52606d">RAIN, FLOW (up to 200 Hz), AUX</text>
+<text x="490.0" y="325.2" text-anchor="middle" font-size="10.5" fill="#52606d">5V sensor supply, 100 mA</text>
+<text x="495" y="225" font-size="10.5" fill="#52606d" text-anchor="start">All connect to</text>
+<text x="495" y="239" font-size="10.5" fill="#52606d" text-anchor="start">the ESP32-S3</text>
+<rect x="650" y="10" width="400" height="360" rx="8" fill="none" stroke="#b91c1c" stroke-width="1.2" stroke-dasharray="6 4"/>
+<text x="658" y="25" font-size="11" font-weight="bold" fill="#b91c1c">Fail-safe</text>
+<rect x="670" y="40" width="170" height="56" rx="5" fill="#fef2f2" stroke="#1f2933" stroke-width="1.3"/>
+<text x="755.0" y="64.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Keep-alive detector A</text>
+<text x="755.0" y="79.7" text-anchor="middle" font-size="10.5" fill="#52606d">needs an edge every 20 ms</text>
+<rect x="865" y="40" width="170" height="56" rx="5" fill="#fef2f2" stroke="#1f2933" stroke-width="1.3"/>
+<text x="950.0" y="64.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Keep-alive detector B</text>
+<text x="950.0" y="79.7" text-anchor="middle" font-size="10.5" fill="#52606d">own parts, holds the relay</text>
+<rect x="670" y="120" width="170" height="56" rx="5" fill="#fef2f2" stroke="#1f2933" stroke-width="1.3"/>
+<text x="755.0" y="144.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Over-current latch</text>
+<text x="755.0" y="159.7" text-anchor="middle" font-size="10.5" fill="#52606d">trips at 4.0 to 5.4 A peak</text>
+<rect x="670" y="200" width="170" height="56" rx="5" fill="#fef2f2" stroke="#1f2933" stroke-width="1.3"/>
+<text x="755.0" y="224.7" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Drive enable</text>
+<text x="755.0" y="239.7" text-anchor="middle" font-size="10.5" fill="#52606d">LED supply, expander reset</text>
+<path d="M600,60 L670,60" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<text x="636" y="54" font-size="10.5" fill="#52606d" text-anchor="middle">keep-alive</text>
+<path d="M645,60 L645,28 L950,28 L950,40" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M755,96 L755,106 L660,106 L660,228 L670,228" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M755,176 L755,200" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<rect x="10" y="390" width="1040" height="240" rx="8" fill="none" stroke="#047857" stroke-width="1.2" stroke-dasharray="6 4"/>
+<text x="18" y="405" font-size="11" font-weight="bold" fill="#047857">Valve outputs</text>
+<rect x="25" y="430" width="150" height="60" rx="5" fill="#f0fdf4" stroke="#1f2933" stroke-width="1.3"/>
+<text x="100.0" y="449.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">I/O expander</text>
+<text x="100.0" y="464.2" text-anchor="middle" font-size="10.5" fill="#52606d">TCA9539, in reset</text>
+<text x="100.0" y="479.2" text-anchor="middle" font-size="10.5" fill="#52606d">while drive is off</text>
+<rect x="195" y="430" width="140" height="60" rx="5" fill="#f0fdf4" stroke="#1f2933" stroke-width="1.3"/>
+<text x="265.0" y="449.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">9 opto-triacs</text>
+<text x="265.0" y="464.2" text-anchor="middle" font-size="10.5" fill="#52606d">MOC3023</text>
+<text x="265.0" y="479.2" text-anchor="middle" font-size="10.5" fill="#52606d">and output LEDs</text>
+<rect x="355" y="430" width="160" height="60" rx="5" fill="#f0fdf4" stroke="#1f2933" stroke-width="1.3"/>
+<text x="435.0" y="449.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">9 triacs T810-600B</text>
+<text x="435.0" y="464.2" text-anchor="middle" font-size="10.5" fill="#52606d">PTC, TVS, snubber</text>
+<text x="435.0" y="479.2" text-anchor="middle" font-size="10.5" fill="#52606d">on every channel</text>
+<rect x="670" y="430" width="140" height="60" rx="5" fill="#f0fdf4" stroke="#1f2933" stroke-width="1.3"/>
+<text x="740.0" y="449.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Terminals</text>
+<text x="740.0" y="464.2" text-anchor="middle" font-size="10.5" fill="#52606d">MV, Z1 to Z8</text>
+<text x="740.0" y="479.2" text-anchor="middle" font-size="10.5" fill="#52606d">each valve to COM</text>
+<rect x="850" y="430" width="185" height="60" rx="5" fill="#f0fdf4" stroke="#1f2933" stroke-width="1.3"/>
+<text x="942.5" y="449.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Valve-common relay K1</text>
+<text x="942.5" y="464.2" text-anchor="middle" font-size="10.5" fill="#52606d">COM live only while</text>
+<text x="942.5" y="479.2" text-anchor="middle" font-size="10.5" fill="#52606d">both detectors allow it</text>
+<rect x="355" y="530" width="160" height="70" rx="5" fill="#f0fdf4" stroke="#1f2933" stroke-width="1.3"/>
+<text x="435.0" y="554.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#1f2933">Shunt 0.1 ohm</text>
+<text x="435.0" y="569.2" text-anchor="middle" font-size="10.5" fill="#52606d">two amplifiers to the</text>
+<text x="435.0" y="584.2" text-anchor="middle" font-size="10.5" fill="#52606d">ADC and the comparator</text>
+<path d="M370,90 L345,90 L345,412 L100,412 L100,430" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<text x="220" y="408" font-size="10.5" fill="#52606d" text-anchor="middle">I2C</text>
+<path d="M175,460 L195,460" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M335,460 L355,460" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<path d="M515,460 L670,460" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<text x="560" y="454" font-size="10.5" fill="#52606d" text-anchor="middle">outputs</text>
+<path d="M850,460 L810,460" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<text x="830" y="454" font-size="10.5" fill="#52606d" text-anchor="middle">COM</text>
+<path d="M435,490 L435,530" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<text x="442" y="516" font-size="10.5" fill="#52606d" text-anchor="start">triac return</text>
+<path d="M515,565 L640,565 L640,148 L670,148" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<text x="646" y="520" font-size="10.5" fill="#52606d" text-anchor="start">current</text>
+<path d="M755,256 L755,382 L265,382 L265,430" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<text x="560" y="398" font-size="10.5" fill="#52606d" text-anchor="middle">drive enable</text>
+<path d="M950,96 L950,430" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<text x="956" y="300" font-size="10.5" fill="#52606d" text-anchor="start">relay transistor Q2</text>
+<path d="M100,490 L100,612 L942,612 L942,490" fill="none" stroke="#1f2933" stroke-width="1.5" marker-end="url(#ar)"/>
+<text x="520" y="607" font-size="10.5" fill="#52606d" text-anchor="middle">RLY_ON (expander bit)</text>
+<text x="25" y="642" font-size="11" fill="#52606d" text-anchor="start">Drawn from hardware design sections 1 and 4 to 16. Part numbers are design choices; nothing has been built.</text>
+</svg>

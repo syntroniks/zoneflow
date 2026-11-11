@@ -1,14 +1,26 @@
 # Getting started
 
-!!! warning "No hardware exists yet"
-    ZoneFlow is in early design. There is no board to wire up. These pages are
-    placeholders until a prototype has been built and bench-tested.
+!!! warning "Written from the design; not yet verified on hardware"
+    No ZoneFlow board has been built. These pages describe how the board,
+    the enclosure and the firmware are designed to be installed and used.
+    Expect corrections after the first prototype. Notes marked "to be
+    completed" say what is still missing and which issue unblocks it.
 
-The setup path will be:
+This is the installation manual. It is written for someone who can wire a
+sprinkler timer and use a multimeter. Do the steps in this order:
 
-1. [Wiring](wiring.md): connect the transformer, valves and sensors.
-2. [First power-up](first-power-up.md): check the board before you connect valves.
-3. [Provisioning](provisioning.md): join the controller to your WiFi.
-4. [First schedule](first-schedule.md): create a watering program.
+1. [Safety](../safety.md): read it first, in particular the USB and earthing rules.
+2. [What you need](what-you-need.md): transformer, cable, valves, tools.
+3. [Mounting](mounting.md): put the enclosure on the wall with the drilling template.
+4. [Wiring](wiring.md): terminal by terminal, with a diagram.
+5. [Installing firmware](../firmware/web-installer.md): only if the board has no firmware yet.
+6. [First power-up](first-power-up.md): what the display and the lights should show.
+7. [Joining your network](provisioning.md): standalone firmware or ESPHome.
+8. [First schedule](first-schedule.md): from the display, the web interface or Home Assistant.
+9. [Testing each zone](testing-zones.md): run each valve once and record its current.
 
-Read the [safety notes](../safety.md) before any of these steps.
+If something does not behave as described, see [troubleshooting](../troubleshooting.md).
+
+Before step 1, decide which firmware you will run:
+[choosing a firmware](../firmware/index.md). The wiring and mounting are the
+same for both.
