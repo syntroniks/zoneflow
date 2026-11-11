@@ -1,0 +1,114 @@
+name: enclosure
+
+on:
+  pull_request:
+    paths:
+      - "enclosure/**"
+      - "hardware/mechanical.yaml"
+      - "hardware/zoneflow-a/zoneflow-a.kicad_pcb"
+      - "hardware/zoneflow-a/design/heights.toml"
+      - ".github/workflows/enclosure.yml"
+  push:
+    branches: [main]
+    paths:
+      - "enclosure/**"
+      - "hardware/mechanical.yaml"
+      - "hardware/zoneflow-a/zoneflow-a.kicad_pcb"
+      - "hardware/zoneflow-a/design/heights.toml"
+      - ".github/workflows/enclosure.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: enclosure-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  layout:
+    name: read the board layout
+    runs-on: ubuntu-latest
+    # The KiCad project's own image, the version the board file was made with.
+    container:
+      image: kicad/kicad:10.0.8
+      options: --user root
+    steps:
+      - name: Install make and git
+        run: apt-get update && apt-get install -y --no-install-recommends make git ca-certificates
+
+      - uses: actions/checkout@v7
+
+      # The one step of the enclosure build that needs KiCad: where the laid-out
+      # board puts every part. Its result is committed and must be what the
+      # board file gives.
+      - name: Read the board file
+        run: |
+          rm enclosure/board_layout.json
+          make -C enclosure board_layout.json
+
+      - name: The committed layout is what the board file gives
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git diff --exit-code -- enclosure/board_layout.json
+
+  build:
+    name: build the print files and check them
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.3.3
+
+      # OpenSCAD snapshots leave the server after a while. The cache keeps the
+      # pinned one for as long as this workflow runs often enough.
+      - name: Cache the OpenSCAD snapshot
+        uses: actions/cache@v4
+        with:
+          path: enclosure/.cache
+          key: openscad-${{ hashFiles('enclosure/Makefile') }}
+
+      - name: Fetch OpenSCAD
+        run: |
+          make -C enclosure openscad
+          # A runner has no FUSE for an AppImage: unpack it once.
+          cd enclosure/.cache
+          test -d squashfs-root || ./OpenSCAD-*.AppImage --appimage-extract > /dev/null
+
+      - name: Libraries for rendering without a display
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libegl1 libgl1 libglu1-mesa libopengl0 libgl1-mesa-dri xvfb
+
+      # Everything is rebuilt except the two files that need KiCad: the layout
+      # (the job above) and the view-only board model, which depends on the
+      # part models of the KiCad library that made it.
+      - name: Rebuild everything from the sources
+        run: |
+          cd enclosure
+          keep=output/test-fit/view-only
+          rm -f board_params.scad testfit_params.scad
+          find output -type f ! -path "$keep/*" -delete
+          touch $keep/*
+          Xvfb :99 -screen 0 1600x1200x24 > /dev/null 2>&1 &
+          export DISPLAY=:99
+          make -j4 OPENSCAD="$PWD/.cache/squashfs-root/AppRun" \
+            -o board_layout.json -o $keep/zoneflow-a-board-detailed-view-only.stl
+
+      # Text, STL and 3MF are the same bytes on every machine. Pictures and the
+      # PDF are not: they depend on the graphics library and carry a date.
+      - name: The committed files are what the sources generate
+        run: |
+          git status --short -- enclosure docs/assets/enclosure
+          git diff --exit-code --stat -- enclosure docs/assets/enclosure \
+            ':(exclude)*.png' ':(exclude)*.pdf' ':(exclude)*.svg'
+          test -z "$(git status --porcelain --untracked-files=all -- enclosure docs/assets/enclosure | grep '^??' | grep -v 'enclosure/build/\|enclosure/.cache/')"
+
+      - name: Keep the print files and the report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zoneflow-test-fit-print-files
+          path: |
+            enclosure/build/zoneflow-test-fit-print-files.zip
+            enclosure/output/check-report.md
+            enclosure/output/test-fit/*.png
+          if-no-files-found: warn
