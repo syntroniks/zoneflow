@@ -297,22 +297,28 @@ resistance fitted to its data sheet limits.
 
 | Case | `V_BUCK` | Peak current | F5 opens after | D25 takes |
 |---|---|---|---|---|
-| No protection, `VIN_DC` 30 V | Past 7 V after 14 us, peak 42.7 V | | | |
-| No protection, `VIN_DC` 44.3 V | Past 7 V after 11 us, peak 63.4 V | | | |
-| Welded switch, 44.3 V, L1 saturated | 9.67 V | 46.3 A | 0.04 ms, 0.15 ms at three times the I²t | 0.015 J, 0.052 J |
-| Welded switch, 44.3 V, L1 47 uH | 9.19 to 9.24 V | 36.6 to 37.7 A | 0.11 ms, 0.22 ms | 0.022 J, 0.059 J |
-| Welded switch, 30 V | 8.54 to 8.78 V | 23.7 to 28.5 A | 0.12 to 0.19 ms, 18.9 ms | 0.025 to 0.029 J, 0.18 J |
-| Welded switch, 17 V | 7.90 to 7.99 V | 10.9 to 12.6 A | 2.9 ms, 58 ms | 0.093 J, 0.39 J |
-| Switch 0.725 ohm, 17 to 44.3 V | 7.67 to 8.60 V | 6.4 to 24.8 A | 0.15 to 20 ms, 1.4 to 63 ms | 0.027 to 0.14 J, 0.13 to 0.45 J |
-| Switch 5 ohm, 17 to 44.3 V | 7.46 to 7.67 V | 2.2 to 6.8 A | 22 to 62 ms, 160 to 199 ms | 0.15 to 0.23 J, 0.62 to 0.70 J |
-| D25 at its lowest clamp, welded switch, 17 and 44.3 V | 7.07 and 8.12 V | 13.7 to 14.1 and 48.5 A | | |
-| 40 and 75 VA instead of 20 VA | The same within 0.01 V | The same within 0.3 A | | |
+| No protection, `VIN_DC` 30 V | Past 7 V after 14 us, peak 43.1 V | | | |
+| No protection, `VIN_DC` 44.3 V | Past 7 V after 11 us, peak 64.8 V | | | |
+| Welded switch, 44.3 V, L1 saturated | 9.81 V | 49.0 A | 0.04 ms, 0.13 ms at three times the I²t | 0.016 J, 0.049 J |
+| Welded switch, 44.3 V, L1 47 uH | 9.26 to 9.33 V | 37.9 to 39.5 A | 0.10 ms, 0.21 ms | 0.022 J, 0.059 J |
+| Welded switch, 30 V | 8.59 to 8.87 V | 24.7 to 30.2 A | 0.10 to 0.18 ms, 18 ms | 0.022 to 0.029 J, 0.16 J |
+| Welded switch, 17 V | 7.91 to 8.01 V | 11.3 to 13.1 A | 2.7 ms, 58 ms | 0.091 J, 0.39 J |
+| Switch 0.725 ohm, 17 to 44.3 V | 7.68 to 8.64 V | 6.5 to 25.5 A | 0.15 to 20 ms, 1.2 to 63 ms | 0.027 to 0.14 J, 0.12 to 0.45 J |
+| Switch 5 ohm, 17 to 44.3 V | 7.46 to 7.68 V | 2.2 to 6.8 A | 22 to 61 ms, 160 to 198 ms | 0.15 to 0.23 J, 0.62 to 0.69 J |
+| D25 at its lowest clamp, welded switch, 17 and 44.3 V | 7.09 and 8.21 V | 14.4 to 14.6 and 51.4 to 51.5 A | | |
+| 40 and 75 VA instead of 20 VA | The same within 0.01 V | The same within 0.2 A | | |
+| The worst case with C1 at 0.099, 0.033 and 0.010 ohm | 9.61, 9.81 and 9.89 V | 45.1, 49.0 and 50.7 A | 0.047, 0.042 and 0.040 ms | |
 
 Where two figures are given, the first is for F5 opening at its nominal
 melting I²t and the second at three times that. In the cases that end
 within 10 ms, the pulse curve of the SMBJ data sheet (600 W at 1 ms, falling
-with the square root of the pulse length) allows 4.5 to 11 times the energy
+with the square root of the pulse length) allows 4.4 to 11 times the energy
 D25 takes.
+
+C1 is the Rubycon 63ZLJ470M12.5X20 that `main` changed to while review A2
+ran. Its sheet gives an impedance of at most 0.033 ohm at 20 °C, which the
+runs use. The Lelon part before it had 0.082 ohm, and with that the worst
+peak was 46 A.
 
 The last block holds F5 closed and reports the current the rectifier
 delivers through R1 into the clamp, which is what would flow if F5 were not
@@ -328,8 +334,9 @@ there:
 
 What it showed:
 
-- **The fault needs protection.** Without it `V_BUCK` is past the 7 V limit of U11 in 11 to 14 us and reaches 43 to 63 V.
-- **The clamp holds.** 9.7 V at most, with the part that clamps highest. `3V3` stays regulated: U3 takes 20 V.
+- **The fault needs protection.** Without it `V_BUCK` is past the 7 V limit of U11 in 11 to 14 us and reaches 43 to 65 V.
+- **The clamp holds.** 9.8 V at most, with the part that clamps highest, and 9.9 V if C1 is three times better than its limit. `3V3` stays regulated: U3 takes 20 V.
+- **The peak current reaches the interrupting rating of F5.** 49 to 52 A in the one worst case, at 44.3 V with a welded switch and a saturated inductor, against 50 A at 125 V and 300 A at 32 V DC in the data sheet. At 30 V it is 25 to 30 A.
 - **F5 opens in every case**, on the charge of C1 from about 23 V up and with the help of the rectifier below that.
 - **A fuse rated for the board's 3 A input could not do this.** The rectifier and R1 limit the current to 1.6 to 3.7 A rms. The time-lag input fuses F1 and F4 would not open, and R1 would burn at 9 to 42 W.
 - **Limits of the model**: a fuse heats without loss only for milliseconds, so the rows that end after tens of milliseconds are optimistic. The data sheet row that bounds them is 5 s at 200 %. The resistance of the failed switch is a parameter, not a known value. No arc is modelled.
