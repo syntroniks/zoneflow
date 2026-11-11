@@ -61,7 +61,7 @@ enum class SpareFunction : uint8_t {
 struct DiagSettings {
     bool currentEnabled = true;
     uint32_t settleMs = 500;
-    uint16_t idleMaxMa = 60;
+    uint16_t idleMaxMa = kDefaultIdleMaxMa; // hardware design 19.2
     uint16_t shortCircuitMa = 3000;
     uint8_t confirmSamples = 3;
 };

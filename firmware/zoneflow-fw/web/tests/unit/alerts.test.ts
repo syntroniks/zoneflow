@@ -13,7 +13,7 @@ describe('deriveAlerts', () => {
   it('explains a zone fault in plain language, names the zone and offers clear', () => {
     const s = { ...baseStatus(), faults: { active: ['zone_open_circuit' as const], zones: [{ zone: 3, fault: 'zone_open_circuit', locked_out: true }] } };
     const [a] = deriveAlerts(s, name, until);
-    expect(a?.title).toBe('No current through a valve on Zone 3');
+    expect(a?.title).toBe('Zone 3: no current');
     expect(a?.detail).toMatch(/Check the wire/);
     expect(a?.clearable).toBe(true);
     expect(a?.severity).toBe('error');

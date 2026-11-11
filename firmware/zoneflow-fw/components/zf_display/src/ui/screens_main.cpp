@@ -117,7 +117,9 @@ public:
             h.lines[1] = InfoLine{Icon::Rain, Tone::Warn,
                                   fmt(Str::HomeRainDelayUntil, whenText(s.rainDelayUntil, s.utc, c.tz).c_str()), false};
         } else if ((s.inhibitFlags & kInhibitSensor) != 0) {
-            h.lines[1] = InfoLine{Icon::Rain, Tone::Warn, tr(Str::HomeSensorWet), false};
+            // The rain sensor, or the spare input set to hold programs.
+            const bool spare = !s.sensors.rainActive && s.sensors.spareActive;
+            h.lines[1] = InfoLine{Icon::Rain, Tone::Warn, tr(spare ? Str::HomeSpareActive : Str::HomeSensorWet), false};
         } else if (s.sensors.rainEnabled) {
             h.lines[1] = InfoLine{Icon::Rain, Tone::Muted, tr(Str::HomeSensorDry), false};
         }

@@ -95,8 +95,9 @@ Every request that changes something needs a session. Reads are open unless
 "protect reads" is on. The reasoning is in the
 [firmware security notes](../design/firmware-security.md).
 
-1. **First access.** Set the admin password with the setup code shown on the
-   controller's display or serial console:
+1. **First access.** Set the admin password with the setup code from the
+   controller's display (**Menu → Setup → Network → Show setup code**, hold
+   the knob for 3 s) or its serial console:
 
     ```sh
     curl -X POST http://zoneflow-ab12.local/api/v1/auth/setup \

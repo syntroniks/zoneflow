@@ -57,6 +57,7 @@ do better than that, and this design does not pretend it does.
 |---|---|---|
 | Encoder | turn | Moves the focus. In a picker, changes the value. |
 | Encoder | press | Selects the focused item. In a picker, confirms. |
+| Encoder | hold 3 s | Only on Show setup code: shows the setup code (section 9). |
 | Back | press | One level up. In a picker, cancels. |
 | Back | hold | Repeats every 0.4 s: climbs out of the menus. |
 | Manual/Home | press | On Home: opens Manual run. Elsewhere: goes Home. |
@@ -78,7 +79,11 @@ Rules that hold everywhere:
 
 The encoder press acts when the switch closes, not when it opens, so the
 most used control has no delay. Only Manual/Home waits for the release,
-because it has to tell a press from a hold.
+because it has to tell a press from a hold. The encoder's hold is sent in
+addition to its press, 3 s after it (`ButtonTiming::holdMs`), so it costs
+the press nothing; only the Show setup code screen acts on it. The three
+timings are in one place, `zf_ui/input.hpp`, for the device and the
+simulator.
 
 Acceleration applies in value pickers only. Slow turning gives one step per
 detent. Above 14, 28 and 50 detents per second a step counts 2, 5 and 10
@@ -104,6 +109,8 @@ flowchart LR
     menu --> setup[Setup]
     zone --> fault
     setup --> network[Network] --> prov[WiFi setup, QR code]
+    network --> reprov([Restart into WiFi setup question])
+    network --> code[Show setup code]
     setup --> time[Time] --> tz[Time zone list]
     setup --> display[Display]
     setup --> about[About]
@@ -305,7 +312,12 @@ past the delay.
 
 **Sensors and flow** is read-only: rain sensor, 24 V AC supply, valve
 current, flow rate, water counted since power-on, the valve board's state,
-master valve, spare input.
+master valve, spare input and what the spare input is set to do ("Holds
+programs" or "Shown only"; set in the web interface). When the spare input
+holds programs, Home's second line says "Spare input on: programs on hold"
+rather than blaming the rain sensor.
+
+![Spare input holding programs](display-ui/home-spare-input.png){ width="300" }
 
 **Faults** lists what is wrong, one row per fault. A row opens the
 explanation:
@@ -313,7 +325,10 @@ explanation:
 ![Fault explanation](display-ui/fault-detail.png){ width="300" }
 
 Each text says what happened, then what to check, in words a homeowner
-uses. No codes.
+uses. No codes. The headlines are the one table of fault text,
+`zf_core/include/zf/fault_text.hpp`, which the web interface and the
+ESPHome Faults sensor use too; `test/host/fault_text_test.cpp` holds this
+string table to it.
 
 | Fault | Headline | Text |
 |---|---|---|
@@ -328,7 +343,7 @@ uses. No codes.
 | Storage error | Settings could not be saved | Writing to memory failed. Try again. If it keeps failing, the board needs service. |
 | Master lockout | Master valve locked | The master valve failed several times in a row, so no zone can run. Check: master valve wiring and solenoid. Then clear the fault. |
 | No current reading | Valve current not measured | The board gets no current reading. Zones still run, but a broken or shorted valve is not noticed. If it stays, the board needs service. |
-| Hardware trip | Protection tripped | A short made the board switch all valves off for a moment. The other zones carry on. A zone with three trips in a day stays off. Check: valve wires touching each other or the common wire. Then clear the fault. |
+| Hardware trip | Protection tripped, or Zone 3: protection tripped | A short made the board switch all valves off for a moment. The other zones carry on. A zone with three trips in a day stays off. Check: valve wires touching each other or the common wire. Then clear the fault. |
 | Keep-alive detector | Safety circuit failed its test | The circuit that turns the valves off if the controller stops failed its self-test. Nothing runs. Repair the board, then confirm it here. |
 | Expander | Valve driver not responding | The chip that drives the valves did not answer or did not read back what was written. All valves were switched off. Clear the fault to try again. If it comes back, the board needs service. |
 | Welded relay | Valve relay stuck closed | Current flowed although the valve relay should have been open: a welded relay contact or a bridged jumper. Nothing runs. The board needs service. |
@@ -361,10 +376,18 @@ fault lights the screen.
 |---|---|---|
 | ![Setup](display-ui/setup.png){ width="300" } | ![Time](display-ui/time.png){ width="300" } | ![Display](display-ui/display.png){ width="300" } |
 
-- **Network.** Link state, network name, address, signal, and "Set up
-  WiFi", which shows the QR code for the Espressif BLE provisioning app
-  while provisioning runs. On a device that is already on a network it
-  cannot start provisioning yet (section 14).
+- **Network.** Link state, network name, address, signal, and two items.
+  **Set up WiFi** shows the QR code for Espressif's ESP BLE Provisioning
+  app while BLE provisioning runs, or the setup access point's name while
+  SoftAP provisioning runs. On a device with a stored network it asks
+  "Restart into WiFi setup?", Cancel focused, and Restart calls
+  `net::requestProvisioning` (section 14). This is the local way back into
+  setup when the WiFi, and with it the web interface, is what is broken.
+  The restart stops a running zone; scheduled starts run while
+  provisioning waits (firmware architecture 12). **Show setup code** shows
+  the setup code as text after a 3 s hold of the knob, and hides it after
+  60 s, when the screen dims and when the screen is left (firmware
+  security 4.1: the hold is physical presence).
 - **Time.** Time zone from a list of 34 zones (cities and UTC offset), the
   clock by hand (date, then time), and where the clock came from.
 - **Display.** Brightness, which follows the knob while it is being set, the
@@ -372,6 +395,14 @@ fault lights the screen.
 - **Zones in use.** How many of the eight outputs are wired.
 - **About.** Firmware, board, device name, ESP-IDF and LVGL versions.
 - **Factory reset.** One question, Cancel focused.
+
+| Restart into WiFi setup? | Show setup code | After the 3 s hold |
+|---|---|---|
+| ![Restart into WiFi setup](display-ui/wifi-restart-question.png){ width="300" } | ![Show setup code](display-ui/setup-code-hidden.png){ width="300" } | ![Setup code shown](display-ui/setup-code-shown.png){ width="300" } |
+
+| Network | Setup access point running |
+|---|---|
+| ![Network](display-ui/network.png){ width="300" } | ![Setup access point](display-ui/wifi-setup-ap.png){ width="300" } |
 
 ![Factory reset](display-ui/factory-reset-question.png){ width="300" }
 
@@ -442,7 +473,9 @@ FontAwesome symbols (LVGL's `LV_SYMBOL_*`); the display does not draw them.
 - Use the user's words: "valve wire", not "load". No fault codes.
 - No exclamation marks. A fault is stated, not shouted.
 - 24-hour clock, metric units. Neither can be changed yet.
-- Every string is in one table (`zf_ui/strings.hpp`, about 270 entries).
+- Every string is in one table (`zf_ui/strings.hpp`, about 290 entries).
+  Fault headlines also match `zf/fault_text.hpp`, shared with the web
+  interface and ESPHome.
   A translation is a second table with the same ids. City names in the
   time zone list are proper nouns and stay as they are.
 
@@ -467,10 +500,11 @@ checks after each one that an open valve is shown as open
 
 | Check | Covers |
 |---|---|
-| `test/host/run.sh` (GoogleTest, ASan, UBSan): 67 display tests | Button debounce, long press, repeat. Encoder detents, lost counts, counter wrap, acceleration. Every picker. Program editor and its mapping into the core configuration, through the stored JSON and back. Next-run forecast including rain delay and a start inside a DST gap. Every time zone entry parses. Navigation: three-input manual run, one-press stop, hold to stop, wake on first input, queue, pause, faults, rain delay, program edit with save, discard and delete, setup, clock, factory reset, wizard, a refused command, a resting zone, a pause that times out. |
-| Simulator, `sim/run.sh --screenshots` | All 69 scenes draw and write a PNG. Each scene is reached with user inputs against the real controller core; the four valve-board scenes run it on the simulated rev A output stage of the host tests. |
+| `test/host/run.sh` (GoogleTest, ASan, UBSan): 83 display tests and 4 fault-text tests | Button debounce, long press, repeat, the encoder switch's hold. Encoder detents at the rev A board's two counts per detent (one turn of 30 detents is 30 steps), lost counts, counter wrap, acceleration. Fault headlines against `zf/fault_text.hpp`. Restart into WiFi setup (asks, Cancel first, works with the network down, Manual/Home hold still stops), Show setup code (press is not enough, hold shows it, hidden after 60 s, on dim and on leaving), the setup access point screen, the spare input on Home and in Sensors. Every picker. Program editor and its mapping into the core configuration, through the stored JSON and back. Next-run forecast including rain delay and a start inside a DST gap. Every time zone entry parses. Navigation: three-input manual run, one-press stop, hold to stop, wake on first input, queue, pause, faults, rain delay, program edit with save, discard and delete, setup, clock, factory reset, wizard, a refused command, a resting zone, a pause that times out. |
+| Simulator, `sim/run.sh --screenshots` | All 73 scenes draw and write a PNG. Each scene is reached with user inputs against the real controller core; the four valve-board scenes run it on the simulated rev A output stage of the host tests. |
 | `idf.py build`, ESP-IDF v5.5.6, esp32s3 | Builds with no warnings, display included. |
 | Looked at, by the author | All 65 pictures, three rounds. Found and fixed: buttons clipped with four in a row, list rows truncated, weekday labels cut by their frame, the fault too small on Home, no time shown while paused. |
+| Looked at, for the setup-code and WiFi-setup change | The five new pictures and `network.png`. Found and fixed: the restart question's text ran into its buttons, the spare-input line on Home was cut. |
 
 Not checked, because it needs a board: the panel init sequence, orientation
 and colour inversion, SPI at 15 MHz on the board's pins, PCNT counting with a
@@ -519,7 +553,9 @@ module. `zf::display::start()` takes the real implementations.
 |---|---|---|---|
 | WiFi link state, network name, address, signal | `zf_net` | `INetworkPort::status()` | Wired to `net::status()` in `main/display_ports.hpp`. |
 | The QR payload for the provisioning app | `zf_net` | `INetworkPort::startProvisioning()` | Wired to `net::setupInfo()`. Works while `zf_net` is provisioning, which is the case on a device with no credentials, when the wizard asks. |
-| Start provisioning on a device that already has credentials | `zf_net` | the same | **Open.** `net::requestProvisioning()` restarts the device. The display does not do that on its own; "Set up WiFi" then says setup is not running and points to the web interface. Needed: either a way to start BLE provisioning without a restart, or a decision that the display asks "Restart to set up WiFi?" and calls it. |
+| Start provisioning on a device that already has credentials | `zf_net` | `INetworkPort::restartIntoProvisioning()` | Wired to `net::requestProvisioning(Ble)`, which stores the request and restarts. Decided: the display asks "Restart into WiFi setup?" (Cancel focused) and then calls it. |
+| The setup code as text | `zf_net` | `INetworkPort::setupCode()` | Wired to `net::setupInfo().setupCode`. Read only after the 3 s hold. |
+| The setup access point's name while SoftAP provisioning runs | `zf_net` | `NetworkStatus::setupNetwork` | Filled from `net::setupInfo().serviceName`. |
 | Factory reset | `zf_net` | `INetworkPort::factoryReset()` | Wired to `net::factoryReset()`, which stops watering, erases NVS and restarts. The display then does nothing more. |
 | Per-zone learned current | `zf_core` | `IZoneDiagPort::learnedCurrentMa()`, from `CurrentMonitor::observedMa()` | **Open.** Stand-in; the zone screen reads "No data". |
 
@@ -557,7 +593,11 @@ build silences it for `zf_core`.
 2. **Panel.** Which module, which controller revision, which orientation in
    the enclosure. Clock rate, SPI mode, mirror flags and colour inversion
    are placeholders in the board header.
-3. **Encoder.** Detents per revolution and counts per detent. The firmware
-   assumes four counts per detent.
+3. **Encoder.** Answered with item 1: EC11J1525402, 30 detents and 15
+   pulses per turn, so two counts per detent (hardware design 19.3, item 8).
+   The firmware takes `board::kEncoderCountsPerDetent` (2) from the board
+   header; `EncoderDecoder` has no default, and the simulator uses the same
+   constant. Whether clockwise counts up (`kEncoderReversed`) is checked on
+   the first board.
 4. **Backlight.** PWM frequency and polarity of the driver. The firmware
    uses 5 kHz, active high.

@@ -47,7 +47,7 @@ export function defaultConfig(): Json {
       spare: { enabled: false, contact: 'no', debounce_ms: 200, function: 'none' },
       flow: { enabled: false, pulses_per_litre: 450, leak_threshold_lpm: 0.5, leak_detect_s: 60 },
     },
-    diagnostics: { current_enabled: true, settle_ms: 500, idle_max_ma: 60, short_circuit_ma: 3000, confirm_samples: 3 },
+    diagnostics: { current_enabled: true, settle_ms: 500, idle_max_ma: 30, short_circuit_ma: 3000, confirm_samples: 3 },
     schedule: { seasonal_percent: 100, missed_start_grace_min: 60, pause_timeout_min: 120, programs: [] },
     mqtt: {
       enabled: false, host: '', port: 1883, username: '', tls: false, ca: 'bundle', client_id: '', base_topic: '',
@@ -384,6 +384,14 @@ export class Device {
   }
 
   // ---- run logic -------------------------------------------------------
+
+  /** As Controller::updateInhibit: the rain sensor, or the spare input set to "inhibit". */
+  sensorInhibit(): boolean {
+    const sens = this.config['sensors'] as Record<string, Json>;
+    const rain = this.sensors.rainActive && sens['rain']?.['enabled'] === true;
+    const spare = this.sensors.spareActive && sens['spare']?.['enabled'] === true && sens['spare']?.['function'] === 'inhibit';
+    return rain || spare;
+  }
 
   inhibited(): boolean {
     return !this.sensors.ac || this.maintenance;
@@ -746,7 +754,7 @@ export class Device {
       sensors: this.sensorsJson(),
       rain_delay: this.rainJson(),
       inhibit: {
-        sensor: this.sensors.rainActive && (this.config['sensors'] as Record<string, Json>)['rain']?.['enabled'] === true,
+        sensor: this.sensorInhibit(),
         no_ac: !this.sensors.ac,
         maintenance: this.maintenance,
         master_lockout: this.master.lockedOut && masterEnabled,

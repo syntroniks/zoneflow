@@ -183,8 +183,8 @@ display:
       std::string line;
       Color c = id(zf_green);
       if (hub->any_fault()) { line = "Fault: " + hub->faults_text(); c = id(zf_red); }
-      else if (!hub->ac_present()) { line = "No 24 VAC: valves cannot run"; c = id(zf_amber); }
-      else if (id(zf_rain_enabled).state && id(zf_rain).state) { line = "Rain: schedules paused"; c = id(zf_amber); }
+      else if (!hub->ac_present()) { line = "No 24 V AC supply"; c = id(zf_amber); }
+      else if (id(zf_rain_enabled).state && id(zf_rain).state) { line = "Rain sensor wet: programs on hold"; c = id(zf_amber); }
       else if (id(zf_schedule).rain_delay_remaining_hours() > 0) {
         char buf[48];
         snprintf(buf, sizeof buf, "Rain delay: %.0f h left", std::ceil(id(zf_schedule).rain_delay_remaining_hours()));

@@ -7,6 +7,8 @@
 
 #include "fake_board.hpp"
 #include "supervisor.h"
+#include "zf/config/config.hpp"
+#include "zf/fault_text.hpp"
 
 namespace {
 
@@ -30,6 +32,7 @@ struct Rig {
     for (auto &z : c.zones)
       z.max_run_sec = 600;
     c.min_rest_sec = 1800;
+    c.master_enabled = true;  // most tests run with a master valve wired
     return c;
   }
   explicit Rig(const SupervisorConfig &cfg = defaults(), const zf::RetainedRecord *retained = nullptr)
@@ -75,6 +78,35 @@ TEST(Supervisor, StartupSelfTestPassesAndLeavesTheKeepAliveStopped) {
   EXPECT_FALSE(r.board.kaHigh());
   EXPECT_FALSE(r.board.driveEnabled());
   EXPECT_GE(r.sup.stage().selfTestsPassed, 1u);
+}
+
+// The package and the standalone firmware share these defaults: no master
+// valve, and the idle-current threshold of hardware design 19.2.
+TEST(Supervisor, DefaultsMatchTheStandaloneFirmware) {
+  const SupervisorConfig c;
+  const zf::Config fw = zf::Config::defaults();
+  EXPECT_FALSE(c.master_enabled);
+  EXPECT_EQ(c.master_enabled, fw.master.enabled);
+  EXPECT_EQ(zf::kDefaultIdleMaxMa, 30);
+  EXPECT_EQ(c.idle_threshold_ma, zf::kDefaultIdleMaxMa);
+  EXPECT_EQ(fw.diag.idleMaxMa, zf::kDefaultIdleMaxMa);
+}
+
+// Nothing on the MV terminal and the default configuration: a run raises no
+// master fault and never drives the master output.
+TEST(Supervisor, WithoutAMasterValveARunRaisesNoMasterFault) {
+  SupervisorConfig c;
+  for (auto &z : c.zones)
+    z.max_run_sec = 600;
+  Rig r(c);
+  ASSERT_TRUE(r.run_until([&] { return r.idle(); }, 10000));
+  ASSERT_TRUE(r.sup.start_zone(0, 30).ok());
+  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(0) == ValveState::Open; }, 8000));
+  EXPECT_FALSE(r.master_driven());
+  r.run(31000);
+  EXPECT_EQ(r.sup.zone_last_stop(0), StopReason::Completed);
+  EXPECT_EQ(r.sup.general_faults() & (zfe::kFaultMaster | zfe::kFaultMasterLockedOut), 0u);
+  EXPECT_FALSE(r.sup.any_latched_fault());
 }
 
 TEST(Supervisor, ZoneRunsWithMasterAndRelayThenEverythingStops) {
@@ -144,9 +176,29 @@ TEST(Supervisor, OpenValveIsStoppedAndLockedOutUntilCleared) {
   EXPECT_TRUE(r.sup.zone_locked_out(2));
   EXPECT_FALSE(r.zone_driven(2));
   EXPECT_EQ(r.sup.start_zone(2, 60).error, StartError::LockedOut);
+  // The Faults text sensor uses the words of the display and the web UI
+  // (zf/fault_text.hpp), with the zone's name when it has one.
+  std::array<const char *, zf::kMaxZones> names{};
+  EXPECT_EQ(zfe::faults_text(r.sup, 8, names), "Zone 3: no current");
+  names[2] = "Roses";
+  EXPECT_EQ(zfe::faults_text(r.sup, 8, names), "Roses: no current");
   r.sup.clear_faults();
+  EXPECT_EQ(zfe::faults_text(r.sup, 8, names), "No faults");
   EXPECT_FALSE(r.sup.zone_locked_out(2));
   EXPECT_TRUE(r.sup.start_zone(2, 60).ok());
+}
+
+TEST(Supervisor, FaultTextComesFromTheSharedTable) {
+  for (ZoneFault f : {ZoneFault::OpenCircuit, ZoneFault::OverCurrent, ZoneFault::ShortCircuit,
+                      ZoneFault::OverCurrentTrip, ZoneFault::DcCurrent}) {
+    const zf::FaultText *t = zf::faultText(zfe::fault_code(f));
+    ASSERT_NE(t, nullptr) << zfe::to_string(f);
+    ASSERT_FALSE(t->zoneTitle.empty()) << zfe::to_string(f);
+    std::string expected(t->zoneTitle);
+    expected.replace(expected.find("%s"), 2, "Zone 1");
+    EXPECT_EQ(zfe::zone_fault_text(f, "Zone 1"), expected);
+  }
+  EXPECT_EQ(zfe::zone_fault_text(ZoneFault::OpenCircuit, "Master valve"), "Master valve: no current");
 }
 
 TEST(Supervisor, ShortedValveStopsEverythingAndLocksTheZoneOut) {

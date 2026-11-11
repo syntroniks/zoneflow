@@ -125,23 +125,23 @@ Names below use the default zone names.
 | `Repeat cycles` | number | Sprinkler repeat count |
 | `Stop all` | button | Stops every zone and the cycle |
 | `Fault` | binary sensor | Any latched fault or locked-out zone |
-| `Faults` | text | What is wrong, for example `zone 3 short_circuit, no 24 VAC` |
+| `Faults` | text | What is wrong, in the words of the standalone display and web interface, for example `Zone 3: short circuit, No 24 V AC supply`. `No faults` when there is none. |
 | `Valve board fault` | binary sensor | The output stage failed a self-test or read-back |
 | `Clear faults` | button | Clears lockouts and latched faults, not a keep-alive detector fault |
 | `Acknowledge repair (press twice)` | button | Clears a keep-alive detector fault: press, then press again within 10 s |
 | `Run self-test` | button | Runs the polling cycle of hardware design 19.6 now |
 | `Valve current` | sensor | Total valve current, RMS, mA, every second |
 | `Master valve`, `Valve common relay` | binary sensor | Output states |
-| `24 VAC present` | binary sensor | From the zero-cross signal |
+| `24 V AC supply` | binary sensor | From the zero-cross signal |
 | `Water used`, `Flow rate` | sensor | From the flow meter, L and L/min |
-| `Unscheduled flow` | binary sensor | Flow with every valve shut, latched until cleared |
-| `Rain` | binary sensor | The rain sensor, after the type setting and a 2 s debounce |
+| `Water flows with all valves off` | binary sensor | Flow with every valve shut, latched until cleared |
+| `Rain sensor` | binary sensor | The rain sensor, after the type setting and a 2 s debounce |
 | `Rain sensor enabled` | switch | Off by default. With nothing connected, a normally-closed sensor reads "wet". |
 | `Rain sensor type` | select | Normally closed (most sensors) or normally open |
 | `Rain delay` | number | Hours. Set it to pause schedules; it counts down and survives a restart. |
-| `Aux input` | binary sensor | The AUX terminal |
+| `Spare input` | binary sensor | The AUX terminal |
 | `Display backlight` | light | |
-| Diagnostics | | `Output stage`, `Mains frequency`, `Current noise floor`, `Self-tests passed`, `Sensor supply fault`, `Current sense fault`, `Home button`, firmware version, WiFi signal, uptime, restart and safe-mode buttons |
+| Diagnostics | | `Output stage`, `Mains frequency`, `Current noise floor`, `Self-tests passed`, `Sensor supply overloaded`, `Valve current not measured`, `Home button`, firmware version, WiFi signal, uptime, restart and safe-mode buttons |
 
 ### Schedule
 
@@ -214,9 +214,12 @@ to the other. What the package does for each:
   Assistant call gets past it.
 - **Stagger and concurrency.** Two outputs never switch on within 100 ms. At most one
   zone runs at a time by default (two zones plus the master is the board's limit).
-- **Master valve.** The zoneflow component opens the master valve 1 s before the first
-  zone and closes it 2 s after the last. The sprinkler component's pump options are not
-  used for it, because the output layer has to keep the stagger and the master lockout.
+- **Master valve.** Off by default, as in the standalone firmware, so a controller
+  with nothing on the MV terminal reports no master fault. With a master valve or pump
+  relay wired, set the substitution `master_valve: "true"` in your device file. The
+  zoneflow component then opens the master valve 1 s before the first zone and closes it
+  2 s after the last. The sprinkler component's pump options are not used for it,
+  because the output layer has to keep the stagger and the master lockout.
 - **Current faults.** The board measures one total current. The firmware compares it
   with the sum of the windows of the outputs that are on (80 to 700 mA per output by
   default) after 500 ms of inrush blanking. Below the window is an open circuit: that zone
@@ -237,8 +240,8 @@ to the other. What the package does for each:
 | Zone open, short, over-current, DC current, trip | Zone (or everything) off, zone locked out, `Zone N fault` on | `Clear faults`, or hold **Home** for 3 s |
 | Output stage (expander, relay, read-back) | Everything off, nothing starts | `Clear faults` |
 | Keep-alive detector (self-test steps 1, 2, 9) | Everything off, nothing starts, the board needs repair | `Acknowledge repair`, pressed twice within 10 s |
-| No 24 VAC, current sense unavailable, sensor supply | Reported; no 24 VAC also blocks starts | Clear themselves |
-| Unscheduled flow | Reported | `Clear faults` |
+| No 24 V AC supply, valve current not measured, sensor supply overloaded | Reported; no 24 V AC also blocks starts | Clear themselves |
+| Water flows with all valves off | Reported | `Clear faults` |
 
 A new fault that stops everything also stops the sprinkler cycle, so it does not move on
 to the next zone, and fires the `on_fault` automation of the `zoneflow:` block. The status

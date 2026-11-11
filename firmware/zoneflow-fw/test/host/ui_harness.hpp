@@ -26,6 +26,9 @@ public:
     bool provisioning = false;
     int forgets = 0;
     bool resetsDevice = false; // true: behaves like zf_net, which erases and restarts itself
+    int reprovisionRequests = 0;
+    std::string code = "K7M2Q9XR4T"; // the device's setup code
+    int codeReads = 0;
 
     display::NetworkStatus status() const override { return net; }
     bool startProvisioning(char *out, std::size_t outSize) override
@@ -51,6 +54,26 @@ public:
         if (net.link == display::WifiLink::Provisioning) {
             net.link = display::WifiLink::NotProvisioned;
         }
+    }
+    bool restartIntoProvisioning() override
+    {
+        if (net.link == display::WifiLink::Unavailable) {
+            return false;
+        }
+        ++reprovisionRequests;
+        return true;
+    }
+    bool setupCode(char *out, std::size_t outSize) override
+    {
+        if (outSize > 0) {
+            out[0] = '\0';
+        }
+        if (net.link == display::WifiLink::Unavailable || code.size() >= outSize) {
+            return false;
+        }
+        ++codeReads;
+        std::snprintf(out, outSize, "%s", code.c_str());
+        return true;
     }
     bool factoryReset() override
     {
@@ -226,6 +249,14 @@ public:
     void back() { input(ui::InputEvent::press(ui::Key::Back)); }
     void home() { input(ui::InputEvent::press(ui::Key::Home)); }
     void holdHome() { input(ui::InputEvent::press(ui::Key::Home, ui::InputType::LongPress)); }
+    // The encoder switch held down: its Press on the way down, then Hold
+    // once it has been down for the hold time.
+    void holdSelect()
+    {
+        input(ui::InputEvent::press(ui::Key::Select), 200);
+        runMs(ui::kSelectHoldMs - 200);
+        input(ui::InputEvent::press(ui::Key::Select, ui::InputType::Hold));
+    }
 
     const ui::Frame &frame() const { return ui->frame(); }
     // The focused row of a list frame; a row with id -2 if there is none.

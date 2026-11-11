@@ -100,7 +100,7 @@ the common wire, which goes to COM.
 2. Connect the other lead to the common wire, the same as a zone valve.
 3. Tell the firmware a master is connected:
     - Standalone firmware: turn the master valve on under **Settings → Watering** in the web interface. It is off by default.
-    - ESPHome: the master output is on in the package by default (`master_valve: enabled: true` in the `zoneflow:` block). Override it in your device file if nothing is connected to MV.
+    - ESPHome: add `master_valve: "true"` under `substitutions:` in your device file. It is off by default.
 
 Both firmwares open the master 1 second before the first zone and close it 2
 seconds after the last.
@@ -150,11 +150,16 @@ defaults you can change.
 
 ### 6. Spare input
 
-AUX and the GND next to it take a dry contact. In the standalone firmware
-it is set in the configuration (`sensors.spare` in the
-[REST API](../firmware/api.md)): reported only, or holding programs like the
-rain sensor. The web interface shows its state but has no setting for it
-yet. In ESPHome it shows as `Aux input`.
+AUX and the GND next to it take a dry contact: the spare input.
+
+- Standalone firmware: **Settings → Sensors → Spare input connected**, then
+  its contact type and **What the spare input does**: **Show only**, or
+  **Hold programs**. With **Hold programs**, programs set to skip when the
+  rain sensor is wet also skip while the spare input is active. The
+  display shows the state and the choice under **Sensors and flow**. The same
+  settings are `sensors.spare` in the [REST API](../firmware/api.md).
+- ESPHome: the `Spare input` binary sensor shows its state. The package does
+  not hold programs on it; use it in your own automations.
 
 ### 7. Expansion (Qwiic)
 

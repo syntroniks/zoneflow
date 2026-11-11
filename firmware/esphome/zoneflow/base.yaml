@@ -18,6 +18,11 @@ substitutions:
   # Flow meter K-factor in pulses per litre, from the meter's datasheet.
   flow_pulses_per_litre: "450"
   leak_threshold_lpm: "0.5"
+  # Master valve or pump relay on the MV terminal. Off by default, as in the
+  # standalone firmware: without a master valve wired, "true" would report a
+  # master fault (no current) at every run. Set it to "true" in your own
+  # YAML when one is wired.
+  master_valve: "false"
   zone_1_name: Zone 1
   zone_2_name: Zone 2
   zone_3_name: Zone 3
@@ -152,7 +157,7 @@ zoneflow:
   max_run_time: ${max_run_time}
   rest_time: ${rest_time}
   master_valve:
-    enabled: true
+    enabled: ${master_valve}
     pre_open: 1s
     post_close: 2s
   flow_rate_sensor: zf_flow_rate
@@ -227,10 +232,10 @@ binary_sensor:
     name: Valve board fault
   - platform: zoneflow
     type: ac_present
-    name: 24 VAC present
+    name: 24 V AC supply
   - platform: zoneflow
     type: leak
-    name: Unscheduled flow
+    name: Water flows with all valves off
   - platform: zoneflow
     type: master_valve
     name: Master valve
@@ -239,10 +244,10 @@ binary_sensor:
     name: Valve common relay
   - platform: zoneflow
     type: sensor_supply_fault
-    name: Sensor supply fault
+    name: Sensor supply overloaded
   - platform: zoneflow
     type: current_sense_fault
-    name: Current sense fault
+    name: Valve current not measured
   # Rain sensor on the RAIN terminal. Contact closed reads low.
   - platform: gpio
     id: zf_rain_contact
@@ -255,14 +260,14 @@ binary_sensor:
       - delayed_on_off: 2s
   - platform: template
     id: zf_rain
-    name: Rain
+    name: Rain sensor
     device_class: moisture
     lambda: |-
       // Most rain sensors open their contact when wet (normally closed).
       const bool closed = id(zf_rain_contact).state;
       return id(zf_rain_type).active_index() == 0 ? !closed : closed;
   - platform: gpio
-    name: Aux input
+    name: Spare input
     pin:
       number: ${zf_pin_aux}
       mode: input

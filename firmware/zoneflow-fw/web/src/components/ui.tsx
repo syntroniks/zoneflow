@@ -171,11 +171,16 @@ export function Switch({ label, help, checked, onChange, disabled }: { label: Co
 }
 
 /** A choice of a few options as radio buttons styled as segments or chips. */
-export function Choice<T extends string | number>({ label, options, value, onChange, kind = 'segmented', hideLabel }: { label: string; options: { value: T; label: ComponentChildren; disabled?: boolean }[]; value: T | null; onChange: (v: T) => void; kind?: 'segmented' | 'chips'; hideLabel?: boolean }) {
+export function Choice<T extends string | number>({ label, help, options, value, onChange, kind = 'segmented', hideLabel }: { label: string; help?: string; options: { value: T; label: ComponentChildren; disabled?: boolean }[]; value: T | null; onChange: (v: T) => void; kind?: 'segmented' | 'chips'; hideLabel?: boolean }) {
   const name = useId();
   return (
-    <fieldset class={`choice choice-${kind}`}>
+    <fieldset class={`choice choice-${kind}`} aria-describedby={help ? `${name}-h` : undefined}>
       <legend class={hideLabel ? 'sr-only' : undefined}>{label}</legend>
+      {help && (
+        <small class="field-help" id={`${name}-h`}>
+          {help}
+        </small>
+      )}
       <div class="choice-items">
         {options.map((o) => (
           <label key={String(o.value)} class={o.value === value ? 'is-checked' : undefined}>

@@ -26,6 +26,15 @@ export function faultTitle(code: string): string {
   return tk(`fault_${code}`, undefined, t('fault_unknown', { code }));
 }
 
+/** "Zone 3: no current" when the fault belongs to zones (or the master
+ * valve), the plain title otherwise. Same words as the display and ESPHome:
+ * zf/fault_text.hpp, checked by tests/unit/fault-text.test.ts. */
+export function faultTitleFor(code: string, where: string[]): string {
+  if (!where.length) return faultTitle(code);
+  const zone = where.join(', ');
+  return tk(`fault_${code}_zone`, { zone }, `${faultTitle(code)} ${t('fault_on_zone', { zone })}`);
+}
+
 export function faultCheck(code: string): string {
   return tk(`fault_${code}_check`, undefined, t('fault_unknown_check'));
 }
@@ -39,11 +48,10 @@ export function deriveAlerts(s: Status, zoneName: (id: number) => string, untilT
   for (const code of s.faults?.active ?? []) {
     if (code === 'time_invalid') continue; // shown below with its own wording
     const affected = zoneFaults.filter((z) => z.fault === code).map((z) => zoneName(z.zone ?? 0));
-    const where = affected.length ? ` ${t('fault_on_zone', { zone: affected.join(', ') })}` : '';
     out.push({
       id: `fault:${code}`,
       severity: WARNINGS.has(code) ? 'warning' : 'error',
-      title: faultTitle(code) + where,
+      title: faultTitleFor(code, affected),
       detail: faultCheck(code),
       // A keep-alive detector fault needs the repair confirmed; clearing faults does not clear it.
       clearable: !CONDITIONS.has(code) && !(code === 'keepalive_detector' && s.faults?.hardware?.repair_needed),
@@ -89,7 +97,9 @@ export function deriveAlerts(s: Status, zoneName: (id: number) => string, untilT
     });
   }
   if (s.inhibit?.sensor) {
-    out.push({ id: 'sensor', severity: 'info', title: t('sensor_inhibit'), detail: t('sensor_inhibit_detail') });
+    // The rain sensor, or the spare input set to hold programs like it.
+    const spare = !s.sensors?.rain?.active && !!s.sensors?.spare?.active;
+    out.push({ id: 'sensor', severity: 'info', title: t(spare ? 'spare_inhibit' : 'sensor_inhibit'), detail: t('sensor_inhibit_detail') });
   }
   for (const z of zones) {
     if (z.resting && (z.rest_remaining_s ?? 0) > 0) {

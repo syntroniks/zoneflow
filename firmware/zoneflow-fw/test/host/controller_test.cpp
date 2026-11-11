@@ -711,3 +711,104 @@ TEST_F(ControllerTest, TripWithOutputsOffIsReportedOnce)
     });
     EXPECT_EQ(trips, 1);
 }
+
+// ---- re-provisioning --------------------------------------------------------------------
+//
+// net::requestProvisioning() stores the request and restarts the device
+// (zf_net/src/net.cpp, Msg::Reprovision). For watering that is a restart
+// like any other, and these tests pin what it means, as the web UI, the
+// display and the manual say: a zone that is watering stops and its run is
+// not resumed, the program it belonged to does not start again, and while
+// provisioning waits (up to 15 minutes, network down) scheduled starts run
+// on the backup clock. With no valid clock nothing is scheduled.
+
+namespace {
+
+class Reprovisioning : public ::testing::Test {
+protected:
+    FakeClock clock;
+    FakeSensors sensors;
+    OutputEnableGuard oe{OutputEnableMode::Toggle, 500};
+    EventBus bus;
+    StateStore state;
+    MemoryStorage storage; // NVS: configuration and runtime state survive the restart
+    ConfigStore config{storage};
+    std::unique_ptr<FakeOutputs> out;
+    std::unique_ptr<Controller> ctrl;
+    std::vector<Event> events;
+
+    void SetUp() override
+    {
+        bus.subscribe([](const Event &e, void *ctx) { static_cast<std::vector<Event> *>(ctx)->push_back(e); }, &events);
+        Config c = Config::defaults();
+        c.driver.interZoneDelayMs = 0;
+        c.schedule.programs[0] = makeProgram(1, {6 * 60}, {{0, 600}, {1, 600}}); // 06:00, zones 1 and 2
+        c.schedule.programs[1] = makeProgram(2, {6 * 60 + 25}, {{2, 300}});      // 06:25, zone 3
+        c.schedule.programCount = 2;
+        ASSERT_TRUE(config.update(c).ok);
+    }
+
+    // Power-on or restart: fresh outputs (the restart switched them off),
+    // a fresh controller that reads the stored state.
+    void boot(TimeStatus ts)
+    {
+        ctrl.reset();
+        out = std::make_unique<FakeOutputs>();
+        ctrl = std::make_unique<Controller>(ControllerDeps{clock, *out, sensors, oe, bus, state, config, &storage});
+        ctrl->begin();
+        ctrl->setTimeStatus(ts);
+        runMs(1000); // 24 VAC debounce
+    }
+    void runMs(MonoMs ms)
+    {
+        for (MonoMs t = 0; t < ms; t += 50) {
+            clock.advanceMs(50);
+            ctrl->tick();
+            persistWriteOnce(ctrl->persistMailbox(), storage); // the writer task, every 250 ms on the device
+        }
+    }
+    int started(uint8_t program) const
+    {
+        return static_cast<int>(std::count_if(events.begin(), events.end(), [program](const Event &e) {
+            return e.type == EventType::ProgramStarted && e.program.programId == program;
+        }));
+    }
+};
+
+} // namespace
+
+TEST_F(Reprovisioning, RunningZoneStopsAndLaterStartsRunOnTheBackupClock)
+{
+    clock.utc = utcOf(2026, 6, 1, 5, 59, 50);
+    sensors.sample.acPresent = true;
+    boot(TimeStatus::Synced);
+    runMs(5 * 60 * 1000); // 06:05: zone 1 of program 1 is watering
+    ASSERT_TRUE(out->zone[0]);
+    ASSERT_EQ(started(1), 1);
+
+    // "Restart into WiFi setup". The station does not connect while
+    // provisioning waits, so the clock comes from the RTC.
+    boot(TimeStatus::FromRtc);
+    runMs(60 * 1000);
+    EXPECT_FALSE(out->anyOn()) << "the interrupted run is not resumed";
+    EXPECT_EQ(started(1), 1) << "its start was consumed: no late catch-up after the restart";
+
+    runMs(20 * 60 * 1000); // past 06:25
+    EXPECT_EQ(started(2), 1) << "scheduled starts run while provisioning waits";
+    EXPECT_FALSE(out->zone[1]) << "zone 2 of the interrupted program never ran";
+}
+
+TEST_F(Reprovisioning, WithoutAValidClockNothingIsScheduledWhileItWaits)
+{
+    clock.utc = utcOf(2026, 6, 1, 5, 59, 50);
+    sensors.sample.acPresent = true;
+    boot(TimeStatus::Synced);
+    runMs(5 * 60 * 1000);
+    ASSERT_TRUE(out->zone[0]);
+
+    boot(TimeStatus::Unset); // no RTC time and no SNTP during setup
+    runMs(25 * 60 * 1000);
+    EXPECT_EQ(started(2), 0);
+    EXPECT_FALSE(out->anyOn());
+    EXPECT_TRUE(ctrl->handle(Command::runZone(3, 60))) << "manual runs still work";
+}

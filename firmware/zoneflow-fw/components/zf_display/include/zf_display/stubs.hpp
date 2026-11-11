@@ -21,6 +21,14 @@ public:
         return false;
     }
     void stopProvisioning() override {}
+    bool restartIntoProvisioning() override { return false; }
+    bool setupCode(char *out, std::size_t outSize) override
+    {
+        if (out != nullptr && outSize > 0) {
+            out[0] = '\0';
+        }
+        return false;
+    }
     bool factoryReset() override { return false; }
 };
 

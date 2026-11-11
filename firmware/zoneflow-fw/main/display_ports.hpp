@@ -42,14 +42,17 @@ public:
         out.mac.assign(n.mac.view());
         out.hostname.assign(n.hostname.view());
         out.rssiDbm = n.rssi;
+        if (n.state == net::NetState::Provisioning && n.provisioning == net::ProvTransport::SoftAp) {
+            out.setupNetwork.assign(net::setupInfo().serviceName);
+        }
         return out;
     }
 
     // zf_net starts BLE provisioning by itself on a device with no
     // credentials, which is when the setup wizard asks. On a provisioned
-    // device it can only be started with a restart
-    // (net::requestProvisioning), which the display does not do on its own:
-    // it says so and points to the web interface.
+    // device it starts with a restart, which the display asks for first
+    // (restartIntoProvisioning). This returns the QR payload while BLE
+    // provisioning runs, and false otherwise.
     bool startProvisioning(char *out, std::size_t outSize) override
     {
         if (outSize > 0) {
@@ -69,6 +72,27 @@ public:
 
     // Provisioning ends by itself (success, or zf_net's own timeout).
     void stopProvisioning() override {}
+
+    // Setup, Network, Set up WiFi, after "Restart into WiFi setup?" was
+    // answered Restart. zf_net stores the request and restarts; the boot
+    // after it provisions over BLE (or SoftAP in a build without BT).
+    bool restartIntoProvisioning() override { return net::requestProvisioning(net::ProvTransport::Ble); }
+
+    // Setup, Network, Show setup code, after a 3 s hold of the encoder
+    // switch. The code is in NVS because the display needs it (firmware
+    // security 4.1).
+    bool setupCode(char *out, std::size_t outSize) override
+    {
+        if (outSize > 0) {
+            out[0] = '\0';
+        }
+        const net::SetupInfo info = net::setupInfo();
+        if (info.setupCode.empty() || info.setupCode.size() >= outSize) {
+            return false;
+        }
+        std::snprintf(out, outSize, "%s", info.setupCode.c_str());
+        return true;
+    }
 
     // zf_net stops watering, erases NVS except the device identity and
     // restarts.

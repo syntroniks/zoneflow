@@ -6,11 +6,17 @@
 namespace zf::ui {
 namespace {
 
+// Current faults the core attributes to an output. With no zone carrying
+// one, it is the master valve's.
 bool zoneType(FaultCode c)
 {
     return c == FaultCode::ZoneOpenCircuit || c == FaultCode::ZoneOverCurrent || c == FaultCode::ShortCircuit ||
            c == FaultCode::ZoneDcCurrent;
 }
+
+// Codes a zone can carry. A hardware trip is blamed on the zone switched on
+// just before it, or on no output at all (then it is not the master's).
+bool zoneCarried(FaultCode c) { return zoneType(c) || c == FaultCode::OverCurrentTrip; }
 
 bool stageFault(FaultCode c)
 {
@@ -36,7 +42,7 @@ std::vector<FaultItem> listFaults(const SystemState &state)
             continue;
         }
         const auto code = static_cast<FaultCode>(bit);
-        if (zoneType(code) && (carriedByZone & (1u << bit)) != 0) {
+        if (zoneCarried(code) && (carriedByZone & (1u << bit)) != 0) {
             continue;
         }
         FaultItem item{code, kNoZone};
@@ -77,7 +83,7 @@ std::string faultTitle(const FaultItem &item)
     case FaultCode::CurrentSenseUnavailable:
         return tr(Str::FaultSenseTitle);
     case FaultCode::OverCurrentTrip:
-        return tr(Str::FaultTripTitle);
+        return item.zone == kNoZone ? std::string(tr(Str::FaultTripTitle)) : fmt(Str::FaultTripZoneTitle, who.c_str());
     case FaultCode::KeepAliveDetector:
         return tr(Str::FaultDetectorTitle);
     case FaultCode::OutputExpander:

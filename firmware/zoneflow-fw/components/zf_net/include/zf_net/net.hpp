@@ -40,10 +40,13 @@ struct SetupInfo {
 };
 SetupInfo setupInfo();
 
-// Re-enter provisioning: stores the request and restarts. Bound to the
-// long-press on the controls (display module) and to the REST API. The
-// stored WiFi credentials stay until new ones connect; after 15 minutes
-// without a new setup the device returns to the stored network.
+// Re-enter provisioning: stores the request and restarts. Called from the
+// display (Setup, Network, Set up WiFi, after a confirmation question) and
+// from the REST API (POST /network/reprovision). The stored WiFi credentials
+// stay until new ones connect; after 15 minutes without a new setup the
+// device returns to the stored network. The restart stops a running zone
+// and the queue is not resumed; the scheduler runs while provisioning
+// waits (firmware architecture 12, "Re-provision").
 bool requestProvisioning(ProvTransport transport);
 
 // Factory reset: stops watering (maintenance), waits until the outputs report

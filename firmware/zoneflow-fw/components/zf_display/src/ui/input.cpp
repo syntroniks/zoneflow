@@ -32,6 +32,7 @@ ButtonEdge ButtonDecoder::update(bool pressedRaw, MonoMs now)
         if (down_) {
             downSinceMs_ = now;
             longSent_ = false;
+            holdSent_ = false;
             repeating_ = false;
             return timing_.longPressMs == 0 ? ButtonEdge::Press : ButtonEdge::None;
         }
@@ -43,6 +44,10 @@ ButtonEdge ButtonDecoder::update(bool pressedRaw, MonoMs now)
         return ButtonEdge::None;
     }
     const MonoMs held = now - downSinceMs_;
+    if (timing_.holdMs != 0 && !holdSent_ && held >= timing_.holdMs) {
+        holdSent_ = true;
+        return ButtonEdge::Hold;
+    }
     if (timing_.longPressMs != 0 && !longSent_ && held >= timing_.longPressMs) {
         longSent_ = true;
         return ButtonEdge::LongPress;

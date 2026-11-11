@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "sim.hpp"
+#include "zf_board/board.hpp"
 #include "zf_ui/input.hpp"
 
 namespace zf::sim {
@@ -38,15 +39,13 @@ int runWindow(Screen &screen, bool wizard, int scale)
     h.systemTime.t = static_cast<UtcSeconds>(std::time(nullptr));
     h.time.onNetworkSync();
 
-    ui::ButtonTiming selectTiming;
-    ui::ButtonTiming backTiming;
-    backTiming.repeatMs = 400;
-    ui::ButtonTiming homeTiming;
-    homeTiming.longPressMs = 800;
-    ui::ButtonDecoder select(selectTiming);
-    ui::ButtonDecoder back(backTiming);
-    ui::ButtonDecoder home(homeTiming);
-    ui::EncoderDecoder encoder;
+    // The device's timings and counts per detent: keys and the wheel feed the
+    // same decoders the board's controls do.
+    ui::ButtonDecoder select(ui::selectButtonTiming());
+    ui::ButtonDecoder back(ui::backButtonTiming());
+    ui::ButtonDecoder home(ui::homeButtonTiming());
+    constexpr int kDetent = board::kEncoderCountsPerDetent;
+    ui::EncoderDecoder encoder(kDetent);
     ui::Accelerator accelerator;
     int32_t encoderCount = 0;
     bool keySelect = false;
@@ -63,17 +62,17 @@ int runWindow(Screen &screen, bool wizard, int scale)
             if (e.type == SDL_QUIT) {
                 running = false;
             } else if (e.type == SDL_MOUSEWHEEL) {
-                encoderCount += 4 * (e.wheel.y > 0 ? -1 : 1);
+                encoderCount += kDetent * (e.wheel.y > 0 ? -1 : 1);
             } else if (e.type == SDL_KEYDOWN || e.type == SDL_KEYUP) {
                 const bool down = e.type == SDL_KEYDOWN;
                 switch (e.key.keysym.sym) {
                 case SDLK_RIGHT:
                 case SDLK_DOWN:
-                    encoderCount += down ? 4 : 0; // key repeat = a steady spin
+                    encoderCount += down ? kDetent : 0; // key repeat = a steady spin
                     break;
                 case SDLK_LEFT:
                 case SDLK_UP:
-                    encoderCount -= down ? 4 : 0;
+                    encoderCount -= down ? kDetent : 0;
                     break;
                 case SDLK_RETURN:
                 case SDLK_SPACE:
@@ -144,6 +143,9 @@ int runWindow(Screen &screen, bool wizard, int scale)
                     break;
                 case ui::ButtonEdge::Repeat:
                     h.ui->handleInput(ui::InputEvent::press(b.key, ui::InputType::Repeat), now);
+                    break;
+                case ui::ButtonEdge::Hold:
+                    h.ui->handleInput(ui::InputEvent::press(b.key, ui::InputType::Hold), now);
                     break;
                 case ui::ButtonEdge::None:
                     break;

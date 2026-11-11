@@ -296,10 +296,10 @@ discovery.
 | Flow rate | `sensor`, volume flow rate, L/min, measurement | Only when the flow meter is enabled. |
 | Water used | `sensor`, water, L, total increasing | Counts from boot. |
 | Valve current | `sensor`, current, mA, measurement | Diagnostic. |
-| 24 VAC supply | `binary_sensor`, power | Diagnostic. |
+| 24 V AC supply | `binary_sensor`, power | Diagnostic. |
 | Fault | `binary_sensor`, problem | Any fault; the list is in its attributes. |
 | Valve board fault | `binary_sensor`, problem | The board's self-test failed; check, step and repair needed in its attributes. Diagnostic. |
-| Sensor supply fault | `binary_sensor`, problem | The 5 V sensor terminal is overloaded or too hot. Diagnostic. |
+| Sensor supply overloaded | `binary_sensor`, problem | The 5 V sensor terminal is overloaded or too hot. Diagnostic. |
 | Queue | `sensor`, enum: idle, running, paused | Queue items in its attributes. |
 | WiFi signal | `sensor`, signal strength, dBm | Diagnostic. |
 | Firmware version | `sensor` | Diagnostic. |

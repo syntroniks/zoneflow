@@ -12,6 +12,14 @@
 
 namespace zf {
 
+// Default threshold for current with every output off (an output stuck on).
+// Hardware design 19.2: 30 mA rms as the starting value; the smallest load
+// is 50 mA, and a shorted output passes a valve's full current. Set the
+// final value from the noise floor measured at bring-up. The standalone
+// configuration (diagnostics.idle_max_ma) and the ESPHome component
+// (current_sense.idle_threshold) both default to this.
+inline constexpr uint16_t kDefaultIdleMaxMa = 30;
+
 struct CurrentWindow {
     uint16_t minMa = 0;
     uint16_t maxMa = 0;
@@ -23,7 +31,7 @@ struct CurrentMonitorConfig {
     // spec: 1.5 A for 100 ms, plus filter settling in the front end).
     uint32_t settleMs = 500;
     // Above this with every output off: an output is stuck on.
-    uint16_t idleMaxMa = 60;
+    uint16_t idleMaxMa = kDefaultIdleMaxMa;
     // Above this at any time, settled or not: short circuit.
     uint16_t shortCircuitMa = 3000;
     // Consecutive samples needed before a fault is declared.

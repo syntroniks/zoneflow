@@ -56,6 +56,12 @@ public:
     virtual void picked(Ctx & /*ctx*/, int /*id*/, int64_t /*value*/) {}
     virtual void pickerChanged(Ctx & /*ctx*/, int /*id*/, int64_t /*value*/) {}
     virtual void pickerCancelled(Ctx & /*ctx*/, int /*id*/) {}
+    // The encoder switch is still held after its Press (InputType::Hold).
+    // Only screens that want a deliberate local action use it.
+    virtual void held(Ctx & /*ctx*/) {}
+    // Called from Ui::tick() for the top screen. Return true if the frame
+    // has to be rebuilt (something timed out).
+    virtual bool tick(Ctx & /*ctx*/) { return false; }
     // Answer to Ui::confirm(): the id of the chosen button.
     virtual void confirmed(Ctx & /*ctx*/, int /*request*/, int /*choice*/) {}
     // Back or Home was pressed. Return false to stay (after asking, or

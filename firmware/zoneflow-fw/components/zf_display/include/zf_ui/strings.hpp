@@ -91,6 +91,7 @@
     X(HomeProgramSummary, "%s, %s") /* program name, total duration */                                                 \
     X(HomeRainDelayUntil, "Rain delay until %s")                                                                       \
     X(HomeSensorWet, "Rain sensor wet: programs on hold")                                                              \
+    X(HomeSpareActive, "Spare input on: programs on hold")                                                             \
     X(HomeSensorDry, "Rain sensor dry")                                                                                \
     X(HomeClockNotSet, "Programs are off until it is set")                                                             \
     X(HomeMasterOpen, "Master valve open")                                                                             \
@@ -212,6 +213,9 @@
     /* ---- sensors ---- */                                                                                            \
     X(SensRain, "Rain sensor")                                                                                         \
     X(SensSpare, "Spare input")                                                                                        \
+    X(SensSpareUse, "Spare input use")                                                                                 \
+    X(SpareHolds, "Holds programs")                                                                                    \
+    X(SpareShown, "Shown only")                                                                                        \
     X(SensAc, "24 V AC supply")                                                                                        \
     X(SensFlow, "Flow")                                                                                                \
     X(SensTotal, "Water since on")                                                                                     \
@@ -264,6 +268,7 @@
     X(FaultSenseBody, "The board gets no current reading. Zones still run, but a broken or shorted "                   \
                       "valve is not noticed. If it stays, the board needs service.")                                   \
     X(FaultTripTitle, "Protection tripped")                                                                            \
+    X(FaultTripZoneTitle, "%s: protection tripped") /* zone label */                                                   \
     X(FaultTripBody, "A short made the board switch all valves off for a moment. The other zones carry on. A "         \
                      "zone with three trips in a day stays off. Check: valve wires touching each other or the "        \
                      "common wire. Then clear the fault.")                                                             \
@@ -332,8 +337,23 @@
     X(ProvHeadline, "Scan with the app")                                                                               \
     X(ProvBody, "Use the ESP BLE Provisioning app on a phone.")                                                        \
     X(ProvNotRunningHeadline, "WiFi setup is not running")                                                             \
-    X(ProvNotRunningBody, "To join another network, start WiFi setup from the web interface, "                         \
-                          "or do a factory reset.")                                                                    \
+    X(ProvNotRunningBody, "Go back and choose Set up WiFi again to restart into setup.")                               \
+    X(ProvApHeadline, "Join the setup WiFi")                                                                           \
+    X(ProvApBody, "Network %s. Its password is the setup code: Setup, Network, Show setup code.") /* SSID */           \
+    X(ReprovAsk, "Restart into WiFi setup?")                                                                           \
+    X(ReprovAskBody, "It waits 15 min for the ESP BLE Provisioning app, then goes back to this network. "              \
+                     "Watering in progress stops; scheduled starts still run.")                                        \
+    X(ReprovConfirm, "Restart")                                                                                        \
+    X(ToastReprov, "Restarting into WiFi setup")                                                                       \
+    X(NetShowCode, "Show setup code")                                                                                  \
+    X(CodeHeadline, "Setup code")                                                                                      \
+    X(CodeHiddenBody, "Hold the knob down for 3 seconds to show it. Whoever reads it can set up WiFi "                 \
+                      "and the admin password of this controller.")                                                    \
+    X(CodeShownBody, "For the web interface, the ESP BLE Provisioning app and the setup WiFi. "                        \
+                     "Hidden again after one minute.")                                                                 \
+    X(CodeHoldButton, "Hold to show")                                                                                  \
+    X(CodeHide, "Hide")                                                                                                \
+    X(ToastKeepHolding, "Keep the knob held down")                                                                     \
     X(ToastErasing, "Erasing, then restarting")                                                                        \
     X(ProvUnavailableHeadline, "WiFi setup is not available")                                                          \
     X(ProvUnavailableBody, "This firmware build has no network module. The controller works without it.")              \

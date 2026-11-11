@@ -300,7 +300,13 @@ void statusAndSetupScenes(Walk &shot)
         h.press();
         shot("network", h);
         h.press();
-        shot("wifi-connected", h);
+        shot("wifi-restart-question", h);
+        h.back();
+        h.focusRow("Show setup code");
+        h.press();
+        shot("setup-code-hidden", h);
+        h.holdSelect();
+        shot("setup-code-shown", h);
         h.back();
         h.back();
         h.focusRow("Time");
@@ -342,6 +348,30 @@ void statusAndSetupScenes(Walk &shot)
         shot("network-not-set-up", w.h);
         w.h.press();
         shot("wifi-provisioning", w.h);
+    }
+    {
+        // After 10 minutes without a BLE setup, zf_net switches to the setup
+        // access point: no QR code, the passphrase is the setup code.
+        World w(true, true, false);
+        w.h.net.canProvision = false;
+        w.h.net.net.link = display::WifiLink::Provisioning;
+        w.h.net.net.setupNetwork.assign("ZoneFlow-1A2B");
+        openMenu(w.h, "Setup");
+        w.h.press();
+        w.h.press();
+        shot("wifi-setup-ap", w.h);
+    }
+    {
+        // The spare input set to hold programs like the rain sensor.
+        World w;
+        Config c = w.h.config.get();
+        c.spare.enabled = true;
+        c.spareFunction = SpareFunction::InhibitLikeRain;
+        w.h.config.update(c);
+        w.h.commands.post(Command::simple(CommandType::ReloadConfig));
+        w.h.sensors.sample.spareContactClosed = true;
+        w.h.runSec(2);
+        shot("home-spare-input", w.h);
     }
 }
 

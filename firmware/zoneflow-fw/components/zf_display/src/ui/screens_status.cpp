@@ -50,8 +50,11 @@ public:
         if (!s.spareEnabled) {
             add(Icon::Info, Str::SensSpare, tr(Str::NotUsed), Tone::Muted);
         } else {
+            const bool holds = c.config.spareFunction == SpareFunction::InhibitLikeRain;
             add(Icon::Info, Str::SensSpare, tr(s.spareActive ? Str::Active : Str::Inactive),
-                s.spareActive ? Tone::Warn : Tone::Normal);
+                s.spareActive && holds ? Tone::Warn : Tone::Normal);
+            // Set in the web interface (Settings, Sensors) or the API.
+            add(Icon::Info, Str::SensSpareUse, tr(holds ? Str::SpareHolds : Str::SpareShown), Tone::Muted);
         }
     }
 };

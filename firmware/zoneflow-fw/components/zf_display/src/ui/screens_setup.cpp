@@ -68,9 +68,16 @@ struct Provisioning {
             d.tone = Tone::Ok;
             d.headline = tr(Str::LinkConnected);
             d.body = std::string(net.ssid.c_str()) + "\n" + net.ip.c_str();
+        } else if (!started && !net.setupNetwork.empty()) {
+            // Provisioning over the setup access point: no QR code, the
+            // passphrase is the setup code (Show setup code).
+            d.icon = Icon::Wifi;
+            d.tone = Tone::Running;
+            d.headline = tr(Str::ProvApHeadline);
+            d.body = fmt(Str::ProvApBody, net.setupNetwork.c_str());
         } else if (!started) {
-            // Either the build has no network module, or it has one that
-            // cannot start provisioning without a restart.
+            // Either the build has no network module, or provisioning is
+            // not running now (the Network screen restarts into it).
             const bool none = net.link == display::WifiLink::Unavailable;
             d.icon = Icon::WifiOff;
             d.tone = Tone::Muted;
@@ -168,7 +175,8 @@ public:
 
 class NetworkScreen final : public Screen {
 public:
-    enum : int { kSetup = 1 };
+    enum : int { kSetup = 1, kShowCode };
+    enum : int { kAskReprovision = 1 };
 
     void build(const Ctx &c, Frame &out) override
     {
@@ -177,6 +185,9 @@ public:
         auto &rows = out.list.rows;
         const bool up = net.link == display::WifiLink::Connected;
         rows.push_back(itemRow(kSetup, Icon::Plus, tr(Str::NetSetup)));
+        if (net.link != display::WifiLink::Unavailable) {
+            rows.push_back(itemRow(kShowCode, Icon::Lock, tr(Str::NetShowCode)));
+        }
         rows.push_back(infoRow(tr(Str::NetWifi), tr(linkText(net.link)), up ? Tone::Ok : Tone::Muted,
                                up ? Icon::Wifi : Icon::WifiOff));
         if (!net.ssid.empty()) {
@@ -196,10 +207,130 @@ public:
 
     void activate(Ctx &c, int id) override
     {
-        if (id == kSetup) {
+        if (id == kShowCode) {
+            c.ui.push(makeSetupCodeScreen());
+            return;
+        }
+        if (id != kSetup) {
+            return;
+        }
+        const display::WifiLink link = c.ports.net.status().link;
+        if (link == display::WifiLink::Unavailable || link == display::WifiLink::NotProvisioned ||
+            link == display::WifiLink::Provisioning) {
+            // No module, or zf_net provisions by itself: show what runs.
             c.ui.push(makeProvisioningScreen());
+            return;
+        }
+        // A network is stored: setup needs a restart, which stops a running
+        // zone. Ask, with Cancel first.
+        DetailModel q;
+        q.icon = Icon::Wifi;
+        q.tone = Tone::Warn;
+        q.headline = tr(Str::ReprovAsk);
+        q.body = tr(Str::ReprovAskBody);
+        q.buttons = {button(kChoiceNo, Str::Cancel), button(kChoiceYes, Str::ReprovConfirm, Icon::Wifi, Tone::Warn)};
+        c.ui.confirm(kAskReprovision, q);
+    }
+
+    void confirmed(Ctx &c, int request, int choice) override
+    {
+        if (request != kAskReprovision || choice != kChoiceYes) {
+            return;
+        }
+        if (c.ports.net.restartIntoProvisioning()) {
+            c.ui.toast(tr(Str::ToastReprov), Tone::Warn, Icon::Wifi);
+        } else {
+            c.ui.toast(tr(Str::ProvUnavailableHeadline), Tone::Fault, Icon::WifiOff);
         }
     }
+};
+
+// Shows the setup code as text after the encoder switch was held for
+// kSelectHoldMs: physical presence at the controller is the proof that the
+// person may see it (firmware security 4.1). A plain press does nothing, so
+// a brush against the knob does not reveal it. Hidden again after
+// kShowMs, when the screen dims, and when the screen is left.
+class SetupCodeScreen final : public Screen {
+public:
+    static constexpr MonoMs kShowMs = 60000;
+    enum : int { kAction = 1 };
+
+    FrameKind kind() const override { return FrameKind::Detail; }
+
+    void build(const Ctx &c, Frame &out) override
+    {
+        out.bar.title = tr(Str::NetShowCode);
+        DetailModel &d = out.detail;
+        if (c.ports.net.status().link == display::WifiLink::Unavailable) {
+            d.icon = Icon::WifiOff;
+            d.tone = Tone::Muted;
+            d.headline = tr(Str::ProvUnavailableHeadline);
+            d.body = tr(Str::ProvUnavailableBody);
+            d.buttons = {button(kAction, Str::Done, Icon::Check)};
+            return;
+        }
+        d.icon = Icon::Lock;
+        if (shown_) {
+            d.tone = Tone::Warn;
+            d.headline = code_;
+            d.body = tr(Str::CodeShownBody);
+            d.buttons = {button(kAction, Str::CodeHide, Icon::Lock)};
+        } else {
+            d.headline = tr(Str::CodeHeadline);
+            d.body = tr(Str::CodeHiddenBody);
+            d.buttons = {button(kAction, Str::CodeHoldButton, Icon::Knob)};
+        }
+    }
+
+    void activate(Ctx &c, int /*id*/) override
+    {
+        if (c.ports.net.status().link == display::WifiLink::Unavailable) {
+            c.ui.pop();
+        } else if (shown_) {
+            hide();
+        } else {
+            // The press that starts a hold arrives first; say what to do.
+            c.ui.toast(tr(Str::ToastKeepHolding), Tone::Normal, Icon::Knob);
+        }
+    }
+
+    void held(Ctx &c) override
+    {
+        char buf[16] = {};
+        if (!c.ports.net.setupCode(buf, sizeof buf)) {
+            return;
+        }
+        code_ = buf;
+        shown_ = true;
+        shownAt_ = c.now;
+    }
+
+    bool tick(Ctx &c) override
+    {
+        if (shown_ && (c.now - shownAt_ >= kShowMs || c.ui.power() != Power::Active)) {
+            hide();
+            return true;
+        }
+        return false;
+    }
+
+    bool mayLeave(Ctx & /*ctx*/, bool /*toHome*/) override
+    {
+        hide();
+        return true;
+    }
+
+private:
+    void hide()
+    {
+        shown_ = false;
+        std::fill(code_.begin(), code_.end(), '\0');
+        code_.clear();
+    }
+
+    bool shown_ = false;
+    std::string code_;
+    MonoMs shownAt_ = 0;
 };
 
 class ProvisioningScreen final : public Screen {
@@ -570,6 +701,7 @@ private:
 std::unique_ptr<Screen> makeSetupScreen() { return std::make_unique<SetupScreen>(); }
 std::unique_ptr<Screen> makeNetworkScreen() { return std::make_unique<NetworkScreen>(); }
 std::unique_ptr<Screen> makeProvisioningScreen() { return std::make_unique<ProvisioningScreen>(); }
+std::unique_ptr<Screen> makeSetupCodeScreen() { return std::make_unique<SetupCodeScreen>(); }
 std::unique_ptr<Screen> makeTimeScreen() { return std::make_unique<TimeScreen>(); }
 std::unique_ptr<Screen> makeTimeZoneScreen() { return std::make_unique<TimeZoneScreen>(); }
 std::unique_ptr<Screen> makeDisplayScreen() { return std::make_unique<DisplayScreen>(); }
