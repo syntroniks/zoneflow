@@ -267,6 +267,7 @@ class Builder:
 
     def footprints(self) -> None:
         place = self.placements()
+        self.clearance_overrides: list[str] = []
         sheet_of = {p["ref"]: p for p in self.model["parts"]}
         pad_net: dict[tuple[str, str], str] = {}
         for name, nodes in self.nl.nets.items():
@@ -305,7 +306,18 @@ class Builder:
             fp.SetExcludedFromBOM(not comp.in_bom)
             x, y, rot, side = place[ref]
             fp.SetPosition(self.pt(x, y))
+            # A clearance that a library footprint brings with it outranks the net class of its pads,
+            # in the zone fill and in DRC, and neither says so. KiCad's TI_SO-PowerPAD-8 has 0.2 mm:
+            # with it the ground pour stood 0.2 mm from the 45 V input pin and the switch node of the
+            # buck converter, where their class asks for 0.4 mm. Clearances are those of board.toml.
+            if fp.GetLocalClearance() is not None:
+                self.clearance_overrides.append(f"{ref} ({pcbnew.ToMM(fp.GetLocalClearance()):g} mm)")
+                fp.SetLocalClearance(None)
             for pad in fp.Pads():
+                if pad.GetLocalClearance() is not None:
+                    self.clearance_overrides.append(
+                        f"{ref}.{pad.GetNumber()} ({pcbnew.ToMM(pad.GetLocalClearance()):g} mm)")
+                    pad.SetLocalClearance(None)
                 name = pad_net.get((ref, pad.GetNumber()))
                 if name:
                     pad.SetNet(self.net(name))
@@ -894,6 +906,9 @@ def cmd_build(args) -> int:
     b.new_board()
     b.outline()
     b.footprints()
+    if b.clearance_overrides:
+        print("footprints: clearance override of the library footprint removed from "
+              + ", ".join(b.clearance_overrides))
     n_pre = b.preroutes()
     n_guard = b.guards()
     n_fan, no_via = b.fanout()
