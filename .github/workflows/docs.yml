@@ -27,6 +27,27 @@ jobs:
       - name: Vendored ESP Web Tools is the pinned one
         run: python3 tools/ewt/vendor.py check
 
+      # The browser demo (docs/try-it.md): the firmware as WebAssembly, the
+      # web interface and the page around them. The script smoke-tests the
+      # module under Node before it assembles the demo. The site build below
+      # copies the result to demo/.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: firmware/zoneflow-fw/web/package-lock.json
+
+      - name: Cache the demo's Emscripten and sources
+        uses: actions/cache@v4
+        with:
+          path: |
+            firmware/zoneflow-fw/sim/.cache
+            firmware/zoneflow-fw/sim/build-web/_deps
+          key: demo-deps-${{ hashFiles('firmware/zoneflow-fw/sim/CMakeLists.txt', 'firmware/zoneflow-fw/sim/web/build.sh') }}
+
+      - name: Build the browser demo
+        run: firmware/zoneflow-fw/sim/web/build.sh --emsdk
+
       - name: Build site
         run: uv run mkdocs build --strict
 

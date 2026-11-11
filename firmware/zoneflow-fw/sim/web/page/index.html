@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f3f6f5" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0c1211" media="(prefers-color-scheme: dark)" />
+    <meta
+      name="description"
+      content="ZoneFlow in your browser: the controller's firmware compiled to WebAssembly, with a simulated garden. Turn the knob, open the web interface, cut a wire."
+    />
+    <title>ZoneFlow live demo</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <a class="brand" href="../" title="ZoneFlow documentation">
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <path d="M24 4C24 4 8 22 8 31a16 16 0 0 0 32 0C40 22 24 4 24 4Z" />
+          <path d="M15 29h18M14.5 35h19M18 41h12" />
+        </svg>
+        <span>ZoneFlow</span>
+      </a>
+      <span class="tag" title="The firmware runs in this page. No hardware exists yet.">simulator</span>
+
+      <div class="clock" role="group" aria-label="Simulated time">
+        <div class="clock-read">
+          <span id="clock-time" class="clock-time">--:--:--</span>
+          <span id="clock-date" class="clock-date">&nbsp;</span>
+        </div>
+        <div class="speed" role="radiogroup" aria-label="Speed of time">
+          <button type="button" role="radio" data-speed="1" aria-checked="true" title="Real time">1×</button>
+          <button type="button" role="radio" data-speed="10" aria-checked="false" title="Ten times faster">10×</button>
+          <button type="button" role="radio" data-speed="60" aria-checked="false" title="A minute every second">60×</button>
+          <button type="button" role="radio" data-speed="600" aria-checked="false" title="Ten minutes every second">600×</button>
+        </div>
+        <button type="button" id="skip" class="btn ghost" title="Run the clock forward until a valve opens">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l8 7-8 7zM13 5l8 7-8 7z" /></svg>
+          <span>Next watering</span>
+        </button>
+      </div>
+
+      <div class="bar-end">
+        <div class="leds-mini" id="leds-mini" aria-hidden="true"></div>
+        <details class="menu" id="menu">
+          <summary class="btn ghost" aria-label="Demo menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </summary>
+          <div class="menu-list" role="menu">
+            <button type="button" role="menuitem" data-menu="restart">
+              <b>Power-cycle the controller</b>
+              <span>Restarts the firmware. Settings and history are kept, as in flash.</span>
+            </button>
+            <button type="button" role="menuitem" data-menu="garden">
+              <b>Start over with the demo garden</b>
+              <span>Six zones, two programs, password <code>zoneflow</code>.</span>
+            </button>
+            <button type="button" role="menuitem" data-menu="fresh">
+              <b>Unbox a new controller</b>
+              <span>Factory state: first-boot wizard on the display, no password yet.</span>
+            </button>
+            <a role="menuitem" href="../try-it/">
+              <b>What is simulated, and what is not</b>
+              <span>The limits of this demo.</span>
+            </a>
+          </div>
+        </details>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="Views">
+      <button type="button" data-tab="controller" aria-pressed="true">Controller</button>
+      <button type="button" data-tab="garden" aria-pressed="false">Garden</button>
+      <button type="button" data-tab="phone" aria-pressed="false">Phone</button>
+    </nav>
+
+    <main class="stage" data-tab="controller">
+      <!-- ============ the controller on the wall ============ -->
+      <section class="pane pane-controller" aria-labelledby="h-controller">
+        <h2 id="h-controller">On the wall <small>the controller</small></h2>
+        <div class="device-fit" id="device-fit">
+          <div class="device" id="device">
+            <div class="device-top">
+              <div class="screen" id="screen-wrap">
+                <canvas id="screen" width="320" height="240" aria-label="Controller display"></canvas>
+                <div class="screen-dim" id="screen-dim"></div>
+                <div class="screen-off" id="screen-off">booting</div>
+              </div>
+              <div class="knob-area">
+                <button type="button" class="knob" id="knob" aria-label="Encoder knob: drag or scroll to turn, click to press">
+                  <span class="knob-cap" id="knob-cap"><i></i></span>
+                </button>
+                <div class="knob-steps">
+                  <button type="button" id="turn-left" aria-label="Turn left one step" title="Turn left (←)">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H5v-4M5 7a8 8 0 1 1-1 7" /></svg>
+                  </button>
+                  <button type="button" id="turn-right" aria-label="Turn right one step" title="Turn right (→)">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 7h4v-4M19 7a8 8 0 1 0 1 7" /></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="keys">
+                <button type="button" class="key" id="key-back" aria-label="Back button" title="Back (Backspace)">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 6l-6 6 6 6" /></svg>
+                </button>
+                <button type="button" class="key" id="key-home" aria-label="Manual and Home button. Hold to stop all valves." title="Manual / Home (H). Hold: stop everything">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5" /></svg>
+                </button>
+              </div>
+            </div>
+            <div class="led-row" id="led-row" aria-label="Output lights"></div>
+            <div class="device-name">ZoneFlow</div>
+            <div class="cover">
+              <ol class="label-card" id="label-card"></ol>
+              <span class="cover-screw"></span>
+            </div>
+          </div>
+        </div>
+        <p class="hint" id="controller-hint">
+          <b>Drag the knob</b> or scroll over it to turn, click it to press. Hold the round button to stop everything.
+          <span class="hint-keys">Keys: <kbd>←</kbd> <kbd>→</kbd> turn, <kbd>Enter</kbd> press, <kbd>Backspace</kbd> back,
+            <kbd>H</kbd> manual.</span>
+        </p>
+      </section>
+
+      <!-- ============ the garden and what is wired to it ============ -->
+      <section class="pane pane-garden" aria-labelledby="h-garden">
+        <h2 id="h-garden">Outside <small>the garden it waters</small></h2>
+        <div class="garden-card">
+          <svg id="garden" class="garden" viewBox="0 0 400 300" role="img" aria-label="Plan of the garden with its watering zones"></svg>
+          <dl class="meters">
+            <div id="m-ac"><dt>Supply</dt><dd>24 VAC</dd></div>
+            <div id="m-current"><dt>Valve current</dt><dd>0 mA</dd></div>
+            <div id="m-flow"><dt>Flow</dt><dd>0.0 L/min</dd></div>
+            <div id="m-total"><dt>Water used</dt><dd>0 L</dd></div>
+          </dl>
+        </div>
+
+        <div class="card world">
+          <h3>Make something happen</h3>
+          <div class="switches">
+            <button type="button" class="switch" data-cond="rain" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 15a4 4 0 0 1 .5-8A5 5 0 0 1 17 8a3.5 3.5 0 0 1 0 7zM8 18l-1 3M12 18l-1 3M16 18l-1 3" /></svg>
+              <span><b>Rain</b><small>wets the rain sensor</small></span>
+            </button>
+            <button type="button" class="switch" data-cond="wifi" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9a14 14 0 0 1 18 0M6 12.5a9 9 0 0 1 12 0M9 16a4.5 4.5 0 0 1 6 0M12 19.5v.01M4 4l16 16" /></svg>
+              <span><b>WiFi down</b><small>unplug the router</small></span>
+            </button>
+            <button type="button" class="switch" data-cond="ac" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4" /></svg>
+              <span><b>Power cut</b><small>no 24 VAC from the transformer</small></span>
+            </button>
+            <button type="button" class="switch" data-cond="leak" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h9a3 3 0 0 1 3 3v1M15 12h4M17 15c0 0-2 2.4-2 3.8a2 2 0 0 0 4 0C19 17.400 17 15 17 15z" /></svg>
+              <span><b>Leaking pipe</b><small>water flows with every valve shut</small></span>
+            </button>
+          </div>
+          <div class="wires">
+            <div class="wires-head">
+              <b>Valve wires</b>
+              <small>click one to cut it, again to short it, again to mend it</small>
+            </div>
+            <div class="wire-chips" id="wire-chips"></div>
+          </div>
+          <details class="advanced">
+            <summary>A fault inside the controller</summary>
+            <button type="button" class="switch" data-cond="triac" aria-pressed="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 14h6l-1 7 8-11h-6z" /></svg>
+              <span><b>Output device fails short</b><small>a triac that can no longer switch off</small></span>
+            </button>
+          </details>
+        </div>
+
+        <div class="card log-card">
+          <h3>What the firmware is doing</h3>
+          <ol class="log" id="log" aria-live="polite"></ol>
+        </div>
+      </section>
+
+      <!-- ============ the phone ============ -->
+      <section class="pane pane-phone" aria-labelledby="h-phone">
+        <h2 id="h-phone">In your hand <small>the web interface it serves</small></h2>
+        <div class="phone">
+          <div class="phone-bar" id="phone-bar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 11V8a5 5 0 0 1 10 0v3M6 11h12v9H6z" /></svg>
+            <span id="phone-url">zoneflow.local</span>
+            <button type="button" id="phone-reload" aria-label="Reload the web interface" title="Reload">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v5h-5M19 10a7.5 7.5 0 1 0 1 5" /></svg>
+            </button>
+          </div>
+          <iframe id="app" title="ZoneFlow web interface" src="about:blank"></iframe>
+        </div>
+        <p class="hint" id="phone-hint">&nbsp;</p>
+      </section>
+
+      <aside class="tour" aria-labelledby="h-tour">
+        <h2 id="h-tour">Five things to try</h2>
+        <ol id="tour"></ol>
+      </aside>
+    </main>
+
+    <footer class="foot">
+      <p>
+        This page runs the controller's own firmware code, compiled to WebAssembly: scheduler, safety logic, display
+        and REST API. The valves, sensors and radio are simulated, and no ZoneFlow board has been built yet.
+        <a href="../try-it/">What that means</a>. Nothing you do here leaves your browser.
+      </p>
+    </footer>
+
+    <div class="splash" id="splash">
+      <div>
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <path d="M24 4C24 4 8 22 8 31a16 16 0 0 0 32 0C40 22 24 4 24 4Z" />
+        </svg>
+        <p id="splash-text">Loading the firmware…</p>
+      </div>
+    </div>
+    <div class="toast" id="toast" role="status"></div>
+
+    <script type="module" src="demo.js"></script>
+  </body>
+</html>

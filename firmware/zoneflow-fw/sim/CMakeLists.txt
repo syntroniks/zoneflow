@@ -70,6 +70,47 @@ add_subdirectory(../components/zf_board zf_board)
 # owner in the pull request that added this simulator.
 target_compile_options(zf_core PRIVATE -Wno-array-bounds)
 
+if(EMSCRIPTEN)
+    # The browser demo (sim/web): the same core and display, plus the REST
+    # API and authentication of zf_web, as one WebAssembly module. These
+    # sources include no ESP-IDF headers; test/host builds the same list.
+    set(ZF_COMPONENTS "${CMAKE_CURRENT_LIST_DIR}/../components")
+    add_library(zf_ext STATIC
+        ${ZF_COMPONENTS}/zf_net/src/net_logic.cpp
+        ${ZF_COMPONENTS}/zf_ota/src/ota_logic.cpp
+        ${ZF_COMPONENTS}/zf_web/src/api.cpp
+        ${ZF_COMPONENTS}/zf_web/src/auth.cpp
+        ${ZF_COMPONENTS}/zf_web/src/command_watch.cpp
+        ${ZF_COMPONENTS}/zf_web/src/crypto.cpp
+        ${ZF_COMPONENTS}/zf_web/src/http_util.cpp
+        ${ZF_COMPONENTS}/zf_web/src/json_map.cpp
+        ${ZF_COMPONENTS}/zf_web/src/routes.cpp
+        ${ZF_COMPONENTS}/zf_mqtt/src/mqtt_logic.cpp
+    )
+    target_include_directories(zf_ext PUBLIC
+        ${ZF_COMPONENTS}/zf_net/include
+        ${ZF_COMPONENTS}/zf_ota/include
+        ${ZF_COMPONENTS}/zf_web/include
+        ${ZF_COMPONENTS}/zf_mqtt/include)
+    target_compile_options(zf_ext PRIVATE -Wall -Wextra -fno-exceptions -fno-rtti)
+    target_link_libraries(zf_ext PUBLIC zf_core cjson)
+
+    set(ZF_DEMO_VERSION "0.0.0-demo" CACHE STRING "Firmware version the demo reports")
+    add_executable(zoneflow-demo web/device.cpp sim.cpp)
+    target_include_directories(zoneflow-demo PRIVATE "${CMAKE_CURRENT_LIST_DIR}" "${CMAKE_CURRENT_LIST_DIR}/../test/host")
+    target_compile_options(zoneflow-demo PRIVATE -Wall -Wextra)
+    target_compile_definitions(zoneflow-demo PRIVATE ZF_DEMO_VERSION="${ZF_DEMO_VERSION}")
+    target_link_libraries(zoneflow-demo PRIVATE zf_view zf_ui zf_core zf_ext zf_board cjson lvgl)
+    # An ES module the page imports; the page calls the zf_* exports. LVGL's
+    # heap is a 16 MB static pool (lv_conf.h), hence the initial memory.
+    target_link_options(zoneflow-demo PRIVATE
+        -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,node
+        -sINITIAL_MEMORY=48MB -sALLOW_MEMORY_GROWTH=1 -sSTACK_SIZE=1MB
+        -sEXPORTED_FUNCTIONS=_main,_malloc,_free
+        -sEXPORTED_RUNTIME_METHODS=UTF8ToString,stringToUTF8,lengthBytesUTF8,HEAPU8)
+    return()
+endif()
+
 add_executable(zoneflow-sim
     main.cpp
     scenes.cpp
