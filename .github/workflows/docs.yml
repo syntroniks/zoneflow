@@ -48,6 +48,15 @@ jobs:
       - name: Build the browser demo
         run: firmware/zoneflow-fw/sim/web/build.sh --emsdk
 
+      # docs/hardware/cost.md: its tables are written by tools/cost from dated
+      # data files. Test the arithmetic, then check the page matches the data.
+      - name: Cost estimate tests
+        working-directory: tools/cost
+        run: |
+          uv run --locked ruff check .
+          uv run --locked pytest -q
+          uv run --locked zfcost render ../../docs/hardware/cost.md --check
+
       - name: Build site
         run: uv run mkdocs build --strict
 

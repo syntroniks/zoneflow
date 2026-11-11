@@ -1,0 +1,91 @@
+# Assumptions of the landed-cost estimate. Each is a choice or a guess, not a
+# fact read from a source. Each can be changed here or on the command line
+# with --set name=value. The site page lists them with their values.
+
+[assumptions.attrition_fields]
+value = true
+why = "The JLCPCB parts search returns two unlabelled quantities per part, leastPatchNumber and lossNumber. They are read as the minimum quantity JLCPCB buys for an assembly order and the extra parts it adds for attrition: order = max(needed + loss, least). JLCPCB's FAQ says both rules exist but gives no numbers. Set false to order exactly what is fitted."
+
+[assumptions.tier_by_order_qty]
+value = true
+why = "A part's price break is chosen by the quantity ordered for the whole batch, as on the JLCPCB parts search."
+
+[assumptions.service]
+value = "auto"
+why = "JLCPCB assembly service: 'auto' uses Economic up to 50 boards (its limit) and Standard above; 'economic' or 'standard' forces one. Economic above 50 is priced as several orders of at most 50."
+
+[assumptions.tht_by]
+value = "builder"
+why = "Who solders the six through-hole parts (four headers, C1, K1). 'builder': bought loose with the order and soldered by hand, as hardware-layout.md section 12 plans. 'assembler': JLCPCB's manual assembly fee per joint plus its hand-soldering labour per order, and Standard service because C1 and K1 are on the bottom side. Neither has been asked of JLCPCB."
+
+[assumptions.pcb_hole]
+value = "0p2"
+why = "The layout needs 0.2 mm holes (twelve thermal vias under U1), so the 0.2 mm price applies. '0p3' prices the board with those vias enlarged to 0.3 mm, which is a layout change."
+
+[assumptions.pcb_qty_round_up]
+value = true
+why = "The board quantity is the smallest quoted quantity at or above the number of controllers. Extra bare boards are spares."
+
+[assumptions.us_tariff_rate]
+value = 0.35
+why = "Duty rate on the China-made goods (parts, board, assembly). 0.35 is what JLCPCB says it collects on PCBs under DDP (Section 301 25 % plus 10 %). It changes often; the page shows 0, 0.25, 0.35 and 0.60."
+
+[assumptions.tariff_on_freight]
+value = false
+why = "US duty is assessed on the goods' value, not on the international freight."
+
+[assumptions.components_g_per_board]
+value = 45.0
+why = "Mass of the parts on one assembled board including relay, capacitor, module and headers, not weighed. Used for the freight only."
+
+[assumptions.loose_g_per_unit]
+value = 40.0
+why = "Display panel, four plugs and spare fuse per controller, packed. Not weighed."
+
+[assumptions.packing_g_per_order]
+value = 250.0
+why = "Box and padding per shipment."
+
+[assumptions.spare_fuses_per_unit]
+value = 1
+why = "One spare 3 A fuse (0452003.MRL, the replacement named in the BOM) in each box. The fuse holders on the board come with fuses."
+
+[assumptions.us_distributor_shipping]
+value = 8.0
+why = "Shipping per order for the coin cells from a US distributor. Not quoted."
+
+[assumptions.petg_waste_factor]
+value = 1.10
+why = "Purge, skirt and failed prints over the model mass."
+
+[assumptions.screw_usd_each]
+value = 0.08
+why = "M3 stainless machine screw, bought by the hundred. Not quoted."
+
+[assumptions.label_usd_each]
+value = 0.05
+why = "One 28 x 89 mm address label from a sheet. Not quoted."
+
+[assumptions.fastener]
+value = "insert"
+why = "'insert' uses seven heat-set inserts; 'selftap' uses none (docs/enclosure/printing.md)."
+
+[assumptions.labour_usd_per_hour]
+value = 0.0
+why = "Money per hour of the builder's time. 0 leaves time out of the money totals; the page lists hours separately."
+
+[assumptions.minutes_tht_solder]
+value = 10.0
+why = "Hand-soldering the six through-hole parts (26 joints) of one board."
+
+[assumptions.minutes_enclosure]
+value = 25.0
+why = "Pressing seven inserts, fitting the light pipes, display, board and fascia (docs/enclosure/assembly.md)."
+
+[assumptions.minutes_flash_test]
+value = 20.0
+why = "Flashing firmware and the per-board checks of the first-power-up page, per board after the first."
+
+[assumptions.minutes_per_order]
+value = 120.0
+why = "Ordering, checking the assembler's placement preview, unpacking: per batch."
