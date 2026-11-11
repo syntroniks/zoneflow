@@ -24,6 +24,22 @@ describe('deriveAlerts', () => {
     expect(a?.clearable).toBe(false);
   });
 
+  it('a board not yet commissioned is a warning that clears itself', () => {
+    const [a] = deriveAlerts({ ...baseStatus(), faults: { active: ['not_commissioned'], zones: [] } }, name, until);
+    expect(a?.severity).toBe('warning');
+    expect(a?.clearable).toBe(false);
+    expect(a?.title).toBe('Safety timing not learned');
+  });
+
+  it('a fault of a safety layer that needs a repair is not cleared with one press', () => {
+    for (const [code, step] of [['keepalive_bridged', '2b'], ['relay_gate_bleed', '5b']] as const) {
+      const hardware = { check: code === 'relay_gate_bleed' ? 'gate_bleed' : 'float_drive_enabled', step, repair_needed: true };
+      const [a] = deriveAlerts({ ...baseStatus(), faults: { active: [code], zones: [], hardware } }, name, until);
+      expect(a?.clearable).toBe(false);
+      expect(a?.severity).toBe('error');
+    }
+  });
+
   it('reports resting zones, rain delay, the sensor and an unset clock, errors first', () => {
     const b = baseStatus();
     const s = {

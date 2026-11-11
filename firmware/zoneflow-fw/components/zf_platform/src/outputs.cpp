@@ -12,7 +12,10 @@
 #include "esp_log.h"
 #include "hal/gpio_ll.h"
 #include "sdkconfig.h"
+#include "soc/gpio_reg.h"
+#include "soc/gpio_sig_map.h"
 #include "soc/gpio_struct.h"
+#include "soc/io_mux_reg.h"
 #include "zf_board/board.hpp"
 #include "zf_platform/platform.hpp"
 
@@ -20,6 +23,29 @@ namespace zf::platform {
 namespace {
 
 constexpr const char *kTag = "zf.out";
+
+// Contract 19.4, changed by review A2 (finding M6): an edge at least every
+// 20 ms and no phase shorter than 2.5 ms. The pin changes level only on a
+// keep-alive period, so the period is the shortest phase.
+static_assert(keepalive::periodMeetsContract(CONFIG_ZF_OE_TOGGLE_PERIOD_MS * 1000u),
+              "hardware design 19.4: keep-alive period between 2.5 and 20 ms");
+
+// Rule 16: GPIO17 is UART1's default TXD. A console on UART1 with its default
+// pins would idle high and send edges on the keep-alive net.
+#if defined(CONFIG_ESP_CONSOLE_UART_NUM) && CONFIG_ESP_CONSOLE_UART_NUM == 1 && !defined(CONFIG_ESP_CONSOLE_UART_CUSTOM)
+#error "hardware design 19.1 rule 16: no console on UART1 with its default pins (TXD is the keep-alive pin)"
+#endif
+#if defined(CONFIG_ESP_CONSOLE_UART_TX_GPIO)
+static_assert(CONFIG_ESP_CONSOLE_UART_TX_GPIO != board::kKeepAliveGpio &&
+                  CONFIG_ESP_CONSOLE_UART_RX_GPIO != board::kKeepAliveGpio,
+              "hardware design 19.1 rule 16: the console UART must not use the keep-alive pin");
+#endif
+
+// The interrupt runs every 1 ms; every CONFIG_ZF_OE_TOGGLE_PERIOD_MS-th one
+// is a keep-alive period. The 1 ms ones only read the keep-alive pin while
+// it floats (hardware design 19.7 step 2b: "read KA as an input every 1 ms").
+constexpr uint32_t kIsrPeriodUs = 1000;
+DRAM_ATTR uint32_t sDiv = 0;
 
 // Keep-alive: a GPTimer alarm interrupt every CONFIG_ZF_OE_TOGGLE_PERIOD_MS.
 // With CONFIG_GPTIMER_ISR_CACHE_SAFE the interrupt is in IRAM and stays
@@ -35,8 +61,25 @@ gptimer_handle_t sKeepAliveTimer = nullptr;
 
 IRAM_ATTR bool onKeepAlive(gptimer_handle_t, const gptimer_alarm_event_data_t *, void *)
 {
+    const auto ka = static_cast<uint32_t>(board::kKeepAliveGpio);
+    if (sGuard->pinIsInput()) {
+        sGuard->sampleFloat(gpio_ll_get_level(&GPIO, ka) != 0);
+    }
+    if (++sDiv < CONFIG_ZF_OE_TOGGLE_PERIOD_MS) {
+        return false;
+    }
+    sDiv = 0;
     const bool on = sGuard->step(CONFIG_ZF_OE_TOGGLE_PERIOD_MS);
-    gpio_ll_set_level(&GPIO, static_cast<uint32_t>(board::kKeepAliveGpio), on ? 1u : 0u);
+    if (sGuard->pinIsInput()) {
+        // Step 2b: driver off, no pull. R33 holds the net low unless
+        // something else drives it.
+        gpio_ll_output_disable(&GPIO, ka);
+    } else {
+        // Level first, then the driver: coming back from the float test the
+        // pin goes straight to low.
+        gpio_ll_set_level(&GPIO, ka, on ? 1u : 0u);
+        gpio_ll_output_enable(&GPIO, ka);
+    }
     // The read-backs and the latch, every period, for the self-test timing.
     const bool driveEnabled = gpio_ll_get_level(&GPIO, static_cast<uint32_t>(board::kDriveEnableReadbackGpio)) != 0;
     const bool relayOff = gpio_ll_get_level(&GPIO, static_cast<uint32_t>(board::kRelayOffReadbackGpio)) != 0;
@@ -69,16 +112,31 @@ RTC_NOINIT_ATTR alignas(4) uint8_t sRetained[sizeof(RetainedRecord)];
 } // namespace
 
 // Called from the global-scope C entry point below.
-IRAM_ATTR void forceOutputsOff() { gpio_ll_set_level(&GPIO, static_cast<uint32_t>(board::kKeepAliveGpio), 0); }
+IRAM_ATTR void forceOutputsOff()
+{
+    gpio_ll_set_level(&GPIO, static_cast<uint32_t>(board::kKeepAliveGpio), 0);
+    gpio_ll_output_enable(&GPIO, static_cast<uint32_t>(board::kKeepAliveGpio));
+}
+
+bool keepAlivePinPlain()
+{
+    // Rule 16 and contract 19.4: the IO_MUX selects the GPIO function and the
+    // GPIO matrix routes no peripheral signal to the pin.
+    const auto ka = static_cast<uint32_t>(board::kKeepAliveGpio);
+    const uint32_t mux = REG_GET_FIELD(IO_MUX_GPIO0_REG + ka * 4u, MCU_SEL);
+    const uint32_t out = REG_GET_FIELD(GPIO_FUNC0_OUT_SEL_CFG_REG + ka * 4u, GPIO_FUNC0_OUT_SEL);
+    return mux == PIN_FUNC_GPIO && out == SIG_GPIO_OUT_IDX;
+}
 
 esp_err_t initOutputStagePins()
 {
     // Keep-alive: latch low first, then the driver on. R33 holds the pin low
     // until then (hardware design 8.7).
     gpio_set_level(static_cast<gpio_num_t>(board::kKeepAliveGpio), 0);
+    // Input buffer on as well: step 2b reads the pin while its driver is off.
     const gpio_config_t ka = {
         .pin_bit_mask = 1ULL << board::kKeepAliveGpio,
-        .mode = GPIO_MODE_OUTPUT,
+        .mode = GPIO_MODE_INPUT_OUTPUT,
         .pull_up_en = GPIO_PULLUP_DISABLE,
         .pull_down_en = GPIO_PULLDOWN_DISABLE,
         .intr_type = GPIO_INTR_DISABLE,
@@ -147,7 +205,7 @@ esp_err_t startKeepAlive(OutputEnableGuard &guard)
     }
     const gptimer_event_callbacks_t cbs = {.on_alarm = &onKeepAlive};
     gptimer_alarm_config_t alarm = {};
-    alarm.alarm_count = static_cast<uint64_t>(CONFIG_ZF_OE_TOGGLE_PERIOD_MS) * 1000u;
+    alarm.alarm_count = kIsrPeriodUs;
     alarm.reload_count = 0;
     alarm.flags.auto_reload_on_alarm = true;
     err = gptimer_register_event_callbacks(sKeepAliveTimer, &cbs, nullptr);

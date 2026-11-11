@@ -81,9 +81,8 @@ std::string faults_text(const Supervisor &s, uint8_t zone_count,
   if (s.hardware_fault()) {
     const zf::HwCheck check = s.stage().fault;
     std::string t = title_of(zf::faultCodeFor(check));
-    char step[32];
-    std::snprintf(step, sizeof step, " (step %u)", static_cast<unsigned>(zf::hwCheckStep(check)));
-    add(t + step);
+    const std::string step = zf::hwCheckStep(check);  // "2b"; empty for a check that is not a step
+    add(step.empty() ? t : t + " (step " + step + ")");
   }
   const uint32_t g = s.general_faults();
   if (g & kFaultCurrentWhileIdle)
@@ -106,6 +105,8 @@ std::string faults_text(const Supervisor &s, uint8_t zone_count,
     add(title_of(zf::FaultCode::SensorSupply));
   if (g & kCondMainsSignal)
     add(title_of(zf::FaultCode::MainsSignal));
+  if (g & kCondNotCommissioned)
+    add(title_of(zf::FaultCode::NotCommissioned));
   for (uint8_t z = 0; z < zone_count && z < zf::kMaxZones; ++z) {
     const std::string label =
         labels[z] != nullptr && labels[z][0] != '\0' ? std::string(labels[z]) : "Zone " + std::to_string(z + 1);
@@ -120,8 +121,12 @@ std::string faults_text(const Supervisor &s, uint8_t zone_count,
 }
 
 Supervisor::Supervisor(zf::hw::IExpanderBus &bus, zf::OutputEnableGuard &guard, const zf::IClock &clock,
-                       const zf::hw::ExpanderLayout &layout, const SupervisorConfig &cfg)
-    : clock_(clock), cfg_(cfg), stage_(bus, guard, clock, layout, cfg.stage), driver_(stage_, guard, clock) {
+                       const zf::hw::ExpanderLayout &layout, const SupervisorConfig &cfg,
+                       zf::IDetectorReferenceStore *reference)
+    : clock_(clock),
+      cfg_(cfg),
+      stage_(bus, guard, clock, layout, cfg.stage, reference),
+      driver_(stage_, guard, clock) {
   driver_.setListener(this);
   for (auto &t : trip_at_ms_)
     t.fill(kNoTrip);
@@ -232,6 +237,7 @@ void Supervisor::tick(const SupervisorInputs &in) {
   st.currentSenseAvailable = in.current_sense_available && cfg_.current_enabled;
   st.idleThresholdMa = cfg_.idle_threshold_ma;
   st.sensorSupplyOn = in.sensor_supply_on;
+  st.keepAlivePinPlain = in.keepalive_pin_plain;
   stage_.tick(st);
   handle_stage(now);
 
@@ -246,6 +252,8 @@ void Supervisor::tick(const SupervisorInputs &in) {
   set_flag(kCondCurrentSenseUnavailable, cfg_.current_enabled && !in.current_sense_available);
   if (stage_status_.sensorSupplyKnown)
     set_flag(kCondSensorSupply, in.sensor_supply_on && stage_status_.sensorSupplyFault);
+  // 19.7, the limits of step 9: a board with no stored release times says so.
+  set_flag(kCondNotCommissioned, !stage_status_.commissioned);
 
   if (in.flow_lpm >= 0.0f)
     handle_flow(in.flow_lpm, now);

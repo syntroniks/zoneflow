@@ -61,6 +61,9 @@ plain form, for example "Valve drew no current".
 | [Zone N: valve current lopsided](#zone-n-valve-current-lopsided) | `zone_dc_current` | No |
 | [Mains signal wrong](#mains-signal-wrong) | `mains_signal` | Yes |
 | [Safety circuit failed its test](#safety-circuit-failed-its-test) | `keepalive_detector` | No, needs a confirmed repair |
+| [Safety signal disturbed](#safety-signal-disturbed) | `keepalive_bridged` | No, needs a confirmed repair |
+| [Valve relay driver faulty](#valve-relay-driver-faulty) | `relay_gate_bleed` | No, needs a confirmed repair |
+| [Safety timing not learned](#safety-timing-not-learned) | `not_commissioned` | Yes |
 | [Valve driver not responding](#valve-driver-not-responding) | `output_expander` | No |
 | [Valve relay stuck closed](#valve-relay-stuck-closed) | `relay_welded` | No |
 | [Valve output stuck on](#valve-output-stuck-on) | `output_shorted` | No |
@@ -213,7 +216,7 @@ plain form, for example "Valve drew no current".
 > The circuit that turns the valves off if the controller stops failed its
 > self-test. Nothing runs. Repair the board, then confirm it here.
 
-- **Detected:** one of the two keep-alive detectors did not behave as designed in a self-test: it was on when it should be off, did not come on within 150 ms, or did not let go within its time window when the pulses stopped.
+- **Detected:** one of the two keep-alive detectors did not behave as designed in a self-test: it was on when it should be off, did not come on within 150 ms, or did not let go within its time window when the pulses stopped. The window is 0.15 to 1.0 s for the gate drive and 0.05 to 1.6 s for the relay, and, once the board has learned its own times, 0.5 to 1.5 times those.
 - **Why it matters:** those detectors are what turn the valves off when the firmware crashes. With one of them unreliable, a crash could leave a valve on.
 - **Clear:** this fault does not clear with one press. After the board has been repaired and checked, confirm the repair: on the display, **Repaired**, then **Yes, repaired** (Cancel is focused first). In ESPHome, press `Acknowledge repair (press twice)` twice within 10 seconds. The full self-test runs before any valve opens.
 
@@ -223,18 +226,65 @@ The "Step N" line names the failed check. For whoever repairs the board:
 
 | Line | Meaning | Section of the hardware design |
 |---|---|---|
-| Step 1: `idle_drive_enabled`, `idle_relay_on`, `idle_expander_answers` | A detector, or the expander, was on with the keep-alive stopped | 19.7 step 1 |
+| Step 1: `idle_drive_enabled` | The gate-drive read-back (GPIO42, `V_DRV`) was high and the expander answered with the keep-alive stopped: detector A or the over-current latch is stuck on | 19.7 step 1 |
+| Step 1: `idle_drive_supply_on` | `V_DRV` was high with the expander in reset: Q3 conducts when it should not, or GPIO42 is driven | 19.7 step 1, 8.6 |
+| Step 1: `idle_relay_on` | The relay read-back (GPIO7) was low with the keep-alive stopped: the relay transistor Q2 is on, or, on USB power with 24 V AC present, `V_BUCK` is missing (U1, F5 or D25; rule 15) | 19.7 steps 0 and 1, 4.8 |
+| Step 1: `idle_relay_gate_drain` | GPIO7 read between 0.3 and 1.5 V at rest: Q2 shorted gate to drain | 7.4; review A2 4.6 question 7 |
+| Step 1: `idle_expander_answers` | The expander answered with the gate-drive read-back low: `DRV_EN` stuck high | 19.7 step 1 |
 | Step 2: `pin_high_drive_enabled`, `pin_high_relay_on` | A detector came on with the keep-alive pin held high; a shorted pump capacitor or an open bleed resistor | 19.7 step 2 |
+| Step 2b: `float_pin_high`, `float_drive_enabled`, `float_relay_on` | With the keep-alive pin an input, something lifted the keep-alive net or a detector came on: see [Safety signal disturbed](#safety-signal-disturbed) | 19.7 step 2b |
 | Step 3: `start_drive_timeout`, `start_relay_timeout`, `start_no_acknowledge` | A detector or the expander did not come on within 150 ms of the first pulse | 19.7 step 3 |
-| Step 4: `expander_inputs`, `expander_outputs`, `expander_config` | The expander's pins or registers did not read as expected | 19.7 steps 4a to 4c |
+| Step 4a, 4b, 4c: `expander_inputs`, `expander_outputs`, `expander_config` | The expander's pins or registers did not read as expected | 19.7 steps 4a to 4c |
 | Step 5: `relay_welded` | Current with the relay open | 19.7 step 5 |
+| Step 5: `weld_no_readback` | A valve pin did not read low while its bit was driven low | 19.7 steps 5 and 7 |
+| Step 5b: `gate_bleed` | Current with the relay's control released without being driven low: see [Valve relay driver faulty](#valve-relay-driver-faulty) | 19.7 step 5b |
 | Step 6: `relay_no_readback`, `output_shorted` | The relay bit did not read back, or current with no output on | 19.7 step 6 |
 | Step 7: `run_readback`, `run_drive_lost`, `run_relay_lost` | During a run, a register or a detector changed by itself | 19.7 step 7 |
 | Step 8: `end_no_acknowledge` | The expander did not accept the end-of-run writes | 19.7 step 8 |
-| Step 9: `stop_drive_release`, `stop_relay_release`, `stop_expander_answers` | A detector let go outside its window (0.3 to 1.0 s, 0.08 to 1.0 s), or the expander still answered | 19.7 step 9 |
+| Step 9: `stop_drive_release`, `stop_relay_release` | A detector let go outside its absolute window (0.15 to 1.0 s, 0.05 to 1.6 s), or not within 3 s | 19.7 step 9 |
+| Step 9: `stop_drive_band`, `stop_relay_band` | A detector let go outside 0.5 to 1.5 times this board's learned time: typically an open bleed resistor (R30 or R91 for the gate drive, R14 or R90 for the relay) | 19.7 step 9 |
+| Step 9: `stop_expander_answers` | The expander still answered after the stop | 19.7 step 9 |
+| (no step): `keepalive_pin_routed` | A peripheral of the processor is routed to the keep-alive pin: a firmware fault | 19.1 rule 16 |
 
-Steps 1, 2 and 9 raise "Safety circuit failed its test" and need the
-confirmed repair. Other steps raise the matching fault above.
+Steps 1, 2, 2b, 5b and 9 mean one of the two layers can no longer be
+relied on, and they need the confirmed repair. Step 2b raises "Safety
+signal disturbed", step 5b "Valve relay driver faulty", steps 1, 2 and 9
+"Safety circuit failed its test". Other steps raise the matching fault
+above. Confirming a repair also makes the board learn its detector times
+again (see [Safety timing not learned](#safety-timing-not-learned)).
+
+#### Safety signal disturbed
+
+> Another signal drives the safety line: a valve could stay on if the
+> controller stops. Nothing runs. Repair the board, then confirm it here.
+
+- **Detected:** the float test (self-test step 2b). Before every run the controller lets go of the keep-alive line for half a second, with the display, its backlight and the memory busy. Nothing may drive the line meanwhile. Something did: the line read high, or one of the safety detectors came on.
+- **Why it matters:** a leak of a kilohm or so from a signal that switches by itself, such as the backlight, onto the keep-alive line does nothing while the controller drives the line, and keeps both safety detectors on if the controller crashes. It is the one board fault that defeats both layers. Hardware review A2, section 3.3.
+- **Likely causes:** flux residue, a solder bridge or a dendrite near the keep-alive line; a damaged component on it; or, as a firmware fault (`keepalive_pin_routed`), a serial port opened on the keep-alive pin.
+- **Clear:** the board needs repair. Clean and inspect around GPIO17, module pin 10, and the keep-alive net. Then confirm the repair as above.
+
+![Fault detail for the float test](design/display-ui/fault-detail-float-test.png){ width="300" }
+
+#### Valve relay driver faulty
+
+> The valve relay stayed on when its control was let go. Nothing runs.
+> Repair the board, then confirm it here.
+
+- **Detected:** the gate bleed check (self-test step 5b). Before every run the controller switches the relay on for 20 ms and then lets go of its control line without switching it off first. The relay must open by itself; with the first output on for one 100 ms window no current may flow.
+- **Why it matters:** if the relay driver keeps its charge when its control is let go, the relay stays on through a reset of the valve driver chip, and one of the two layers is lost.
+- **Likely causes:** R12, the resistor that discharges the relay driver's gate, open or missing.
+- **Clear:** the board needs repair. Then confirm the repair as above.
+
+#### Safety timing not learned
+
+> The board has not learned how fast its safety circuit switches off. It
+> learns this by itself with 24 V AC on. If this stays, the board needs
+> service.
+
+- **Detected:** the board has no stored release times for its two keep-alive detectors. Until it has, the stop test after every run applies only its wide absolute limits, which cannot find an open bleed resistor.
+- **What happens:** with 24 V AC connected and no zone running, the controller runs its start-up test and up to ten short test cycles, about 5 seconds each, and stores the middle value of five that agree. Do this the first time at room temperature: the times change with temperature, and a board commissioned at 70 °C or at freezing learns a value the later tests compare against. The warning clears itself when the times are stored. Watering works meanwhile.
+- **If it stays:** the times did not agree, or were outside what a healthy board gives at room temperature (gate drive 0.34 to 0.9 s, relay 0.16 to 1.1 s). The board may have a fault, or it is far from room temperature. Try again at room temperature: restart the controller. If it still stays, the board needs checking.
+- **Learning again:** confirming a repair of a safety fault clears the stored times, and the board learns them again. A factory reset keeps them: they belong to the board, not to its settings.
 
 #### Mains signal wrong
 

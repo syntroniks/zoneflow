@@ -51,6 +51,12 @@ const char *toString(FaultCode f)
         return "zone_dc_current";
     case FaultCode::MainsSignal:
         return "mains_signal";
+    case FaultCode::KeepAliveBridged:
+        return "keepalive_bridged";
+    case FaultCode::RelayGateBleed:
+        return "relay_gate_bleed";
+    case FaultCode::NotCommissioned:
+        return "not_commissioned";
     case FaultCode::Count:
         break;
     }
@@ -157,7 +163,18 @@ FaultCode faultCodeFor(HwCheck c)
     case HwCheck::StopDriveRelease:
     case HwCheck::StopRelayRelease:
     case HwCheck::StopExpanderAnswers:
+    case HwCheck::IdleDriveSupplyOn:
+    case HwCheck::IdleRelayGateDrain:
+    case HwCheck::StopDriveBand:
+    case HwCheck::StopRelayBand:
         return FaultCode::KeepAliveDetector;
+    case HwCheck::FloatPinHigh:
+    case HwCheck::FloatDriveEnabled:
+    case HwCheck::FloatRelayOn:
+    case HwCheck::KeepAlivePinRouted:
+        return FaultCode::KeepAliveBridged;
+    case HwCheck::GateBleed:
+        return FaultCode::RelayGateBleed;
     case HwCheck::RelayWelded:
         return FaultCode::RelayWelded;
     case HwCheck::OutputShorted:
@@ -173,6 +190,7 @@ FaultCode faultCodeFor(HwCheck c)
     case HwCheck::EndNoAcknowledge:
     case HwCheck::BusError:
     case HwCheck::TooManyOutputs:
+    case HwCheck::WeldNoReadback:
         return FaultCode::OutputExpander;
     case HwCheck::None:
     case HwCheck::Count:

@@ -65,6 +65,7 @@ add_executable(zf_host_tests
     event_bus_test.cpp
     output_enable_test.cpp
     output_stage_test.cpp
+    selftest_a2_test.cpp
     current_sense_test.cpp
     retained_test.cpp
     hardware_controller_test.cpp

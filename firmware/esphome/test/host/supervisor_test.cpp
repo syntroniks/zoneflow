@@ -23,6 +23,8 @@ struct Rig {
   zf::test::FakeClock clock;
   zf::OutputEnableGuard guard{zf::OutputEnableMode::Toggle, 500};
   zf::test::FakeBoard board{guard, clock};
+  // The board's stored detector release times (hardware design 19.7, step 9).
+  zf::test::FakeReferenceStore reference = zf::test::StageRig::storeWith(true);
   Supervisor sup;
   float flow_lpm = -1.0f;
   bool ticking = true;  // false: the ESPHome main loop is stalled
@@ -36,7 +38,7 @@ struct Rig {
     return c;
   }
   explicit Rig(const SupervisorConfig &cfg = defaults(), const zf::RetainedRecord *retained = nullptr)
-      : sup(board, guard, clock, zf::test::revALayout(), cfg) {
+      : sup(board, guard, clock, zf::test::revALayout(), cfg, &reference) {
     clock.mono = 0;
     sup.begin(retained);
   }
@@ -101,7 +103,7 @@ TEST(Supervisor, WithoutAMasterValveARunRaisesNoMasterFault) {
   Rig r(c);
   ASSERT_TRUE(r.run_until([&] { return r.idle(); }, 10000));
   ASSERT_TRUE(r.sup.start_zone(0, 30).ok());
-  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(0) == ValveState::Open; }, 8000));
+  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(0) == ValveState::Open; }, 12000));
   EXPECT_FALSE(r.master_driven());
   r.run(31000);
   EXPECT_EQ(r.sup.zone_last_stop(0), StopReason::Completed);
@@ -116,7 +118,7 @@ TEST(Supervisor, ZoneRunsWithMasterAndRelayThenEverythingStops) {
   EXPECT_EQ(r.sup.zone_state(0), ValveState::Waiting);
   // Self-test before the run (pin-high test, start, weld, relay), then the
   // master, then the zone 1 s later.
-  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(0) == ValveState::Open; }, 8000));
+  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(0) == ValveState::Open; }, 12000));
   EXPECT_TRUE(r.zone_driven(0));
   EXPECT_TRUE(r.master_driven());
   EXPECT_TRUE(r.board.relayClosed());
@@ -136,7 +138,7 @@ TEST(Supervisor, UntilStoppedMeansTheZonesMaximumAndThenItRests) {
   Rig r(c);
   ASSERT_TRUE(r.run_until([&] { return r.idle(); }, 10000));
   ASSERT_TRUE(r.sup.start_zone(1, 0).ok());  // the sprinkler component times the run
-  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(1) == ValveState::Open; }, 8000));
+  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(1) == ValveState::Open; }, 12000));
   r.run(61000);
   EXPECT_EQ(r.sup.zone_state(1), ValveState::Off);
   EXPECT_EQ(r.sup.zone_last_stop(1), StopReason::MaxRunTime);
@@ -151,7 +153,7 @@ TEST(Supervisor, BackToBackRunsShareOneBudget) {
   Rig r(c);
   ASSERT_TRUE(r.run_until([&] { return r.idle(); }, 10000));
   ASSERT_TRUE(r.sup.start_zone(0, 40).ok());
-  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(0) == ValveState::Open; }, 8000));
+  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(0) == ValveState::Open; }, 12000));
   r.run(41000);
   ASSERT_EQ(r.sup.zone_state(0), ValveState::Off);
   const zf::StartResult second = r.sup.start_zone(0, 40);
@@ -205,7 +207,7 @@ TEST(Supervisor, ShortedValveStopsEverythingAndLocksTheZoneOut) {
   Rig r;
   ASSERT_TRUE(r.run_until([&] { return r.idle(); }, 10000));
   ASSERT_TRUE(r.sup.start_zone(1, 120).ok());
-  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(1) == ValveState::Open; }, 8000));
+  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(1) == ValveState::Open; }, 12000));
   r.board.valveMa[1] = 3500;  // above the 3 A short-circuit limit, below the hardware trip
   ASSERT_TRUE(r.run_until([&] { return r.sup.zone_fault(1) != ZoneFault::None; }, 2000));
   EXPECT_EQ(r.sup.zone_fault(1), ZoneFault::ShortCircuit);
@@ -248,11 +250,75 @@ TEST(Supervisor, DetectorFaultAtStartupNeedsAConfirmedRepair) {
   EXPECT_TRUE(r.sup.start_zone(0, 60).ok());
 }
 
+// Review A2: the float test (step 2b) and the gate bleed check (step 5b) run
+// in the package as in the standalone firmware, with the same words and the
+// lettered step in the Faults text.
+TEST(Supervisor, FloatTestFindsABridgeOntoTheKeepAliveNet) {
+  Rig r;
+  r.board.kaNet = zf::test::KaNet::ToggleWeak;  // 1 kohm to the backlight PWM
+  bool saw_float = false;
+  ASSERT_TRUE(r.run_until(
+      [&] {
+        saw_float = saw_float || r.sup.float_test();
+        return r.sup.hardware_fault();
+      },
+      10000));
+  EXPECT_TRUE(saw_float);
+  EXPECT_FALSE(r.sup.float_test());
+  EXPECT_EQ(r.sup.stage().fault, zf::HwCheck::FloatDriveEnabled);
+  EXPECT_TRUE(r.sup.repair_needed());
+  const std::array<const char *, zf::kMaxZones> names{};
+  EXPECT_EQ(zfe::faults_text(r.sup, 8, names), "Safety signal disturbed (step 2b)");
+}
+
+TEST(Supervisor, GateBleedFindsAnOpenR12BeforeTheRun) {
+  Rig r;
+  r.board.r12Open = true;
+  ASSERT_TRUE(r.run_until([&] { return r.idle(); }, 10000));
+  EXPECT_TRUE(r.sup.start_zone(0, 60).ok());
+  ASSERT_TRUE(r.run_until([&] { return r.sup.hardware_fault(); }, 12000));
+  EXPECT_EQ(r.sup.stage().fault, zf::HwCheck::GateBleed);
+  const std::array<const char *, zf::kMaxZones> names{};
+  EXPECT_EQ(zfe::faults_text(r.sup, 8, names), "Valve relay driver faulty (step 5b)");
+  EXPECT_FALSE(r.zone_driven(0));
+  r.sup.clear_faults();  // one press does not clear it
+  EXPECT_TRUE(r.sup.hardware_fault());
+  r.board.r12Open = false;
+  EXPECT_TRUE(r.sup.acknowledge_repair(true));
+  EXPECT_EQ(r.reference.clears, 1);  // a confirmed repair learns the release times again
+}
+
+TEST(Supervisor, NewBoardSaysItIsNotCommissionedUntilItHasLearned) {
+  Rig r;
+  r.reference.have = false;
+  r.run(100);
+  EXPECT_FALSE(r.sup.commissioned());
+  EXPECT_NE(r.sup.general_faults() & zfe::kCondNotCommissioned, 0u);
+  const std::array<const char *, zf::kMaxZones> names{};
+  EXPECT_NE(zfe::faults_text(r.sup, 8, names).find("Safety timing not learned"), std::string::npos);
+  EXPECT_FALSE(r.sup.any_latched_fault());  // a condition: watering goes on
+  ASSERT_TRUE(r.run_until([&] { return r.sup.commissioned(); }, 40000));
+  EXPECT_EQ(r.sup.general_faults() & zfe::kCondNotCommissioned, 0u);
+  EXPECT_EQ(r.reference.saves, 1);
+}
+
+TEST(Supervisor, PeripheralOnTheKeepAlivePinIsAFault) {
+  Rig r;
+  ASSERT_TRUE(r.run_until([&] { return r.idle(); }, 10000));
+  zfe::SupervisorInputs in = r.inputs();
+  in.keepalive_pin_plain = false;  // rule 16: a logger on UART1, say
+  r.sup.tick(in);
+  EXPECT_TRUE(r.sup.hardware_fault());
+  EXPECT_EQ(r.sup.stage().fault, zf::HwCheck::KeepAlivePinRouted);
+  const std::array<const char *, zf::kMaxZones> names{};
+  EXPECT_EQ(zfe::faults_text(r.sup, 8, names), "Safety signal disturbed");
+}
+
 TEST(Supervisor, StalledMainLoopStopsTheKeepAliveAndTheValves) {
   Rig r;
   ASSERT_TRUE(r.run_until([&] { return r.idle(); }, 10000));
   ASSERT_TRUE(r.sup.start_zone(0, 300).ok());
-  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(0) == ValveState::Open; }, 8000));
+  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(0) == ValveState::Open; }, 12000));
   ASSERT_TRUE(r.zone_driven(0));
   // The ESPHome loop stops calling tick(): no heartbeat. The interrupt keeps
   // firing but stops making edges after 500 ms; detector A lets go 600 ms later
@@ -273,7 +339,7 @@ TEST(Supervisor, NoAcBlocksStartsAndStopsARun) {
   Rig r;
   ASSERT_TRUE(r.run_until([&] { return r.idle(); }, 10000));
   ASSERT_TRUE(r.sup.start_zone(0, 300).ok());
-  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(0) == ValveState::Open; }, 8000));
+  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(0) == ValveState::Open; }, 12000));
   r.board.acPresent = false;
   r.run(300);
   EXPECT_EQ(r.sup.zone_state(0), ValveState::Off);
@@ -290,7 +356,7 @@ TEST(Supervisor, MaintenanceStopsEverythingAndBlocksStarts) {
   Rig r;
   ASSERT_TRUE(r.run_until([&] { return r.idle(); }, 10000));
   ASSERT_TRUE(r.sup.start_zone(4, 300).ok());
-  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(4) == ValveState::Open; }, 8000));
+  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(4) == ValveState::Open; }, 12000));
   r.sup.set_maintenance(true);  // OTA begins
   r.run(100);
   EXPECT_EQ(r.sup.output_mask(), 0);
@@ -342,7 +408,7 @@ TEST(Supervisor, FlowDuringAScheduledRunIsNoLeak) {
   Rig r;
   ASSERT_TRUE(r.run_until([&] { return r.idle(); }, 10000));
   ASSERT_TRUE(r.sup.start_zone(0, 120).ok());
-  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(0) == ValveState::Open; }, 8000));
+  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(0) == ValveState::Open; }, 12000));
   r.flow_lpm = 8.0f;
   r.run(90000);
   EXPECT_FALSE(r.sup.leak());
@@ -356,7 +422,7 @@ TEST(Supervisor, RunBudgetAndLatchedFaultSurviveASoftwareRestart) {
     Rig r(c);
     ASSERT_TRUE(r.run_until([&] { return r.idle(); }, 10000));
     ASSERT_TRUE(r.sup.start_zone(0, 0).ok());
-    ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(0) == ValveState::Open; }, 8000));
+    ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(0) == ValveState::Open; }, 12000));
     r.run(61000);
     ASSERT_EQ(r.sup.zone_last_stop(0), StopReason::MaxRunTime);
     r.sup.save_retained(rec);

@@ -50,12 +50,13 @@ constexpr uint32_t faultBit(FaultCode c) { return 1u << static_cast<unsigned>(c)
 // latches until ClearFaults.
 constexpr uint32_t kSelfClearing = faultBit(FaultCode::AcLost) | faultBit(FaultCode::TimeInvalid) |
                                    faultBit(FaultCode::CurrentSenseUnavailable) | faultBit(FaultCode::SensorSupply) |
-                                   faultBit(FaultCode::MainsSignal);
+                                   faultBit(FaultCode::MainsSignal) | faultBit(FaultCode::NotCommissioned);
 
 // Output-stage faults: they clear when the stage accepts the acknowledgement.
 constexpr uint32_t kStageFaults = faultBit(FaultCode::KeepAliveDetector) | faultBit(FaultCode::OutputExpander) |
                                   faultBit(FaultCode::RelayWelded) | faultBit(FaultCode::OutputShorted) |
-                                  faultBit(FaultCode::TripLatchStuck);
+                                  faultBit(FaultCode::TripLatchStuck) | faultBit(FaultCode::KeepAliveBridged) |
+                                  faultBit(FaultCode::RelayGateBleed);
 
 constexpr int64_t kNoTrip = INT64_MIN;
 
@@ -262,6 +263,7 @@ void Controller::tick()
     in.currentSenseAvailable = s.currentSenseAvailable && config_.diag.currentEnabled;
     in.idleThresholdMa = config_.diag.idleMaxMa;
     in.sensorSupplyOn = s.sensorSupplyOn;
+    in.keepAlivePinPlain = s.keepAlivePinPlain;
     deps_.outputs.tick(in);
     handleStage(now);
     if (!deps_.outputs.ownsKeepAlive()) {
@@ -409,6 +411,9 @@ void Controller::handleStage(MonoMs now)
     if (st.sensorSupplyKnown) {
         checkCondition(FaultCode::SensorSupply, sensorSupplyOn_ && st.sensorSupplyFault);
     }
+    // 19.7, the limits of step 9: a board with no stored release times
+    // reports that it is not commissioned.
+    checkCondition(FaultCode::NotCommissioned, !st.commissioned);
 }
 
 void Controller::handleDc(const CurrentReading &r)
@@ -799,6 +804,9 @@ void Controller::publishSnapshot(MonoMs now)
     hw.enableRelayMs = stage_.enableRelayMs;
     hw.releaseDriveMs = stage_.releaseDriveMs;
     hw.releaseRelayMs = stage_.releaseRelayMs;
+    hw.commissioned = stage_.commissioned;
+    hw.referenceDriveMs = stage_.reference.driveMs;
+    hw.referenceRelayMs = stage_.reference.relayMs;
     hw.mainsMilliHz = mainsMilliHz_;
     hw.noiseFloorMa = currentSense_.noiseFloorMa();
     hw.currentChannel = reading_.channel;

@@ -14,6 +14,7 @@ A factory reset returns the controller to its first-boot state. Make a
 | Zones, programs and all settings | The setup code |
 | WiFi network and password | The firmware, and the previous firmware in the other update slot |
 | Admin password and web settings | The web interface |
+| | The safety circuit's learned release times (they belong to the board; a confirmed repair of a safety fault makes it learn them again) |
 | HTTPS key and certificate | |
 | MQTT password and CA certificate | |
 | Run history | |

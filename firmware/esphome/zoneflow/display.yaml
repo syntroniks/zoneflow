@@ -21,7 +21,35 @@ globals:
     type: int
     initial_value: "0"  # 0 full, 1 dimmed, 2 off
 
+# Hardware design 19.1 rule 17: while the keep-alive pin floats for the
+# float test (19.7 step 2b), the backlight PWM runs at a mid duty and the
+# display is redrawn, so that a bridge from either net to the keep-alive net
+# shows. The component keeps the PSRAM busy itself. Afterwards the backlight
+# goes back to what the light says.
+zoneflow:
+  on_float_test:
+    - lambda: |-
+        if (x) {
+          id(zf_backlight_pwm).set_level(0.5f);
+        } else {
+          id(zf_backlight).get_output()->write_state(id(zf_backlight));
+        }
+    - if:
+        condition:
+          lambda: return x;
+        then:
+          - script.execute: zf_float_redraw
+
 script:
+  - id: zf_float_redraw
+    mode: restart
+    then:
+      - while:
+          condition:
+            lambda: return id(zf_hub).float_test_active();
+          then:
+            - component.update: zf_display
+            - delay: 20ms
   - id: zf_ui_input
     mode: queued
     then:

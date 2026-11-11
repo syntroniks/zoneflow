@@ -64,15 +64,20 @@ struct HardwareStatus {
     bool sensorSupplyOn = false;
     bool sensorSupplyFault = false;
     HwCheck check = HwCheck::None; // latched output-stage fault
-    uint8_t step = 0;              // its self-test step (hardware design 19.7)
+    const char *step = "";         // its self-test step (hardware design 19.7): "1", "2b"; "" for none
     bool repairNeeded = false;     // acknowledging it needs a confirmed repair
     uint32_t selfTestsPassed = 0;
     uint16_t enableDriveMs = 0;  // last start: detector A on after the first edge
     uint16_t enableRelayMs = 0;  // detector B
     uint16_t releaseDriveMs = 0; // last stop: detector A off after the last edge
     uint16_t releaseRelayMs = 0; // detector B
-    uint32_t mainsMilliHz = 0;   // 0 = unknown
-    int32_t noiseFloorMa = 0;    // learned with the relay open
+    // This board's stored release times (19.7, the limits of step 9); 0 when
+    // not commissioned.
+    bool commissioned = false;
+    uint16_t referenceDriveMs = 0;
+    uint16_t referenceRelayMs = 0;
+    uint32_t mainsMilliHz = 0; // 0 = unknown
+    int32_t noiseFloorMa = 0;  // learned with the relay open
     CurrentChannel currentChannel = CurrentChannel::None;
     int32_t currentDcMa = 0;        // DC component of the latest window
     int32_t lastTripCurrentMa = -1; // current window before the last over-current trip

@@ -30,6 +30,21 @@
 
 namespace zf {
 
+// The keep-alive waveform contract with the rev A detectors (hardware design
+// 19.4, changed by review A2 finding M6): an edge at least every 20 ms and no
+// phase shorter than 2.5 ms. In Toggle mode the pin changes level only at a
+// period boundary, so every phase is a whole number of periods; a period
+// inside these limits meets the contract. Both firmwares assert it for their
+// timer configuration.
+namespace keepalive {
+inline constexpr uint32_t kMaxEdgeIntervalUs = 20000;
+inline constexpr uint32_t kMinPhaseUs = 2500;
+constexpr bool periodMeetsContract(uint32_t periodUs)
+{
+    return periodUs >= kMinPhaseUs && periodUs <= kMaxEdgeIntervalUs;
+}
+} // namespace keepalive
+
 enum class OutputEnableMode : uint8_t {
     // OE is a retriggerable monostable: firmware must produce edges.
     Toggle,
@@ -44,6 +59,7 @@ enum class KeepAliveRequest : uint8_t {
     Off,      // pin low
     Run,      // toggle (Toggle mode) or high (StaticLevel mode)
     HoldHigh, // steady high: the pin-high self-test (hardware design 19.7 step 2)
+    Float,    // the pin an input with no pull: the float test (19.7 step 2b)
 };
 
 // What the keep-alive interrupt saw, for the self-test timing (hardware
@@ -54,12 +70,16 @@ struct KeepAliveReadbacks {
     uint32_t nowMs = 0;                               // interrupt time of the latest sample
     KeepAliveRequest applied = KeepAliveRequest::Off; // what the pin did in the latest period
     uint32_t appliedSinceMs = 0;                      // when `applied` last changed
-    bool driveEnabled = false;                        // A_RB, GPIO42: DRV_EN high
+    bool driveEnabled = false;                        // A_RB, GPIO42: V_DRV high (A on, latch clear, Q3 on)
     uint32_t driveSinceMs = 0;                        // when driveEnabled last changed
     bool relayOff = false;                            // B_RB, GPIO7: relay transistor Q2 off
     uint32_t relaySinceMs = 0;                        // when relayOff last changed
     bool overCurrentLatched = false;                  // OC, GPIO40 low
     uint32_t samples = 0;                             // 0: the interrupt has not sampled yet
+    // Step 2b: reads of the keep-alive pin as an input since `applied`
+    // became Float, and how many of them were high.
+    uint32_t floatReads = 0;
+    uint32_t floatHighReads = 0;
 };
 
 class OutputEnableGuard {
@@ -113,7 +133,7 @@ public:
         if (beats != 0 && !fresh(nowMs)) {
             stale_ = true;
         }
-        if (stale_ || !allowed(nowMs)) {
+        if (stale_ || !allowed(nowMs) || request() == KeepAliveRequest::Float) {
             level_ = false;
         } else if (request() == KeepAliveRequest::HoldHigh) {
             level_ = true;
@@ -143,7 +163,7 @@ public:
         if (!alive || tripped()) {
             req = KeepAliveRequest::Off;
         }
-        if (req == KeepAliveRequest::Off) {
+        if (req == KeepAliveRequest::Off || req == KeepAliveRequest::Float) {
             timerLevel_ = false;
         } else if (req == KeepAliveRequest::HoldHigh || mode_ == OutputEnableMode::StaticLevel) {
             timerLevel_ = true;
@@ -154,8 +174,28 @@ public:
         if (req != timerApplied_) {
             timerApplied_ = req;
             timerAppliedSinceMs_ = isrMs_;
+            floatReads_ = 0;
+            floatHighReads_ = 0;
         }
         return timerLevel_;
+    }
+
+    // Timer interrupt only, after step(): true while the pin must be an
+    // input with no pull (the float test). The interrupt then turns the
+    // pin's output driver off; otherwise it drives the level step()
+    // returned. A stale heartbeat or a tripped guard turns Float into Off,
+    // so the pin is driven low again.
+    ZF_ALWAYS_INLINE bool pinIsInput() const { return timerApplied_ == KeepAliveRequest::Float; }
+
+    // Timer interrupt only: one read of the keep-alive pin while it is an
+    // input. The device calls it every 1 ms (19.7 step 2b).
+    ZF_ALWAYS_INLINE void sampleFloat(bool high)
+    {
+        if (timerApplied_ != KeepAliveRequest::Float) {
+            return;
+        }
+        ++floatReads_;
+        floatHighReads_ += high ? 1u : 0u;
     }
 
     // Timer interrupt only, after step(): the levels of the read-back pins
@@ -178,6 +218,8 @@ public:
         rb_.applied = timerApplied_;
         rb_.appliedSinceMs = timerAppliedSinceMs_;
         rb_.nowMs = isrMs_;
+        rb_.floatReads = floatReads_;
+        rb_.floatHighReads = floatHighReads_;
         ++rb_.samples;
         std::atomic_thread_fence(std::memory_order_release);
         rbSeq_.store(seq + 2, std::memory_order_release);
@@ -222,6 +264,8 @@ private:
         c.relaySinceMs = v.relaySinceMs;
         c.overCurrentLatched = v.overCurrentLatched;
         c.samples = v.samples;
+        c.floatReads = v.floatReads;
+        c.floatHighReads = v.floatHighReads;
     }
 
     bool fresh(uint32_t nowMs) const
@@ -250,6 +294,8 @@ private:
     uint32_t isrMs_ = 0;                                    // timer interrupt only: periods so far, in ms
     KeepAliveRequest timerApplied_ = KeepAliveRequest::Off; // timer interrupt only
     uint32_t timerAppliedSinceMs_ = 0;                      // timer interrupt only
+    uint32_t floatReads_ = 0;                               // timer interrupt only
+    uint32_t floatHighReads_ = 0;                           // timer interrupt only
     KeepAliveReadbacks rb_{};                               // written by sample()
     std::atomic<uint32_t> rbSeq_{0};                        // sequence lock for rb_
 };

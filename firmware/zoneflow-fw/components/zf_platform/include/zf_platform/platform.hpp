@@ -52,10 +52,24 @@ public:
 esp_err_t initOutputStagePins();
 
 OutputEnableMode configuredOutputEnableMode();
-// Starts the keep-alive: an IRAM-safe GPTimer interrupt that calls
-// guard.step() every CONFIG_ZF_OE_TOGGLE_PERIOD_MS, drives the keep-alive
-// pin, then samples GPIO42, GPIO7 and GPIO40 into guard.sample().
+// Starts the keep-alive: an IRAM-safe GPTimer interrupt every 1 ms. Every
+// CONFIG_ZF_OE_TOGGLE_PERIOD_MS-th one calls guard.step(), drives the
+// keep-alive pin (or turns its driver off for the float test, 19.7 step 2b),
+// then samples GPIO42, GPIO7 and GPIO40 into guard.sample(). While the pin
+// floats, every one reads it into guard.sampleFloat().
 esp_err_t startKeepAlive(OutputEnableGuard &guard);
+// Rule 16 and contract 19.4: the keep-alive pin's IO_MUX function is GPIO and
+// no peripheral signal is routed to it. Any task.
+bool keepAlivePinPlain();
+
+// Rule 17: while the float test runs, the nets that toggle by themselves
+// must toggle. On: the backlight PWM at a fixed mid duty, the display
+// redrawn continuously, and a task streaming through a PSRAM buffer. The
+// control task sets it from OutputStageStatus::floatTest.
+void setFloatTestLoad(bool on);
+bool floatTestLoad();
+// Starts the PSRAM task (static allocation, core 0, low priority).
+esp_err_t startFloatTestLoad();
 
 void setStatusLed(bool on);
 
@@ -110,6 +124,9 @@ private:
 
 // ADC1 continuous mode on ISENSE_HI and ISENSE_LO, 6 dB, calibrated to mV,
 // accumulated into 100 ms windows by a task (hardware design 19.2).
+// GPIO7 (B_RB) is sampled with them as a third channel: review A2 4.6
+// question 7. Its digital input buffer is turned back on after the ADC is
+// configured, because the keep-alive interrupt still reads it as a level.
 class CurrentSampler {
 public:
     // Starts the ADC and the task. Not fatal on failure: available() stays
@@ -125,8 +142,10 @@ private:
     void *adc_ = nullptr;    // adc_continuous_handle_t
     void *caliHi_ = nullptr; // adc_cali_handle_t
     void *caliLo_ = nullptr;
+    void *caliRb_ = nullptr;
     int chHi_ = -1;
     int chLo_ = -1;
+    int chRb_ = -1;
     mutable portMUX_TYPE lock_ = portMUX_INITIALIZER_UNLOCKED;
     CurrentWindowStats latest_{};
     std::atomic<bool> running_{false};

@@ -6,8 +6,12 @@
 // OutputStage implements IOutputHal for the zone driver and runs the
 // procedures of hardware design section 19 on the control task:
 //
-//  - the self-test and run sequence of 19.7, steps 0 to 9, at start-up,
+//  - the self-test and run sequence of 19.7, steps 0 to 9 with the float
+//    test (2b) and the gate bleed check (5b) of review A2, at start-up,
 //    before and after every run;
+//  - the limits of step 9: absolute limits, and a band of 0.5 to 1.5 times
+//    this board's own release times, learned at commissioning and kept in
+//    non-volatile memory (IDetectorReferenceStore);
 //  - the register sequence, a read-back after every write and a scrub of
 //    every register on every control tick, never more valve bits low than
 //    the board allows;
@@ -138,35 +142,85 @@ struct OutputStageConfig {
     // Control period: the start limit of step 3 is checked on a tick, so it
     // allows one period of slack for the acknowledge poll.
     uint32_t tickMs = 50;
+    // Commissioning cycles (steps 0, 1, 3, 4a, 9) one boot may run back to
+    // back while it has no stored reference; then it stops trying until the
+    // next start and keeps reporting that it is not commissioned.
+    uint8_t maxCommissionCycles = 10;
 };
 
 class OutputStage final : public IOutputHal {
 public:
-    // Hardware design 19.4 and 19.7.
-    static constexpr uint32_t kKeepAliveLowBeforeStartMs = 2000; // step 0
+    // Hardware design 19.4 and 19.7, as review A2 left them.
+    static constexpr uint32_t kKeepAliveLowBeforeStartMs = 2500; // step 0
     static constexpr uint32_t kPinHighHoldMs = 1000;             // step 2
     static constexpr uint32_t kPinHighReleaseMs = 100;           // step 2
-    static constexpr uint32_t kStartLimitMs = 150;               // step 3
-    static constexpr uint32_t kRelaySettleMs = 20;               // step 6, rule 4
-    static constexpr uint32_t kRelayOpenDelayMs = 40;            // step 8, rule 4
-    static constexpr uint32_t kStopTestMaxMs = 3000;             // step 9
-    static constexpr uint32_t kDriveReleaseMinMs = 300;          // step 9, tA
+    static constexpr uint32_t kFloatTestMs = 500;                // step 2b
+    static constexpr uint32_t kFloatReleaseMs = 100;             // step 2b
+    // Step 2b reads the pin every 1 ms. Fewer reads than this in the 0.5 s
+    // means the test did not run as written, and it counts as failed.
+    static constexpr uint32_t kFloatMinReads = 400;
+    static constexpr uint32_t kStartLimitMs = 150;    // step 3
+    static constexpr uint32_t kGateBleedHoldMs = 20;  // step 5b: RLY_ON set this long
+    static constexpr uint32_t kGateBleedWaitMs = 10;  // step 5b: then released undriven this long
+    static constexpr uint32_t kRelaySettleMs = 20;    // step 6, rule 4
+    static constexpr uint32_t kRelayOpenDelayMs = 40; // step 8, rule 4
+    // Step 9. The timeout and every limit leave room for the relay
+    // detector's slow corner of review A2 (finding m10): 1.45 s after the
+    // last edge with the pin driven low, which is how the firmware always
+    // stops it, and 2.19 s if a fault leaves the pin high. Nothing here
+    // assumes the one second of the specification.
+    static constexpr uint32_t kStopTestMaxMs = 3000;
+    static constexpr uint32_t kDriveReleaseMinMs = 150; // tA
     static constexpr uint32_t kDriveReleaseMaxMs = 1000;
-    static constexpr uint32_t kRelayReleaseMinMs = 80; // step 9, tB
-    static constexpr uint32_t kRelayReleaseMaxMs = 1000;
+    static constexpr uint32_t kRelayReleaseMinMs = 50; // tB
+    static constexpr uint32_t kRelayReleaseMaxMs = 1600;
+    static constexpr uint32_t kBandLowPercent = 50; // of the stored value
+    static constexpr uint32_t kBandHighPercent = 150;
+    // Commissioning (19.7, the limits of step 9, item 1): the median of five
+    // stop tests. Firmware choices, not from section 19, so that a board with
+    // a fault cannot store the fault as its normal:
+    //  - only start-up and commissioning cycles count, back to back in one
+    //    boot, not stop tests after runs;
+    //  - each time must lie inside the range a healthy board gives near room
+    //    temperature. Review A2 4.5: over -20 to 70 C a board's tA moves
+    //    between 0.56 and 1.03 times its value at 27 C, tB between 0.55 and
+    //    1.38 times, and the grid at 5 ms edges gives tA 0.21 to 0.83 s and
+    //    tB 0.10 to 1.45 s. Dividing gives 0.375 to 0.81 s and 0.18 to
+    //    1.05 s at 27 C; the limits below add about 10 %. An open R30 or R91
+    //    (tA 1.56 s) and an open R14 or R90 on a typical board (tB 1.20 s)
+    //    fall outside;
+    //  - the five values must agree: the longest at most 1.25 times the
+    //    shortest, as one board at one temperature should.
+    static constexpr uint8_t kCommissionSamples = 5;
+    static constexpr uint32_t kLearnDriveMinMs = 340;
+    static constexpr uint32_t kLearnDriveMaxMs = 900;
+    static constexpr uint32_t kLearnRelayMinMs = 160;
+    static constexpr uint32_t kLearnRelayMaxMs = 1100;
+    static constexpr uint32_t kLearnMaxSpreadPercent = 125;
+    // Review A2 4.6 question 7: GPIO7 between 0.3 and 1.5 V at rest is Q2
+    // shorted gate to drain.
+    static constexpr int32_t kRelayGateDrainMinMv = 300;
+    static constexpr int32_t kRelayGateDrainMaxMv = 1500;
     static constexpr uint32_t kTripHoldMs = 1500; // 19.8: keep-alive low this long
     static constexpr uint32_t kTripClearMaxMs = 3000;
-    static constexpr uint32_t kWindowWaitMs = 500;    // a current window must arrive within this
-    static constexpr uint32_t kAfterOffSettleMs = 20; // valve current gone one half-cycle after off
+    static constexpr uint32_t kWindowWaitMs = 500;       // a current window must arrive within this
+    static constexpr uint32_t kAfterOffSettleMs = 20;    // valve current gone one half-cycle after off
+    static constexpr uint32_t kRestWindowMaxAgeMs = 300; // a window this fresh lies inside the 2.5 s at rest
     static constexpr uint32_t kPinHighMaxAgeMs = 24u * 3600u * 1000u;
-    // Firmware choice, not from section 19: the keep-alive toggles at least
-    // this long before a stop test, so that the detectors' reservoirs are
-    // charged as in the simulations behind the step 9 limits. The start-up
-    // and polling cycles would otherwise stop after about 0.1 s.
+    // 19.7, toggling before a stop test: at least 0.3 s, or the release
+    // times are short of their final values (review A2 4.6 question 1). The
+    // firmware toggles at least 1 s before every stop test, the start-up,
+    // polling and commissioning cycles included.
+    static constexpr uint32_t kMinToggleRequiredMs = 300;
     static constexpr uint32_t kMinToggleBeforeStopMs = 1000;
+    static_assert(kMinToggleBeforeStopMs >= kMinToggleRequiredMs, "hardware design 19.7: 0.3 s before a stop test");
+    static_assert(kStopTestMaxMs > kRelayReleaseMaxMs && kKeepAliveLowBeforeStartMs > 2190,
+                  "room for the relay detector's slowest release, 2.19 s with the pin high (review A2 m10)");
 
+    // `reference` keeps this board's release times; nullptr keeps them in
+    // RAM only (learned again after every start).
     OutputStage(IExpanderBus &bus, OutputEnableGuard &guard, const IClock &clock, const ExpanderLayout &layout,
-                const OutputStageConfig &cfg = {});
+                const OutputStageConfig &cfg = {}, IDetectorReferenceStore *reference = nullptr);
 
     // Before the first tick: a fault that was latched before a software
     // restart (RTC memory). The stage starts in the fault state.
@@ -189,6 +243,8 @@ public:
     uint8_t shadowOutput(uint8_t port) const { return outShadow_[port & 1u]; }
     uint8_t shadowConfig(uint8_t port) const { return cfgShadow_[port & 1u]; }
     uint8_t valveBitsLow() const;
+    // How long the keep-alive toggled before the latest stop test, ms.
+    uint32_t toggledBeforeLastStopMs() const { return toggledBeforeStopMs_; }
 
 private:
     enum class Step : uint8_t {
@@ -198,10 +254,13 @@ private:
         IdleTest,       // 1
         PinHigh,        // 2, pin held high
         PinHighRelease, // 2, pin low again
+        Float,          // 2b, pin an input
+        FloatRelease,   // 2b, pin low again
         Start,          // 3
         Setup,          // 4a to 4c
-        PollRead,       // 19.6: input port 1 between 4a and 9
+        PollRead,       // 19.6 and commissioning: input port 1 between 4a and 9
         Weld,           // 5
+        GateBleed,      // 5b
         Relay,          // 6
         Ready,          // 7
         EndValves,      // 8: valves off, waiting 40 ms
@@ -211,7 +270,7 @@ private:
         Fault,
         Halted,
     };
-    enum class Proc : uint8_t { None, Startup, Run, Poll };
+    enum class Proc : uint8_t { None, Startup, Run, Poll, Commission };
 
     void enter(Step s);
     void begin(Proc p);
@@ -225,10 +284,14 @@ private:
     void doIdleTest(const KeepAliveReadbacks &rb);
     void doPinHigh(const KeepAliveReadbacks &rb);
     void doPinHighRelease(const KeepAliveReadbacks &rb);
+    void doFloat(const KeepAliveReadbacks &rb);
+    void doFloatRelease(const KeepAliveReadbacks &rb);
     void doStart(const KeepAliveReadbacks &rb);
     void doSetup();
     void doPollRead(const KeepAliveReadbacks &rb);
+    bool firstOutput(BitRef &b) const;
     void doWeld();
+    void doGateBleed();
     void doRelay();
     void doReady(const KeepAliveReadbacks &rb);
     void doEnd(const KeepAliveReadbacks &rb);
@@ -236,7 +299,14 @@ private:
     {
         return rb.applied == KeepAliveRequest::Run && rb.nowMs - rb.appliedSinceMs >= kMinToggleBeforeStopMs;
     }
+    void beginStopTest(const KeepAliveReadbacks &rb);
     void doStopTest(const KeepAliveReadbacks &rb);
+    // Step 9 passed its absolute limits: the band, or a commissioning sample.
+    bool judgeAgainstReference(uint32_t tA, uint32_t tB);
+    void learn(uint32_t tA, uint32_t tB);
+    void loadReference();
+    void forgetReference();
+    bool restReadbackGateDrain() const;
     void doFault();
 
     // Bus helpers: false on any error, after handling it (fault or trip).
@@ -253,6 +323,7 @@ private:
     const IClock &clock_;
     const ExpanderLayout layout_;
     const OutputStageConfig cfg_;
+    IDetectorReferenceStore *refStore_;
 
     Step step_ = Step::NoAc;
     Proc proc_ = Proc::None;
@@ -273,6 +344,8 @@ private:
     MonoMs lastValveOffMs_ = 0;
     MonoMs weldStartMs_ = 0;
     bool weldBitOn_ = false;
+    uint8_t bleedPhase_ = 0; // step 5b: 0 start, 1 RLY_ON set, 2 released, 3 output on
+    MonoMs bleedSinceMs_ = 0;
     bool startupDone_ = false;
     MonoMs endValvesMs_ = 0;
     bool endWritesDone_ = false;
@@ -294,6 +367,15 @@ private:
     bool pinHighDone_ = false;
     MonoMs lastPinHighMs_ = 0;
     bool pinHighThisProc_ = false;
+    uint32_t toggledBeforeStopMs_ = 0;
+
+    // Step 9 reference (19.7).
+    bool refLoaded_ = false;
+    DetectorReference reference_{};
+    std::array<uint16_t, kCommissionSamples> sampleDrive_{};
+    std::array<uint16_t, kCommissionSamples> sampleRelay_{};
+    uint8_t samples_ = 0;
+    uint8_t commissionCycles_ = 0; // this boot
 
     std::atomic<bool> emergency_{false};
 };

@@ -29,12 +29,14 @@ enum class StagePhase : uint8_t {
 };
 
 // The check that failed, for the fault report. Hardware design section 19.7
-// step numbers in the comments.
+// step numbers in the comments. New values go at the end, before Count: the
+// number is kept in RTC memory over a software restart (RetainedRecord), so
+// an update must not give an old number a new meaning.
 enum class HwCheck : uint8_t {
     None,
-    IdleDriveEnabled,    // 1: A_RB high with the keep-alive stopped
-    IdleRelayOn,         // 1: B_RB low with the keep-alive stopped
-    IdleExpanderAnswers, // 1: expander acknowledges while it should be in reset
+    IdleDriveEnabled,    // 1: A_RB high and the expander answers: detector A or the latch stuck on
+    IdleRelayOn,         // 1: B_RB low with the keep-alive stopped: Q2 on, or V_BUCK missing (rule 15)
+    IdleExpanderAnswers, // 1: expander acknowledges with A_RB low: DRV_EN stuck high
     PinHighDriveEnabled, // 2: A_RB high with the pin held high (C22 shorted)
     PinHighRelayOn,      // 2: B_RB low with the pin held high (C51 shorted, bleed open)
     StartDriveTimeout,   // 3: A_RB not high within 150 ms of the first edge
@@ -50,22 +52,56 @@ enum class HwCheck : uint8_t {
     RunDriveLost,        // 7: A_RB low while the keep-alive runs and OC is high
     RunRelayLost,        // 7: B_RB high while the keep-alive runs
     EndNoAcknowledge,    // 8: expander did not accept the end-of-run writes
-    StopDriveRelease,    // 9: A_RB released outside 0.3 to 1.0 s
-    StopRelayRelease,    // 9: B_RB released outside 0.08 to 1.0 s
+    StopDriveRelease,    // 9: A_RB released outside 0.15 to 1.0 s, or not within 3 s
+    StopRelayRelease,    // 9: B_RB released outside 0.05 to 1.6 s, or not within 3 s
     StopExpanderAnswers, // 9: expander still answers after the stop
     BusError,            // I2C timeout or stuck bus
     LatchStuck,          // 19.8: OC still low 3 s after the keep-alive stopped
     TooManyOutputs,      // a write would drive more valve bits than allowed
+    // Added after hardware review A2.
+    IdleDriveSupplyOn,  // 1: A_RB high and no acknowledge: V_DRV on with DRV_EN low (Q3 conducting)
+    IdleRelayGateDrain, // 1: GPIO7 reads 0.3 to 1.5 V at rest: Q2 shorted gate to drain (review A2 4.6 q7)
+    FloatPinHigh,       // 2b: KA read high while it was an input
+    FloatDriveEnabled,  // 2b: A_RB high after the float test
+    FloatRelayOn,       // 2b: B_RB low after the float test
+    WeldNoReadback,     // 5: the valve pin does not read low when its bit is driven low
+    GateBleed,          // 5b: current with RLY_ON released undriven: R12 open
+    StopDriveBand,      // 9: tA outside 0.5 to 1.5 times this board's stored value
+    StopRelayBand,      // 9: tB outside 0.5 to 1.5 times this board's stored value
+    KeepAlivePinRouted, // rule 16, 19.4: the keep-alive pin is not a plain GPIO (a peripheral drives it)
     Count,
 };
 
 const char *toString(StagePhase p);
 const char *toString(HwCheck c);
-// Section 19.7 step of a check (19.8 latch: 10; firmware limit: 0).
-uint8_t hwCheckStep(HwCheck c);
-// Steps 1, 2 and 9 mean a keep-alive detector can no longer be relied on: the
-// board needs repair, and acknowledging must be a deliberate second action.
+// Section 19.7 step of a check: "1", "2b", "4a", "5b", "9". Empty for a
+// check that is not a step of the sequence (bus error, the 19.8 latch, a
+// firmware limit, rule 16).
+const char *hwCheckStep(HwCheck c);
+// Steps 1, 2, 2b, 5b and 9 mean one of the layers can no longer be relied on:
+// the board needs repair, and acknowledging must be a deliberate second
+// action (hardware design 19.7, the fault state).
 bool hwCheckNeedsRepair(HwCheck c);
+
+// Detector release times this board gave at commissioning (hardware design
+// 19.7, the limits of step 9). Step 9 then also requires each time to lie
+// within 0.5 to 1.5 times its stored value.
+struct DetectorReference {
+    uint16_t driveMs = 0; // tA, median of the commissioning stop tests
+    uint16_t relayMs = 0; // tB
+    bool valid() const { return driveMs != 0 && relayMs != 0; }
+};
+
+// Non-volatile storage of the reference (standalone: NVS; ESPHome:
+// preferences). Calls come from the control task only.
+class IDetectorReferenceStore {
+public:
+    virtual ~IDetectorReferenceStore() = default;
+    // False when nothing valid is stored.
+    virtual bool load(DetectorReference &out) = 0;
+    virtual bool save(const DetectorReference &r) = 0;
+    virtual bool clear() = 0;
+};
 
 struct OutputStageStatus {
     StagePhase phase = StagePhase::None;
@@ -77,6 +113,9 @@ struct OutputStageStatus {
     uint32_t faultSeq = 0;          // increments on every new fault
     uint32_t tripSeq = 0;           // increments on every over-current trip
     bool tripClearing = false;      // keep-alive held low to clear the latch
+    // Step 2b runs, or is about to: the display, the backlight PWM and the
+    // PSRAM must be in use (hardware design 19.1 rule 17).
+    bool floatTest = false;
     // Last stop test (step 9), ms after the last edge; 0 = not measured.
     uint16_t releaseDriveMs = 0;
     uint16_t releaseRelayMs = 0;
@@ -84,15 +123,24 @@ struct OutputStageStatus {
     uint16_t enableDriveMs = 0;
     uint16_t enableRelayMs = 0;
     uint32_t selfTestsPassed = 0;
+    // This board's stored release times (19.7, the limits of step 9). Not
+    // commissioned: only the absolute limits apply, and it is reported.
+    bool commissioned = false;
+    DetectorReference reference{};
+    uint8_t commissionSamples = 0; // stop tests collected towards the reference
 };
 
 // What the controller hands the output stage every tick.
 struct StageTickInput {
     bool acPresent = false;   // an AC_ZC edge within 25 ms (raw, not debounced)
-    CurrentReading current{}; // latest current window
+    CurrentReading current{}; // latest current window (with the GPIO7 mean, relayReadbackMv)
     bool currentSenseAvailable = false;
     uint16_t idleThresholdMa = 30; // hardware design 19.2
     bool sensorSupplyOn = false;   // GPIO45 driven high
+    // Rule 16 and contract 19.4: the keep-alive pin is a plain GPIO with no
+    // peripheral signal routed to it. The device reads the pin's IO_MUX and
+    // GPIO matrix setting every tick.
+    bool keepAlivePinPlain = true;
 };
 
 // Valve output drivers. Active level, pin numbers and drive details are the
@@ -132,7 +180,8 @@ public:
     virtual void tick(const StageTickInput &in) { (void)in; }
     virtual OutputStageStatus status() const { return {}; }
     // A person acknowledged the latched fault. repairConfirmed: they also
-    // confirmed the board was repaired, which a detector fault needs.
+    // confirmed the board was repaired, which a detector fault needs; the
+    // board then learns its detector release times again (19.7, step 9).
     // Returns false if the fault stays.
     virtual bool acknowledgeFault(bool repairConfirmed)
     {
@@ -167,6 +216,9 @@ struct SensorSample {
     uint32_t mainsMilliHz = 0;
     // The 5 V sensor supply is switched on (rev A: GPIO45).
     bool sensorSupplyOn = false;
+    // Rev A: the keep-alive pin is a plain GPIO with no peripheral routed to
+    // it (hardware design 19.1 rule 16, 19.4).
+    bool keepAlivePinPlain = true;
 };
 
 class ISensorHal {

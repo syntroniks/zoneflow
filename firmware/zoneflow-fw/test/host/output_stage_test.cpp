@@ -14,7 +14,7 @@ using namespace zf::test;
 
 namespace {
 
-constexpr uint64_t kStartupMs = 6000; // 2 s low, 1.1 s pin high, start, stop test: about 4 s
+constexpr uint64_t kStartupMs = 9000; // 2.5 s low, 1.1 s pin high, 0.6 s float, 1 s toggling, stop test: about 6 s
 
 bool contains(const std::vector<std::string> &log, std::initializer_list<const char *> seq)
 {
@@ -273,7 +273,9 @@ const FailCase kFailCases[] = {
     {"RelayTooSlow", [](FakeBoard &b) { b.b.onMs = 300; }, HwCheck::StartRelayTimeout, false},
     {"DriveBleedOpen", [](FakeBoard &b) { b.a.holdMs = 1700; }, HwCheck::StopDriveRelease, false},
     {"DriveReleasesTooSoon", [](FakeBoard &b) { b.a.holdMs = 150; }, HwCheck::StopDriveRelease, false},
-    {"RelayBleedOpen", [](FakeBoard &b) { b.b.holdMs = 1450; }, HwCheck::StopRelayRelease, false},
+    // An open R14 or R90 doubles tB. Inside the absolute limit of 1.6 s, outside
+    // the band around this board's stored 570 ms.
+    {"RelayBleedOpen", [](FakeBoard &b) { b.b.holdMs = 1200; }, HwCheck::StopRelayBand, false},
     {"InputsWrong", [](FakeBoard &b) { b.corruptReadOf = 0x00; }, HwCheck::ExpanderInputs, false},
     {"OutputsDoNotReadBack", [](FakeBoard &b) { b.corruptReadOf = 0x02; }, HwCheck::ExpanderOutputs, false},
     {"ConfigDoesNotReadBack", [](FakeBoard &b) { b.corruptReadOf = 0x06; }, HwCheck::ExpanderConfig, false},
@@ -451,7 +453,7 @@ TEST(OutputStage, DriveLostWithoutTripIsADetectorFault)
     r.run(100);
     EXPECT_EQ(r.fault(), HwCheck::RunDriveLost);
     EXPECT_TRUE(hwCheckNeedsRepair(HwCheck::StopDriveRelease));
-    EXPECT_EQ(hwCheckStep(HwCheck::RunDriveLost), 7);
+    EXPECT_STREQ(hwCheckStep(HwCheck::RunDriveLost), "7");
 }
 
 // ---- polling between runs (19.6) ----------------------------------------------------------------------

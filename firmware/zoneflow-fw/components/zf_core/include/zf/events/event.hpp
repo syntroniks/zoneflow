@@ -37,6 +37,10 @@ enum class FaultCode : uint8_t {
     SensorSupply,      // the 5 V sensor supply reports over-current or over-temperature; clears itself
     ZoneDcCurrent,     // a zone's current has a DC component: one triac polarity not conducting; latched
     MainsSignal,       // the zero-cross signal is not at mains frequency (bridged to the keep-alive?); clears itself
+    // Added after hardware review A2.
+    KeepAliveBridged, // another net drives the keep-alive net (step 2b float test, rule 16); latched
+    RelayGateBleed,   // the relay driver Q1 keeps its gate charge when released: R12 open (step 5b); latched
+    NotCommissioned,  // no stored detector release times yet: step 9 uses its absolute limits only; clears itself
     Count,
 };
 static_assert(static_cast<unsigned>(FaultCode::Count) <= 32, "fault bitmask is 32 bits");

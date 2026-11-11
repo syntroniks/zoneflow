@@ -2,6 +2,7 @@
 #include "zf/hw/output_stage.hpp"
 
 #include <algorithm>
+#include <string_view>
 
 namespace zf {
 
@@ -87,60 +88,93 @@ const char *toString(HwCheck c)
         return "latch_stuck";
     case HwCheck::TooManyOutputs:
         return "too_many_outputs";
+    case HwCheck::IdleDriveSupplyOn:
+        return "idle_drive_supply_on";
+    case HwCheck::IdleRelayGateDrain:
+        return "idle_relay_gate_drain";
+    case HwCheck::FloatPinHigh:
+        return "float_pin_high";
+    case HwCheck::FloatDriveEnabled:
+        return "float_drive_enabled";
+    case HwCheck::FloatRelayOn:
+        return "float_relay_on";
+    case HwCheck::WeldNoReadback:
+        return "weld_no_readback";
+    case HwCheck::GateBleed:
+        return "gate_bleed";
+    case HwCheck::StopDriveBand:
+        return "stop_drive_band";
+    case HwCheck::StopRelayBand:
+        return "stop_relay_band";
+    case HwCheck::KeepAlivePinRouted:
+        return "keepalive_pin_routed";
     case HwCheck::Count:
         break;
     }
     return "?";
 }
 
-uint8_t hwCheckStep(HwCheck c)
+const char *hwCheckStep(HwCheck c)
 {
     switch (c) {
     case HwCheck::IdleDriveEnabled:
     case HwCheck::IdleRelayOn:
     case HwCheck::IdleExpanderAnswers:
-        return 1;
+    case HwCheck::IdleDriveSupplyOn:
+    case HwCheck::IdleRelayGateDrain:
+        return "1";
     case HwCheck::PinHighDriveEnabled:
     case HwCheck::PinHighRelayOn:
-        return 2;
+        return "2";
+    case HwCheck::FloatPinHigh:
+    case HwCheck::FloatDriveEnabled:
+    case HwCheck::FloatRelayOn:
+        return "2b";
     case HwCheck::StartDriveTimeout:
     case HwCheck::StartRelayTimeout:
     case HwCheck::StartNoAcknowledge:
-        return 3;
+        return "3";
     case HwCheck::ExpanderInputs:
+        return "4a";
     case HwCheck::ExpanderOutputs:
+        return "4b";
     case HwCheck::ExpanderConfig:
-        return 4;
+        return "4c";
     case HwCheck::RelayWelded:
-        return 5;
+    case HwCheck::WeldNoReadback:
+        return "5";
+    case HwCheck::GateBleed:
+        return "5b";
     case HwCheck::RelayNoReadback:
     case HwCheck::OutputShorted:
-        return 6;
+        return "6";
     case HwCheck::RunReadback:
     case HwCheck::RunDriveLost:
     case HwCheck::RunRelayLost:
-        return 7;
+        return "7";
     case HwCheck::EndNoAcknowledge:
-        return 8;
+        return "8";
     case HwCheck::StopDriveRelease:
     case HwCheck::StopRelayRelease:
     case HwCheck::StopExpanderAnswers:
-        return 9;
-    case HwCheck::LatchStuck:
-        return 10;
+    case HwCheck::StopDriveBand:
+    case HwCheck::StopRelayBand:
+        return "9";
     case HwCheck::None:
     case HwCheck::BusError:
+    case HwCheck::LatchStuck:
     case HwCheck::TooManyOutputs:
+    case HwCheck::KeepAlivePinRouted:
     case HwCheck::Count:
         break;
     }
-    return 0;
+    return "";
 }
 
 bool hwCheckNeedsRepair(HwCheck c)
 {
-    const uint8_t step = hwCheckStep(c);
-    return step == 1 || step == 2 || step == 9;
+    const std::string_view step = hwCheckStep(c);
+    return step == "1" || step == "2" || step == "2b" || step == "5b" || step == "9";
 }
 
 } // namespace zf
@@ -183,8 +217,8 @@ uint32_t since(uint32_t later, uint32_t earlier) { return later >= earlier ? lat
 } // namespace
 
 OutputStage::OutputStage(IExpanderBus &bus, OutputEnableGuard &guard, const IClock &clock, const ExpanderLayout &layout,
-                         const OutputStageConfig &cfg)
-    : bus_(bus), guard_(guard), clock_(clock), layout_(layout), cfg_(cfg)
+                         const OutputStageConfig &cfg, IDetectorReferenceStore *reference)
+    : bus_(bus), guard_(guard), clock_(clock), layout_(layout), cfg_(cfg), refStore_(reference)
 {
     guard_.setRequest(KeepAliveRequest::Off);
     stepSinceMs_ = clock_.monoMs();
@@ -226,6 +260,7 @@ bool OutputStage::keepAliveActive() const
     case Step::Setup:
     case Step::PollRead:
     case Step::Weld:
+    case Step::GateBleed:
     case Step::Relay:
     case Step::Ready:
     case Step::EndValves:
@@ -257,6 +292,7 @@ void OutputStage::fail(HwCheck check)
     }
     relayClosed_ = false;
     weldBitOn_ = false;
+    bleedPhase_ = 0;
     outShadow_ = {0xFF, 0xFF};
     cfgShadow_ = {0xFF, 0xFF};
     proc_ = Proc::None;
@@ -308,6 +344,11 @@ bool OutputStage::acknowledgeFault(bool repairConfirmed)
     if (hwCheckNeedsRepair(fault_) && !repairConfirmed) {
         return false;
     }
+    if (repairConfirmed && hwCheckNeedsRepair(fault_)) {
+        // A repair of a layer may have changed the detectors' parts: learn
+        // this board's release times again (19.7, the limits of step 9).
+        forgetReference();
+    }
     fault_ = HwCheck::None;
     pendingNack_ = HwCheck::None;
     if (step_ == Step::Fault) {
@@ -334,9 +375,9 @@ OutputStageStatus OutputStage::status() const
         s.phase = StagePhase::Stopping;
         break;
     case Step::StopTest:
-        s.phase = proc_ == Proc::Startup ? StagePhase::StartupTest
-                  : proc_ == Proc::Poll  ? StagePhase::Polling
-                                         : StagePhase::Stopping;
+        s.phase = proc_ == Proc::Startup || proc_ == Proc::Commission ? StagePhase::StartupTest
+                  : proc_ == Proc::Poll                               ? StagePhase::Polling
+                                                                      : StagePhase::Stopping;
         break;
     case Step::TripClear:
     case Step::NackPending:
@@ -349,9 +390,9 @@ OutputStageStatus OutputStage::status() const
         s.phase = StagePhase::Halted;
         break;
     default:
-        s.phase = proc_ == Proc::Startup ? StagePhase::StartupTest
-                  : proc_ == Proc::Poll  ? StagePhase::Polling
-                                         : StagePhase::Starting;
+        s.phase = proc_ == Proc::Startup || proc_ == Proc::Commission ? StagePhase::StartupTest
+                  : proc_ == Proc::Poll                               ? StagePhase::Polling
+                                                                      : StagePhase::Starting;
         break;
     }
     s.zonesFitted = zonesFitted_;
@@ -367,6 +408,12 @@ OutputStageStatus OutputStage::status() const
     s.enableDriveMs = enableDriveMs_;
     s.enableRelayMs = enableRelayMs_;
     s.selfTestsPassed = passed_;
+    // From the 100 ms before the pin floats to 100 ms after it is driven
+    // again, so that the load is on for the whole 0.5 s (rule 17).
+    s.floatTest = step_ == Step::PinHighRelease || step_ == Step::Float || step_ == Step::FloatRelease;
+    s.commissioned = reference_.valid();
+    s.reference = reference_;
+    s.commissionSamples = samples_;
     return s;
 }
 
@@ -492,7 +539,7 @@ void OutputStage::setMaster(bool on)
 
 void OutputStage::allOff()
 {
-    if (step_ != Step::Ready && step_ != Step::Weld && step_ != Step::Relay) {
+    if (step_ != Step::Ready && step_ != Step::Weld && step_ != Step::GateBleed && step_ != Step::Relay) {
         return;
     }
     const uint8_t zones = zonesFitted_ == 0 ? kMaxZones : zonesFitted_;
@@ -524,6 +571,14 @@ void OutputStage::tick(const StageTickInput &in)
         guard_.setRequest(KeepAliveRequest::Off);
         relayClosed_ = false;
         enter(Step::Halted);
+        return;
+    }
+    if (!refLoaded_) {
+        loadReference();
+    }
+    // Rule 16 and contract 19.4: no peripheral may drive the keep-alive pin.
+    if (!in.keepAlivePinPlain && step_ != Step::Fault) {
+        fail(HwCheck::KeepAlivePinRouted);
         return;
     }
     KeepAliveReadbacks rb;
@@ -571,6 +626,9 @@ void OutputStage::tick(const StageTickInput &in)
             fail(HwCheck::LatchStuck); // 19.8: latch or detector A faulty
         } else if (wanted_) {
             begin(Proc::Run);
+        } else if (!reference_.valid() && commissionCycles_ < cfg_.maxCommissionCycles) {
+            ++commissionCycles_;
+            begin(Proc::Commission); // 19.7: steps 3 and 9 until five stop tests agree
         } else if (in.sensorSupplyOn && (pollRequested_ || now - lastActiveEndMs_ >= cfg_.pollIntervalMs ||
                                          (pinHighDone_ && now - lastPinHighMs_ >= kPinHighMaxAgeMs))) {
             pollRequested_ = false;
@@ -589,6 +647,12 @@ void OutputStage::tick(const StageTickInput &in)
     case Step::PinHighRelease:
         doPinHighRelease(rb);
         break;
+    case Step::Float:
+        doFloat(rb);
+        break;
+    case Step::FloatRelease:
+        doFloatRelease(rb);
+        break;
     case Step::Start:
         doStart(rb);
         break;
@@ -600,6 +664,9 @@ void OutputStage::tick(const StageTickInput &in)
         break;
     case Step::Weld:
         doWeld();
+        break;
+    case Step::GateBleed:
+        doGateBleed();
         break;
     case Step::Relay:
         doRelay();
@@ -639,7 +706,8 @@ void OutputStage::tick(const StageTickInput &in)
 void OutputStage::doPrecheck(const KeepAliveReadbacks &rb)
 {
     // Step 0: 24 VAC is present (checked in tick), the keep-alive has been
-    // low for 2 s, the latch is clear.
+    // low for 2.5 s, the latch is clear. 2.5 s covers the relay detector's
+    // slowest release, 2.19 s with the pin high (review A2 m10).
     guard_.setRequest(KeepAliveRequest::Off);
     if (rb.overCurrentLatched) {
         onTrip();
@@ -653,29 +721,56 @@ void OutputStage::doPrecheck(const KeepAliveReadbacks &rb)
         enter(Step::Idle);
         return;
     }
+    if (proc_ == Proc::Commission && wanted_) {
+        proc_ = Proc::Run; // a run goes first; commissioning carries on afterwards
+    }
     enter(Step::IdleTest);
     doIdleTest(rb);
 }
 
+bool OutputStage::restReadbackGateDrain() const
+{
+    // Review A2 4.6 question 7: with Q2 shorted gate to drain, Q2 sits at its
+    // own threshold and GPIO7 sees 0.6 times that, 0.4 to 0.95 V, which a
+    // digital read may take for high. The window must lie inside the 2.5 s
+    // the keep-alive has been low.
+    const CurrentReading &w = in_.current;
+    if (!in_.currentSenseAvailable || w.relayReadbackMv < 0 || clock_.monoMs() - w.endMs > kRestWindowMaxAgeMs) {
+        return false; // no analogue reading: the digital read alone decides
+    }
+    return w.relayReadbackMv >= kRelayGateDrainMinMv && w.relayReadbackMv <= kRelayGateDrainMaxMv;
+}
+
 void OutputStage::doIdleTest(const KeepAliveReadbacks &rb)
 {
-    // Step 1: both detectors off, expander in reset.
+    // Step 1: both detectors off, the LED supply off, the expander in reset.
+    // A_RB reads V_DRV since review A2 (section 8.6): with no acknowledge, a
+    // high A_RB is Q3 conducting; with an acknowledge, detector A or the
+    // latch is stuck on. An acknowledge with A_RB low is DRV_EN stuck high.
+    const BusStatus st = bus_.probe();
+    if (st != BusStatus::Ok && st != BusStatus::Nack) {
+        bus_.recover();
+        fail(HwCheck::BusError);
+        return;
+    }
+    const bool answers = st == BusStatus::Ok;
     if (rb.driveEnabled) {
-        fail(HwCheck::IdleDriveEnabled);
+        fail(answers ? HwCheck::IdleDriveEnabled : HwCheck::IdleDriveSupplyOn);
+        return;
+    }
+    if (restReadbackGateDrain()) {
+        fail(HwCheck::IdleRelayGateDrain);
         return;
     }
     if (!rb.relayOff) {
+        // Q2 on, or (rule 15) V_BUCK missing on USB power: B_RB is pulled up
+        // from V_BUCK. GPIO7 reads 0 V either way; section 19 gives no
+        // reading that tells the two apart.
         fail(HwCheck::IdleRelayOn);
         return;
     }
-    const BusStatus st = bus_.probe();
-    if (st == BusStatus::Ok) {
+    if (answers) {
         fail(HwCheck::IdleExpanderAnswers);
-        return;
-    }
-    if (st != BusStatus::Nack) {
-        bus_.recover();
-        fail(HwCheck::BusError);
         return;
     }
     const MonoMs now = clock_.monoMs();
@@ -712,7 +807,49 @@ void OutputStage::doPinHigh(const KeepAliveReadbacks &rb)
 
 void OutputStage::doPinHighRelease(const KeepAliveReadbacks &rb)
 {
+    // Step 2 ends with 100 ms low. The float test follows: status().floatTest
+    // is already set, so the display, the backlight PWM and the PSRAM are
+    // busy before the pin floats (rule 17).
     if (rb.applied != KeepAliveRequest::Off || since(rb.nowMs, rb.appliedSinceMs) < kPinHighReleaseMs) {
+        return;
+    }
+    guard_.setRequest(KeepAliveRequest::Float);
+    enter(Step::Float);
+}
+
+void OutputStage::doFloat(const KeepAliveReadbacks &rb)
+{
+    // Step 2b: the pin an input with no pull for 0.5 s, read every 1 ms by
+    // the interrupt. Nothing may drive the keep-alive net: R33 holds it low.
+    if (rb.applied != KeepAliveRequest::Float) {
+        return;
+    }
+    if (rb.floatHighReads > 0) {
+        fail(HwCheck::FloatPinHigh); // another net lifts KA: stop at once, pin driven low
+        return;
+    }
+    if (since(rb.nowMs, rb.appliedSinceMs) < kFloatTestMs) {
+        return;
+    }
+    if (rb.floatReads < kFloatMinReads) {
+        fail(HwCheck::FloatPinHigh); // the pin was not read as asked: the test did not run
+        return;
+    }
+    if (rb.driveEnabled) {
+        fail(HwCheck::FloatDriveEnabled);
+        return;
+    }
+    if (!rb.relayOff) {
+        fail(HwCheck::FloatRelayOn);
+        return;
+    }
+    guard_.setRequest(KeepAliveRequest::Off);
+    enter(Step::FloatRelease);
+}
+
+void OutputStage::doFloatRelease(const KeepAliveReadbacks &rb)
+{
+    if (rb.applied != KeepAliveRequest::Off || since(rb.nowMs, rb.appliedSinceMs) < kFloatReleaseMs) {
         return;
     }
     guard_.setRequest(KeepAliveRequest::Run);
@@ -790,7 +927,7 @@ void OutputStage::doSetup()
         fail(HwCheck::ExpanderInputs); // a strap does not change
         return;
     }
-    if (proc_ == Proc::Poll) {
+    if (proc_ == Proc::Poll || proc_ == Proc::Commission) {
         enter(Step::PollRead);
         return;
     }
@@ -848,8 +985,20 @@ void OutputStage::doPollRead(const KeepAliveReadbacks &rb)
     if (!toggledLongEnough(rb)) {
         return; // read again next tick
     }
-    guard_.setRequest(KeepAliveRequest::Off);
-    enter(Step::StopTest);
+    beginStopTest(rb);
+}
+
+bool OutputStage::firstOutput(BitRef &b) const
+{
+    if (firstBit_ < kMaxZones && (zonesFitted_ == 0 || firstBit_ < zonesFitted_)) {
+        b = layout_.zone[firstBit_];
+        return true;
+    }
+    if (firstBit_ == kMaxZones) {
+        b = layout_.master;
+        return true;
+    }
+    return false;
 }
 
 void OutputStage::doWeld()
@@ -858,31 +1007,35 @@ void OutputStage::doWeld()
     // nothing. A welded K1 contact, a bridged JP1 or a shorted Q1 shows here.
     const MonoMs now = clock_.monoMs();
     BitRef b{};
-    bool have = false;
-    if (firstBit_ < kMaxZones && (zonesFitted_ == 0 || firstBit_ < zonesFitted_)) {
-        b = layout_.zone[firstBit_];
-        have = true;
-    } else if (firstBit_ == kMaxZones) {
-        b = layout_.master;
-        have = true;
-    }
+    const bool have = firstOutput(b);
+    const uint8_t port = b.port & 1u;
+    const auto m = static_cast<uint8_t>(1u << b.bit);
     if (stepFirstTick_ && !weldBitOn_) {
         if (!have || !in_.currentSenseAvailable) {
             // Nothing to test with: no known first output, or no current
             // readings (zones still run without them; firmware architecture
-            // section 3, current sense unavailable).
+            // section 3, current sense unavailable). Step 5b needs the same.
             enter(Step::Relay);
             doRelay();
             return;
         }
-        const auto m = static_cast<uint8_t>(1u << b.bit);
-        const auto next = static_cast<uint8_t>(outShadow_[b.port & 1u] & ~m);
-        if (!writeChecked(outReg(b.port & 1u), next, HwCheck::ExpanderOutputs)) {
+        const auto next = static_cast<uint8_t>(outShadow_[port] & ~m);
+        if (!writeChecked(outReg(port), next, HwCheck::ExpanderOutputs)) {
             return;
         }
-        outShadow_[b.port & 1u] = next;
+        outShadow_[port] = next;
         weldBitOn_ = true;
         weldStartMs_ = now;
+        // The pin itself must follow: a valve pin that does not read low
+        // while driven low is an open or shorted pin of the expander, its
+        // pull-up array or the opto LED path (review A2 appendix A).
+        uint8_t in = 0;
+        if (!read(inReg(port), in, HwCheck::WeldNoReadback)) {
+            return;
+        }
+        if ((in & m) != 0) {
+            fail(HwCheck::WeldNoReadback);
+        }
         return;
     }
     CurrentReading r;
@@ -892,16 +1045,106 @@ void OutputStage::doWeld()
         return;
     }
     // Bit off again before anything else.
-    const auto m = static_cast<uint8_t>(1u << b.bit);
-    const auto next = static_cast<uint8_t>(outShadow_[b.port & 1u] | m);
-    if (!writeChecked(outReg(b.port & 1u), next, HwCheck::ExpanderOutputs)) {
+    const auto next = static_cast<uint8_t>(outShadow_[port] | m);
+    if (!writeChecked(outReg(port), next, HwCheck::ExpanderOutputs)) {
         return;
     }
-    outShadow_[b.port & 1u] = next;
+    outShadow_[port] = next;
     weldBitOn_ = false;
     lastValveOffMs_ = now;
     if (got && r.ma > in_.idleThresholdMa) {
         fail(HwCheck::RelayWelded);
+        return;
+    }
+    bleedPhase_ = 0;
+    enter(Step::GateBleed);
+    doGateBleed();
+}
+
+void OutputStage::doGateBleed()
+{
+    // Step 5b: RLY_ON high for 20 ms, then its pin an input without driving
+    // it low first. With R12 in place the gate of Q1 discharges and K1 opens
+    // within its 10 ms; with R12 open Q1 keeps its charge, and the output of
+    // step 5 then draws current through the relay.
+    const MonoMs now = clock_.monoMs();
+    BitRef b{};
+    (void)firstOutput(b); // step 5 ran, so there is one
+    const uint8_t port = b.port & 1u;
+    const auto m = static_cast<uint8_t>(1u << b.bit);
+    const uint8_t rp = layout_.relay.port & 1u;
+    const uint8_t rm = layout_.relayMask(rp);
+    switch (bleedPhase_) {
+    case 0: {
+        const auto next = static_cast<uint8_t>(outShadow_[rp] | rm);
+        if (!writeChecked(outReg(rp), next, HwCheck::RelayNoReadback)) {
+            return;
+        }
+        outShadow_[rp] = next;
+        relayClosed_ = true;
+        bleedSinceMs_ = now;
+        bleedPhase_ = 1;
+        return;
+    }
+    case 1: {
+        if (now - bleedSinceMs_ < kGateBleedHoldMs) {
+            return;
+        }
+        // Configuration 0 = 0xE0 on rev A: RLY_ON an input, its output bit
+        // still set.
+        const auto cfg = static_cast<uint8_t>(cfgShadow_[rp] | rm);
+        if (!writeChecked(cfgReg(rp), cfg, HwCheck::ExpanderConfig)) {
+            return;
+        }
+        cfgShadow_[rp] = cfg;
+        relayClosed_ = false;
+        bleedSinceMs_ = now;
+        bleedPhase_ = 2;
+        return;
+    }
+    case 2: {
+        if (now - bleedSinceMs_ < kGateBleedWaitMs) {
+            return;
+        }
+        const auto next = static_cast<uint8_t>(outShadow_[port] & ~m);
+        if (!writeChecked(outReg(port), next, HwCheck::ExpanderOutputs)) {
+            return;
+        }
+        outShadow_[port] = next;
+        weldBitOn_ = true;
+        bleedSinceMs_ = now;
+        bleedPhase_ = 3;
+        return;
+    }
+    default:
+        break;
+    }
+    CurrentReading r;
+    const bool got = windowSince(bleedSinceMs_, r);
+    if (!got && now - bleedSinceMs_ <= kWindowWaitMs) {
+        return;
+    }
+    // Output off, RLY_ON cleared, then RLY_ON an output again (low).
+    const auto off = static_cast<uint8_t>(outShadow_[port] | m);
+    if (!writeChecked(outReg(port), off, HwCheck::ExpanderOutputs)) {
+        return;
+    }
+    outShadow_[port] = off;
+    weldBitOn_ = false;
+    lastValveOffMs_ = now;
+    const auto relayOff = static_cast<uint8_t>(outShadow_[rp] & ~rm);
+    if (!writeChecked(outReg(rp), relayOff, HwCheck::ExpanderOutputs)) {
+        return;
+    }
+    outShadow_[rp] = relayOff;
+    const auto cfg = static_cast<uint8_t>(cfgShadow_[rp] & ~rm);
+    if (!writeChecked(cfgReg(rp), cfg, HwCheck::ExpanderConfig)) {
+        return;
+    }
+    cfgShadow_[rp] = cfg;
+    bleedPhase_ = 0;
+    if (got && r.ma > in_.idleThresholdMa) {
+        fail(HwCheck::GateBleed);
         return;
     }
     enter(Step::Relay);
@@ -1042,6 +1285,14 @@ void OutputStage::doEnd(const KeepAliveReadbacks &rb)
     if (!toggledLongEnough(rb)) {
         return; // every pin is an input; keep toggling until the reservoirs are charged
     }
+    beginStopTest(rb);
+}
+
+void OutputStage::beginStopTest(const KeepAliveReadbacks &rb)
+{
+    // The only way into step 9. Every caller has waited for
+    // toggledLongEnough(): 1 s of toggling, above the 0.3 s of 19.7.
+    toggledBeforeStopMs_ = rb.applied == KeepAliveRequest::Run ? since(rb.nowMs, rb.appliedSinceMs) : 0;
     guard_.setRequest(KeepAliveRequest::Off);
     enter(Step::StopTest);
 }
@@ -1067,6 +1318,7 @@ void OutputStage::doStopTest(const KeepAliveReadbacks &rb)
     const uint32_t tB = since(rb.relaySinceMs, rb.appliedSinceMs);
     releaseDriveMs_ = static_cast<uint16_t>(tA);
     releaseRelayMs_ = static_cast<uint16_t>(tB);
+    // Absolute limits (review A2): wider than every tolerance corner.
     if (tA < kDriveReleaseMinMs || tA > kDriveReleaseMaxMs) {
         fail(HwCheck::StopDriveRelease);
         return;
@@ -1085,7 +1337,90 @@ void OutputStage::doStopTest(const KeepAliveReadbacks &rb)
         fail(HwCheck::BusError);
         return;
     }
+    if (!judgeAgainstReference(tA, tB)) {
+        return;
+    }
     finishProcedure();
+}
+
+bool OutputStage::judgeAgainstReference(uint32_t tA, uint32_t tB)
+{
+    if (!reference_.valid()) {
+        // Not commissioned: the absolute limits only (19.7, item 3). Start-up
+        // and commissioning cycles teach the board its own times.
+        if (proc_ == Proc::Startup || proc_ == Proc::Commission) {
+            learn(tA, tB);
+        }
+        return true;
+    }
+    // The band (19.7, item 2): an open R30 or R91 doubles tA, an open R14 or
+    // R90 doubles tB.
+    const auto inBand = [](uint32_t t, uint16_t ref) {
+        return t * 100u >= ref * kBandLowPercent && t * 100u <= ref * kBandHighPercent;
+    };
+    if (!inBand(tA, reference_.driveMs)) {
+        fail(HwCheck::StopDriveBand);
+        return false;
+    }
+    if (!inBand(tB, reference_.relayMs)) {
+        fail(HwCheck::StopRelayBand);
+        return false;
+    }
+    return true;
+}
+
+void OutputStage::learn(uint32_t tA, uint32_t tB)
+{
+    const bool plausible =
+        tA >= kLearnDriveMinMs && tA <= kLearnDriveMaxMs && tB >= kLearnRelayMinMs && tB <= kLearnRelayMaxMs;
+    if (!plausible) {
+        samples_ = 0; // not what a healthy board gives near room temperature: start again
+        return;
+    }
+    sampleDrive_[samples_] = static_cast<uint16_t>(tA);
+    sampleRelay_[samples_] = static_cast<uint16_t>(tB);
+    if (++samples_ < kCommissionSamples) {
+        return;
+    }
+    samples_ = 0;
+    auto a = sampleDrive_;
+    auto b = sampleRelay_;
+    std::sort(a.begin(), a.end());
+    std::sort(b.begin(), b.end());
+    const auto agree = [](const std::array<uint16_t, kCommissionSamples> &v) {
+        return static_cast<uint32_t>(v.back()) * 100u <= static_cast<uint32_t>(v.front()) * kLearnMaxSpreadPercent;
+    };
+    if (!agree(a) || !agree(b)) {
+        return; // one board at one temperature gives the same time five times
+    }
+    DetectorReference r;
+    r.driveMs = a[kCommissionSamples / 2];
+    r.relayMs = b[kCommissionSamples / 2];
+    reference_ = r;
+    if (refStore_ != nullptr) {
+        (void)refStore_->save(r); // kept in RAM for this boot even if the write failed
+    }
+}
+
+void OutputStage::loadReference()
+{
+    refLoaded_ = true;
+    DetectorReference r;
+    if (refStore_ != nullptr && refStore_->load(r) && r.valid() && r.driveMs >= kLearnDriveMinMs &&
+        r.driveMs <= kLearnDriveMaxMs && r.relayMs >= kLearnRelayMinMs && r.relayMs <= kLearnRelayMaxMs) {
+        reference_ = r;
+    }
+}
+
+void OutputStage::forgetReference()
+{
+    reference_ = DetectorReference{};
+    samples_ = 0;
+    commissionCycles_ = 0;
+    refLoaded_ = true;
+    if (refStore_ != nullptr) {
+        (void)refStore_->clear();
+    }
 }
 
 void OutputStage::doFault()
