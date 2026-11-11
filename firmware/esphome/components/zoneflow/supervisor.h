@@ -28,11 +28,13 @@
 
 #include <array>
 #include <cstdint>
+#include <string>
 
 #include "zf/app/retained.hpp"
 #include "zf/diag/current_monitor.hpp"
 #include "zf/diag/current_sense.hpp"
 #include "zf/diag/sensors.hpp"
+#include "zf/events/event.hpp"
 #include "zf/hw/output_stage.hpp"
 #include "zf/zone/zone_driver.hpp"
 
@@ -48,6 +50,8 @@ enum class ZoneFault : uint8_t {
   DcCurrent,        // one triac polarity not conducting
 };
 const char *to_string(ZoneFault f);
+// The fault code the standalone firmware reports for the same condition.
+zf::FaultCode fault_code(ZoneFault f);
 
 // Faults that do not belong to one zone. Bits of Supervisor::general_faults().
 enum GeneralFault : uint32_t {
@@ -76,7 +80,7 @@ struct ZoneSettings {
 struct SupervisorConfig {
   uint8_t zone_count = 8;  // zones the YAML declares; limited further by the variant strap
   uint8_t max_concurrent = 1;
-  bool master_enabled = true;
+  bool master_enabled = false;  // same default as the standalone firmware
   uint32_t master_pre_open_ms = 1000;
   uint32_t master_post_close_ms = 2000;
   uint32_t inter_zone_delay_ms = 0;
@@ -86,7 +90,7 @@ struct SupervisorConfig {
   uint16_t master_max_ma = 700;
   bool current_enabled = true;
   uint32_t settle_ms = 500;         // inrush blanking
-  uint16_t idle_threshold_ma = 30;  // hardware design 19.2
+  uint16_t idle_threshold_ma = zf::kDefaultIdleMaxMa;  // hardware design 19.2
   uint16_t short_circuit_ma = 3000;
   uint8_t confirm_samples = 3;
   uint8_t master_fault_lockout_count = 3;
@@ -149,6 +153,8 @@ class Supervisor final : private zf::IZoneDriverListener {
   uint32_t zone_rest_remaining_ms(uint8_t zone) const { return driver_.restRemainingMs(zone); }
   bool zone_locked_out(uint8_t zone) const { return driver_.lockedOut(zone); }
   ZoneFault zone_fault(uint8_t zone) const { return zone < zf::kMaxZones ? zone_fault_[zone] : ZoneFault::None; }
+  // Which current fault set kFaultMaster: OpenCircuit, OverCurrent or ShortCircuit.
+  ZoneFault master_fault() const { return master_fault_; }
   zf::StopReason zone_last_stop(uint8_t zone) const { return driver_.lastStopReason(zone); }
   // Mean current of the zone's last run with no other output changing; 0 if none.
   uint16_t zone_last_run_ma(uint8_t zone) const { return zone < zf::kMaxZones ? last_run_ma_[zone] : 0; }
@@ -215,6 +221,7 @@ class Supervisor final : private zf::IZoneDriverListener {
   std::array<uint16_t, zf::kMaxZones> last_run_ma_{};
   std::array<std::array<int64_t, zf::kTripsKept>, zf::kMaxZones + 1> trip_at_ms_{};
   uint8_t master_faults_ = 0;
+  ZoneFault master_fault_ = ZoneFault::None;
   bool master_fault_in_session_ = false;
   zf::MonoMs master_on_since_ms_ = 0;
 
@@ -232,5 +239,13 @@ class Supervisor final : private zf::IZoneDriverListener {
   uint16_t last_mask_ = 0;
   zf::StagePhase last_phase_ = zf::StagePhase::None;
 };
+
+// Fault text in the words of the display and the web UI, from the one table
+// in zf/fault_text.hpp. `label` names the zone: its name, or "Zone 3".
+std::string zone_fault_text(ZoneFault f, const std::string &label);
+// Every active fault and condition, joined with ", ". "No faults" if none.
+// `labels[z]` is the zone's name; empty or null gives "Zone N".
+std::string faults_text(const Supervisor &s, uint8_t zone_count,
+                        const std::array<const char *, zf::kMaxZones> &labels);
 
 }  // namespace zfe

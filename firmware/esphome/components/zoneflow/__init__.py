@@ -164,7 +164,9 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_MAX_CONCURRENT, default=1): cv.int_range(min=1, max=2),
             cv.Optional(CONF_MASTER_VALVE, default={}): cv.Schema(
                 {
-                    cv.Optional(CONF_ENABLED, default=True): cv.boolean,
+                    # Off by default, as in the standalone firmware: a board
+                    # without a master valve must not report a master fault.
+                    cv.Optional(CONF_ENABLED, default=False): cv.boolean,
                     cv.Optional(CONF_PRE_OPEN, default="1s"): cv.positive_time_period_milliseconds,
                     cv.Optional(CONF_POST_CLOSE, default="2s"): cv.positive_time_period_milliseconds,
                     cv.Optional(CONF_MIN_CURRENT, default=80): milliamps,
@@ -183,7 +185,10 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_CURRENT_SENSE, default={}): cv.Schema(
                 {
                     cv.Optional(CONF_ENABLED, default=True): cv.boolean,
-                    cv.Optional(CONF_IDLE_THRESHOLD, default=30): milliamps,  # hardware design 19.2
+                    # No default here: unset, the C++ default applies, which is
+                    # zf::kDefaultIdleMaxMa (zf_core, hardware design 19.2), the
+                    # same constant the standalone firmware uses.
+                    cv.Optional(CONF_IDLE_THRESHOLD): milliamps,
                     cv.Optional(CONF_SHORT_CIRCUIT, default=3000): milliamps,
                     cv.Optional(CONF_SETTLE_TIME, default="500ms"): cv.positive_time_period_milliseconds,
                     cv.Optional(CONF_CONFIRM_SAMPLES, default=3): cv.int_range(min=1, max=20),
@@ -272,7 +277,6 @@ async def to_code(config):
         f"c.master_max_ma = {mv[CONF_MAX_CURRENT]};",
         f"c.min_rest_sec = {config[CONF_REST_TIME].total_seconds};",
         f"c.current_enabled = {'true' if cs[CONF_ENABLED] else 'false'};",
-        f"c.idle_threshold_ma = {cs[CONF_IDLE_THRESHOLD]};",
         f"c.short_circuit_ma = {cs[CONF_SHORT_CIRCUIT]};",
         f"c.settle_ms = {cs[CONF_SETTLE_TIME].total_milliseconds};",
         f"c.confirm_samples = {cs[CONF_CONFIRM_SAMPLES]};",
@@ -280,6 +284,8 @@ async def to_code(config):
         f"c.leak_detect_sec = {lk[CONF_DELAY].total_seconds};",
         f"c.stage.pinHighTestEveryRun = {'true' if config[CONF_SELF_TEST_EVERY_RUN] else 'false'};",
     ]
+    if CONF_IDLE_THRESHOLD in cs:
+        stmts.append(f"c.idle_threshold_ma = {cs[CONF_IDLE_THRESHOLD]};")
     overrides = {o[CONF_ZONE] - 1: o for o in config[CONF_ZONE_OVERRIDES]}
     for z in range(MAX_ZONES):
         o = overrides.get(z, {})

@@ -133,7 +133,8 @@ void ZoneFlowComponent::notify_faults_() {
     const zfe::ZoneFault zf_ = this->sup_->zone_fault(z);
     if (f != 0 && f != this->last_zone_fault_[z]) {
       if (what.empty())
-        what = std::string("zone ") + std::to_string(z + 1) + ": " + zfe::to_string(zf_);
+        what = zfe::zone_fault_text(zf_, *this->zone_name(z) != '\0' ? std::string(this->zone_name(z))
+                                                                      : "Zone " + std::to_string(z + 1));
       stop_cycle = stop_cycle || (zf_ != zfe::ZoneFault::OpenCircuit && zf_ != zfe::ZoneFault::DcCurrent);
     }
     this->last_zone_fault_[z] = f;
@@ -258,49 +259,8 @@ const char *ZoneFlowComponent::stage_text() const {
 
 std::string ZoneFlowComponent::faults_text() const {
   if (!this->sup_)
-    return "not started";
-  auto *s = this->sup_.get();
-  std::string out;
-  auto add = [&out](const std::string &t) {
-    if (!out.empty())
-      out += ", ";
-    out += t;
-  };
-  const auto &st = s->stage();
-  if (s->hardware_fault()) {
-    add(std::string("output stage: ") + zf::toString(st.fault) + " (step " +
-        std::to_string(zf::hwCheckStep(st.fault)) + (s->repair_needed() ? ", repair needed)" : ")"));
-  }
-  const uint32_t g = s->general_faults();
-  if (g & zfe::kFaultCurrentWhileIdle)
-    add("current with every valve off");
-  if (g & zfe::kFaultOverCurrentTrip)
-    add("over-current trip");
-  if (g & zfe::kFaultMaster)
-    add("master valve current");
-  if (g & zfe::kFaultMasterLockedOut)
-    add("master valve locked out");
-  if (g & zfe::kFaultDcCurrent)
-    add("DC current");
-  if (g & zfe::kFaultLeak)
-    add("flow with every valve shut");
-  if (g & zfe::kCondNoAc)
-    add("no 24 VAC");
-  if (g & zfe::kCondCurrentSenseUnavailable)
-    add("current sense unavailable");
-  if (g & zfe::kCondSensorSupply)
-    add("sensor supply fault");
-  if (g & zfe::kCondMainsSignal)
-    add("zero-cross signal implausible");
-  for (uint8_t z = 0; z < this->cfg_.zone_count; ++z) {
-    if (s->zone_fault(z) != zfe::ZoneFault::None)
-      add("zone " + std::to_string(z + 1) + " " + zfe::to_string(s->zone_fault(z)));
-    else if (s->zone_locked_out(z))
-      add("zone " + std::to_string(z + 1) + " locked out");
-  }
-  if (s->maintenance())
-    add("maintenance (OTA)");
-  return out.empty() ? "none" : out;
+    return "Starting";
+  return zfe::faults_text(*this->sup_, this->cfg_.zone_count, this->zone_names_);
 }
 
 zf::ValveState ZoneFlowComponent::zone_state(uint8_t zone) const {

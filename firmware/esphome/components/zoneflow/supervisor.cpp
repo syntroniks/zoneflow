@@ -3,6 +3,9 @@
 
 #include <algorithm>
 #include <climits>
+#include <cstdio>
+
+#include "zf/fault_text.hpp"
 
 namespace zfe {
 namespace {
@@ -25,6 +28,95 @@ const char *to_string(ZoneFault f) {
       return "dc_current";
   }
   return "unknown";
+}
+
+zf::FaultCode fault_code(ZoneFault f) {
+  switch (f) {
+    case ZoneFault::None:
+      return zf::FaultCode::None;
+    case ZoneFault::OpenCircuit:
+      return zf::FaultCode::ZoneOpenCircuit;
+    case ZoneFault::OverCurrent:
+      return zf::FaultCode::ZoneOverCurrent;
+    case ZoneFault::ShortCircuit:
+      return zf::FaultCode::ShortCircuit;
+    case ZoneFault::OverCurrentTrip:
+      return zf::FaultCode::OverCurrentTrip;
+    case ZoneFault::DcCurrent:
+      return zf::FaultCode::ZoneDcCurrent;
+  }
+  return zf::FaultCode::None;
+}
+
+namespace {
+
+std::string title_of(zf::FaultCode c) {
+  const zf::FaultText *t = zf::faultText(c);
+  return t != nullptr ? std::string(t->title) : std::string(zf::toString(c));
+}
+
+// "Zone 3: no current"; the plain title for a fault that has no zone form.
+std::string zone_title_of(zf::FaultCode c, const std::string &label) {
+  const zf::FaultText *t = zf::faultText(c);
+  if (t == nullptr || t->zoneTitle.empty())
+    return title_of(c);
+  const std::string fmt(t->zoneTitle);
+  const std::size_t at = fmt.find("%s");
+  return at == std::string::npos ? fmt : fmt.substr(0, at) + label + fmt.substr(at + 2);
+}
+
+}  // namespace
+
+std::string zone_fault_text(ZoneFault f, const std::string &label) { return zone_title_of(fault_code(f), label); }
+
+std::string faults_text(const Supervisor &s, uint8_t zone_count,
+                        const std::array<const char *, zf::kMaxZones> &labels) {
+  std::string out;
+  auto add = [&out](const std::string &t) {
+    if (!out.empty())
+      out += ", ";
+    out += t;
+  };
+  static const std::string kMaster = "Master valve";
+  if (s.hardware_fault()) {
+    const zf::HwCheck check = s.stage().fault;
+    std::string t = title_of(zf::faultCodeFor(check));
+    char step[32];
+    std::snprintf(step, sizeof step, " (step %u)", static_cast<unsigned>(zf::hwCheckStep(check)));
+    add(t + step);
+  }
+  const uint32_t g = s.general_faults();
+  if (g & kFaultCurrentWhileIdle)
+    add(title_of(zf::FaultCode::CurrentWhileIdle));
+  if (g & kFaultOverCurrentTrip)
+    add(title_of(zf::FaultCode::OverCurrentTrip));
+  if (g & kFaultMaster)
+    add(zone_fault_text(s.master_fault() == ZoneFault::None ? ZoneFault::OverCurrent : s.master_fault(), kMaster));
+  if (g & kFaultMasterLockedOut)
+    add(title_of(zf::FaultCode::MasterLockedOut));
+  if (g & kFaultDcCurrent)
+    add(zone_fault_text(ZoneFault::DcCurrent, kMaster));
+  if (g & kFaultLeak)
+    add(title_of(zf::FaultCode::FlowWithoutZones));
+  if (g & kCondNoAc)
+    add(title_of(zf::FaultCode::AcLost));
+  if (g & kCondCurrentSenseUnavailable)
+    add(title_of(zf::FaultCode::CurrentSenseUnavailable));
+  if (g & kCondSensorSupply)
+    add(title_of(zf::FaultCode::SensorSupply));
+  if (g & kCondMainsSignal)
+    add(title_of(zf::FaultCode::MainsSignal));
+  for (uint8_t z = 0; z < zone_count && z < zf::kMaxZones; ++z) {
+    const std::string label =
+        labels[z] != nullptr && labels[z][0] != '\0' ? std::string(labels[z]) : "Zone " + std::to_string(z + 1);
+    if (s.zone_fault(z) != ZoneFault::None)
+      add(zone_fault_text(s.zone_fault(z), label));
+    else if (s.zone_locked_out(z))
+      add(label + ": locked");
+  }
+  if (s.maintenance())
+    add("Updating: watering is off");
+  return out.empty() ? "No faults" : out;
 }
 
 Supervisor::Supervisor(zf::hw::IExpanderBus &bus, zf::OutputEnableGuard &guard, const zf::IClock &clock,
@@ -232,6 +324,7 @@ void Supervisor::handle_current(const zf::CurrentVerdict &v) {
         zone_fault_[zone] =
             v.fault == zf::CurrentFault::ShortCircuit ? ZoneFault::ShortCircuit : ZoneFault::OverCurrent;
       } else {
+        master_fault_ = v.fault == zf::CurrentFault::ShortCircuit ? ZoneFault::ShortCircuit : ZoneFault::OverCurrent;
         set_flag(kFaultMaster, true);
       }
       if (v.outputBit == zf::ZoneDriver::kMasterBit)
@@ -244,6 +337,7 @@ void Supervisor::handle_current(const zf::CurrentVerdict &v) {
         zone_fault_[zone] = ZoneFault::OpenCircuit;
       } else {
         driver_.stopAll(zf::StopReason::Fault);
+        master_fault_ = ZoneFault::OpenCircuit;
         set_flag(kFaultMaster, true);
       }
       break;
@@ -430,6 +524,7 @@ void Supervisor::clear_faults() {
   driver_.clearLockouts();
   monitor_.rearm();  // a current fault whose cause is still there is raised again
   zone_fault_.fill(ZoneFault::None);
+  master_fault_ = ZoneFault::None;
   master_faults_ = 0;
   for (auto &t : trip_at_ms_)
     t.fill(kNoTrip);
