@@ -795,10 +795,20 @@ The same settings file carries what the Specctra file cannot:
 - `router.fanout.enabled = false`. The fan-out stage puts a via at every
   surface-mount pin before routing. On this board that took the room the
   router needed.
-- `router.layers[n].routable`. This is how a layer is kept for a plane. An
-  `autoroute_settings` block in the Specctra file makes 2.5.0 load an empty
-  board without an error message. A `.rules` file given with `-dr` was read
-  but its `(fanout off)` was not honoured.
+- `router.layers[n]`: the cost of a layer. An `autoroute_settings` block in
+  the Specctra file makes 2.5.0 load an empty board without an error message.
+  A `.rules` file given with `-dr` was read but its `(fanout off)` was not
+  honoured.
+- `router.autorouter.ignore_net_classes`: the nets it must leave alone (13.9).
+
+**`router.layers[n].routable = false` does not keep 2.5.0 off a layer.** An
+earlier version of this section said it did. It is read without complaint
+and not obeyed: with In1.Cu marked not routable, the router put more track on
+In1.Cu than on any other layer, 2.2 m in one run. No check noticed, because
+In1.Cu is a ground pour and a pour flows round whatever is on its layer.
+Every routing of the revision A board stored before this was found had
+signal tracks on the ground plane. What does keep the router off a layer is
+in 13.9.
 
 ### 13.4 More KiCad 10.0.8 Python findings
 
@@ -824,8 +834,11 @@ three passes. What made it tractable:
    kept from the autorouter.
 2. Every current-carrying net written out by hand, as a group where it
    repeats.
-3. A third routing layer for the logic nets.
+3. A third routing layer for the logic nets, In2.Cu, which they share with
+   the 3.3 V pour.
 4. No fan-out stage.
+5. A way to finish by hand what the autorouter leaves open without routing
+   again: `[[unroute]]` and `[[patch]]` (13.10).
 
 
 ### 13.6 A silkscreen that passes DRC
@@ -885,3 +898,42 @@ the hash stored beside the committed session in `route/`, imports that
 session, and runs `make board-check`: DRC with schematic parity, the
 mechanical contract, the layout rules. It makes no renders and needs no
 display.
+
+### 13.9 Telling the autorouter what is not its business
+
+Two things had to be said to Freerouting 2.5.0 in the Specctra file, because
+its settings file could not say them.
+
+**Nets it must not route.** `[route] exclude` lists them by pattern: the nets
+that connect through a plane or a pour, and the nets routed by hand. The first
+version took the pins of those nets out of the Specctra file. That had two
+faults, found on this board. The pads of such a net lost the clearance of
+their net class, so the router laid tracks 0.2 mm from pads that need 0.5 mm.
+And the router joined the separate pieces of a net that connects through a
+plane it cannot see. Now `hwflow/dsn.py` leaves the pins in and moves each
+such net from its class `X` to a class `X__fixed` with the same rules, and
+the settings file names those classes in
+`router.autorouter.ignore_net_classes`. Freerouting counts their connections
+as unrouted in its log; `route/<name>.freerouting.json` therefore overstates
+what is open, and DRC is the count that matters.
+
+**Layers it must not route on.** `[[route.plane]] layer, net`. The layer gets
+the type `power` and a plane polygon of that net over the board. With the type
+alone Freerouting writes "declared as a power layer but no plane is defined
+for it. It will be treated as a signal layer." With both it routes nothing on
+the layer and still passes vias through it. `pcbbuild finish` fails if the
+imported session has a track on such a layer.
+
+### 13.10 Finishing by hand after the autorouter
+
+The autorouter does not give the same result twice, and a change to the
+placement or to the hand-routed copper changes the Specctra file and so
+discards the stored session. To close the last connections without that,
+`board.toml` has two tables that act after the session is imported:
+
+- `[[unroute]] nets = [...]` deletes the autorouted copper of the nets named.
+- `[[patch]]` is a `[[track]]` laid after the import.
+
+They belong to the stored session. If the board is routed again they will no
+longer fit, and DRC will say so.
+
