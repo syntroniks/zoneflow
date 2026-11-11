@@ -416,9 +416,29 @@ class Builder:
                         layer, other = other, layer
         return count
 
+    def vias(self) -> int:
+        """[[via]]: a via on its own, for stitching a pour to a plane. ``net``, ``at`` and ``size = [d, drill]``."""
+        count = 0
+        for v in self.cfg.get("via", []):
+            net = self.board.FindNet(v["net"])
+            if net is None:
+                raise BoardError(f"via at {v['at']}: no net named {v['net']}")
+            via = pcbnew.PCB_VIA(self.board)
+            via.SetPosition(self.pt(v["at"][0], v["at"][1]))
+            via.SetViaType(pcbnew.VIATYPE_THROUGH)
+            via.SetLayerPair(pcbnew.F_Cu, pcbnew.B_Cu)
+            via.SetWidth(pcbnew.F_Cu, mm(v.get("size", [0.6, 0.3])[0]))
+            via.SetDrill(mm(v.get("size", [0.6, 0.3])[1]))
+            via.SetNet(net)
+            via.SetLocked(True)
+            self.board.Add(via)
+            count += 1
+        return count
+
     def preroutes(self) -> int:
         self.board.SynchronizeNetsAndNetClasses(True)
         count = self._tracks(self.cfg.get("track", []))
+        count += self.vias()
         by_local = {(p["sheet"], p["sheet_path"], p["local_ref"]): p["ref"] for p in self.model["parts"]}
         for sheet, group in self.groups():
             for sheet_path, origin in group.get("at", {}).items():
@@ -850,6 +870,7 @@ def cmd_build(args) -> int:
     if not ok:
         raise BoardError("Specctra DSN export failed")
     route = b.cfg.get("route", {})
+    dsn_mod.widen_clearances(dsn, float(route.get("clearance_margin", 0.0)))
     n_excluded, fixed_classes = dsn_mod.fix_nets(dsn, route.get("exclude", []))
     names = ["F.Cu"] + [f"In{i}.Cu" for i in range(1, layers - 1)] + ["B.Cu"]
 

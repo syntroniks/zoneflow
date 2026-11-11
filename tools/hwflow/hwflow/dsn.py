@@ -92,6 +92,23 @@ def fix_nets(dsn: Path, patterns: list[str]) -> tuple[int, list[str]]:
     return count, names
 
 
+def widen_clearances(dsn: Path, margin_mm: float) -> int:
+    """Add a margin to every clearance the autorouter is given.
+
+    Freerouting places a diagonal track to the micrometre it is told and
+    rounds; KiCad's DRC then finds 0.198 mm where 0.2 mm is the rule. With
+    ``[route] clearance_margin = 0.01`` the router works to 0.21 mm and DRC
+    still checks 0.2 mm.
+    """
+    if margin_mm <= 0:
+        return 0
+    text = dsn.read_text(encoding="utf-8")
+    add = margin_mm * 1000.0
+    text, n = re.subn(r"\(clearance (\d+(?:\.\d+)?)\)", lambda m: f"(clearance {float(m.group(1)) + add:g})", text)
+    dsn.write_text(text, encoding="utf-8")
+    return n
+
+
 def add_keepouts(dsn: Path, keepouts: list[dict], to_dsn) -> int:
     """Add rectangles where the autorouter may put neither track nor via.
 

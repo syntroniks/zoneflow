@@ -254,8 +254,8 @@ block("Current-sense amplifier. Channel A (low range) on the left, channel B on 
 at("U8", 35.0, 62.6, 90)
 at("C25", 35.0, 57.65, 0)
 col("R39 C26", 30.2, 66.0, -1.6)
-at("R47", 33.2, 67.55, 0)       # ADC series resistors, at the amplifier outputs
-at("R46", 36.7, 67.55, 0)
+at("R46", 31.9, 67.5, 0)        # ADC series resistors, each at its amplifier output; the strip between
+at("R47", 41.0, 67.5, 0)        # them, below the expander, stays free for the lines that leave it
 at("R38", 30.2, 62.8, 180)     # shunt side towards the amplifier: Kelvin tracks end here
 at("R40", 30.2, 61.2, 180)
 col("R41 C27", 30.2, 59.6, -1.6)
@@ -304,8 +304,8 @@ at("R58", 111.9, 74.3, 180)
 at("TP9", 95.2, 76.3, 0)
 at("TP16", 112.6, 71.5, 0)     # AC_ZC: at the far side from the keep-alive
 block("ADC filter capacitors. The two ADC lines come up under them on the bottom side on their way\nto module pins 38 and 39, 18 mm further on: there is no room beside those pins.")
-at("C30", 108.0, 88.2, 90)
-at("C31", 109.6, 88.2, 90)
+at("C31", 108.0, 88.2, 90)
+at("C30", 109.6, 88.2, 90)
 at("R23", 111.3, 88.2, 90)
 
 # ---- left of the module, top edge ---------------------------------------------------------------
@@ -640,6 +640,13 @@ zones = ["# Ground: all of In1.Cu, and pours on both outer layers.",
          "[[zone]]\nnet = \"3V3\"\nlayers = [\"In2.Cu\"]\n"
          "outline = [[0.5, 109.5], [113.5, 109.5], [113.5, 5.0], [103.9, 5.0], [103.9, 45.3], [9.5, 45.3], "
          "[9.5, 16.0], [0.5, 16.0]]\nclearance = 0.3\nmin_width = 0.25\nconnect = \"solid\"\npriority = 1\n",
+         "# 3.3 V again on B.Cu, over the logic area. The signals routed on In2.Cu cut the pour there into\n"
+         "# pieces; every 3.3 V via reaches both pours, and together they hold. A corridor along the\n"
+         "# keep-alive net is left out: there the ground pour of B.Cu stays, on both sides of it.",
+         "[[zone]]\nnet = \"3V3\"\nlayers = [\"B.Cu\"]\n"
+         "outline = [[0.5, 16.0], [9.5, 16.0], [9.5, 45.3], [103.9, 45.3], [103.9, 5.0], [113.5, 5.0], [113.5, 109.5], "
+         "[0.5, 109.5], [0.5, 80.6], [90.5, 80.6], [90.5, 89.6], [94.3, 89.6], [94.3, 98.9], [98.5, 98.9], [98.5, 76.6], "
+         "[0.5, 76.6]]\nclearance = 0.3\nmin_width = 0.25\nconnect = \"solid\"\npriority = 1\n",
          "# Shunt return: In2.Cu under the triacs. Every A1 terminal drops into it through two vias.",
          zone("/ISNS", ["In2.Cu"], rect=(34.6, 18.6, 103.3, 40.1), clearance=0.5, min_width=0.3, connect="solid",
               priority=2),
@@ -682,6 +689,14 @@ hand = [
     track(["U1.7", "C4.1"], width=0.3),
     track(["L1.1", [15.5, 33.05], [16.95, 34.5], [16.95, 36.3], "R6.1"], width=0.25,
           comment="Switch node to the ripple resistor R6, which is at the feedback pin."),
+    track(["U1.5", [19.4, 35.65], [21.925, 35.65], "C8.2"], width=0.2,
+          comment="Feedback node, ripple network and the RON resistor: short, and written out."),
+    track(["C8.2", "R5.1"], width=0.2),
+    track(["R5.1", "R4.2"], width=0.2),
+    track(["R6.2", "C7.1"], width=0.2),
+    track(["R6.2", "C8.1"], width=0.2),
+    track(["R4.1", "R3.2"], width=0.2),
+    track(["U1.4", [24.925, 35.6], "R2.1"], width=0.2),
     track(["L1.2", "D25.1"], width=2.0, comment="V_BUCK: the output pad of L1 to the clamp D25 and to C6 and C5."),
     track(["L1.2", [10.925, 28.0], "C6.1"], width=1.1),
     track(["L1.2", [11.5, 28.0], [15.3, 28.0], "C5.1"], width=0.5),
@@ -734,6 +749,13 @@ more = [
           width=0.25, via=(0.6, 0.3)),
     track(["R29.1", [96.5, 87.6]], width=0.25),
     track(["R89.1", {"via": [44.2, 78.6]}], width=0.25, via=(0.6, 0.3)),
+    "# The two neighbours of the keep-alive pin on the module edge. ENC_B (pin 9) comes up under the\n"
+    "# encoder, through the 0.6 mm gaps between its lands, and reaches its pin from the left. BTN_BACK\n"
+    "# (pin 11) leaves under the module to a via; the autorouter takes it on from there. Both stay\n"
+    "# 1 mm from the keep-alive stub and its via.",
+    track(["R70.2", "C40.1"], width=0.2),
+    track(["C40.1", [90.93, 77.4], [90.2, 78.13], [88.45, 78.13], [88.45, 97.9], [88.9, 98.35], "U4.9"], width=0.2),
+    track(["U4.11", [95.2, 95.5], {"via": [100.4, 95.5]}], width=0.2, via=(0.6, 0.3)),
     "# Detector A: pump, reservoir and comparator input, by hand so that each node stays short.",
     track(["R29.2", [99.6, 88.4], [103.9, 88.4], "C22.1"], width=0.3),
     track(["C22.2", "D7.3"], width=0.3),
@@ -816,14 +838,14 @@ more += [
     "# From the series resistors at the amplifier on B.Cu, east along y = 67, south of everything the\n"
     "# keep-alive touches, north under the comparator block and the module to pins 39 and 38. The\n"
     "# filter capacitors C30 and C31 sit on the way.",
-    track(["R46.2", {"via": [38.5, 67.4]}, [38.85, 67.75], [107.6, 67.75], [108.0, 68.15], [108.0, 107.24], [110.3, 107.24]],
+    track(["R46.2", {"via": [33.6, 67.0]}, [33.85, 66.75], [109.2, 66.75], [109.6, 67.15], [109.6, 107.24], [110.3, 107.24]],
           width=0.2, via=(0.6, 0.3)),
     track(["U4.39", {"via": [110.3, 107.24]}], width=0.2, via=(0.6, 0.3)),
-    track(["C30.1", {"via": [108.0, 86.3]}], width=0.2, via=(0.6, 0.3)),
-    track(["R47.2", {"via": [34.95, 67.55]}, [35.75, 66.75], [109.2, 66.75], [109.6, 67.15], [109.6, 105.97], [110.3, 105.97]],
+    track(["C30.1", {"via": [109.6, 86.3]}], width=0.2, via=(0.6, 0.3)),
+    track(["R47.2", {"via": [42.6, 68.0]}, [42.85, 67.75], [107.6, 67.75], [108.0, 68.15], [108.0, 105.97]],
           width=0.2, via=(0.6, 0.3)),
-    track(["U4.38", {"via": [110.3, 105.97]}], width=0.2, via=(0.6, 0.3)),
-    track(["C31.1", {"via": [109.6, 86.3]}], width=0.2, via=(0.6, 0.3)),
+    track(["U4.38", {"via": [108.0, 105.97]}], width=0.2, via=(0.6, 0.3)),
+    track(["C31.1", {"via": [108.0, 86.3]}], width=0.2, via=(0.6, 0.3)),
     "# Flow input: from R79 up the right edge on B.Cu, round the top of the ADC lines under the module,\n"
     "# and down to module pin 5.",
     track(["R79.2", {"via": [112.7, 53.4]}, [112.7, 107.6], [112.3, 108.0], [97.4, 108.0], [97.0, 107.6], [97.0, 104.2]],
@@ -950,12 +972,14 @@ TAIL = '''
 [route]
 layers = ["F.Cu", "In2.Cu", "B.Cu"]   # In2.Cu is also the 3.3 V pour: what is routed there cuts into it
 plane_layers = ["In2.Cu"]             # for the routing report: a track here is a slot in a pour
+clearance_margin = 0.01               # the autorouter works to 0.01 mm more than DRC checks
 # Nets the autorouter must leave alone: they connect through planes, pours or hand-routed copper.
 exclude = ["GND", "3V3", "/ISNS", "/OUT_*", "/*/T2", "/*/SNB", "/AC_L_IN", "/AC_N", "/AC_L", "/COM",
            "/Power/VRECT", "VIN_DC", "/Power/VIN_U1", "/Power/UVLO", "/Power/SW", "/Power/BST", "/KA",
            "/Failsafe/KA_N0", "/Failsafe/KA_N1", "/KA_N2", "/Failsafe/KA_INP",
            "/TFT_CS", "/TFT_MOSI", "/TFT_SCLK", "/TFT_DC", "/TFT_RST", "/TFT_BL", "/Display/TFT_LEDA",
-           "/Display/TFT_LEDK", "/USB_DP_MCU", "/USB_DM_MCU", "/ADC_LO", "/ADC_HI", "/SENS_FLOW", "/*/G", "/*/OGT", "/*/OLA", "/*/LEDA"]
+           "/Display/TFT_LEDK", "/USB_DP_MCU", "/USB_DM_MCU", "/ADC_LO", "/ADC_HI", "/SENS_FLOW", "/ENC_B",
+           "/Power/FB", "/Power/RIP", "/Power/FB_MID", "/Power/RON", "/*/G", "/*/OGT", "/*/OLA", "/*/LEDA"]
 
 # In1.Cu is the ground plane. Freerouting is told so in the Specctra file, as a power layer with a
 # plane: the "routable" flag of its settings is not obeyed. The build fails if a track is on it.
@@ -1023,6 +1047,63 @@ skip = ["J7.8", "J7.9"]     # joined to C38 by a track
 within = [[0.9, 45.7, 113.1, 109.1], [104.4, 5.4, 113.1, 45.7], [0.9, 16.4, 9.1, 45.7]]
 
 @COPPER@
+
+# Ground vias along the keep-alive corridor, 1.5 mm from the track: they tie the ground pour that
+# runs on both sides of it on B.Cu to the ground plane.
+[[via]]
+net = "GND"
+at = [50, 80.1]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [58, 80.1]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [66, 80.1]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [83.75, 80.1]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [86.25, 80.1]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [58, 77.1]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [66.5, 77.1]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [70, 77.1]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [85, 77.1]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [91, 83.5]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [94.05, 83]
+size = [0.6, 0.3]
 
 # No other track or via within 1 mm of the keep-alive net (hardware design, section 8.5).
 [[guard]]

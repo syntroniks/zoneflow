@@ -74,6 +74,16 @@ def test_no_pattern_changes_nothing(tmp_path):
     assert f.read_text() == TEXT
 
 
+def test_clearances_get_a_margin(tmp_path):
+    f = tmp_path / "a.dsn"
+    f.write_text(TEXT.replace("(width 200)\n      )\n    )\n  )\n  (wiring", "(width 200)\n        (clearance 200)\n"
+                              "        (clearance 50 (type smd_smd))\n      )\n    )\n  )\n  (wiring"))
+    assert dsn.widen_clearances(f, 0.01) == 1
+    out = f.read_text()
+    assert "(clearance 210)" in out and "(clearance 50 (type smd_smd))" in out
+    assert dsn.widen_clearances(f, 0.0) == 0
+
+
 def test_a_plane_layer_gets_its_type_and_its_plane(tmp_path):
     f = tmp_path / "a.dsn"
     f.write_text(TEXT)
