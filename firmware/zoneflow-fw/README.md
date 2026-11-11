@@ -93,6 +93,24 @@ runs every test through CTest. Extra arguments go to `ctest`. The suites
 cover the core and the display logic (`ui_*_test.cpp`); the display tests
 need no LVGL.
 
+## Run the system soak simulation
+
+`test/soak/` runs the controller core, output stage, persistence, history,
+REST API and MQTT command path for simulated weeks against the simulated
+rev A board and a model of the world (faults, restarts, clock trouble,
+users), and checks safety and schedule invariants on every simulated tick.
+A second rig runs the ESPHome supervisor glue. Deterministic from a seed.
+
+```sh
+firmware/zoneflow-fw/test/soak/run.sh --ci          # the subset CI runs, ASan and UBSan
+firmware/zoneflow-fw/test/soak/run_long.sh          # the long run, about two hours on 16 cores
+firmware/zoneflow-fw/test/soak/run.sh --mode chaos --seed 17 --days 30 --shrink
+```
+
+[`test/soak/README.md`](test/soak/README.md) lists the world model, the
+invariants and the run sizes; firmware architecture section 22 what the
+runs found.
+
 ## Format
 
 ```sh
@@ -117,6 +135,7 @@ CI checks formatting with the same clang-format version.
 | `sim/` | Desktop simulator of the display and the screenshot generator. |
 | `main/app_main.cpp` | Wires everything together and starts the tasks. |
 | `test/host/` | GoogleTest suites and fakes for the core and the display logic. |
+| `test/soak/` | System soak simulation of both firmwares on the simulated board (`zf_soak`). |
 | `test/vectors/` | Schedule cases shared by the C++ scheduler test and the web UI's preview. |
 | `web/` | Browser UI (Preact, TypeScript), mock controller and its tests. |
 | `test/broker/` | Optional broker test: the MQTT logic and the core against a local Mosquitto (`run.sh`; not in CI). |
@@ -125,7 +144,10 @@ CI checks formatting with the same clang-format version.
 ## What is verified
 
 - Host tests: `test/host/run.sh`, all suites pass under ASan and UBSan.
-- Display simulator: `sim/run.sh --screenshots <dir>` draws all 69 scenes.
+- System soak simulation: `test/soak/run.sh --ci` in CI. What the long run
+  covered and found is in firmware architecture section 22. It is a
+  simulation on a model of the board, not a bench check.
+- Display simulator: `sim/run.sh --screenshots <dir>` draws all 75 scenes.
   The pictures in `docs/design/display-ui/` are its output.
 - `idf.py build` with ESP-IDF v5.5.6 for esp32s3 completes with no warnings
   in ZoneFlow code.
