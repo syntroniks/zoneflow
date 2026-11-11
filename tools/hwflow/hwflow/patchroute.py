@@ -14,12 +14,17 @@ The result is written as ``[[patch]]`` tracks, in ``design/patches.toml``,
 with the hash of the routing session they were made for. ``pcbbuild finish``
 lays them after it has imported that session, and refuses them for any other.
 
+A patch of one net can cut the pour of another in two. So the work is done in
+passes: the first on the board without patches; then, with ``--add``, on the
+board with the patches laid, for what they opened. ``--check`` only says
+whether the report still has something open.
+
 It is a small tool for the last few connections. It does not rip up, it does
 not optimise, and it knows nothing of signal quality: what it routes is listed
 in the routing report for a person to look at.
 
 Runs under KiCad's Python:
-``python -m hwflow.patchroute <project> <design> --drc <drc.json>``.
+``python -m hwflow.patchroute <project> <design> --drc <drc.json> [--add | --check]``.
 """
 
 from __future__ import annotations
@@ -38,6 +43,7 @@ MARGIN = 0.03        # mm added to every clearance: the grid's own error
 WINDOW = 9.0         # mm round the two ends of a connection
 VIA = (0.6, 0.3)     # diameter, drill
 VIA_COST = 60        # cells: a via is worth 3 mm of track
+HOLE_GAP = 0.3       # mm between the walls of two holes
 SQRT2 = math.sqrt(2.0)
 
 
@@ -51,6 +57,7 @@ class Grid:
         self.layers = layers
         self.blocked = {name: bytearray(self.w * self.h) for name in layers}
         self.no_via = bytearray(self.w * self.h)
+        self.own_vias: set = set()       # cells where a via of the net already is: change layer there for free
 
     def cell(self, x, y):
         return int(round((x - self.x0) / GRID)), int(round((y - self.y0) / GRID))
@@ -135,11 +142,12 @@ def search(grid: Grid, starts, goals):
                 best[nxt] = c
                 came[nxt] = node
                 heapq.heappush(heap, (c + est(nxt), c, nxt))
-        if not grid.no_via[iy * w + ix]:
+        have = (ix, iy) in grid.own_vias
+        if have or not grid.no_via[iy * w + ix]:
             for other in range(len(names)):
-                if other != layer and not blocked[other][iy * w + ix]:
+                if other != layer and (have or not blocked[other][iy * w + ix]):
                     nxt = (other, ix, iy)
-                    c = cost + VIA_COST
+                    c = cost + (1 if have else VIA_COST)
                     if c < best.get(nxt, 1e18):
                         best[nxt] = c
                         came[nxt] = node
@@ -160,7 +168,7 @@ def reach_of(grid: Grid, starts) -> tuple[int, tuple]:
             if 0 <= nx < w and 0 <= ny < h and not blocked[layer][ny * w + nx] and (layer, nx, ny) not in seen:
                 seen.add((layer, nx, ny))
                 todo.append((layer, nx, ny))
-        if not grid.no_via[iy * w + ix]:
+        if (ix, iy) in grid.own_vias or not grid.no_via[iy * w + ix]:
             for other in range(len(blocked)):
                 if other != layer and not blocked[other][iy * w + ix] and (other, ix, iy) not in seen:
                     seen.add((other, ix, iy))
@@ -170,6 +178,77 @@ def reach_of(grid: Grid, starts) -> tuple[int, tuple]:
     xs, ys = [n[1] for n in seen], [n[2] for n in seen]
     a, b = grid.point(min(xs), min(ys)), grid.point(max(xs), max(ys))
     return len(seen), (a[0], a[1], b[0], b[1], sorted({grid.layers[n[0]] for n in seen}))
+
+
+def _free(buf, w: int, a, c) -> bool:
+    """Whether the straight run of cells from a to c, along an axis or a diagonal, is free."""
+    dx, dy = (c[0] > a[0]) - (c[0] < a[0]), (c[1] > a[1]) - (c[1] < a[1])
+    x, y = a
+    for _ in range(max(abs(c[0] - a[0]), abs(c[1] - a[1]))):
+        nx, ny = x + dx, y + dy
+        if buf[ny * w + nx] or (dx and dy and (buf[y * w + nx] or buf[ny * w + x])):
+            return False
+        x, y = nx, ny
+    return True
+
+
+def _bends(a, c) -> list[list]:
+    """The ways from a to c with at most one bend: no middle point, or the diagonal first, or the straight first."""
+    dx, dy = c[0] - a[0], c[1] - a[1]
+    d = min(abs(dx), abs(dy))
+    if d == 0 or abs(dx) == abs(dy):
+        return [[]]
+    sx, sy = (dx > 0) - (dx < 0), (dy > 0) - (dy < 0)
+    return [[(a[0] + sx * d, a[1] + sy * d)], [(c[0] - sx * d, c[1] - sy * d)]]
+
+
+def straighten(buf, w: int, cells: list) -> list:
+    """The corner points of a path of cells, with the steps of the search pulled straight.
+
+    A* returns one of many paths of equal length, and it is a staircase. From
+    each corner this takes the farthest cell of the path that one bend
+    reaches over free cells, so the track runs straight and turns by 45
+    degrees. It only ever uses cells the search could have used, so it keeps
+    the same clearances.
+    """
+    def joins(i, j):
+        for mid in _bends(cells[i], cells[j]):
+            pts = [cells[i], *mid, cells[j]]
+            if all(_free(buf, w, p, q) for p, q in zip(pts, pts[1:])):
+                return mid
+        return None
+
+    out, i, last = [cells[0]], 0, len(cells) - 1
+    while i < last:
+        j, mid = i + 1, []                        # the next cell always joins
+        step, lo, hi = 2, i + 1, i + 1
+        while j < last:                           # look twice as far each time, until it does not join
+            k = min(i + step, last)
+            got = joins(i, k)
+            if got is None:
+                hi = k
+                break
+            lo, j, mid = k, k, got
+            step *= 2
+        while hi - lo > 1:                        # then halve the stretch between what joined and what did not
+            k = (lo + hi) // 2
+            got = joins(i, k)
+            if got is None:
+                hi = k
+            else:
+                lo, j, mid = k, k, got
+        out += [*mid, cells[j]]
+        i = j
+    corners = [out[0]]
+    for a, b, c in zip(out, out[1:], out[2:]):
+        if b == a:
+            continue
+        cross = (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0])
+        if cross != 0 or (b[0] - a[0]) * (c[0] - b[0]) + (b[1] - a[1]) * (c[1] - b[1]) < 0:
+            corners.append(b)
+    if len(out) > 1:
+        corners.append(out[-1])
+    return corners
 
 
 def to_tracks(grid: Grid, path, net: str, width: float) -> list[dict]:
@@ -184,15 +263,10 @@ def to_tracks(grid: Grid, path, net: str, width: float) -> list[dict]:
     runs.append(cur)
     out = []
     for i, run in enumerate(runs):
-        pts = [run[0]]
-        for a, b, c in zip(run, run[1:], run[2:]):
-            if (b[1] - a[1], b[2] - a[2]) != (c[1] - b[1], c[2] - b[2]):
-                pts.append(b)
-        if len(run) > 1:
-            pts.append(run[-1])
-        points = [list(grid.point(p[1], p[2])) for p in pts]
+        pts = straighten(grid.blocked[grid.layers[run[0][0]]], grid.w, [(n[1], n[2]) for n in run])
+        points = [list(grid.point(p[0], p[1])) for p in pts]
         entry = {"layer": grid.layers[run[0][0]], "net": net, "width": width, "stay": True, "points": points}
-        if i < len(runs) - 1:
+        if i < len(runs) - 1 and (run[-1][1], run[-1][2]) not in grid.own_vias:
             if len(points) == 1:
                 points.append(list(points[0]))
             x, y = points[-1]
@@ -218,14 +292,16 @@ def read_board(pcb_path: Path, origin, height, y_up: bool):
     copper_ids = list(board.GetEnabledLayers().CuStack())
     names = {i: str(board.GetLayerName(i)) for i in copper_ids}
     every = frozenset(names.values())
-    items = []                                # (net, layers, shape, uuid)
+    items = []                                # (net, layers, shape, uuid, radius of its hole or 0)
     for t in board.GetTracks():
         if t.Type() == pcbnew.PCB_VIA_T:
             radius = pcbnew.ToMM(t.GetWidth(pcbnew.F_Cu)) / 2
-            items.append((t.GetNetname(), every, ("circle", xy(t.GetPosition()), radius), t.m_Uuid.AsString()))
+            items.append((t.GetNetname(), every, ("circle", xy(t.GetPosition()), radius), t.m_Uuid.AsString(),
+                          pcbnew.ToMM(t.GetDrill()) / 2))
         else:
             items.append((t.GetNetname(), frozenset([names[t.GetLayer()]]),
-                          ("seg", xy(t.GetStart()), xy(t.GetEnd()), pcbnew.ToMM(t.GetWidth())), t.m_Uuid.AsString()))
+                          ("seg", xy(t.GetStart()), xy(t.GetEnd()), pcbnew.ToMM(t.GetWidth())), t.m_Uuid.AsString(),
+                          0.0))
     for fp in board.GetFootprints():
         for p in fp.Pads():
             b = p.GetBoundingBox()
@@ -234,8 +310,9 @@ def read_board(pcb_path: Path, origin, height, y_up: bool):
             layers = frozenset(n for i, n in names.items() if p.IsOnLayer(i))
             if p.GetAttribute() == pcbnew.PAD_ATTRIB_NPTH or not layers:
                 layers = every                 # a hole: nothing passes on any layer
+            hole = max(pcbnew.ToMM(p.GetDrillSize().x), pcbnew.ToMM(p.GetDrillSize().y)) / 2
             items.append((p.GetNetname(), layers, ("rect", (min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1))),
-                          p.m_Uuid.AsString()))
+                          p.m_Uuid.AsString(), hole))
     areas = []                                # (layers, outline, tracks forbidden, vias forbidden, net)
     for z in board.Zones():
         o = z.Outline()
@@ -296,9 +373,19 @@ def build_grid(items, areas, clearance, net, width, window, layers, extra, pours
         return bx1 + r >= grid.x0 and bx0 - r <= x1 and by1 + r >= grid.y0 and by0 - r <= y1
 
     mine = []
-    for other, item_layers, shape, _ in items:
+    for other, item_layers, shape, _, hole in items:
+        if hole > 0:
+            # hole to hole, whatever the nets: a new via keeps its distance from every hole
+            centre = shape[1] if shape[0] == "circle" else ((shape[1][0] + shape[1][2]) / 2,
+                                                            (shape[1][1] + shape[1][3]) / 2)
+            if near(("circle", centre, 0.0), hole + 1.0):
+                grid._disc(grid.no_via, centre[0], centre[1], hole + VIA[1] / 2 + HOLE_GAP + MARGIN)
         if other == net:
             mine.append((item_layers, shape))
+            if shape[0] == "circle" and hole > 0 and near(shape, 0):
+                cell = grid.cell(*shape[1])
+                if 0 <= cell[0] < grid.w and 0 <= cell[1] < grid.h:
+                    grid.own_vias.add(cell)
             continue
         c = reach(other)
         if not near(shape, c + via_r):
@@ -379,8 +466,16 @@ def main(argv=None) -> int:
     ap.add_argument("--drc", required=True, help="DRC report (JSON) of the routed board, with its zones filled")
     ap.add_argument("--out", help="default: <design>/patches.toml")
     ap.add_argument("--first", help="nets to route first, in this order, comma-separated")
+    ap.add_argument("--add", action="store_true",
+                    help="the board has the patches of the file laid: keep them and add what is still open")
+    ap.add_argument("--check", action="store_true", help="route nothing: exit 0 if the report has nothing open, else 1")
     args = ap.parse_args(argv)
     project, design = Path(args.project_dir), Path(args.design_dir)
+    report = json.loads(Path(args.drc).read_text(encoding="utf-8"))
+    if args.check:
+        n = len(report.get("unconnected_items", []))
+        print(f"patch router: {n} connections open" if n else "patch router: nothing is open")
+        return 1 if n else 0
     cfg = tomllib.loads((design / "board.toml").read_text(encoding="utf-8"))
     name = json.loads((project / "build" / "model.json").read_text(encoding="utf-8"))["name"]
     b = cfg["board"]
@@ -389,15 +484,20 @@ def main(argv=None) -> int:
               if layer not in {p["layer"] for p in route.get("plane", [])}]
     items, areas, clearance, class_width = read_board(project / f"{name}.kicad_pcb", b["origin"], b["size"][1],
                                                       bool(b.get("y_up", False)))
-    by_uuid = {u: (net, item_layers, shape) for net, item_layers, shape, u in items}
+    by_uuid = {u: (net, item_layers, shape) for net, item_layers, shape, u, _ in items}
     # nets that ask for more room than their class: (net, from whom, except whom, distance)
     extra = [(g["net"], ["*"], [], float(g["distance"])) for g in cfg.get("guard", [])]
     extra += [(k["net"], k["from"], k.get("except", []), float(k["distance"])) for k in cfg.get("keepaway", [])]
     pours = {p["net"] for p in cfg.get("plane", [])}
     ox, oy = b["origin"]
 
-    report = json.loads(Path(args.drc).read_text(encoding="utf-8"))
+    out = Path(args.out) if args.out else design / "patches.toml"
     entries, notes, failed = [], [], []
+    if args.add and out.exists():
+        text = out.read_text(encoding="utf-8")
+        entries = tomllib.loads(text).get("patch", [])
+        notes = [line[2:] for line in text.splitlines() if line.startswith("# ") and " mm wide" in line]
+    kept = len(notes)
     first = args.first.split(",") if args.first else []
 
     def rank(u):
@@ -449,14 +549,15 @@ def main(argv=None) -> int:
         for e in done:
             pts = [x["via"] if isinstance(x, dict) else x for x in e["points"]]
             for p, q in zip(pts, pts[1:]):
-                items.append((net, frozenset([e["layer"]]), ("seg", tuple(p), tuple(q), e["width"]), ""))
+                items.append((net, frozenset([e["layer"]]), ("seg", tuple(p), tuple(q), e["width"]), "", 0.0))
             if "via" in e:
-                items.append((net, frozenset(layers) | {"In1.Cu"}, ("circle", tuple(pts[-1]), VIA[0] / 2), ""))
+                items.append((net, frozenset(layers) | {"In1.Cu"}, ("circle", tuple(pts[-1]), VIA[0] / 2), "",
+                              VIA[1] / 2))
     stamp = project / "route" / f"{name}.dsn.sha256"
     session = stamp.read_text().strip() if stamp.exists() else ""
-    out = Path(args.out) if args.out else design / "patches.toml"
     out.write_text(toml(entries, session, notes), encoding="utf-8")
-    print(f"patch router: {len(notes)} connections closed with {len(entries)} track runs -> {out}")
+    print(f"patch router: {len(notes) - kept} connections closed" + (f", {kept} kept" if args.add else "")
+          + f"; {len(entries)} track runs -> {out}")
     for f in failed:
         sys.stderr.write(f"patch router: FAILED {f}\n")
     return 1 if failed else 0
