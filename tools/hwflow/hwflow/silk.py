@@ -29,10 +29,19 @@ import shutil
 import subprocess
 from pathlib import Path
 
-import pcbnew
+try:
+    import pcbnew
+except ImportError:          # crowded_texts and its test need no KiCad
+    pcbnew = None
 
 SILK_CHECKS = {"silk_overlap", "silk_over_copper", "silk_edge_clearance"}
-MAX_ROUNDS = 30
+MAX_ROUNDS = 80
+# Two texts whose boxes come closer than this read as one word ("TP6TP21", "BOOTSW2"). DRC measures
+# stroke against stroke and is content when they do not touch, so this check is made here.
+TEXT_GAP_MM = 0.5
+# A text keeps this distance from the board outline. A designator that the cleaner had moved beyond
+# the edge is not printed at all, and DRC did not report the ones that lay wholly outside.
+TEXT_EDGE_MM = 0.3
 
 
 class SilkError(Exception):
@@ -50,6 +59,53 @@ def _extent(fp) -> tuple[int, int, int, int]:
         boxes = [p.GetBoundingBox() for p in fp.Pads()]
     return (min(b.GetLeft() for b in boxes), min(b.GetTop() for b in boxes),
             max(b.GetRight() for b in boxes), max(b.GetBottom() for b in boxes))
+
+
+def crowded_texts(boxes: list[tuple[str, int, bool, float, float, float, float]], gap: float) -> list[tuple[str, str]]:
+    """Pairs of texts on one layer that read as one word, or lie on each other.
+
+    ``boxes`` holds (id, layer, upright, left, top, right, bottom) for every visible text; ``upright``
+    is true for a text turned by 90 degrees. Two texts written in the same direction are a pair when
+    they stand on one line (their boxes share half the height of the lower one) and the space between
+    them along the line is under ``gap``. Lines one above the other may be close. Any two texts whose
+    boxes overlap are a pair. Lengths in one unit.
+    """
+    pairs = []
+    for i, (a, la, ua, ax0, ay0, ax1, ay1) in enumerate(boxes):
+        for b, lb, ub, bx0, by0, bx1, by1 in boxes[i + 1:]:
+            if la != lb:
+                continue
+            gap_x, gap_y = max(ax0, bx0) - min(ax1, bx1), max(ay0, by0) - min(ay1, by1)     # negative: overlap
+            if gap_x < -0.05 and gap_y < -0.05:
+                pairs.append((a, b))
+            elif ua == ub:
+                along, across = (gap_y, gap_x) if ua else (gap_x, gap_y)
+                low = min(ax1 - ax0, bx1 - bx0) if ua else min(ay1 - ay0, by1 - by0)
+                if along < gap and -across >= 0.5 * low:
+                    pairs.append((a, b))
+    return pairs
+
+
+def off_board(boxes: list[tuple[str, int, bool, float, float, float, float]],
+              outline: tuple[float, float, float, float], margin: float) -> list[str]:
+    """Texts whose box is not inside the rectangle ``outline`` (left, top, right, bottom) by ``margin``."""
+    x0, y0, x1, y1 = outline
+    return [t for t, _, _, left, top, right, bottom in boxes
+            if left < x0 + margin or top < y0 + margin or right > x1 - margin or bottom > y1 - margin]
+
+
+def _text_boxes(board) -> list[tuple[str, int, bool, float, float, float, float]]:
+    out = []
+    items = [fp.Reference() for fp in board.GetFootprints()]
+    items += [d for d in board.GetDrawings() if d.GetClass() == "PCB_TEXT"]
+    for t in items:
+        if t.GetLayer() not in (pcbnew.F_SilkS, pcbnew.B_SilkS) or not t.IsVisible():
+            continue
+        bb = t.GetBoundingBox()
+        upright = abs(t.GetTextAngleDegrees() % 180 - 90) < 1
+        out.append((_uuid(t), t.GetLayer(), upright, pcbnew.ToMM(bb.GetLeft()), pcbnew.ToMM(bb.GetTop()),
+                    pcbnew.ToMM(bb.GetRight()), pcbnew.ToMM(bb.GetBottom())))
+    return out
 
 
 def candidates(fp, size_mm: float = 1.0) -> list[tuple[int, int, float]]:
@@ -104,6 +160,15 @@ def clean(board, pcb_path: Path, work_dir: Path, optional: set[str] = frozenset(
         found = [v for v in json.loads(report.read_text(encoding="utf-8")).get("violations", [])
                  if v["type"] in SILK_CHECKS]
         report.unlink()
+        # Texts that DRC lets stand flush against each other are findings too, of the same shape.
+        boxes = _text_boxes(board)
+        found += [{"type": "text_boxes", "items": [{"uuid": a, "description": "silkscreen text"},
+                                                   {"uuid": b, "description": "silkscreen text"}]}
+                  for a, b in crowded_texts(boxes, TEXT_GAP_MM)]
+        edge = board.GetBoardEdgesBoundingBox()
+        outline = tuple(pcbnew.ToMM(v) for v in (edge.GetLeft(), edge.GetTop(), edge.GetRight(), edge.GetBottom()))
+        found += [{"type": "text_off_board", "items": [{"uuid": t, "description": "silkscreen text beyond the edge"}]}
+                  for t in off_board(boxes, outline, TEXT_EDGE_MM)]
         if not found:
             break
 
@@ -140,8 +205,9 @@ def clean(board, pcb_path: Path, work_dir: Path, optional: set[str] = frozenset(
                     drop[opt[-1]] = texts[opt[-1]]
                 else:
                     pos = v["items"][0].get("pos", {})
-                    errors.append(f"{v['type']}: " + "; ".join(i["description"] for i in v["items"])
-                                  + f" at page ({pos.get('x')}, {pos.get('y')})")
+                    errors.append(f"{v['type']}: " + "; ".join(
+                        f"{i['description']} '{texts[i['uuid']].GetText()}'" if i["uuid"] in texts else i["description"]
+                        for i in v["items"]) + f" at page ({pos.get('x')}, {pos.get('y')})")
             elif len(g_hit) == 2:
                 # Two outlines: the one of the later reference goes.
                 u = max(g_hit, key=lambda x: (graphics[x][0].GetReference(), x))

@@ -778,7 +778,8 @@ class Builder:
             item.SetLayer(self.layer(t.get("layer", "F.SilkS")))
             item.SetPosition(self.pt(t["at"][0], t["at"][1]))
             size = mm(t.get("size", 1.0))
-            item.SetTextSize(pcbnew.VECTOR2I(size, size))
+            # "width" narrows the letters and leaves their height, for a label that has to fit a pitch
+            item.SetTextSize(pcbnew.VECTOR2I(mm(t["width"]) if "width" in t else size, size))
             item.SetTextThickness(mm(t.get("thickness", 0.15)))
             if item.GetLayer() in (pcbnew.B_SilkS, pcbnew.B_Cu, pcbnew.B_Fab):
                 item.SetMirrored(True)
