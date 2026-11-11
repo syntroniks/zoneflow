@@ -47,6 +47,9 @@ NETCLASS = {
     # Supply rails.
     "Power": "V_BUCK V5 VBUS 3V3 V_DRV SP_OUT QW_3V3 VDD_RTC TFT_LEDA TFT_LEDK RLY_A RLY_B",
     "USB": "USB_DP USB_DM USB_DP_MCU USB_DM_MCU",
+    # High-impedance nodes of the two keep-alive detectors: a leak from a rail onto one of them holds
+    # a detector on (hardware design, section 8.5, layout rules 2 and 3). Wide clearance for their tracks.
+    "HiZ": "KA_N1 KA_N2 KA_INP RLY_G2 KB_N1",
 }
 _CLASS_OF = {net: cls for cls, nets in NETCLASS.items() for net in nets.split()}
 

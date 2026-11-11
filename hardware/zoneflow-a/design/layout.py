@@ -87,6 +87,14 @@ clearance = 0.2
 via_diameter = 0.6
 via_drill = 0.3
 
+# The high-impedance nodes of the two keep-alive detectors. Nothing is routed within 0.6 mm of
+# them; design/rules.kicad_dru lets their own pads sit at the usual distance.
+[netclass.HiZ]
+track_width = 0.25
+clearance = 0.6
+via_diameter = 0.6
+via_drill = 0.3
+
 [board]
 origin = [90.0, 50.0]    # where the outline's top-left corner sits on the KiCad page
 size = [114.0, 110.0]    # mechanical contract, board.outline
@@ -216,6 +224,7 @@ at("C9", 37.0, 37.95, 0)
 block("Qwiic: ESD array and PTC at the connector.")
 at("C17", 111.3, 7.3, 0)
 at("F2", 106.05, 16.8, 0)
+at("R24", 104.6, 14.8, 0)       # Qwiic pull-up; the other one, R23, is at the module
 at("U9", 110.7, 17.35, 0)
 block("Sensor terminals: TVS and series resistor of each input, sensor supply TVS, pull-ups.")
 at("R81", 104.86, 21.55, 90)
@@ -245,6 +254,8 @@ block("Current-sense amplifier. Channel A (low range) on the left, channel B on 
 at("U8", 35.0, 62.6, 90)
 at("C25", 35.0, 57.65, 0)
 col("R39 C26", 30.2, 66.0, -1.6)
+at("R47", 33.2, 67.55, 0)       # ADC series resistors, at the amplifier outputs
+at("R46", 36.7, 67.55, 0)
 at("R38", 30.2, 62.8, 180)     # shunt side towards the amplifier: Kelvin tracks end here
 at("R40", 30.2, 61.2, 180)
 col("R41 C27", 30.2, 59.6, -1.6)
@@ -284,16 +295,18 @@ at("R34", 107.2, 84.15, 270)
 at("C19", 109.2, 84.15, 90)
 at("R53", 110.7, 84.15, 270)
 at("R36", 112.2, 84.15, 270)
-row("R50 R49 R48", 95.0, 78.4, 3.3)
-row("R51 C32", 95.0, 76.35, 3.3)
+row("R48 R49 R50", 95.0, 78.4, 3.3)      # 3.3 V end at the left, away from the reservoir test pad
+at("C32", 98.3, 76.35, 0)
+at("R51", 101.6, 76.35, 0)
 row("R52 C33", 95.0, 74.3, 3.3)
 at("R57", 108.9, 74.3, 0)
 at("R58", 111.9, 74.3, 180)
-at("TP9", 101.6, 76.1, 0)
-at("TP16", 112.0, 87.5, 0)     # AC_ZC: at the far side from the keep-alive
-block("Qwiic pull-ups, at module pins 24 and 25.")
-at("R23", 107.2, 88.2, 90)
-at("R24", 108.9, 88.2, 90)
+at("TP9", 95.2, 76.3, 0)
+at("TP16", 112.6, 71.5, 0)     # AC_ZC: at the far side from the keep-alive
+block("ADC filter capacitors. The two ADC lines come up under them on the bottom side on their way\nto module pins 38 and 39, 18 mm further on: there is no room beside those pins.")
+at("C30", 108.0, 88.2, 90)
+at("C31", 109.6, 88.2, 90)
+at("R23", 111.3, 88.2, 90)
 
 # ---- left of the module, top edge ---------------------------------------------------------------
 block("Left of the module, at the top edge: 3.3 V bulk and decoupling at pin 2, reset network and\nsupervisor at pin 3, ADC filters, encoder switch filter. Everything here is under 3.5 mm. The\ndisplay bus passes under the lower edge of this block on the bottom side.")
@@ -306,10 +319,6 @@ at("C54", 84.8, 103.6, 90)
 at("R66", 83.2, 103.6, 90)
 at("R71", 81.7, 103.6, 90)
 at("C41", 80.2, 103.6, 90)
-at("R46", 85.0, 106.8, 90)
-at("C30", 83.5, 106.8, 90)
-at("R47", 82.0, 106.8, 90)
-at("C31", 80.5, 106.8, 90)
 
 # ---- encoder ------------------------------------------------------------------------------------
 block("Encoder pull-ups and filters, below the encoder.")
@@ -332,9 +341,16 @@ at("TP23", 62.3, 76.3, 0)
 
 # ---- sensor input clamps ------------------------------------------------------------------------
 block("Sensor input clamps and filters, above the display cable.")
-row("D15 D16 D17", 60.2, 107.4, 4.0)
-row("C44 C45 C46", 60.1, 104.1, 4.0, rot=90)
-row("R76 R79 R82", 60.1, 101.05, 4.0, rot=90)
+at("D15", 60.2, 107.4, 0)
+at("D17", 68.2, 107.4, 0)
+at("C44", 60.1, 104.1, 90)
+at("C46", 68.1, 104.1, 90)
+at("R76", 60.1, 101.05, 90)
+at("R82", 68.1, 101.05, 90)
+block("Flow input clamp and filter, at the right edge. The flow signal is one of the nets that may not\ncome near the keep-alive: from here it goes up the right edge on the bottom side.")
+at("D16", 110.9, 49.2, 180)
+at("C45", 108.2, 51.7, 90)
+at("R79", 110.6, 52.6, 0)
 
 # ---- under the display --------------------------------------------------------------------------
 block("I/O expander with its pull-up and pull-down networks.")
@@ -377,7 +393,7 @@ block("Reset and boot buttons, boot pull-up, serial resistor, I2C and Qwiic pull
 at("SW1", 48.0, 105.5, 0)
 at("SW2", 48.0, 99.4, 0)
 at("R19", 42.4, 99.4, 90)
-at("R99", 42.4, 105.5, 90)
+at("R99", 77.6, 100.4, 0)       # boot-log series resistor, on the way to the debug pads
 row("R21 R22", 38.2, 77.6, 3.2)
 block("Status LED resistor, in the light-pipe strip beside the LED.")
 at("R20", 15.1, 42.0, 180)
@@ -748,27 +764,48 @@ DROP = {"TFT_CS": (72.6, 2, 86.18), "TFT_DC": (71.7, 3, 86.68), "TFT_SCLK": (70.
         "TFT_MOSI": (69.9, 5, 87.68), "TFT_RST": (69.0, 6, 88.18)}             # F.Cu x, connector pin, pin y
 bus = ["# Display bus: module pins 18 to 22 to J7, and the backlight line to R61. See the comment in layout.py."]
 for i, n in enumerate(BUS):
-    # under the module the six lanes are 0.4 mm apart: between the keep-alive guard and the thermal
-    # vias of the module's ground pad there is room for no more
-    vx, y1, x1, y2 = BUS_VIA_X[n], 93.2 + 0.4 * i, 97.45 + 0.4 * i, 98.6 + 0.4 * i
-    pts = [f"U4.{BUS_PIN[n]}", {"via": [vx, 92.4]}, [vx, y1], [x1, y1], [x1, y2]]
+    vx = BUS_VIA_X[n]
     if n == "TFT_BL":
-        # the backlight line: on along y = 101.5, down west of the bus vias, then under the buttons to R61
-        pts += [[77.4, y2], [77.4 - (102.0 - y2), 102.0], [68.0, 102.0], [67.5, 101.5], [67.5, 97.3], [67.0, 96.8],
-                [48.2, 96.8]]
+        # The backlight line goes round the far side of the module's ground pad and its thermal vias:
+        # between the keep-alive guard and those vias there is room for five lanes, not six. It
+        # joins the others as the top lane left of the module, runs on at y = 102, turns down west
+        # of the bus vias and passes under the buttons to R61.
+        pts = [f"U4.{BUS_PIN[n]}", {"via": [vx, 92.4]}, [vx, 102.6], [vx - 0.7, 103.3], [96.5, 103.3], [93.8, 100.6],
+               [78.6, 100.6], [77.2, 102.0], [68.0, 102.0], [67.5, 101.5], [67.5, 97.3], [67.0, 96.8], [48.2, 96.8]]
         bus.append(track(pts, width=0.2, via=(0.6, 0.3)))
         bus.append(track(["R61.1", [48.2, 94.2], {"via": [48.2, 96.8]}], width=0.2, via=(0.6, 0.3)))
         continue
+    # Under the module the five lanes are 0.4 mm apart, 1 mm clear of the keep-alive via on one side
+    # and 0.5 mm of the ground pad's thermal vias on the other.
+    y1, x1, y2 = 93.2 + 0.4 * i, 97.65 + 0.4 * i, 98.6 + 0.4 * i
+    pts = [f"U4.{BUS_PIN[n]}", {"via": [vx, 92.4]}, [vx, y1], [x1, y1], [x1, y2]]
     ys = SPREAD[n]
     fx, pin, py = DROP[n]
     # where this lane leaves the 0.4 mm pitch for the 1.0 mm pitch of the vias: the outer lanes first
-    x0 = 77.4 - 0.3 * (i if ys < y2 else 5 - i)
+    x0 = 77.4 - 0.3 * (i if ys < y2 else 4 - i)
     pts += [[x0, y2], [x0 - abs(y2 - ys), ys]]
     pts.append([fx, ys])
     bus.append(track(pts, width=0.2, via=(0.6, 0.3)))
     bus.append(track([f"J7.{pin}", [fx - 0.5, py], [fx, py + 0.5], {"via": [fx, ys]}], width=0.2, via=(0.6, 0.3)))
 more += bus
 more += [
+    "# ADC lines (hardware design, section 8.5: the current waveform may not come near the keep-alive).\n"
+    "# From the series resistors at the amplifier on B.Cu, east along y = 67, south of everything the\n"
+    "# keep-alive touches, north under the comparator block and the module to pins 39 and 38. The\n"
+    "# filter capacitors C30 and C31 sit on the way.",
+    track(["R46.2", {"via": [38.5, 67.4]}, [38.85, 67.75], [107.6, 67.75], [108.0, 68.15], [108.0, 107.24], [110.3, 107.24]],
+          width=0.2, via=(0.6, 0.3)),
+    track(["U4.39", {"via": [110.3, 107.24]}], width=0.2, via=(0.6, 0.3)),
+    track(["C30.1", {"via": [108.0, 86.3]}], width=0.2, via=(0.6, 0.3)),
+    track(["R47.2", {"via": [34.95, 67.55]}, [35.75, 66.75], [109.2, 66.75], [109.6, 67.15], [109.6, 105.97], [110.3, 105.97]],
+          width=0.2, via=(0.6, 0.3)),
+    track(["U4.38", {"via": [110.3, 105.97]}], width=0.2, via=(0.6, 0.3)),
+    track(["C31.1", {"via": [109.6, 86.3]}], width=0.2, via=(0.6, 0.3)),
+    "# Flow input: from R79 up the right edge on B.Cu, round the top of the ADC lines under the module,\n"
+    "# and down to module pin 5.",
+    track(["R79.2", {"via": [112.7, 53.4]}, [112.7, 107.6], [112.3, 108.0], [97.4, 108.0], [97.0, 107.6], [97.0, 104.2]],
+          width=0.2, via=(0.6, 0.3)),
+    track(["U4.5", [95.8, 103.43], {"via": [97.0, 104.2]}], width=0.2, via=(0.6, 0.3)),
     "# Display connector, open side: ground, 3.3 V, the backlight anode and cathode.",
     track(["J7.1", [56.6, 85.68], "C37.2"], width=0.25),
     track(["J7.12", {"via": [58.95, 91.25]}], width=0.25, via=(0.6, 0.3)),
@@ -898,9 +935,9 @@ layers = ["F.Cu", "In2.Cu", "B.Cu"]   # In1.Cu is the ground plane: the autorout
 # Nets the autorouter must leave alone: they connect through planes, pours or hand-routed copper.
 exclude = ["GND", "3V3", "/ISNS", "/OUT_*", "/*/T2", "/*/SNB", "/AC_L_IN", "/AC_N", "/AC_L", "/COM",
            "/Power/VRECT", "VIN_DC", "/Power/VIN_U1", "/Power/UVLO", "/Power/SW", "/Power/BST", "/KA",
-           "/Failsafe/KA_N0", "/Failsafe/KA_N1", "/Failsafe/KA_N2", "/Failsafe/KA_INP",
+           "/Failsafe/KA_N0", "/Failsafe/KA_N1", "/KA_N2", "/Failsafe/KA_INP",
            "/TFT_CS", "/TFT_MOSI", "/TFT_SCLK", "/TFT_DC", "/TFT_RST", "/TFT_BL", "/Display/TFT_LEDA",
-           "/Display/TFT_LEDK", "/USB_DP_MCU", "/USB_DM_MCU", "/*/G", "/*/OGT", "/*/OLA", "/*/LEDA"]
+           "/Display/TFT_LEDK", "/USB_DP_MCU", "/USB_DM_MCU", "/ADC_LO", "/ADC_HI", "/SENS_FLOW", "/*/G", "/*/OGT", "/*/OLA", "/*/LEDA"]
 
 [route.layer_cost]
 "In2.Cu" = 2.5              # In2.Cu is also the 3.3 V pour: use it only where it saves a long way round
@@ -914,6 +951,29 @@ rect = [39.4, 7.3, 103.3, 38.9]
 [[route.keepout]]
 layers = ["In2.Cu"]
 rect = [34.6, 18.6, 39.4, 40.1]
+
+# The keep-alive net runs on B.Cu. In2.Cu is the layer next to it with no plane between: nothing is
+# routed on In2.Cu within 1.1 mm of it in plan view. The 3.3 V pour stays.
+[[route.keepout]]
+layers = ["In2.Cu"]
+rect = [95.1, 88.9, 97.3, 98.2]
+
+[[route.keepout]]
+layers = ["In2.Cu"]
+rect = [92.8, 86.5, 97.6, 88.9]
+
+[[route.keepout]]
+layers = ["In2.Cu"]
+rect = [91.4, 78.6, 93.6, 87.6]
+
+[[route.keepout]]
+layers = ["In2.Cu"]
+rect = [43.1, 77.5, 92.6, 79.7]
+
+# Between detector B and the encoder no net has a reason to cross the keep-alive: closed on F.Cu too.
+[[route.keepout]]
+layers = ["F.Cu"]
+rect = [56.6, 78.05, 80.4, 79.15]
 
 # A via beside every surface-mount pad of a plane net.
 [[plane]]
@@ -932,6 +992,92 @@ within = [[0.9, 45.7, 113.1, 109.1], [104.4, 5.4, 113.1, 45.7], [0.9, 16.4, 9.1,
 [[guard]]
 net = "/KA"
 distance = 1.0
+
+# ---- layout rules of the fail-safe analysis, checked by hwflow.layoutrules after DRC ----------------
+# Hardware design, section 8.5, "Layout rules that follow". docs/design/hardware-layout.md, section 9,
+# goes through them one by one.
+#
+# Rule 1, second half: the nets that toggle with no control loop behind them stay 1 mm from the
+# keep-alive net in plan view, on whatever layer. Not even a crossing on another layer passes.
+[[keepaway]]
+net = "/KA"
+from = ["unconnected-(U4-IO3[567]-Pad*",                       # the PSRAM lines of the module
+        "/TFT_BL", "/Display/BL_G", "/Display/TFT_LEDK",        # backlight PWM, and what it switches
+        "/Connectors/U0TXD", "/U0TXD_MCU",                      # boot log
+        "/AC_ZC",                                               # zero-cross signal
+        "/SENS_FLOW", "/Sensors/N_FLOW", "/T_FLOW",             # flow meter pulses
+        "/ADC_LO", "/ADC_HI", "/ISENSE_LO", "/ISENSE_HI",       # the current waveform
+        "/USB/USB_D[PM]", "/USB_D[PM]_MCU",                     # USB data
+        "/TFT_SCLK", "/TFT_MOSI",                               # display clock and data
+        "/Power/SW"]                                            # buck switch node
+distance = 1.0
+scope = "plan"
+
+# The same for the node behind the 220 ohm series resistor R29, which is the keep-alive net to a bridge.
+[[keepaway]]
+net = "/Failsafe/KA_N0"
+from = ["unconnected-(U4-IO3[567]-Pad*", "/TFT_BL", "/Display/BL_G", "/Display/TFT_LEDK", "/Connectors/U0TXD",
+        "/U0TXD_MCU", "/AC_ZC", "/SENS_FLOW", "/Sensors/N_FLOW", "/T_FLOW", "/ADC_LO", "/ADC_HI", "/ISENSE_LO",
+        "/ISENSE_HI", "/USB/USB_D[PM]", "/USB_D[PM]_MCU", "/TFT_SCLK", "/TFT_MOSI", "/Power/SW"]
+distance = 1.0
+scope = "plan"
+
+# Rule 1, first half: 1 mm to the tracks and vias of any other signal on the same layer. Ground is
+# what is wanted on both sides. Pads are left out: at the module pin and at R33, R29 and R89 the
+# neighbouring pads are closer than that by the pitch of the parts.
+[[keepaway]]
+net = "/KA"
+from = ["*"]
+except = ["GND"]
+distance = 1.0
+scope = "layer"
+kinds = ["track", "via"]
+own_kinds = ["track", "via"]
+
+# Rules 2 and 3: no supply rail within 1 mm of the nodes where a leak holds a detector on, pads included.
+[[keepaway]]
+net = "/Expander/RLY_G2"
+from = ["3V3", "V5", "V_BUCK", "VBUS", "V_DRV"]
+distance = 1.0
+scope = "layer"
+
+[[keepaway]]
+net = "/Expander/KB_N1"
+from = ["3V3", "V5", "V_BUCK", "VBUS", "V_DRV"]
+distance = 1.0
+scope = "layer"
+
+[[keepaway]]
+net = "/Failsafe/KA_N1"
+from = ["3V3", "V5", "V_BUCK", "VBUS", "V_DRV"]
+distance = 1.0
+scope = "layer"
+
+[[keepaway]]
+net = "/KA_N2"
+from = ["3V3", "V5", "V_BUCK", "VBUS", "V_DRV"]
+distance = 1.0
+scope = "layer"
+
+[[keepaway]]
+net = "/Failsafe/KA_INP"
+from = ["3V3", "V5", "V_BUCK", "VBUS", "V_DRV"]
+distance = 1.0
+scope = "layer"
+
+# Rule 2: no test pad on these nets. TP8 on KA_N2 is allowed by the rule and is covered above.
+[[no_pad]]
+nets = ["/Expander/RLY_G2", "/Expander/KB_N1", "/Expander/KB_N0", "/Failsafe/KA_N1"]
+refs = "TP*"
+
+# Rule 4: the two pumps at least 10 mm apart, their capacitors at right angles.
+[[apart]]
+a = ["R29", "C22", "D7"]
+b = ["R89", "C51", "D22"]
+distance = 10.0
+
+[[perpendicular]]
+parts = ["C22", "C51"]
 
 # ---- silkscreen -----------------------------------------------------------------------------------
 # 351 parts on one side: the designators of the small parts do not fit between them. They are left

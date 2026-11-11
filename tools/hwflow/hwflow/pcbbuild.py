@@ -404,6 +404,16 @@ class Builder:
         for g in self.cfg.get("guard", []):
             if g["net"] in (net_a, net_b) and net_a != net_b:
                 c = max(c, float(g["distance"]))
+        # [[keepaway]] on one layer (see hwflow.layoutrules): a plane via of a net that must stay
+        # away keeps that distance from the start.
+        import fnmatch
+        for k in self.cfg.get("keepaway", []):
+            if k.get("scope", "plan") != "layer" or net_a == net_b:
+                continue
+            for own, other in ((net_a, net_b), (net_b, net_a)):
+                if own == k["net"] and any(fnmatch.fnmatchcase(other, p) for p in k["from"]) \
+                        and not any(fnmatch.fnmatchcase(other, p) for p in k.get("except", [])):
+                    c = max(c, float(k["distance"]))
         return c
 
     def guards(self) -> int:
