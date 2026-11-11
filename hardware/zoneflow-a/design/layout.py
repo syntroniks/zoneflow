@@ -215,16 +215,16 @@ at("C9", 37.0, 37.95, 0)
 # ---- right edge ---------------------------------------------------------------------------------
 block("Qwiic: ESD array and PTC at the connector.")
 at("C17", 111.3, 7.3, 0)
-at("F2", 105.65, 16.8, 0)
-at("U9", 110.4, 17.35, 0)
+at("F2", 106.05, 16.8, 0)
+at("U9", 110.7, 17.35, 0)
 block("Sensor terminals: TVS and series resistor of each input, sensor supply TVS, pull-ups.")
-at("R81", 104.46, 21.55, 90)
-at("D14", 109.31, 21.55, 0)
-at("R75", 104.46, 26.2, 90)
-at("D12", 109.31, 26.2, 0)
-at("R78", 104.46, 30.85, 90)
-at("D13", 109.31, 30.85, 0)
-at("D18", 109.31, 35.5, 0)
+at("R81", 104.86, 21.55, 90)
+at("D14", 109.71, 21.55, 0)
+at("R75", 104.86, 26.2, 90)
+at("D12", 109.71, 26.2, 0)
+at("R78", 104.86, 30.85, 90)
+at("D13", 109.71, 30.85, 0)
+at("D18", 109.71, 35.5, 0)
 at("R74", 109.1, 40.55, 0)
 at("R77", 109.1, 42.95, 0)
 at("R80", 109.1, 46.0, 0)
@@ -491,20 +491,18 @@ group_tracks = [
     "# Copper of one channel column, repeated nine times. Offsets from the column centre at y = 0.",
     track(["C1.1", "R5.2"], width=0.3, table=G, comment="Snubber mid-point."),
     track(["D1.1", [-1.25, 16.54], "F1.1"], width=1.2, table=G, comment="Output: TVS to the PTC."),
-    track(["D1.1", [-1.25, 14.6], [0.5, 14.7]], width=0.6, table=G),
-    track(["F1.1", [0.5, 16.2], {"via": [0.5, 14.7]}], width=0.6, via=(0.6, 0.3), table=G,
-          comment="Two output vias down to the fan-out lane on In2.Cu, joined there."),
-    track(["F1.1", {"via": [-3.12, 16.54]}, [-3.12, 15.6], [0.5, 15.6], [0.5, 14.7]], width=0.6, via=(0.6, 0.3),
-          via_to="In2.Cu", table=G),
-    track(["F1.2", "Q1.2"], width=3.0, table=G, comment="T2: PTC to the triac tab, and vias to the island on B.Cu."),
-    track(["F1.2", {"via": [-3.12, 22.7]}], width=1.0, table=G),
-    track(["F1.2", {"via": [-3.12, 24.1]}], width=1.0, table=G),
+    track(["D1.1", [-1.25, 14.2], [0.25, 14.2], [0.25, 16.3], "F1.1"], width=1.2, table=G,
+          comment="Output: from the two vias of the fan-out lane up into the PTC pad, 1.2 mm wide."),
+    track(["F1.1", [0.45, 15.9], {"via": [0.45, 15.0]}, {"via": [0.45, 14.2]}], width=0.6, via=(0.6, 0.3), table=G, stay=True),
+    track(["F1.2", "Q1.2"], width=5.0, table=G, comment="T2: PTC to the triac tab, and vias to the island on B.Cu."),
+    track(["F1.2", [2.6, 22.6], {"via": [3.25, 22.6]}], width=1.0, table=G),
+    track(["F1.2", [2.6, 23.9], {"via": [3.25, 23.9]}], width=1.0, table=G),
 ]
 for vx, vy in ((-1.5, 26.9), (1.5, 26.9), (-1.5, 29.7), (1.5, 29.7)):
     group_tracks.append(track(["Q1.2", {"via": [vx, vy]}], width=0.6, via=(0.6, 0.3), table=G))
 group_tracks += [
-    track(["R5.1", {"via": [3.25, 13.97]}], width=0.3, via=(0.6, 0.3), table=G,
-          comment="T2 for the snubber resistor, from the island."),
+    track(["R5.1", [3.375, 15.0], [3.375, 22.4], [3.25, 22.6]], width=0.3, table=G,
+          comment="T2 for the snubber resistor: up the gap between this PTC and the next, on F.Cu."),
     track(["Q1.1", "R4.2"], width=0.6, table=G, comment="A1: to the gate resistor, and vias to the ISNS plane on In2.Cu."),
     track(["Q1.1", {"via": [2.3, 36.0]}], width=0.6, via=(0.6, 0.3), table=G),
     track(["Q1.1", {"via": [2.3, 32.5]}], width=0.6, via=(0.8, 0.4), table=G),
@@ -514,11 +512,17 @@ group_tracks += [
     track(["R3.2", {"via": [-0.89, 38.65]}], width=0.3, via=(0.6, 0.3), table=G),
 ]
 
-# ---- fan-out lanes on In2 ------------------------------------------------------------------------
-LANES = [12.75, 11.55, 10.35, 9.15, 7.95]
-JOG, STEP = 1.2, 0.05
+# ---- fan-out lanes on B.Cu, with a copy on In2.Cu -----------------------------------------------
+# 0.9 mm tracks 0.5 mm apart: the 24 VAC clearance, kept on an outer layer too.
+PITCH = 1.4
+LANES = [13.6, 12.2, 10.8, 9.4, 8.0, 6.6]
+# The sixth lane, y = 6.6, is level with the terminal pins. Only the last output uses it, for the
+# few millimetres right of its own pin where no other pin is: LOW_LANE_END checks that.
+LOW_LANE_END = 76.2                # the next terminal pad, J4 pin 1, begins at x = 77.2
+JOG, STEP = PITCH, 0.05
+VIA_DX, RISE_Y = 0.45, 15.0        # the two vias of an output are at x = centre + 0.45, y = 14.2 and 15.0
 order = list(COLS)
-via_x = {n: round(COLS[n] + 0.5, 3) for n in order}
+via_x = {n: round(COLS[n] + VIA_DX, 3) for n in order}
 pts = {n: [] for n in order}
 active = []        # names, in index order
 st = {}            # name -> dict(lane, from_lane, jog_start, jog_end)
@@ -528,12 +532,12 @@ while x <= 101.5:
     for n in list(active):
         if abs(x - via_x[n]) < STEP / 2:
             assert st[n]["lane"] == 0 and x >= st[n]["jog_end"], (n, st[n], x)
-            pts[n] += [(via_x[n], LANES[0]), (via_x[n], 14.7)]
+            pts[n] += [(via_x[n], LANES[0]), (via_x[n], RISE_Y)]
             active.remove(n)
             last_end = x
     for n in order:
         if abs(x - PIN_X[n]) < STEP / 2:
-            occ = [max(st[t]["lane"], st[t]["from_lane"]) if x < st[t]["jog_end"] + 0.6 else st[t]["lane"] for t in active]
+            occ = [max(st[t]["lane"], st[t]["from_lane"]) if x < st[t]["jog_end"] + PITCH / 2 else st[t]["lane"] for t in active]
             lane = (max(occ) + 1) if occ else 0
             assert lane < len(LANES), (n, lane)
             st[n] = {"lane": lane, "from_lane": lane, "jog_start": -99, "jog_end": -99}
@@ -550,11 +554,11 @@ while x <= 101.5:
                 continue
             u = st[t]
             if x < u["jog_end"]:
-                if u["lane"] == L_ - 1 or (u["from_lane"] == L_ - 1 and x < u["jog_start"] + 0.6):
+                if u["lane"] == L_ - 1 or (u["from_lane"] == L_ - 1 and x < u["jog_start"] + PITCH / 2):
                     busy = True
             elif u["lane"] == L_ - 1:
                 busy = True
-        if busy or (L_ - 1 == 0 and x < last_end + 1.25) or x + JOG > via_x[n] - 0.3:
+        if busy or (L_ - 1 == 0 and x < last_end + PITCH + 0.05) or x + JOG > via_x[n] - 0.3:
             continue
         pts[n] += [(round(x, 3), LANES[L_]), (round(x + JOG, 3), LANES[L_ - 1])]
         s_.update(from_lane=L_, lane=L_ - 1, jog_start=x, jog_end=x + JOG)
@@ -574,20 +578,24 @@ def seg_dist(a, b, c, d):
     return min(pt_seg(a, c, d), pt_seg(b, c, d), pt_seg(c, a, b), pt_seg(d, a, b))
 
 polys = {n: [(PIN_X[n], 5.9)] + pts[n][1:] for n in order}
+for n in order:
+    low = [q for q in polys[n][1:] if q[1] < LANES[4] - 0.01]
+    assert all(PIN_X[n] <= q[0] <= LOW_LANE_END and n == order[-1] for q in low), (n, low)
 worst = 9.0
 for i, a in enumerate(order):
     for b in order[i + 1:]:
         for p, q in zip(polys[a], polys[a][1:]):
             for r, s2 in zip(polys[b], polys[b][1:]):
                 worst = min(worst, seg_dist(p, q, r, s2))
-_ = (f"lanes: closest two fan-out tracks come is {worst:.3f} mm centre to centre (need 1.2)")
-assert worst >= 1.19, worst
+print(f"fan-out lanes: the closest two come is {worst:.3f} mm centre to centre (need {PITCH})")
+assert worst >= PITCH - 0.01, worst
 
-lane_tracks = ["# Valve outputs, from each terminal pin to the vias under its column, on In2.Cu. Later\n"
-               "# outputs start lower and step up as earlier ones end, so no two cross. 0.9 mm wide,\n"
-               "# 0.3 mm apart: design/rules.kicad_dru allows 0.25 mm between 24 VAC nets on this layer.\n"
-               "# The inner copper must be 1 oz (35 um)."]
+lane_tracks = ["# Valve outputs, from each terminal pin to the two vias under its column. On B.Cu, which is\n"
+               "# 1 oz copper, 0.9 mm wide and 0.5 mm apart, and the same again on In2.Cu: the terminal pin and\n"
+               "# the two vias join the two. Later outputs start lower and step up as earlier ones end, so no\n"
+               "# two cross. The current calculation is in docs/design/hardware-layout.md."]
 for n in order:
+    lane_tracks.append(track(pts[n], layer="B.Cu", width=0.9))
     lane_tracks.append(track(pts[n], layer="In2.Cu", width=0.9))
 
 # ---- zones ---------------------------------------------------------------------------------------
@@ -611,9 +619,9 @@ zones = ["# Ground: all of In1.Cu, and pours on both outer layers.",
          "# Shunt return: In2.Cu under the triacs. Every A1 terminal drops into it through two vias.",
          zone("/ISNS", ["In2.Cu"], rect=(34.6, 17.6, 103.3, 39.1), clearance=0.5, min_width=0.3, connect="solid",
               priority=2),
-         "# One island per triac tab on B.Cu, 6.5 x 31.6 mm, joined to the tab by six vias."]
+         "# One island per triac tab on B.Cu, 6.6 x 23.1 mm, above the fan-out lanes, joined to the tab by six vias."]
 for n in order:
-    zones.append(zone(f"/{n}/T2", ["B.Cu"], rect=(COLS[n] - 3.25, 7.6, COLS[n] + 3.25, 39.0), clearance=0.5,
+    zones.append(zone(f"/{n}/T2", ["B.Cu"], rect=(COLS[n] - 3.3, 16.0, COLS[n] + 3.3, 39.1), clearance=0.5,
                       min_width=0.3, connect="solid", priority=3))
 
 # ---- 24 VAC entry and other hand tracks ----------------------------------------------------------

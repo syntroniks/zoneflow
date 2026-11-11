@@ -174,17 +174,17 @@ C9 = [37, 37.95, 0]
 
 # Qwiic: ESD array and PTC at the connector.
 C17 = [111.3, 7.3, 0]
-F2 = [105.65, 16.8, 0]
-U9 = [110.4, 17.35, 0]
+F2 = [106.05, 16.8, 0]
+U9 = [110.7, 17.35, 0]
 
 # Sensor terminals: TVS and series resistor of each input, sensor supply TVS, pull-ups.
-R81 = [104.46, 21.55, 90]
-D14 = [109.31, 21.55, 0]
-R75 = [104.46, 26.2, 90]
-D12 = [109.31, 26.2, 0]
-R78 = [104.46, 30.85, 90]
-D13 = [109.31, 30.85, 0]
-D18 = [109.31, 35.5, 0]
+R81 = [104.86, 21.55, 90]
+D14 = [109.71, 21.55, 0]
+R75 = [104.86, 26.2, 90]
+D12 = [109.71, 26.2, 0]
+R78 = [104.86, 30.85, 90]
+D13 = [109.71, 30.85, 0]
+D18 = [109.71, 35.5, 0]
 R74 = [109.1, 40.55, 0]
 R77 = [109.1, 42.95, 0]
 R80 = [109.1, 46, 0]
@@ -504,40 +504,34 @@ layer = "F.Cu"
 width = 1.2
 points = ["D1.1", [-1.25, 16.54], "F1.1"]
 
+# Output: from the two vias of the fan-out lane up into the PTC pad, 1.2 mm wide.
 [[group.channel_power.track]]
 layer = "F.Cu"
-width = 0.6
-points = ["D1.1", [-1.25, 14.6], [0.5, 14.7]]
-
-# Two output vias down to the fan-out lane on In2.Cu, joined there.
-[[group.channel_power.track]]
-layer = "F.Cu"
-width = 0.6
-via = [0.6, 0.3]
-points = ["F1.1", [0.5, 16.2], {via = [0.5, 14.7]}]
+width = 1.2
+points = ["D1.1", [-1.25, 14.2], [0.25, 14.2], [0.25, 16.3], "F1.1"]
 
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 0.6
 via = [0.6, 0.3]
-via_to = "In2.Cu"
-points = ["F1.1", {via = [-3.12, 16.54]}, [-3.12, 15.6], [0.5, 15.6], [0.5, 14.7]]
+stay = true
+points = ["F1.1", [0.45, 15.9], {via = [0.45, 15]}, {via = [0.45, 14.2]}]
 
 # T2: PTC to the triac tab, and vias to the island on B.Cu.
 [[group.channel_power.track]]
 layer = "F.Cu"
-width = 3
+width = 5
 points = ["F1.2", "Q1.2"]
 
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 1
-points = ["F1.2", {via = [-3.12, 22.7]}]
+points = ["F1.2", [2.6, 22.6], {via = [3.25, 22.6]}]
 
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 1
-points = ["F1.2", {via = [-3.12, 24.1]}]
+points = ["F1.2", [2.6, 23.9], {via = [3.25, 23.9]}]
 
 [[group.channel_power.track]]
 layer = "F.Cu"
@@ -563,12 +557,11 @@ width = 0.6
 via = [0.6, 0.3]
 points = ["Q1.2", {via = [1.5, 29.7]}]
 
-# T2 for the snubber resistor, from the island.
+# T2 for the snubber resistor: up the gap between this PTC and the next, on F.Cu.
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 0.3
-via = [0.6, 0.3]
-points = ["R5.1", {via = [3.25, 13.97]}]
+points = ["R5.1", [3.375, 15], [3.375, 22.4], [3.25, 22.6]]
 
 # A1: to the gate resistor, and vias to the ISNS plane on In2.Cu.
 [[group.channel_power.track]]
@@ -613,54 +606,99 @@ width = 0.3
 via = [0.6, 0.3]
 points = ["R3.2", {via = [-0.89, 38.65]}]
 
-# Valve outputs, from each terminal pin to the vias under its column, on In2.Cu. Later
-# outputs start lower and step up as earlier ones end, so no two cross. 0.9 mm wide,
-# 0.3 mm apart: design/rules.kicad_dru allows 0.25 mm between 24 VAC nets on this layer.
-# The inner copper must be 1 oz (35 um).
+# Valve outputs, from each terminal pin to the two vias under its column. On B.Cu, which is
+# 1 oz copper, 0.9 mm wide and 0.5 mm apart, and the same again on In2.Cu: the terminal pin and
+# the two vias join the two. Later outputs start lower and step up as earlier ones end, so no
+# two cross. The current calculation is in docs/design/hardware-layout.md.
 [[track]]
-layer = "In2.Cu"
+layer = "B.Cu"
 width = 0.9
-points = ["J2.3", [37.845, 12.75], [43.35, 12.75], [43.35, 14.7]]
+points = ["J2.3", [37.845, 13.6], [43.3, 13.6], [43.3, 15]]
 
 [[track]]
 layer = "In2.Cu"
 width = 0.9
-points = ["J2.4", [41.655, 11.55], [44.6, 11.55], [45.8, 12.75], [50.45, 12.75], [50.45, 14.7]]
+points = ["J2.3", [37.845, 13.6], [43.3, 13.6], [43.3, 15]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.9
+points = ["J2.4", [41.655, 12.2], [44.75, 12.2], [46.15, 13.6], [50.4, 13.6], [50.4, 15]]
 
 [[track]]
 layer = "In2.Cu"
 width = 0.9
-points = ["J2.5", [45.465, 10.35], [46.3, 10.35], [47.5, 11.55], [51.7, 11.55], [52.9, 12.75], [57.55, 12.75], [57.55, 14.7]]
+points = ["J2.4", [41.655, 12.2], [44.75, 12.2], [46.15, 13.6], [50.4, 13.6], [50.4, 15]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.9
+points = ["J2.5", [45.465, 10.8], [46.3, 10.8], [47.7, 12.2], [51.85, 12.2], [53.25, 13.6], [57.5, 13.6], [57.5, 15]]
 
 [[track]]
 layer = "In2.Cu"
 width = 0.9
-points = ["J2.6", [49.275, 9.15], [50.1, 9.15], [51.3, 10.35], [52.35, 10.35], [53.55, 11.55], [58.8, 11.55], [60, 12.75], [64.65, 12.75], [64.65, 14.7], [64.65, 12.75], [64.65, 14.7]]
+points = ["J2.5", [45.465, 10.8], [46.3, 10.8], [47.7, 12.2], [51.85, 12.2], [53.25, 13.6], [57.5, 13.6], [57.5, 15]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.9
+points = ["J2.6", [49.275, 9.4], [50.1, 9.4], [51.5, 10.8], [52.6, 10.8], [54, 12.2], [58.95, 12.2], [60.35, 13.6], [64.6, 13.6], [64.6, 15], [64.6, 13.6], [64.6, 15]]
 
 [[track]]
 layer = "In2.Cu"
 width = 0.9
-points = ["J2.7", [53.085, 9.15], [53.9, 9.15], [55.1, 10.35], [59.4, 10.35], [60.6, 11.55], [65.9, 11.55], [67.1, 12.75], [71.75, 12.75], [71.75, 14.7]]
+points = ["J2.6", [49.275, 9.4], [50.1, 9.4], [51.5, 10.8], [52.6, 10.8], [54, 12.2], [58.95, 12.2], [60.35, 13.6], [64.6, 13.6], [64.6, 15], [64.6, 13.6], [64.6, 15]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.9
+points = ["J2.7", [53.085, 9.4], [53.9, 9.4], [55.3, 10.8], [59.7, 10.8], [61.1, 12.2], [66.05, 12.2], [67.45, 13.6], [71.7, 13.6], [71.7, 15]]
 
 [[track]]
 layer = "In2.Cu"
 width = 0.9
-points = ["J3.1", [58.295, 9.15], [60, 9.15], [61.2, 10.35], [66.5, 10.35], [67.7, 11.55], [73, 11.55], [74.2, 12.75], [78.85, 12.75], [78.85, 14.7]]
+points = ["J2.7", [53.085, 9.4], [53.9, 9.4], [55.3, 10.8], [59.7, 10.8], [61.1, 12.2], [66.05, 12.2], [67.45, 13.6], [71.7, 13.6], [71.7, 15]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.9
+points = ["J3.1", [58.295, 9.4], [60.45, 9.4], [61.85, 10.8], [66.75, 10.8], [68.15, 12.2], [73.15, 12.2], [74.55, 13.6], [78.8, 13.6], [78.8, 15]]
 
 [[track]]
 layer = "In2.Cu"
 width = 0.9
-points = ["J3.2", [62.105, 9.15], [67.1, 9.15], [68.3, 10.35], [73.6, 10.35], [74.8, 11.55], [80.1, 11.55], [81.3, 12.75], [85.95, 12.75], [85.95, 14.7]]
+points = ["J3.1", [58.295, 9.4], [60.45, 9.4], [61.85, 10.8], [66.75, 10.8], [68.15, 12.2], [73.15, 12.2], [74.55, 13.6], [78.8, 13.6], [78.8, 15]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.9
+points = ["J3.2", [62.105, 8], [62.95, 8], [64.35, 9.4], [67.45, 9.4], [68.85, 10.8], [73.9, 10.8], [75.3, 12.2], [80.25, 12.2], [81.65, 13.6], [85.9, 13.6], [85.9, 15]]
 
 [[track]]
 layer = "In2.Cu"
 width = 0.9
-points = ["J3.3", [65.915, 7.95], [67.7, 7.95], [68.9, 9.15], [74.2, 9.15], [75.4, 10.35], [80.7, 10.35], [81.9, 11.55], [87.2, 11.55], [88.4, 12.75], [93.05, 12.75], [93.05, 14.7]]
+points = ["J3.2", [62.105, 8], [62.95, 8], [64.35, 9.4], [67.45, 9.4], [68.85, 10.8], [73.9, 10.8], [75.3, 12.2], [80.25, 12.2], [81.65, 13.6], [85.9, 13.6], [85.9, 15]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.9
+points = ["J3.3", [65.915, 8], [68.15, 8], [69.55, 9.4], [74.65, 9.4], [76.05, 10.8], [80.95, 10.8], [82.35, 12.2], [87.4, 12.2], [88.8, 13.6], [93, 13.6], [93, 15]]
 
 [[track]]
 layer = "In2.Cu"
 width = 0.9
-points = ["J3.4", [69.725, 7.95], [74.8, 7.95], [76, 9.15], [81.3, 9.15], [82.5, 10.35], [87.8, 10.35], [89, 11.55], [94.3, 11.55], [95.5, 12.75], [100.15, 12.75], [100.15, 14.7]]
+points = ["J3.3", [65.915, 8], [68.15, 8], [69.55, 9.4], [74.65, 9.4], [76.05, 10.8], [80.95, 10.8], [82.35, 12.2], [87.4, 12.2], [88.8, 13.6], [93, 13.6], [93, 15]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.9
+points = ["J3.4", [69.725, 6.6], [70.55, 6.6], [71.95, 8], [75.4, 8], [76.8, 9.4], [81.65, 9.4], [83.05, 10.8], [88.15, 10.8], [89.55, 12.2], [94.45, 12.2], [95.85, 13.6], [100.1, 13.6], [100.1, 15]]
+
+[[track]]
+layer = "In2.Cu"
+width = 0.9
+points = ["J3.4", [69.725, 6.6], [70.55, 6.6], [71.95, 8], [75.4, 8], [76.8, 9.4], [81.65, 9.4], [83.05, 10.8], [88.15, 10.8], [89.55, 12.2], [94.45, 12.2], [95.85, 13.6], [100.1, 13.6], [100.1, 15]]
 
 # Ground: all of In1.Cu, and pours on both outer layers.
 [[zone]]
@@ -701,11 +739,11 @@ min_width = 0.3
 connect = "solid"
 priority = 2
 
-# One island per triac tab on B.Cu, 6.5 x 31.6 mm, joined to the tab by six vias.
+# One island per triac tab on B.Cu, 6.6 x 23.1 mm, above the fan-out lanes, joined to the tab by six vias.
 [[zone]]
 net = "/MV/T2"
 layers = ["B.Cu"]
-outline = [[39.6, 7.6], [46.1, 7.6], [46.1, 39], [39.6, 39]]
+outline = [[39.55, 16], [46.15, 16], [46.15, 39.1], [39.55, 39.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
@@ -714,7 +752,7 @@ priority = 3
 [[zone]]
 net = "/Z1/T2"
 layers = ["B.Cu"]
-outline = [[46.7, 7.6], [53.2, 7.6], [53.2, 39], [46.7, 39]]
+outline = [[46.65, 16], [53.25, 16], [53.25, 39.1], [46.65, 39.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
@@ -723,7 +761,7 @@ priority = 3
 [[zone]]
 net = "/Z2/T2"
 layers = ["B.Cu"]
-outline = [[53.8, 7.6], [60.3, 7.6], [60.3, 39], [53.8, 39]]
+outline = [[53.75, 16], [60.35, 16], [60.35, 39.1], [53.75, 39.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
@@ -732,7 +770,7 @@ priority = 3
 [[zone]]
 net = "/Z3/T2"
 layers = ["B.Cu"]
-outline = [[60.9, 7.6], [67.4, 7.6], [67.4, 39], [60.9, 39]]
+outline = [[60.85, 16], [67.45, 16], [67.45, 39.1], [60.85, 39.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
@@ -741,7 +779,7 @@ priority = 3
 [[zone]]
 net = "/Z4/T2"
 layers = ["B.Cu"]
-outline = [[68, 7.6], [74.5, 7.6], [74.5, 39], [68, 39]]
+outline = [[67.95, 16], [74.55, 16], [74.55, 39.1], [67.95, 39.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
@@ -750,7 +788,7 @@ priority = 3
 [[zone]]
 net = "/Z5/T2"
 layers = ["B.Cu"]
-outline = [[75.1, 7.6], [81.6, 7.6], [81.6, 39], [75.1, 39]]
+outline = [[75.05, 16], [81.65, 16], [81.65, 39.1], [75.05, 39.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
@@ -759,7 +797,7 @@ priority = 3
 [[zone]]
 net = "/Z6/T2"
 layers = ["B.Cu"]
-outline = [[82.2, 7.6], [88.7, 7.6], [88.7, 39], [82.2, 39]]
+outline = [[82.15, 16], [88.75, 16], [88.75, 39.1], [82.15, 39.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
@@ -768,7 +806,7 @@ priority = 3
 [[zone]]
 net = "/Z7/T2"
 layers = ["B.Cu"]
-outline = [[89.3, 7.6], [95.8, 7.6], [95.8, 39], [89.3, 39]]
+outline = [[89.25, 16], [95.85, 16], [95.85, 39.1], [89.25, 39.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
@@ -777,7 +815,7 @@ priority = 3
 [[zone]]
 net = "/Z8/T2"
 layers = ["B.Cu"]
-outline = [[96.4, 7.6], [102.9, 7.6], [102.9, 39], [96.4, 39]]
+outline = [[96.35, 16], [102.95, 16], [102.95, 39.1], [96.35, 39.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
