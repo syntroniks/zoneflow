@@ -22,6 +22,13 @@ SCH_LINT  ?=
 STABLE    ?=
 # The design netlist a board is drawn from, if it has one (netlist-driven capture).
 DESIGN_NETLIST ?=
+# Extra flags for the placement export: --smd-only where the through-hole parts are soldered by hand.
+POS_FLAGS ?=
+# Inner copper layers to plot for review, besides the two outer ones.
+INNER_LAYERS ?=
+# The mechanical contract the board must agree with, if it has one. With it the
+# build fails when a constrained part is off position or a height zone is violated.
+MECH_CONTRACT ?=
 
 # Generation runs in the locked uv environment. The board steps need KiCad's
 # pcbnew module, which only the system interpreter has.
@@ -46,7 +53,7 @@ PCB := $(NAME).kicad_pcb
 # that the exit code of kicad-cli still decides whether the step passed.
 LOG := 2>> build/kicad-cli.stderr
 
-.PHONY: all schematic footprints sch lint erc sch-outputs board route reroute finish drc outputs check committed
+.PHONY: all schematic footprints layout sch lint erc sch-outputs board route reroute finish drc mech outputs check committed
 .NOTPARALLEL:
 
 all: outputs
@@ -67,7 +74,12 @@ footprints: | build
 
 # Circuit description -> schematic sheets, project file, library tables, DRC
 # rules. Fails if the netlist KiCad extracts differs from the description.
-sch: footprints | build
+# A board whose description repeats or is computed writes design/board.toml from
+# design/layout.py. The schematic step reads the net classes from board.toml.
+layout: | build
+	@if [ -f $(DESIGN)/layout.py ]; then $(KICAD_PY) $(DESIGN)/layout.py . ; fi
+
+sch: footprints layout | build
 	$(UV_PY) -m hwflow sch $(DESIGN) . --fab-rules $(FAB_RULES)
 
 # Plot every page and fail on text or symbols that collide. ERC does not look for that.
@@ -128,7 +140,13 @@ sch-outputs: erc
 committed:
 	$(UV_PY) -m hwflow committed . --netlist $(DESIGN_NETLIST)
 
-outputs: drc sch-outputs
+# The built board against the mechanical contract: positions of the constrained
+# parts, holes, height zones, keep-outs. Reads the saved board, measures nothing.
+mech: drc
+	$(KICAD_PY) -m hwflow.pcbbuild dump $(DESIGN) .
+	$(if $(MECH_CONTRACT),$(UV_PY) -m hwflow mech . --contract $(MECH_CONTRACT) --heights $(DESIGN)/heights.toml,@true)
+
+outputs: drc mech sch-outputs
 	# Gerbers, drill and placement all use the drill/place origin, which the
 	# board builder puts on the bottom-left corner of the outline.
 	$(KICAD_CLI) pcb export gerbers --layers "$(GERBER_LAYERS)" --subtract-soldermask --no-protel-ext \
@@ -136,8 +154,18 @@ outputs: drc sch-outputs
 	$(KICAD_CLI) pcb export drill --format excellon --excellon-separate-th --drill-origin plot \
 		--generate-map --map-format pdf -o $(OUT)/gerbers/ $(PCB) $(LOG)
 	$(KICAD_CLI) pcb export pos --format csv --units mm --side both --exclude-dnp --use-drill-file-origin \
-		-o build/$(NAME)-pos.csv $(PCB) $(LOG)
+		$(POS_FLAGS) -o build/$(NAME)-pos.csv $(PCB) $(LOG)
 	$(KICAD_PY) -m hwflow.fab cpl build/$(NAME)-pos.csv $(OUT)/$(NAME)-cpl-jlcpcb.csv --rotations $(ROTATIONS)
+	# One placement file per build variant: the base file without the parts that variant leaves out.
+	$(foreach v,$(VARIANTS),$(KICAD_PY) -m hwflow.fab cpl build/$(NAME)-pos.csv \
+		$(OUT)/$(NAME)-cpl-jlcpcb-$(v).csv --rotations $(ROTATIONS) --model build/model.json --variant $(v) &&) true
+	# Where pin 1 of every polarised part is: what to compare the assembler's placement preview with.
+	$(KICAD_PY) -m hwflow.fab polarity build/placement.json $(OUT)/$(NAME)-pin1.csv
+	# Assembly drawings: part outlines and every reference designator, one page per side.
+	$(KICAD_CLI) pcb export pdf --layers "F.Fab,Edge.Cuts" --mode-single --black-and-white \
+		--exclude-drawing-sheet -o $(OUT)/$(NAME)-assembly-top.pdf $(PCB) $(LOG)
+	$(KICAD_CLI) pcb export pdf --layers "B.Fab,Edge.Cuts" --mode-single --black-and-white --mirror \
+		--exclude-drawing-sheet -o $(OUT)/$(NAME)-assembly-bottom.pdf $(PCB) $(LOG)
 	$(KICAD_CLI) pcb export step --subst-models --force -o $(OUT)/$(NAME).step $(PCB) $(LOG)
 	$(KICAD_CLI) pcb render --side top --quality high --width 1600 --height 1200 \
 		-o $(OUT)/$(NAME)-top.png $(PCB) $(LOG)
@@ -148,7 +176,10 @@ outputs: drc sch-outputs
 		--exclude-drawing-sheet -o $(OUT)/$(NAME)-front.svg $(PCB) $(LOG)
 	$(KICAD_CLI) pcb export svg --layers "B.Cu,B.Silkscreen,Edge.Cuts" --mode-single --page-size-mode 2 \
 		--exclude-drawing-sheet -o $(OUT)/$(NAME)-back.svg $(PCB) $(LOG)
+	$(foreach l,$(INNER_LAYERS),$(KICAD_CLI) pcb export svg --layers "$(l),Edge.Cuts" --mode-single \
+		--page-size-mode 2 --exclude-drawing-sheet -o $(OUT)/$(NAME)-$(l).svg $(PCB) $(LOG) &&) true
 	$(KICAD_PY) -m hwflow.report . $(OUT)
+	$(STABILISE)
 
 # Unit tests, KiCad round-trip tests, and proof that ERC and DRC catch
 # deliberately broken inputs. Needs the board to have been built.

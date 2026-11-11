@@ -1,9 +1,1304 @@
 # Board description for ZoneFlow rev A. Lengths in millimetres.
-# Phase 1 (schematic capture) uses only the net classes. Placement, pours and
-# pre-routed tracks are added with the layout.
+#
+# WRITTEN BY design/layout.py. Do not edit: change layout.py and run make.
+#
+# Board coordinates are those of the mechanical contract, hardware/mechanical.yaml:
+# origin at the bottom-left corner of the outline seen from the component side,
+# x to the right along the terminal edge, y up towards the antenna. Rotation is
+# counter-clockwise seen from the top side.
+#
+# The reasons for the placement, the widths and the routing are in
+# docs/design/hardware-layout.md. No board has been made.
 
+# Net classes, in order of priority. circuit.py assigns nets to them (NETCLASS).
 [netclass.Default]
 track_width = 0.2
 clearance = 0.2
 via_diameter = 0.6
 via_drill = 0.3
+
+# 24 VAC paths that carry valve or supply current. Trunks are wider; see [[track]].
+[netclass.AC24]
+track_width = 1.0
+clearance = 0.5
+via_diameter = 1.0
+via_drill = 0.5
+
+# The shunt node. It carries the valve current back and is within 3 V of ground, so it may come
+# closer to ground than a 24 VAC net may. Against a 24 VAC net the larger clearance applies.
+[netclass.Shunt]
+track_width = 1.0
+clearance = 0.25
+via_diameter = 1.0
+via_drill = 0.5
+
+# At 24 VAC potential, milliamps: gates, opto outputs, snubber mid-points.
+[netclass.AC24S]
+track_width = 0.3
+clearance = 0.5
+via_diameter = 0.6
+via_drill = 0.3
+
+# Rectified input, up to 45 V, and the buck converter's switch node.
+[netclass.HVDC]
+track_width = 0.5
+clearance = 0.4
+via_diameter = 0.8
+via_drill = 0.4
+
+# Sensor terminals and the sensor supply output.
+[netclass.Field]
+track_width = 0.4
+clearance = 0.5
+via_diameter = 0.8
+via_drill = 0.4
+
+[netclass.Power]
+track_width = 0.4
+clearance = 0.2
+via_diameter = 0.8
+via_drill = 0.4
+
+[netclass.USB]
+track_width = 0.25
+clearance = 0.2
+via_diameter = 0.6
+via_drill = 0.3
+
+[board]
+origin = [90.0, 50.0]    # where the outline's top-left corner sits on the KiCad page
+size = [114.0, 110.0]    # mechanical contract, board.outline
+y_up = true
+corner_radius = 1.0      # the contract allows up to 1.5
+layers = 4
+thickness = 1.6
+
+# Placement: reference = [x, y, rotation, side]. x, y is the footprint anchor.
+[place]
+
+# Fixed by hardware/mechanical.yaml, revision 2. The mechanical check compares these.
+J5 = [8, 2.675, 0]
+J1 = [17.805, 5.9, 0]
+J2 = [30.225, 5.9, 0]
+J3 = [58.295, 5.9, 0]
+J4 = [78.335, 5.9, 0]
+J6 = [109.25, 3.08, 0]
+F4 = [15, 12.6, 180]
+F1 = [27, 12.6, 0]
+D6 = [12, 42, 0]
+SW4 = [22, 61.5, 0]
+SW5 = [48, 61.5, 0]
+SW3 = [85, 88, 0]
+J7 = [60.44, 88.43, 0]
+U4 = [103, 103.25, 0]
+C1 = [36, 30, 180, "B"]
+H1 = [5.5, 105, 0]
+H2 = [75, 106, 0]
+H3 = [4.5, 12, 0]
+H4 = [109.5, 12, 0]
+
+# Free by the contract, positions chosen here.
+# BT1: 1.3 mm above the reserved position, to clear the opto row, turned so that + is at the left.
+# K1: under the left edge, long axis along y, contacts at the bottom, coil at the top.
+BT1 = [95, 65.3, 180]
+K1 = [2.45, 37, 270, "B"]
+
+# USB-C: CC pull-downs beside the receptacle, VBUS capacitor and shield resistor on its right.
+R15 = [1.81, 2.5, 90]
+R16 = [1.81, 5.6, 90]
+C13 = [14.15, 2.6, 90]
+R17 = [14.15, 5.7, 90]
+U2 = [3.6, 17.7, 0]
+
+# Around the relay pins (K1 is on the bottom side): solder jumper across the contacts,
+# coil diode, and the zero-cross clamp fed from AC_L. Nothing here is taller than 1.5 mm.
+JP1 = [7.15, 22, 270]
+TP22 = [3.2, 21.7, 0]
+R55 = [3.2, 27.7, 90]
+R56 = [6.2, 28.7, 90]
+C34 = [7.9, 28.7, 90]
+D9 = [3, 31.9, 0]
+R88 = [6.9, 31.9, 90]
+D5 = [4.8, 34.9, 0]
+
+# Power entry: surge clamp, rectifier, surge resistor. C1 is under this area, on the bottom.
+D1 = [16.3, 21.8, 0]
+D2 = [25.2, 20.3, 180]
+R1 = [29.4, 24.5, 0]
+
+# Buck converter. Input capacitors on the right, at pins 1 and 2 and 4 mm from C1. Bootstrap
+# capacitor and inductor on the left, at pins 7 and 8. Output towards the left edge.
+C2 = [31.1, 29.4, 270]
+C3 = [31.1, 34.2, 90]
+U1 = [25, 33, 180]
+C4 = [20.2, 31.73, 270]
+L1 = [15.9, 33, 180]
+C5 = [14.7, 37.6, 0]
+C6 = [15.3, 28.5, 0]
+R6 = [20.2, 28.9, 180]
+R4 = [21.2, 36.6, 0]
+R5 = [24.3, 36.6, 0]
+R3 = [21.2, 38.2, 180]
+C8 = [24.3, 38.2, 180]
+C7 = [27.4, 38.2, 0]
+R2 = [27.4, 36.6, 180]
+R8 = [23.6, 29.2, 180]
+R7 = [26.8, 29.2, 180]
+TP20 = [18.4, 37.7, 0]
+TP2 = [10.9, 37.7, 0]
+
+# Between the fuse well and the channel columns: valve-common TVS, shunt, and the input monitor
+# divider around the pads of C1. Only low parts within 2.5 mm of those pads.
+D23 = [36.7, 11.6, 90]
+R37 = [36.3, 19.25, 270]
+TP17 = [36.3, 25.1, 0]
+TP1 = [38, 30, 0]
+R9 = [36.3, 34.75, 0]
+R10 = [36.3, 36.35, 0]
+C9 = [36.3, 37.95, 0]
+
+# Qwiic: ESD array and PTC at the connector.
+C17 = [111.3, 7.3, 0]
+F2 = [105.65, 16.8, 0]
+U9 = [110.4, 17.35, 0]
+
+# Sensor terminals: TVS and series resistor of each input, sensor supply TVS, pull-ups.
+R81 = [104.46, 21.55, 90]
+D14 = [109.31, 21.55, 0]
+R75 = [104.46, 26.2, 90]
+D12 = [109.31, 26.2, 0]
+R78 = [104.46, 30.85, 90]
+D13 = [109.31, 30.85, 0]
+D18 = [109.31, 35.5, 0]
+R74 = [109.1, 40.55, 0]
+R77 = [109.1, 42.95, 0]
+R80 = [109.1, 46, 0]
+
+# 5 V OR-ing diodes and the 3.3 V regulator.
+D4 = [5, 46.9, 0]
+D3 = [5, 50.6, 0]
+C10 = [8.2, 54.4, 0]
+U3 = [14.5, 50.1, 0]
+C11 = [20, 48.4, 90]
+C12 = [20.2, 52.5, 90]
+TP3 = [3, 54.4, 0]
+TP4 = [20, 55.4, 0]
+
+# Current-sense amplifier. Channel A (low range) on the left, channel B on the right.
+U8 = [35, 62.6, 90]
+C25 = [35, 57.65, 0]
+R39 = [30.2, 66, 0]
+C26 = [30.2, 64.4, 0]
+R38 = [30.2, 62.8, 180]
+R40 = [30.2, 61.2, 180]
+R41 = [30.2, 59.6, 0]
+C27 = [30.2, 58, 0]
+R43 = [39.8, 66, 0]
+C28 = [39.8, 64.4, 0]
+R42 = [39.8, 62.8, 0]
+R44 = [39.8, 61.2, 0]
+R45 = [39.8, 59.6, 0]
+C29 = [39.8, 58, 0]
+
+# Sensor supply switch, its protection and the PTC.
+U11 = [56.8, 65.5, 0]
+D24 = [62.6, 65.5, 0]
+D19 = [69.8, 65.5, 0]
+R84 = [75.9, 65.5, 0]
+F3 = [75.4, 61.5, 0]
+D20 = [68.7, 61.6, 0]
+C48 = [63.2, 61.6, 0]
+C47 = [56.2, 62.3, 0]
+R83 = [56.2, 60.7, 0]
+R86 = [56.2, 59.1, 0]
+C49 = [59.4, 62.3, 0]
+R85 = [59.4, 60.7, 0]
+TP25 = [60.2, 58.4, 0]
+TP30 = [72, 58.2, 0]
+
+# Keep-alive detector A and the comparators, under the module. KA comes down from module pin 31
+# to the via between R29 and R33.
+R33 = [111.4, 88.5, 0]
+R29 = [107.6, 88.5, 180]
+C22 = [104.3, 88.4, 180]
+D7 = [100.6, 87.9, 0]
+C23 = [96.8, 87, 180]
+U6 = [108, 82.3, 0]
+R30 = [95.3, 85, 0]
+R91 = [98.5, 85, 0]
+R31 = [101.7, 85, 0]
+R36 = [95.3, 83.4, 0]
+R32 = [98.5, 83.4, 0]
+C24 = [101.7, 83.4, 0]
+TP9 = [95, 81.4, 0]
+R35 = [98.35, 81.4, 0]
+R34 = [101.7, 81.4, 0]
+R50 = [95.3, 79.4, 0]
+R49 = [98.5, 79.4, 0]
+R48 = [101.7, 79.4, 0]
+R52 = [95.3, 77.8, 0]
+C32 = [98.5, 77.8, 0]
+R51 = [101.7, 77.8, 0]
+R53 = [95.3, 76.2, 0]
+C33 = [98.5, 76.2, 0]
+C19 = [105.2, 76.3, 0]
+R57 = [108.3, 76.3, 0]
+R58 = [111.4, 76.3, 0]
+TP8 = [101.6, 75.8, 0]
+
+# Left of the module, at the top edge: USB series resistors, ADC filters, encoder switch filter,
+# reset network, supervisor, bulk capacitor. Everything here is under 3.5 mm.
+R98 = [89.2, 100, 90]
+R97 = [90.9, 100, 90]
+C53 = [89.2, 103.2, 90]
+C52 = [90.9, 103.2, 90]
+R46 = [87.5, 100, 90]
+C30 = [87.5, 103.2, 90]
+R47 = [85.8, 100, 90]
+C31 = [85.8, 103.2, 90]
+R66 = [84.1, 100, 90]
+R71 = [82.4, 100, 90]
+C41 = [82.4, 103.2, 90]
+TP16 = [80.3, 100.3, 0]
+R18 = [84.1, 103.2, 90]
+C16 = [84.1, 106.4, 90]
+C14 = [90.9, 106.3, 180]
+C15 = [87.5, 106.4, 90]
+U12 = [81.3, 106.95, 90]
+C54 = [80.6, 103.4, 90]
+
+# Encoder pull-ups and filters, below the encoder.
+R64 = [81.4, 77.3, 0]
+R65 = [88.6, 77.3, 0]
+R69 = [81.4, 75.7, 0]
+C39 = [84.5, 75.7, 0]
+R70 = [88.6, 75.7, 0]
+C40 = [91.7, 75.7, 0]
+
+# Debug header pads, between the display cable and the encoder.
+J8 = [74.2, 93.5, 0]
+
+# Real-time clock, next to the positive contact of the cell holder.
+U10 = [66, 72, 0]
+Y1 = [60, 73.1, 90]
+C36 = [60.6, 69.8, 0]
+C35 = [70.9, 71, 90]
+D10 = [72.4, 75.05, 0]
+D11 = [77.25, 75.05, 0]
+R59 = [78, 77.1, 0]
+TP23 = [62.3, 76.3, 0]
+
+# Sensor input clamps and filters, above the display cable.
+D15 = [60.2, 107.4, 0]
+D16 = [64.2, 107.4, 0]
+D17 = [68.2, 107.4, 0]
+C44 = [60.1, 104.1, 90]
+C45 = [64.1, 104.1, 90]
+C46 = [68.1, 104.1, 90]
+R76 = [60.1, 101.05, 90]
+R79 = [64.1, 101.05, 90]
+R82 = [68.1, 101.05, 90]
+
+# I/O expander with its pull-up and pull-down networks.
+U5 = [35, 72.5, 0]
+RN1 = [28.6, 74.5, 0]
+RN2 = [41.4, 74.5, 0]
+RN3 = [41.4, 70.3, 0]
+R96 = [28.4, 71.4, 0]
+R27 = [28.4, 69.8, 0]
+R28 = [28.4, 68.2, 0]
+C18 = [35, 77.6, 0]
+TP21 = [29, 80.4, 0]
+TP26 = [32, 80.4, 0]
+TP27 = [35, 80.4, 0]
+TP28 = [38, 80.4, 0]
+TP29 = [41, 80.4, 0]
+
+# Fail-safe gate, drive-enable switch and fault LED.
+U7 = [20, 74, 0]
+C20 = [20, 79.6, 0]
+Q3 = [13.6, 76.5, 0]
+R25 = [13.6, 73.6, 0]
+R26 = [13.6, 72, 0]
+C21 = [13.6, 70.4, 0]
+R92 = [13.6, 68.8, 0]
+R54 = [9.9, 76.9, 0]
+R87 = [9.9, 75.3, 0]
+D8 = [9.9, 79.2, 0]
+TP7 = [12, 82.6, 0]
+TP10 = [15, 82.6, 0]
+TP11 = [18, 82.6, 0]
+TP12 = [21, 82.6, 0]
+
+# Keep-alive detector B and the relay driver. More than 10 mm from detector A.
+R89 = [46, 78.6, 0]
+C51 = [49.6, 78.5, 0]
+D22 = [53.6, 78, 0]
+C50 = [53.5, 75.1, 0]
+R14 = [46.6, 75.6, 0]
+R90 = [49.8, 75.6, 0]
+Q2 = [53.6, 72.2, 0]
+Q1 = [48.6, 72, 0]
+R11 = [44.6, 69.2, 0]
+R12 = [47.8, 69.2, 0]
+R93 = [51, 69.2, 0]
+R94 = [54.2, 69.2, 0]
+R95 = [57.4, 69.2, 0]
+TP24 = [44.5, 72.4, 0]
+
+# Display connector: decoupling, reset pull-up and the backlight switch.
+R63 = [54.9, 86.3, 0]
+C38 = [54.9, 87.9, 0]
+C37 = [54.9, 89.5, 0]
+R60 = [54, 92.6, 0]
+Q4 = [54.5, 96, 0]
+R61 = [50, 93.6, 0]
+R62 = [50, 95.2, 0]
+
+# Reset and boot buttons, boot pull-up, serial resistor, I2C and Qwiic pull-ups.
+SW1 = [48, 105.5, 0]
+SW2 = [48, 99.4, 0]
+R19 = [42.4, 99.4, 90]
+R99 = [42.4, 105.5, 90]
+R21 = [38.2, 77.6, 0]
+R22 = [41.4, 77.6, 0]
+R23 = [108.3, 74.7, 0]
+R24 = [111.4, 74.7, 0]
+
+# Status LED resistor, in the light-pipe strip beside the LED.
+R20 = [15.1, 42, 180]
+
+# Button pull-ups and filters.
+R67 = [13.9, 64.6, 0]
+R72 = [13.9, 63, 0]
+C42 = [13.9, 61.4, 0]
+R68 = [44, 66.1, 0]
+R73 = [47.2, 66.1, 0]
+C43 = [50.4, 66.1, 0]
+
+# Remaining test pads.
+TP5 = [31.5, 20.5, 0]
+TP6 = [25.9, 80.4, 0]
+TP13 = [25.1, 69.4, 0]
+TP14 = [25.1, 72.2, 0]
+TP15 = [25.1, 75, 0]
+TP18 = [44, 81.6, 0]
+TP19 = [47, 81.6, 0]
+
+# The nine output channels are nine instances of one sheet. Two groups place them, because the
+# two halves of a channel are on different pitches.
+#
+# channel_power: PTC, TVS, triac and snubber, in a column 7.1 mm wide above the terminals.
+# The origin of an instance is the centre line of its column at y = 0.
+[group.channel_power]
+sheet = "channel"
+
+[group.channel_power.at]
+"/MV/" = [42.85, 0]
+"/Z1/" = [49.95, 0]
+"/Z2/" = [57.05, 0]
+"/Z3/" = [64.15, 0]
+"/Z4/" = [71.25, 0]
+"/Z5/" = [78.35, 0]
+"/Z6/" = [85.45, 0]
+"/Z7/" = [92.55, 0]
+"/Z8/" = [99.65, 0]
+
+[group.channel_power.parts]
+D1 = [-1.25, 11.53, 270]   # TVS, pad 1 (OUT) up
+C1 = [2.05, 9.58, 270]     # snubber capacitor, ISNS end down
+R5 = [2.05, 13.06, 270]    # snubber resistor, T2 end up
+F1 = [0, 19.93, 90]        # PTC, pad 1 (OUT) down
+Q1 = [0, 29.44, 270]       # triac, tab down, leads up: A1 right, gate left
+R4 = [1.5, 36.9, 0]        # gate to A1
+R3 = [-1.8, 37.3, 0]       # T2 to the opto output
+
+# channel_logic: the LED, its resistor, the opto LED resistor and the opto-triac. The origin of
+# an instance is its LED, whose position the mechanical contract fixes (y = 42, pitch 9.5).
+[group.channel_logic]
+sheet = "channel"
+
+[group.channel_logic.at]
+"/MV/" = [26.0, 42.0]
+"/Z1/" = [35.5, 42.0]
+"/Z2/" = [45.0, 42.0]
+"/Z3/" = [54.5, 42.0]
+"/Z4/" = [64.0, 42.0]
+"/Z5/" = [73.5, 42.0]
+"/Z6/" = [83.0, 42.0]
+"/Z7/" = [92.5, 42.0]
+"/Z8/" = [102.0, 42.0]
+
+[group.channel_logic.parts]
+D2 = [0, 0, 0]             # LED, cathode left
+R1 = [-3.1, 0, 0]          # opto LED resistor
+R2 = [3.1, 0, 180]         # LED resistor
+U1 = [0, 8.8, 90]          # opto-triac: LED side down, pin 1 left; pin 4 (gate) top right
+
+# ---- copper ---------------------------------------------------------------------------------------
+# Layer use: F.Cu parts and signals, In1.Cu ground, In2.Cu supply planes and the valve fan-out,
+# B.Cu signals, the triac heat islands and ground.
+[route]
+layers = ["F.Cu", "In2.Cu", "B.Cu"]   # In1.Cu is the ground plane: the autorouter only passes vias through it
+# Nets the autorouter must leave alone: they connect through planes, pours or hand-routed copper.
+exclude = ["GND", "3V3", "/ISNS", "/OUT_*", "/*/T2", "/*/SNB", "/AC_L_IN", "/AC_N", "/AC_L", "/COM",
+           "/Power/VRECT", "VIN_DC", "/KA", "/*/G", "/*/OGT", "/*/OLA", "/*/LEDA"]
+
+[route.layer_cost]
+"In2.Cu" = 2.5              # In2.Cu is also the 3.3 V pour: use it only where it saves a long way round
+
+# Where the autorouter may put neither track nor via: the valve block on B.Cu (heat islands) and
+# on In2.Cu (shunt plane and fan-out lanes), which it cannot see because they are added afterwards.
+[[route.keepout]]
+layers = ["B.Cu", "In2.Cu"]
+rect = [39.4, 7.3, 103.3, 37.9]
+
+[[route.keepout]]
+layers = ["In2.Cu"]
+rect = [34.6, 17.6, 39.4, 39.1]
+
+# A via beside every surface-mount pad of a plane net.
+[[plane]]
+net = "GND"
+skip = ["U4.41", "U1.9", "R40.1", "R44.1", "J7.1", "J5.A12", "J5.B1"]   # exposed pads: vias by hand. R40, R44: Kelvin, see below
+
+[[plane]]
+net = "3V3"
+# where the 3.3 V pour on In2.Cu is
+within = [[0.9, 45.7, 113.1, 109.1], [104.4, 5.4, 113.1, 45.7], [0.9, 16.4, 9.1, 45.7]]
+
+# Copper of one channel column, repeated nine times. Offsets from the column centre at y = 0.
+# Snubber mid-point.
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 0.3
+points = ["C1.1", "R5.2"]
+
+# Output: TVS to the PTC.
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 1.2
+points = ["D1.1", [-1.25, 16.54], "F1.1"]
+
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 0.6
+points = ["D1.1", [-1.25, 14.6], [0.5, 14.7]]
+
+# Two output vias down to the fan-out lane on In2.Cu, joined there.
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 0.6
+via = [0.6, 0.3]
+points = ["F1.1", [0.5, 16.2], {via = [0.5, 14.7]}]
+
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 0.6
+via = [0.6, 0.3]
+via_to = "In2.Cu"
+points = ["F1.1", {via = [-3.12, 16.54]}, [-3.12, 15.6], [0.5, 15.6], [0.5, 14.7]]
+
+# T2: PTC to the triac tab, and vias to the island on B.Cu.
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 3
+points = ["F1.2", "Q1.2"]
+
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 1
+points = ["F1.2", {via = [-3.12, 22.7]}]
+
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 1
+points = ["F1.2", {via = [-3.12, 24.1]}]
+
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 0.6
+via = [0.6, 0.3]
+points = ["Q1.2", {via = [-1.5, 26.9]}]
+
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 0.6
+via = [0.6, 0.3]
+points = ["Q1.2", {via = [1.5, 26.9]}]
+
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 0.6
+via = [0.6, 0.3]
+points = ["Q1.2", {via = [-1.5, 29.7]}]
+
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 0.6
+via = [0.6, 0.3]
+points = ["Q1.2", {via = [1.5, 29.7]}]
+
+# T2 for the snubber resistor, from the island.
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+points = ["R5.1", {via = [3.25, 13.97]}]
+
+# A1: to the gate resistor, and vias to the ISNS plane on In2.Cu.
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 0.6
+points = ["Q1.1", "R4.2"]
+
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 0.6
+via = [0.6, 0.3]
+points = ["Q1.1", {via = [2.3, 36]}]
+
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 0.6
+via = [0.8, 0.4]
+points = ["Q1.1", {via = [2.3, 32.5]}]
+
+# Gate.
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 0.3
+points = ["Q1.3", [-2.28, 35.9], [0.675, 35.9], "R4.1"]
+
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+points = ["R4.1", {via = [0.675, 38.4]}]
+
+# T2 and the opto output.
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+points = ["R3.1", {via = [-2.71, 38.55]}]
+
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+points = ["R3.2", {via = [-0.89, 38.65]}]
+
+# Valve outputs, from each terminal pin to the vias under its column, on In2.Cu. Later
+# outputs start lower and step up as earlier ones end, so no two cross. 0.9 mm wide,
+# 0.3 mm apart: design/rules.kicad_dru allows 0.25 mm between 24 VAC nets on this layer.
+# The inner copper must be 1 oz (35 um).
+[[track]]
+layer = "In2.Cu"
+width = 0.9
+points = ["J2.3", [37.845, 12.75], [43.35, 12.75], [43.35, 14.7]]
+
+[[track]]
+layer = "In2.Cu"
+width = 0.9
+points = ["J2.4", [41.655, 11.55], [44.6, 11.55], [45.8, 12.75], [50.45, 12.75], [50.45, 14.7]]
+
+[[track]]
+layer = "In2.Cu"
+width = 0.9
+points = ["J2.5", [45.465, 10.35], [46.3, 10.35], [47.5, 11.55], [51.7, 11.55], [52.9, 12.75], [57.55, 12.75], [57.55, 14.7]]
+
+[[track]]
+layer = "In2.Cu"
+width = 0.9
+points = ["J2.6", [49.275, 9.15], [50.1, 9.15], [51.3, 10.35], [52.35, 10.35], [53.55, 11.55], [58.8, 11.55], [60, 12.75], [64.65, 12.75], [64.65, 14.7], [64.65, 12.75], [64.65, 14.7]]
+
+[[track]]
+layer = "In2.Cu"
+width = 0.9
+points = ["J2.7", [53.085, 9.15], [53.9, 9.15], [55.1, 10.35], [59.4, 10.35], [60.6, 11.55], [65.9, 11.55], [67.1, 12.75], [71.75, 12.75], [71.75, 14.7]]
+
+[[track]]
+layer = "In2.Cu"
+width = 0.9
+points = ["J3.1", [58.295, 9.15], [60, 9.15], [61.2, 10.35], [66.5, 10.35], [67.7, 11.55], [73, 11.55], [74.2, 12.75], [78.85, 12.75], [78.85, 14.7]]
+
+[[track]]
+layer = "In2.Cu"
+width = 0.9
+points = ["J3.2", [62.105, 9.15], [67.1, 9.15], [68.3, 10.35], [73.6, 10.35], [74.8, 11.55], [80.1, 11.55], [81.3, 12.75], [85.95, 12.75], [85.95, 14.7]]
+
+[[track]]
+layer = "In2.Cu"
+width = 0.9
+points = ["J3.3", [65.915, 7.95], [67.7, 7.95], [68.9, 9.15], [74.2, 9.15], [75.4, 10.35], [80.7, 10.35], [81.9, 11.55], [87.2, 11.55], [88.4, 12.75], [93.05, 12.75], [93.05, 14.7]]
+
+[[track]]
+layer = "In2.Cu"
+width = 0.9
+points = ["J3.4", [69.725, 7.95], [74.8, 7.95], [76, 9.15], [81.3, 9.15], [82.5, 10.35], [87.8, 10.35], [89, 11.55], [94.3, 11.55], [95.5, 12.75], [100.15, 12.75], [100.15, 14.7]]
+
+# Ground: all of In1.Cu, and pours on both outer layers.
+[[zone]]
+net = "GND"
+layers = ["In1.Cu"]
+clearance = 0.3
+min_width = 0.25
+connect = "solid"
+priority = 0
+
+[[zone]]
+net = "GND"
+layers = ["F.Cu", "B.Cu"]
+clearance = 0.3
+min_width = 0.25
+connect = "thermal"
+thermal_gap = 0.3
+thermal_width = 0.4
+priority = 0
+
+# 3.3 V: In2.Cu above the LED row, and down both edges to the parts that need it there.
+[[zone]]
+net = "3V3"
+layers = ["In2.Cu"]
+outline = [[0.5, 109.5], [113.5, 109.5], [113.5, 5.0], [103.9, 5.0], [103.9, 45.3], [9.5, 45.3], [9.5, 16.0], [0.5, 16.0]]
+clearance = 0.3
+min_width = 0.25
+connect = "solid"
+priority = 1
+
+# Shunt return: In2.Cu under the triacs. Every A1 terminal drops into it through two vias.
+[[zone]]
+net = "/ISNS"
+layers = ["In2.Cu"]
+outline = [[34.6, 17.6], [103.3, 17.6], [103.3, 39.1], [34.6, 39.1]]
+clearance = 0.5
+min_width = 0.3
+connect = "solid"
+priority = 2
+
+# One island per triac tab on B.Cu, 6.5 x 31.6 mm, joined to the tab by six vias.
+[[zone]]
+net = "/MV/T2"
+layers = ["B.Cu"]
+outline = [[39.6, 7.6], [46.1, 7.6], [46.1, 39], [39.6, 39]]
+clearance = 0.5
+min_width = 0.3
+connect = "solid"
+priority = 3
+
+[[zone]]
+net = "/Z1/T2"
+layers = ["B.Cu"]
+outline = [[46.7, 7.6], [53.2, 7.6], [53.2, 39], [46.7, 39]]
+clearance = 0.5
+min_width = 0.3
+connect = "solid"
+priority = 3
+
+[[zone]]
+net = "/Z2/T2"
+layers = ["B.Cu"]
+outline = [[53.8, 7.6], [60.3, 7.6], [60.3, 39], [53.8, 39]]
+clearance = 0.5
+min_width = 0.3
+connect = "solid"
+priority = 3
+
+[[zone]]
+net = "/Z3/T2"
+layers = ["B.Cu"]
+outline = [[60.9, 7.6], [67.4, 7.6], [67.4, 39], [60.9, 39]]
+clearance = 0.5
+min_width = 0.3
+connect = "solid"
+priority = 3
+
+[[zone]]
+net = "/Z4/T2"
+layers = ["B.Cu"]
+outline = [[68, 7.6], [74.5, 7.6], [74.5, 39], [68, 39]]
+clearance = 0.5
+min_width = 0.3
+connect = "solid"
+priority = 3
+
+[[zone]]
+net = "/Z5/T2"
+layers = ["B.Cu"]
+outline = [[75.1, 7.6], [81.6, 7.6], [81.6, 39], [75.1, 39]]
+clearance = 0.5
+min_width = 0.3
+connect = "solid"
+priority = 3
+
+[[zone]]
+net = "/Z6/T2"
+layers = ["B.Cu"]
+outline = [[82.2, 7.6], [88.7, 7.6], [88.7, 39], [82.2, 39]]
+clearance = 0.5
+min_width = 0.3
+connect = "solid"
+priority = 3
+
+[[zone]]
+net = "/Z7/T2"
+layers = ["B.Cu"]
+outline = [[89.3, 7.6], [95.8, 7.6], [95.8, 39], [89.3, 39]]
+clearance = 0.5
+min_width = 0.3
+connect = "solid"
+priority = 3
+
+[[zone]]
+net = "/Z8/T2"
+layers = ["B.Cu"]
+outline = [[96.4, 7.6], [102.9, 7.6], [102.9, 39], [96.4, 39]]
+clearance = 0.5
+min_width = 0.3
+connect = "solid"
+priority = 3
+
+# 24 VAC entry. 2.0 mm: 3 A, the fuse rating, gives about 6 K rise in 1 oz outer copper.
+[[track]]
+layer = "F.Cu"
+width = 2
+points = ["J1.1", "F4.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 2
+points = ["J1.2", "F1.1"]
+
+# AC_L: fuse to the surge clamp, the rectifier and the relay contact.
+[[track]]
+layer = "F.Cu"
+width = 2
+points = ["F4.2", [11.815, 21.8], "D1.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 1
+points = ["F4.2", [11.815, 19], [23.2, 19], "D2.2"]
+
+[[track]]
+layer = "F.Cu"
+width = 2
+points = ["D1.1", [11.6, 23.6], [9.6, 25.5], "K1.13"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.5
+points = ["K1.13", "JP1.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.5
+points = ["K1.13", [3.2, 25.5], "R55.1"]
+
+# COM: relay contact to the two COM terminals, on B.Cu under the fuse well.
+[[track]]
+layer = "B.Cu"
+width = 2
+points = ["K1.14", [7.15, 16.3], [9.6, 13.8], [9.6, 10.6], [11.2, 9], [27, 9], [29, 7.2], "J2.1"]
+
+[[track]]
+layer = "B.Cu"
+width = 2
+points = ["J2.1", "J2.2"]
+
+[[track]]
+layer = "F.Cu"
+width = 1.5
+points = ["J2.2", [34.035, 8.4], [35.6, 9.45], "D23.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.5
+points = ["K1.14", "JP1.2"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.5
+points = ["JP1.2", [5.5, 21.35], "TP22.1"]
+
+# Return: shunt and valve-common TVS to the fuse in the AC_N leg.
+[[track]]
+layer = "F.Cu"
+width = 2
+points = ["F1.2", [30.185, 13.6], [36, 13.6], "D23.2"]
+
+[[track]]
+layer = "F.Cu"
+width = 2
+points = ["D23.2", "R37.2"]
+
+# Rectifier to the surge resistor.
+[[track]]
+layer = "F.Cu"
+width = 1
+points = ["D2.1", [27.2, 23], [26.5, 23.6], "R1.1"]
+
+# VIN_DC: surge resistor to C1 and to the buck input capacitors.
+[[track]]
+layer = "F.Cu"
+width = 1
+points = ["R1.2", [33.4, 25.6], [33.4, 31.4], [34.5, 32.5], "C1.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 1.5
+points = ["C1.1", [33.6, 32.5], "C3.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 1.5
+points = ["C3.1", "C2.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 1
+points = ["C3.1", [29.4, 32.365], "U1.2"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.4
+points = ["C2.1", [29.5, 30.6], [29.2, 30], [28.3, 29.2], "R7.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.4
+points = ["C1.1", "R9.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.4
+points = ["C1.1", "TP1.1"]
+
+# ISNS: a strip through the lower pads of every TVS and snubber capacitor, then up to the
+# shunt. It carries surge and snubber current only. The triac currents take the In2.Cu plane.
+[[track]]
+layer = "F.Cu"
+width = 1
+points = ["D901.2", [41.6, 8.63], [101.7, 8.63], "C801.2"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.5
+points = ["D901.2", [41.6, 8.63], [38.65, 8.63], [38.65, 21.6], [37.6, 21.6], "R37.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 1
+points = ["R37.1", {via = [37.3, 23.7]}]
+
+[[track]]
+layer = "F.Cu"
+width = 1
+points = ["R37.1", {via = [35.3, 23.7]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.6
+points = ["R37.1", "TP17.1"]
+
+# Kelvin sense of the shunt R37. Each track leaves from its own via at the left end of a shunt
+# pad, and runs on B.Cu: left under C1, up at x = 18.4 and 19.0, where no gate line crosses, then
+# right to the amplifier. Rule areas keep the ground pours away from both, so that the ground
+# sense has no second path.
+[[track]]
+layer = "F.Cu"
+width = 0.25
+via = [0.6, 0.3]
+points = ["R37.1", {via = [34.1, 22.15]}, [34.1, 23.6], [33.3, 24.4], [19.6, 24.4], [19, 25], [19, 57.7], [19.6, 58.3], [32.7, 58.3], [32.7, 62.8]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.25
+via = [0.6, 0.3]
+points = ["R38.1", {via = [32.7, 62.8]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.25
+points = ["R38.1", [32.7, 62.8], "R42.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.25
+via = [0.6, 0.3]
+points = ["R37.2", {via = [34.1, 16.35]}, [33.3, 17.15], [33.3, 23], [32.5, 23.8], [18.9, 23.8], [18.4, 24.3], [18.4, 58.3], [19, 58.9], [31.9, 58.9], [31.9, 61.2]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.25
+via = [0.6, 0.3]
+points = ["R40.1", {via = [31.9, 61.2]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.25
+points = ["R40.1", [31.9, 61.2], [32.3, 61.6], [38.6, 61.6], "R44.1"]
+
+[[rule_area]]
+name = "Kelvin sense: no pour"
+layers = ["B.Cu"]
+no_pour = true
+outline = [[32.7, 15.6], [34.8, 15.6], [34.8, 24.9], [19.5, 24.9], [19.5, 57.8], [33.2, 57.8], [33.2, 63.3], [31.4, 63.3], [31.4, 59.4], [17.9, 59.4], [17.9, 23.3], [32.7, 23.3]]
+
+[[rule_area]]
+name = "Kelvin sense: no pour"
+layers = ["F.Cu"]
+no_pour = true
+rect = [30.5, 60.95, 39.5, 63.4]
+
+[[rule_area]]
+name = "Kelvin sense: ground via not tied to the plane here"
+layers = ["In1.Cu"]
+no_pour = true
+rect = [31.2, 60.5, 32.6, 61.9]
+
+# Keep-alive (hardware design, section 8.5): from module pin 31 under the module to detector A,
+# then on B.Cu to detector B. The [[guard]] below keeps every other track 1 mm away.
+[[track]]
+layer = "F.Cu"
+width = 0.25
+via = [0.6, 0.3]
+points = ["U4.31", {via = [108.9, 97.08]}, [108.9, 91], [109.5, 90.4], [109.5, 88.5]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.25
+via = [0.6, 0.3]
+points = ["R29.1", {via = [109.5, 88.5]}, [109.5, 80], [108.1, 78.6], [44.2, 78.6]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.25
+points = ["R33.1", [109.5, 88.5]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.25
+via = [0.6, 0.3]
+points = ["R89.1", {via = [44.2, 78.6]}]
+
+# USB D+ and D-, side by side on B.Cu from the ESD array up the left edge and across under the
+# display to the series resistors at the module. 0.25 mm tracks, 0.2 mm apart. Full speed only:
+# not impedance controlled.
+[[track]]
+layer = "F.Cu"
+width = 0.25
+via = [0.6, 0.3]
+points = ["U2.1", {via = [1.3, 18.65]}, [1.3, 19.9], [4.3, 22.9], [4.3, 97.7], [4.75, 98.15], [89.2, 98.15]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.25
+via = [0.6, 0.3]
+points = ["R98.1", {via = [89.2, 98.15]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.25
+via = [0.6, 0.3]
+points = ["U2.3", {via = [1.3, 16.75]}, [1.9, 16.15], [4.15, 16.15], [4.75, 16.75], [4.75, 97], [5.45, 97.7], [88, 97.7], [88.2, 97.5], [90.45, 97.5], [90.9, 97.95], [90.9, 98.15]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.25
+via = [0.6, 0.3]
+points = ["R97.1", {via = [90.9, 98.15]}]
+
+# V_DRV, the opto LED supply: one bus under the LED row, a stub to each resistor.
+[[track]]
+layer = "F.Cu"
+width = 0.4
+points = ["R901.1", [22.075, 40.6], [105.925, 40.6], "R802.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["R902.1", [29.925, 40.6]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["R101.1", [31.575, 40.6]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["R102.1", [39.425, 40.6]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["R201.1", [41.075, 40.6]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["R202.1", [48.925, 40.6]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["R301.1", [50.575, 40.6]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["R302.1", [58.425, 40.6]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["R401.1", [60.075, 40.6]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["R402.1", [67.925, 40.6]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["R501.1", [69.575, 40.6]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["R502.1", [77.425, 40.6]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["R601.1", [79.075, 40.6]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["R602.1", [86.925, 40.6]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["R701.1", [88.575, 40.6]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["R702.1", [96.425, 40.6]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["R801.1", [98.075, 40.6]]
+
+# Ground vias for pads where the fan-out finds no place by itself.
+[[track]]
+layer = "F.Cu"
+width = 0.25
+via = [0.6, 0.3]
+points = ["J7.1", {via = [56.4, 84.9]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["J5.A12", [11.25, 7.65], [14.15, 7.65], "R17.2"]
+
+# 3.3 V at the display connector: pin 9 to pin 8, which has the via.
+[[track]]
+layer = "F.Cu"
+width = 0.25
+points = ["J7.9", "J7.8"]
+
+# Copper of one LED cell: resistor to LED, LED cathode to the opto LED cathode, resistor to the
+# opto LED anode. Offsets from the LED.
+[[group.channel_logic.track]]
+layer = "F.Cu"
+width = 0.25
+points = ["R2.2", "D2.2"]
+
+[[group.channel_logic.track]]
+layer = "F.Cu"
+width = 0.25
+points = ["D2.1", [-0.787, 1.4], [0, 2.2], "U1.2"]
+
+[[group.channel_logic.track]]
+layer = "F.Cu"
+width = 0.25
+points = ["R1.2", [-2.275, 1.2], [-2.54, 1.5], "U1.1"]
+
+# Opto-output lines of the nine channels on In2.Cu, gate lines on B.Cu: sideways in the strip
+# under the LED row, then under each opto-triac to a via beside its pin. 0.3 mm, 0.5 mm apart.
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+via_to = "In2.Cu"
+points = ["U901.6", {via = [23.46, 53.4]}, [23.46, 39.75], [41.96, 39.75], [41.96, 38.65]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+via_to = "In2.Cu"
+points = ["U101.6", {via = [32.96, 53.4]}, [32.96, 40.55], [49.06, 40.55], [49.06, 38.65]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+via_to = "In2.Cu"
+points = ["U201.6", {via = [42.46, 53.4]}, [42.46, 41.35], [56.16, 41.35], [56.16, 38.65]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+via_to = "In2.Cu"
+points = ["U301.6", {via = [51.96, 53.4]}, [51.96, 42.15], [63.26, 42.15], [63.26, 38.65]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+via_to = "In2.Cu"
+points = ["U401.6", {via = [61.46, 53.4]}, [61.46, 42.95], [70.36, 42.95], [70.36, 38.65]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+via_to = "In2.Cu"
+points = ["U501.6", {via = [70.96, 53.4]}, [70.96, 43.75], [77.46, 43.75], [77.46, 38.65]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+via_to = "In2.Cu"
+points = ["U601.6", {via = [80.46, 53.4]}, [80.46, 39.75], [84.56, 39.75], [84.56, 38.65]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+via_to = "In2.Cu"
+points = ["U701.6", {via = [89.96, 53.4]}, [89.96, 39.75], [91.66, 39.75], [91.66, 38.65]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+via_to = "In2.Cu"
+points = ["U801.6", {via = [99.46, 53.4]}, [99.46, 39.75], [98.76, 39.75], [98.76, 38.65]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+via_to = "B.Cu"
+points = ["U901.4", {via = [28.54, 53.4]}, [28.54, 39.75], [43.525, 39.75], [43.525, 38.4]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+via_to = "B.Cu"
+points = ["U101.4", {via = [38.04, 53.4]}, [38.04, 40.55], [50.625, 40.55], [50.625, 38.4]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+via_to = "B.Cu"
+points = ["U201.4", {via = [47.54, 53.4]}, [47.54, 41.35], [57.725, 41.35], [57.725, 38.4]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+via_to = "B.Cu"
+points = ["U301.4", {via = [57.04, 53.4]}, [57.04, 42.15], [64.825, 42.15], [64.825, 38.4]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+via_to = "B.Cu"
+points = ["U401.4", {via = [66.54, 53.4]}, [66.54, 39.75], [71.925, 39.75], [71.925, 38.4]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+via_to = "B.Cu"
+points = ["U501.4", {via = [76.04, 53.4]}, [76.04, 39.75], [79.025, 39.75], [79.025, 38.4]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+via_to = "B.Cu"
+points = ["U601.4", {via = [85.54, 53.4]}, [85.54, 39.75], [86.125, 39.75], [86.125, 38.4]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+via_to = "B.Cu"
+points = ["U701.4", {via = [95.04, 53.4]}, [95.04, 39.75], [93.225, 39.75], [93.225, 38.4]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+via_to = "B.Cu"
+points = ["U801.4", {via = [104.54, 53.4]}, [104.54, 39.75], [100.325, 39.75], [100.325, 38.4]]
+
+
+# No other track or via within 1 mm of the keep-alive net (hardware design, section 8.5).
+[[guard]]
+net = "/KA"
+distance = 1.0
+
+# ---- silkscreen -----------------------------------------------------------------------------------
+# 349 parts on one side: the designators of the small parts do not fit between them. They are left
+# off the silkscreen and are on the assembly drawing (F.Fab) instead. Connectors, ICs, switches,
+# fuses and the bottom-side parts keep theirs.
+[silk]
+hide = ["R*", "C[2-9]", "C[1-9][0-9]", "C[1-9][0-9][0-9]", "D*", "F[23]", "F[1-9]0[0-9]", "Q*", "L*", "Y*",
+        "TP*", "H*", "U[1-9]0[0-9]", "JP*"]
+
+[[text]]
+text = "ZoneFlow rev A"
+layer = "F.SilkS"
+at = [22.0, 106.5]
+size = 1.5
+thickness = 0.25
+
+[[text]]
+text = "Not built, not tested. CERN-OHL-P-2.0"
+layer = "F.SilkS"
+at = [28.0, 104.2]
+size = 1.0
+thickness = 0.15
+
+[[text]]
+text = "3A T"
+layer = "F.SilkS"
+at = [21.0, 16.6]
+size = 1.0
+thickness = 0.15
+
+[[text]]
+text = "JP1: bridge only if K1 is not fitted"
+layer = "B.SilkS"
+at = [22.0, 20.5]
+size = 1.0
+thickness = 0.15
+
+[drc_severity]

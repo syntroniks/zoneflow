@@ -53,7 +53,9 @@ def read(path: Path) -> Netlist:
             fields=fields,
             sheet_names=find(sp, "names")[1],
             sheet_tstamps=find(sp, "tstamps")[1],
-            tstamp=find(c, "tstamps")[1],
+            # A multi-unit part lists one id per unit, in an order that differs between builds
+            # of KiCad. The smallest is taken, so that the board links to the same unit everywhere.
+            tstamp=min(find(c, "tstamps")[1:]),
             lib=find(ls, "lib")[1],
             part=find(ls, "part")[1],
             dnp="dnp" in props,

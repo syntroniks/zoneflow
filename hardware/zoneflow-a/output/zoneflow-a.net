@@ -21485,7 +21485,7 @@
 		(comp
 			(ref "U101")
 			(value "MOC3023S")
-			(footprint "Package_DIP:SMDIP-6_W9.53mm")
+			(footprint "ZoneFlow:SMDIP-6_onsemi_646BY")
 			(datasheet "https://www.onsemi.com/pub/Collateral/MOC3023M-D.PDF")
 			(description "Random Phase Opto-Triac, Vdrm 400V, Ift 5mA, DIP6")
 			(fields
@@ -21498,7 +21498,7 @@
 				(field
 					(name "LCSC") "C40701")
 				(field
-					(name "Footprint") "Package_DIP:SMDIP-6_W9.53mm")
+					(name "Footprint") "ZoneFlow:SMDIP-6_onsemi_646BY")
 				(field
 					(name "Datasheet") "https://www.onsemi.com/pub/Collateral/MOC3023M-D.PDF")
 				(field
@@ -22350,7 +22350,7 @@
 		(comp
 			(ref "U201")
 			(value "MOC3023S")
-			(footprint "Package_DIP:SMDIP-6_W9.53mm")
+			(footprint "ZoneFlow:SMDIP-6_onsemi_646BY")
 			(datasheet "https://www.onsemi.com/pub/Collateral/MOC3023M-D.PDF")
 			(description "Random Phase Opto-Triac, Vdrm 400V, Ift 5mA, DIP6")
 			(fields
@@ -22363,7 +22363,7 @@
 				(field
 					(name "LCSC") "C40701")
 				(field
-					(name "Footprint") "Package_DIP:SMDIP-6_W9.53mm")
+					(name "Footprint") "ZoneFlow:SMDIP-6_onsemi_646BY")
 				(field
 					(name "Datasheet") "https://www.onsemi.com/pub/Collateral/MOC3023M-D.PDF")
 				(field
@@ -23215,7 +23215,7 @@
 		(comp
 			(ref "U301")
 			(value "MOC3023S")
-			(footprint "Package_DIP:SMDIP-6_W9.53mm")
+			(footprint "ZoneFlow:SMDIP-6_onsemi_646BY")
 			(datasheet "https://www.onsemi.com/pub/Collateral/MOC3023M-D.PDF")
 			(description "Random Phase Opto-Triac, Vdrm 400V, Ift 5mA, DIP6")
 			(fields
@@ -23228,7 +23228,7 @@
 				(field
 					(name "LCSC") "C40701")
 				(field
-					(name "Footprint") "Package_DIP:SMDIP-6_W9.53mm")
+					(name "Footprint") "ZoneFlow:SMDIP-6_onsemi_646BY")
 				(field
 					(name "Datasheet") "https://www.onsemi.com/pub/Collateral/MOC3023M-D.PDF")
 				(field
@@ -24080,7 +24080,7 @@
 		(comp
 			(ref "U401")
 			(value "MOC3023S")
-			(footprint "Package_DIP:SMDIP-6_W9.53mm")
+			(footprint "ZoneFlow:SMDIP-6_onsemi_646BY")
 			(datasheet "https://www.onsemi.com/pub/Collateral/MOC3023M-D.PDF")
 			(description "Random Phase Opto-Triac, Vdrm 400V, Ift 5mA, DIP6")
 			(fields
@@ -24093,7 +24093,7 @@
 				(field
 					(name "LCSC") "C40701")
 				(field
-					(name "Footprint") "Package_DIP:SMDIP-6_W9.53mm")
+					(name "Footprint") "ZoneFlow:SMDIP-6_onsemi_646BY")
 				(field
 					(name "Datasheet") "https://www.onsemi.com/pub/Collateral/MOC3023M-D.PDF")
 				(field
@@ -25035,7 +25035,7 @@
 		(comp
 			(ref "U501")
 			(value "MOC3023S")
-			(footprint "Package_DIP:SMDIP-6_W9.53mm")
+			(footprint "ZoneFlow:SMDIP-6_onsemi_646BY")
 			(datasheet "https://www.onsemi.com/pub/Collateral/MOC3023M-D.PDF")
 			(description "Random Phase Opto-Triac, Vdrm 400V, Ift 5mA, DIP6")
 			(fields
@@ -25048,7 +25048,7 @@
 				(field
 					(name "LCSC") "C40701")
 				(field
-					(name "Footprint") "Package_DIP:SMDIP-6_W9.53mm")
+					(name "Footprint") "ZoneFlow:SMDIP-6_onsemi_646BY")
 				(field
 					(name "Datasheet") "https://www.onsemi.com/pub/Collateral/MOC3023M-D.PDF")
 				(field
@@ -25999,7 +25999,7 @@
 		(comp
 			(ref "U601")
 			(value "MOC3023S")
-			(footprint "Package_DIP:SMDIP-6_W9.53mm")
+			(footprint "ZoneFlow:SMDIP-6_onsemi_646BY")
 			(datasheet "https://www.onsemi.com/pub/Collateral/MOC3023M-D.PDF")
 			(description "Random Phase Opto-Triac, Vdrm 400V, Ift 5mA, DIP6")
 			(fields
@@ -26012,7 +26012,7 @@
 				(field
 					(name "LCSC") "C40701")
 				(field
-					(name "Footprint") "Package_DIP:SMDIP-6_W9.53mm")
+					(name "Footprint") "ZoneFlow:SMDIP-6_onsemi_646BY")
 				(field
 					(name "Datasheet") "https://www.onsemi.com/pub/Collateral/MOC3023M-D.PDF")
 				(field
@@ -26963,7 +26963,7 @@
 		(comp
 			(ref "U701")
 			(value "MOC3023S")
-			(footprint "Package_DIP:SMDIP-6_W9.53mm")
+			(footprint "ZoneFlow:SMDIP-6_onsemi_646BY")
 			(datasheet "https://www.onsemi.com/pub/Collateral/MOC3023M-D.PDF")
 			(description "Random Phase Opto-Triac, Vdrm 400V, Ift 5mA, DIP6")
 			(fields
@@ -26976,7 +26976,7 @@
 				(field
 					(name "LCSC") "C40701")
 				(field
-					(name "Footprint") "Package_DIP:SMDIP-6_W9.53mm")
+					(name "Footprint") "ZoneFlow:SMDIP-6_onsemi_646BY")
 				(field
 					(name "Datasheet") "https://www.onsemi.com/pub/Collateral/MOC3023M-D.PDF")
 				(field
@@ -27927,7 +27927,7 @@
 		(comp
 			(ref "U801")
 			(value "MOC3023S")
-			(footprint "Package_DIP:SMDIP-6_W9.53mm")
+			(footprint "ZoneFlow:SMDIP-6_onsemi_646BY")
 			(datasheet "https://www.onsemi.com/pub/Collateral/MOC3023M-D.PDF")
 			(description "Random Phase Opto-Triac, Vdrm 400V, Ift 5mA, DIP6")
 			(fields
@@ -27940,7 +27940,7 @@
 				(field
 					(name "LCSC") "C40701")
 				(field
-					(name "Footprint") "Package_DIP:SMDIP-6_W9.53mm")
+					(name "Footprint") "ZoneFlow:SMDIP-6_onsemi_646BY")
 				(field
 					(name "Datasheet") "https://www.onsemi.com/pub/Collateral/MOC3023M-D.PDF")
 				(field
@@ -28801,7 +28801,7 @@
 		(comp
 			(ref "U901")
 			(value "MOC3023S")
-			(footprint "Package_DIP:SMDIP-6_W9.53mm")
+			(footprint "ZoneFlow:SMDIP-6_onsemi_646BY")
 			(datasheet "https://www.onsemi.com/pub/Collateral/MOC3023M-D.PDF")
 			(description "Random Phase Opto-Triac, Vdrm 400V, Ift 5mA, DIP6")
 			(fields
@@ -28814,7 +28814,7 @@
 				(field
 					(name "LCSC") "C40701")
 				(field
-					(name "Footprint") "Package_DIP:SMDIP-6_W9.53mm")
+					(name "Footprint") "ZoneFlow:SMDIP-6_onsemi_646BY")
 				(field
 					(name "Datasheet") "https://www.onsemi.com/pub/Collateral/MOC3023M-D.PDF")
 				(field

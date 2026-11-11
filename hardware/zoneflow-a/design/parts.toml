@@ -635,7 +635,7 @@ package = "0805"
 [part.C40701]  # U101: MOC3023SR2M random-phase opto-triac
 value = "MOC3023S"
 symbol = "Relay_SolidState:MOC3023M"
-footprint = "Package_DIP:SMDIP-6_W9.53mm"
+footprint = "ZoneFlow:SMDIP-6_onsemi_646BY"
 package = "SMD-6"
 
 [part.C22808]  # R101: 150R 1%

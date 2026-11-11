@@ -1,9 +1,10 @@
 # ZoneFlow mechanical design, revision A
 
-Status: **paper design, contract revision 2, 2026-11-10**. No board exists and
+Status: **paper design, contract revision 3, 2026-11-10**. No board exists and
 no part has been printed. Dimensions come from datasheets and drawings that I
 opened, and the text says which. Section 10 lists what I could not confirm.
-Section 12 lists what moved since revision 1.
+Section 12 lists what moved since revision 1, and section 12.1 what the board
+layout changed in revision 3.
 
 This document is for the PCB layout engineer. It explains the mechanical
 contract in `hardware/mechanical.yaml`, which is the file to work from. If a
@@ -129,7 +130,7 @@ numbers with their sources, plus the body sizes.
 | J2 | Header, 7-way | pin 1 at 30.225 | 5.9 | top | COM, COM, MV, 1 to 4 |
 | J3 | Header, 4-way | pin 1 at 58.295 | 5.9 | top | 5 to 8 |
 | J4 | Header, 7-way | pin 1 at 78.335 | 5.9 | top | 5V, FLOW, GND, RAIN, GND, AUX, GND |
-| J6 | Qwiic, JST SH side entry | 109.25 | edge | top | Mouth towards -y, about 0.5 mm beyond the edge |
+| J6 | Qwiic, JST SH side entry | 109.25 | edge | top | Mouth towards -y, 0.45 mm inside the edge (revision 3) |
 | F4 | Fuse holder, `AC_L` leg | 15.0 | 12.6 | top | Long axis along x. In the fuse well. |
 | F1 | Fuse holder, `AC_N` leg | 27.0 | 12.6 | top | Long axis along x. In the fuse well. |
 | D6 | Status LED | 12.0 | 42.0 | top | |
@@ -140,9 +141,9 @@ numbers with their sources, plus the body sizes.
 | SW3 | Encoder | 85.0 | 88.0 | top | Shaft axis. Any multiple of 90 degrees. |
 | J7 | Display FPC connector | 60.44 | 88.43 | top | Body centre. FPC enters from +x. Mouth at x = 63.0. Pad 1 at y = 85.68, pad 12 at y = 91.18. |
 | U4 | ESP32-S3-WROOM-1 | 103.0 | 103.25 | top | Antenna towards +y and wholly beyond the top edge |
-| BT1 | CR2032 holder | 95.0 | 64.0 | top | Reserved position. May move, see below. |
-| C1 | Bulk capacitor, through-hole, lying down | 21.0 | 30.0 | **bottom** | Can axis along x. Pads at (36.0, 27.5) and (36.0, 32.5). Fixed. |
-| K1 | Relay, through-hole | 50 | 22 | **bottom** | Suggested. Free within the bottom zones. |
+| BT1 | CR2032 holder | 95.0 | 65.3 | top | From the layout (revision 3). May move, see below. |
+| C1 | Bulk capacitor, through-hole, lying down | 20.75 | 30.0 | **bottom** | Can axis along x. Pads at (36.0, 27.5) and (36.0, 32.5). Fixed. |
+| K1 | Relay, through-hole | 4.8 | 27.85 | **bottom** | From the layout (revision 3): along the left edge, long axis along y. Free within the bottom zones. |
 
 Notes on some of these.
 
@@ -257,7 +258,7 @@ bottom and soldered by hand, in the same step as the four terminal headers.**
 
 | | Single SMT side, chosen | Double-sided SMT |
 |---|---|---|
-| C1 | Rubycon 63PX470MEFC12.5X20, through-hole, lying on its side | Lelon VZH471M1JTR-1616, SMD, the only SMT part on the bottom |
+| C1 | Rubycon 63ZLJ470M12.5X20 (revision 3; was the 63PX part), through-hole, lying on its side | Lelon VZH471M1JTR-1616, SMD, the only SMT part on the bottom |
 | K1 | Through-hole from the bottom | Same |
 | At the assembly house | One placement side, one reflow | A second stencil, a second placement run and a second reflow for one capacitor |
 | Hand work per board | Six through-hole parts: four headers from the top, K1 and C1 from the bottom | Five: the headers and K1 |
@@ -283,10 +284,10 @@ for the circuit designer to check. I did not edit the BOM.
 
 **What this means for the layout.**
 
-- **C1 has a fixed position**: can centred at (21.0, 30.0) on the bottom side, axis along x, leads towards +x, pads at (36.0, 27.5) and (36.0, 32.5), 5.0 mm apart, for 0.6 mm leads. The can is 21.5 x 13.0 mm at most. Zone B_C1 is its footprint.
+- **C1 has a fixed position**: can centred at (20.75, 30.0) on the bottom side, axis along x, leads towards +x, pads at (36.0, 27.5) and (36.0, 32.5), 5.0 mm apart, for 0.6 mm leads. The can is 22.0 x 13.0 mm at most (revision 3: the ZLJ part; 21.5 for the PX part of revision 2). Zone B_C1 is its footprint.
 - **Retention.** Two ribs in the base stand under the can at x = 14 and x = 28, 0.3 mm short of it. They take its weight off the leads once the board is in the base. Before that, and for vibration, put a dot of neutral-cure silicone between the can and the board. Draw the can's outline on the bottom silkscreen so the dot and the can land in the right place.
 - **Soldering access.** K1 and C1 are soldered on the top side after reflow. Keep 2.5 mm around their top-side pads free of parts taller than 1.5 mm.
-- **K1 is free** within the bottom zones. I suggest (50, 22), next to the COM terminals.
+- **K1 is free** within the bottom zones. Revision 2 suggested (50, 22), next to the COM terminals. The layout put it at (4.8, 27.85), turned, under the left edge: section 12.1.
 - **Nothing else on the bottom.** No surface-mount part. The bottom copper is still yours for the triac heat-spreading islands.
 
 If C1 must move, change the YAML first. The ribs follow it.
@@ -482,6 +483,28 @@ Revision 1 is commit 2f7e375. The YAML file carries the same list under
 | T_CARRIER | 6.5 mm, to x = 74.5 | 5.0 mm, to x = 79.5 |
 | Bottom side | C1 and K1 and anything else | C1 and K1 only, no SMT |
 | Unchanged | | The bottom edge: J5, J1 to J4, J6. Holes C and D. The LED row. |
+
+### 12.1 Revision 3, from the board layout
+
+Written by the layout, not by the author of the rest of this document. The
+reasons are in [hardware layout](hardware-layout.md), section 4. The enclosure
+was rebuilt from the changed contract and `enclosure/tools/check.py` reported
+59 of 59 pairs clear.
+
+| What | Revision 2 | Revision 3 | Why |
+|---|---|---|---|
+| C1 | Rubycon 63PX470M, can 21.5 long at most, centre x = 21.0 | Rubycon 63ZLJ470M, can 22.0 long at most, centre x = 20.75 | Ripple rating and life: hardware design, section 4.5. The pads did not move |
+| K1 | Suggested 50, 22, long axis along x | 4.8, 27.85, long axis along y | At 50, 22 its four pins come up between the output triacs, where the soldering access rule cannot be met |
+| BT1 | 95, 64 | 95, 65.3, positive contact at the left | 1.3 mm up to clear the row of opto-triacs |
+| J6 | y = 1.625, mouth 0.5 mm beyond the edge | y = 2.63, mouth 0.45 mm inside the edge | At 1.625 the two mounting lands of the footprint were 0.7 mm beyond the board edge |
+
+Two things the layout found and did not change, because they are fixed
+positions:
+
+- The encoder and the module are 0.25 mm apart, land to pad (hardware layout,
+  section 12).
+- Nothing can stand beside module pins 38 and 39, so the ADC filter capacitors
+  are 20 mm from them.
 
 ## 13. How the files fit together
 

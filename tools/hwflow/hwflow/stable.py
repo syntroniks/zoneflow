@@ -42,6 +42,12 @@ def normalise(path: Path, date: str) -> bool:
         new = re.sub(rb"(report \()\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(, )", rb"\g<1>" + stamp + rb"\g<2>", raw, count=1)
     elif suffix == ".json":
         new = re.sub(rb'("date": ")\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(")', rb"\g<1>" + stamp + rb"\g<2>", raw, count=1)
+    elif suffix in (".gbr", ".drl", ".gbrjob"):
+        # Gerber X2 and Excellon headers, and the Gerber job file: "...CreationDate,2026-11-10T18:00:00-06:00",
+        # "date 2026-11-10T18:00:00-0600".
+        new = re.sub(rb"(CreationDate[,\"]:? ?\"?)\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+-]\d\d:?\d\d",
+                     rb"\g<1>" + stamp + b"+00:00", raw)
+        new = re.sub(rb"(date )\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+-]\d\d:?\d\d", rb"\g<1>" + stamp + b"+0000", new)
     else:
         return False
     if new != raw:

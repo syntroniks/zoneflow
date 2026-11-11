@@ -90,8 +90,8 @@
 		(uuid "db7f1257-e4c0-556c-9af5-b160609d293a")
 	)
 	(fp_rect
-		(start -8.5 -9.75)
-		(end 8.5 9.75)
+		(start -8.35 -9.75)
+		(end 8.35 9.75)
 		(stroke
 			(width 0.05)
 			(type default)

@@ -33,7 +33,8 @@ def terminal_header(poles: int) -> Footprint:
     for i in range(poles):
         f.tht(str(i + 1), i * pitch, 0, 2.3, 1.4, "rect" if i == 0 else "circle")
     x0, x1, y0, y1 = -end, (poles - 1) * pitch + end, -1.30, 9.20 - 1.30
-    f.outline(x0, y0, x1, y1, courtyard=0.5)
+    # 0.25 around the body: the contract puts J2 and J3 end to end with 0.6 mm between the bodies.
+    f.outline(x0, y0, x1, y1, courtyard=0.25)
     f.line("F.Fab", [(x0, 4.0), (x1, 4.0)], 0.1)  # the step in the housing, to tell front from back
     f.line("F.SilkS", [(x0 - 0.5, -0.8), (x0 - 0.5, 0.8)], 0.2)  # pin 1 mark
     f.labels((x0 + 1.5, -2.6), ((x0 + x1) / 2, y1 + 1.6), ((x0 + x1) / 2, 5.5))
@@ -138,7 +139,9 @@ def encoder_ec11j() -> Footprint:
     f.line("F.SilkS", [(-5.97, 2.4), (-5.97, 6.1)], 0.12)
     f.line("F.SilkS", [(5.97, -6.1), (5.97, -2.4)], 0.12)
     f.line("F.SilkS", [(5.97, 2.4), (5.97, 6.1)], 0.12)
-    f.courtyard(-8.5, -9.75, 8.5, 9.75)
+    # 0.1 beyond the side lands, not the usual 0.25: the mechanical contract puts the module's pad
+    # row 0.25 mm from the right-hand side land (encoder at x = 85.0, module at x = 103.0).
+    f.courtyard(-8.35, -9.75, 8.35, 9.75)
     f.labels((0, -10.8), (0, 10.9), (0, -2.5))
     # KiCad's EC11E is the through-hole relative with the same 20 mm shaft. Stand-in for the STEP export.
     f.model("Rotary_Encoder.3dshapes/RotaryEncoder_Alps_EC11E-Switch_Vertical_H20mm.step")
@@ -233,12 +236,36 @@ def esp32_module() -> Footprint:
     import pcbnew
     zones[0].SetLayerSet(pcbnew.LSET.AllCuMask())
     zones[0].SetZoneName("Antenna keep-out")
+    # The stock courtyard is the module body 0.25 beyond the pads plus the keep-out bar. Redrawn with
+    # 0.1 beyond the pads at the sides, because the contract puts the encoder's side land 0.25 mm
+    # from the pad row. The bar and the bottom edge are as in the stock footprint.
+    if f.clear("F.CrtYd") != 8:
+        raise SystemExit("the stock ESP32-S3-WROOM-1 courtyard no longer has eight lines")
+    f.line("F.CrtYd", [(-24.0, -27.75), (24.0, -27.75), (24.0, -6.75), (9.6, -6.75), (9.6, 13.45),
+                       (-9.6, 13.45), (-9.6, -6.75), (-24.0, -6.75), (-24.0, -27.75)], 0.05)
+    return f
+
+
+def opto_smdip6() -> Footprint:
+    """onsemi MOC3023SR2M, 6-pin surface-mount DIP. onsemi case 646BY, "PDIP6 8.51x6.35, 2.54P", issue A, 2019.
+
+    KiCad's SMDIP-6_W9.53mm with a larger courtyard. Its lands agree with onsemi's (footprints.md,
+    section 2), but its courtyard is 8.17 long, and the drawing gives the body, dimension D, as
+    8.13 to 8.89. Two parts placed courtyard to courtyard could touch. The courtyard here is the
+    largest body, 8.89, plus 0.25 at each end. Height, dimension A, is 4.80 at most.
+    """
+    f = Footprint("SMDIP-6_onsemi_646BY", "onsemi 6-pin SMD DIP, case 646BY (MOC3023SR2M). Lands of KiCad's "
+                  "SMDIP-6_W9.53mm, courtyard for the 8.89 mm maximum body", "optocoupler SMD DIP-6",
+                  from_stock="Package_DIP:SMDIP-6_W9.53mm")
+    if f.clear("F.CrtYd") == 0:
+        raise SystemExit("the stock SMDIP-6_W9.53mm footprint has no courtyard to replace")
+    f.courtyard(-6.04, -4.70, 6.04, 4.70)
     return f
 
 
 def footprints() -> list[Footprint]:
     return [terminal_header(2), terminal_header(4), terminal_header(7), fpc_12(), cr2032_holder(), encoder_ec11j(),
-            tact_6x6(), cap_lying(), mounting_hole(9.0), mounting_hole(7.0), esp32_module()]
+            tact_6x6(), cap_lying(), mounting_hole(9.0), mounting_hole(7.0), esp32_module(), opto_smdip6()]
 
 
 if __name__ == "__main__":

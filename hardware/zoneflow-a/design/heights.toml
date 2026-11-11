@@ -1,0 +1,116 @@
+# Component heights for the mechanical check, by footprint. Millimetres above the board.
+#
+# The check compares these with the height zones of hardware/mechanical.yaml. A footprint that
+# is used on the board and missing here fails the build. Parts that the contract places itself
+# (connectors, encoder, buttons, LEDs, module, cell holder, C1, K1, fuse holders) are not checked
+# against zones and need no entry.
+#
+# src says where the number is from:
+#   "sheet"     read from the maker's data sheet for the ordering code in the BOM
+#   "contract"  taken from the heights list of mechanical.yaml, which names its own source
+#   "package"   the usual maximum of that package. NOT read from the maker's sheet for this part.
+#               None of these is within 2 mm of the limit of the zone it is in.
+# height = 0 marks a footprint with no body: pads only.
+
+[footprint.R_0603_1608Metric]
+height = 0.55
+src = "package"
+[footprint.R_0805_2012Metric]
+height = 0.65
+src = "package"
+[footprint.R_1206_3216Metric]
+height = 0.7
+src = "package"
+[footprint.R_2512_6332Metric]
+height = 0.75
+src = "package"
+[footprint.R_Array_Convex_4x0603]
+height = 0.65
+src = "package"
+[footprint.C_0603_1608Metric]
+height = 0.95
+src = "package"
+[footprint.C_0805_2012Metric]
+height = 1.45
+src = "package"
+[footprint.C_1206_3216Metric]
+height = 1.8
+src = "package"
+[footprint.C_1210_3225Metric]
+height = 2.7
+src = "package"
+[footprint.LED_0603_1608Metric]
+height = 0.8
+src = "sheet"      # C125094: "Extra thin (0.80 mm)". The red LED, C2286, is 0.6
+[footprint.D_SOD-123]
+height = 1.35
+src = "package"
+[footprint.D_SMA]
+height = 2.45
+src = "package"
+[footprint.D_SMB]
+height = 2.45
+src = "package"
+[footprint.D_SMC]
+height = 2.65
+src = "package"
+[footprint.SOT-23]
+height = 1.25
+src = "package"
+[footprint.SOT-23-6]
+height = 1.45
+src = "package"
+[footprint.SOT-223-3_TabPin2]
+height = 1.8
+src = "package"
+[footprint."SOIC-8_3.9x4.9mm_P1.27mm"]
+height = 1.75
+src = "package"
+[footprint."SOIC-14_3.9x8.7mm_P1.27mm"]
+height = 1.75
+src = "package"
+[footprint."TSSOP-24_4.4x7.8mm_P0.65mm"]
+height = 1.2
+src = "package"
+[footprint.TI_SO-PowerPAD-8]
+height = 1.7
+src = "sheet"      # TI drawing 4202561/F: 1,70 MAX
+[footprint.TO-252-2]
+height = 2.4
+src = "contract"
+[footprint.SMDIP-6_onsemi_646BY]
+height = 4.8
+src = "sheet"      # onsemi case 646BY, dimension A maximum
+[footprint.L_Bourns_SRN6045TA]
+height = 4.5
+src = "sheet"      # 4.2 +/- 0.3
+[footprint.Fuse_2920_7451Metric]
+height = 2.1
+src = "sheet"      # BHFUSE BSMD2920, 1.00 to 2.10
+[footprint.Fuse_1812_4532Metric]
+height = 1.25
+src = "sheet"      # Littelfuse 1812L020/60, dimension C maximum
+[footprint.Fuse_1206_3216Metric]
+height = 1.45
+src = "sheet"      # Littelfuse 1206L012, dimension C maximum
+[footprint."Crystal_SMD_3215-2Pin_3.2x1.5mm"]
+height = 0.9
+src = "package"
+[footprint.SW_Push_1P1T_XKB_TS-1187A]
+height = 1.5
+src = "sheet"      # XKB TS-1187A, height code A
+[footprint."TestPoint_Pad_D1.5mm"]
+height = 0
+src = "pads only"
+[footprint."SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm"]
+height = 0
+src = "pads only"
+[footprint."PinHeader_1x06_P2.54mm_Vertical"]
+height = 0
+src = "pads only: the debug header is not fitted"
+[footprint."MountingHole_3.4mm_M3_Keepout9mm"]
+height = 0
+src = "a hole"
+[footprint."MountingHole_3.4mm_M3_Keepout7mm"]
+height = 0
+src = "a hole"

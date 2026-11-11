@@ -11,7 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import committed, netlist, parity, project, schlint, schwriter
+from . import committed, mech, netlist, parity, project, schlint, schwriter
 from .design import Design, DesignError
 
 
@@ -171,9 +171,29 @@ def cmd_committed(args) -> int:
     return 0
 
 
+def cmd_mech(args) -> int:
+    """The built board against the mechanical contract. Reads build/placement.json."""
+    import yaml
+
+    contract = yaml.safe_load(Path(args.contract).read_text(encoding="utf-8"))
+    problems, summary = mech.run(Path(args.project_dir), contract, Path(args.heights))
+    for p in problems:
+        sys.stderr.write(f"  {p}\n")
+    if problems:
+        sys.stderr.write(f"mechanical contract: {len(problems)} problem(s)\n")
+        return 1
+    print(summary)
+    return 0
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(prog="hwflow")
     sub = ap.add_subparsers(dest="cmd", required=True)
+    s = sub.add_parser("mech", help="check the built board against the mechanical contract")
+    s.add_argument("project_dir")
+    s.add_argument("--contract", required=True, help="the mechanical contract (YAML)")
+    s.add_argument("--heights", required=True, help="component heights by footprint (TOML)")
+    s.set_defaults(fn=cmd_mech)
     s = sub.add_parser("committed", help="check a board's committed netlist and BOMs against the design netlist")
     s.add_argument("project_dir")
     s.add_argument("--netlist", required=True, help="the design netlist (YAML)")

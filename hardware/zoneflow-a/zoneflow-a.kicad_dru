@@ -31,3 +31,22 @@
 (rule "JLCPCB pad to silkscreen"
 	(condition "A.Type == 'Pad'")
 	(constraint silk_clearance (min 0.15mm)))
+
+# ---- from rules.kicad_dru ----
+
+# Board rules of ZoneFlow rev A. The fab limits are in hardware/rules/jlcpcb.kicad_dru.
+# The reasons are in docs/design/hardware-layout.md.
+
+# The valve fan-out on In2.Cu: nine output nets side by side between the terminal row and the
+# shunt plane. The 24 VAC net class asks for 0.5 mm to any other net. Between two of these nets,
+# inside the board, 0.25 mm is allowed, so that each track can be 0.9 mm wide for the fault current.
+(rule "valve fan-out spacing on In2"
+  (layer "In2.Cu")
+  (condition "A.NetClass == 'AC24' && B.NetClass == 'AC24'")
+  (constraint clearance (min 0.25mm)))
+
+# The keep-alive net (hardware design, section 8.5): no other track within 1 mm of its tracks.
+# Pads are left out: at the module and at the 0603 resistors the neighbours are closer than that.
+(rule "keep-alive guard"
+  (condition "A.NetName == '/KA' && A.Type == 'Track' && B.Type == 'Track' && B.NetName != '/KA'")
+  (constraint clearance (min 1.0mm)))

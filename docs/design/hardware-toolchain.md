@@ -1,8 +1,8 @@
 # Hardware toolchain
 
 Status: **proven on a 40-part test board, 2026-11-10**, and used for the
-schematic of the revision A board, 346 parts then and 348 since hardware
-review A2, on the same day (section 12).
+schematic and the layout of the revision A board, 346 parts then and 348
+since hardware review A2, on the same day (sections 12 and 13).
 Nothing here has been built as hardware. Every result below names the command
 that produced it.
 
@@ -67,6 +67,7 @@ Three checks make the generated files trustworthy.
 |---|---|---|
 | `design/circuit.py` | Source | Yes |
 | `design/board.toml` | Source | Yes |
+| `design/heights.toml` | Source, component heights for the mechanical check (section 13.2) | Yes |
 | `design/rules.kicad_dru` | Source, board-specific DRC rules | Yes |
 | `design/parts.toml`, `design/symbols.py`, `design/footprints.py`, `design/footprints.md` | Source, on a board drawn from a design netlist (section 12) | Yes |
 | `lib/` | Generated project-local symbol and footprint libraries | No |
@@ -127,6 +128,7 @@ Run these in a board directory such as `hardware/toolchain-test/`.
 | `make committed` | Compare the committed netlist and BOMs with the design netlist. Needs no KiCad |
 | `make erc` | Up to and including ERC |
 | `make drc` | Up to and including DRC. Use this while iterating on placement |
+| `make mech` | Up to DRC, then the board against the mechanical contract |
 | `make reroute` | Discard the stored routing, route again, then everything |
 | `make check` | Unit tests, KiCad round-trip tests, and deliberate ERC and DRC failures |
 
@@ -370,13 +372,15 @@ again before an order.
 - **The autorouter narrows tracks at pads** to about 75% of class width. Set
   the floor you accept as a DRC rule per class.
 - **The autorouter does not understand return paths or which areas of the
-  board should stay apart.** Pre-route what matters. Rule areas are
-  not in `board.toml` yet. Only the ones inside library footprints exist.
+  board should stay apart.** Pre-route what matters. `[[rule_area]]`,
+  `[[guard]]` and `[[route.keepout]]` say where it must not go (section 13.1).
 - **On a 4-layer board Freerouting routes signals on the inner layers** unless
-  `[route] outer_layers_only = true`. With that option, plane nets are also
-  routed as outer-layer tracks, and the pours connect only where a via or
-  through-hole pad passes through. Marking the inner layers `(type power)` in
-  the DSN, or exporting the planes, did not keep Freerouting 2.5.0 off them.
+  it is told not to. `[route] layers` names the layers it may use, through its
+  settings file (section 13.3); `[[plane]]` and `[route] exclude` keep the
+  plane nets from it. The older `[route] outer_layers_only = true` shows it a
+  2-layer board instead; plane nets are then routed as outer-layer tracks.
+  Marking the inner layers `(type power)` in the DSN, or exporting the planes,
+  did not keep Freerouting 2.5.0 off them.
 - **Routing changes completely when placement changes.** The cache keeps a
   rebuild stable only while the DSN is byte-identical. A KiCad patch release
   changes the DSN header and forces a new route.
@@ -390,9 +394,10 @@ again before an order.
   reference text that hangs over the edge. Look at the render.
 - **JLCPCB rotation corrections are unverified.** The table has four rows
   copied from the Fabrication-Toolkit project. None was checked against
-  JLCPCB's placement preview. Bottom-side placement was not exercised.
-- **The CPL lists through-hole parts** such as terminal blocks. Remove them or
-  order them as hand-soldered parts.
+  JLCPCB's placement preview. `output/<name>-pin1.csv` lists where pin 1 of
+  every polarised part is, to compare the preview with.
+- **The CPL lists through-hole parts** such as terminal blocks, unless the
+  board Makefile sets `POS_FLAGS := --smd-only`.
 - **Board exports are not byte-stable.** Gerbers, drill files, reports, the
   PDF and the SVGs carry a timestamp or a generated id. A rebuild of the test
   board from a clean checkout changed 29 files under `output/` and nothing
@@ -688,3 +693,102 @@ Two CI jobs in `.github/workflows/hardware.yml` use this:
   differs.
 - **3D models.** Four project footprints use a stand-in model and four have
   none (`design/footprints.md`, section 5).
+
+## 13. Laying out the revision A board
+
+The layout of `hardware/zoneflow-a/` needed more from `board.toml` than the
+test board did. This section lists what was added and what was learnt. The
+layout itself is described in [hardware layout](hardware-layout.md).
+
+### 13.1 New in `board.toml`
+
+| Table or key | What it does |
+|---|---|
+| `[board] y_up = true` | Board coordinates with the origin at the bottom-left corner and y up, the frame of a mechanical drawing. Rotations stay counter-clockwise as seen from the top |
+| `[group.NAME] sheet = "..."` | Two groups may place parts of one schematic sheet, each with its own origin per instance. The channel has two: the power half on a 7.1 mm pitch and the logic half on 9.5 mm |
+| `[[track]] via = [d, drill]`, `via_to = "In2.Cu"` | A via size for one track, and the layer a track continues on after its via |
+| `[[plane]] net, skip, within` | A short stub and a via beside every surface-mount pad of a net that connects through a plane. `within` lists the rectangles the plane covers |
+| `[[guard]] net, distance` | A rule area along each side of the hand-routed tracks of a net, where no other track or via may be |
+| `[[rule_area]]` | A region of some layers with no pour, no tracks or no vias |
+| `[route] layers` | The copper layers the autorouter may route on. Its vias still pass through the others |
+| `[route] exclude` | Nets the autorouter must leave alone, by pattern. Their pins are taken out of the Specctra file; their pads stay as obstacles and their pre-routed copper stays as fixed copper |
+| `[[route.keepout]]` | Rectangles of one layer where the autorouter may put neither track nor via: the planes and islands that are added as zones after the Specctra file is written |
+| `[route.layer_cost]` | A cost factor for a layer, to make the autorouter use it less |
+
+A footprint named `Lib:Name` is taken from the project's own `lib/Lib.pretty`
+if that exists, and from KiCad's library otherwise.
+
+### 13.2 The mechanical check
+
+`make` runs it after DRC when the board Makefile sets `MECH_CONTRACT`.
+`hwflow.pcbbuild dump` writes `build/placement.json` from the saved board: every
+footprint with its side, position, body outline, courtyard and pads, in board
+coordinates. `hwflow mech` compares that with the contract
+(`tools/hwflow/hwflow/mech.py`):
+
+- outline, layer count, thickness;
+- every hole: an unplated hole of that diameter at that place;
+- every part the contract places: pin 1, the pads, or the centre of the body,
+  whichever the contract gives, within 0.05 mm, and its side;
+- the keep-out circle of every hole, foot and post;
+- the height zones, for every other part, with heights from
+  `design/heights.toml`. A later zone overrides an earlier one. A footprint
+  with no height in the table fails the build;
+- the bottom side: only what the contract puts there;
+- the edge keep-out;
+- no part over 1.5 mm within 2.5 mm of a top-side pad of a bottom-side part.
+
+It compares numbers in files. Nothing is measured. Seven tests in
+`tests/test_mech.py` move, flip and raise parts on a made-up board and check
+that each is reported.
+
+### 13.3 The autorouter reports usage unless told not to
+
+Freerouting 2.5.0 sends usage data to its maker's server by default. Reading
+the class files of the jar: the events carry the command line, which names the
+design file, the host name, and board statistics. The defaults in its settings
+file are `disable_analytics: false` and `allow_telemetry: true`.
+
+`hwflow.route` now writes a settings file with both turned off into
+`build/freerouting-home/`, points Freerouting at it through the `XDG_*`
+variables, and sets the Java proxy properties to a closed local port, so that
+no request can leave even if a later version ignores the setting. **The runs
+before this change, the test board's and the first probes of this board, went
+out with the defaults.**
+
+The same settings file carries what the Specctra file cannot:
+
+- `router.fanout.enabled = false`. The fan-out stage puts a via at every
+  surface-mount pin before routing. On this board that took the room the
+  router needed.
+- `router.layers[n].routable`. This is how a layer is kept for a plane. An
+  `autoroute_settings` block in the Specctra file makes 2.5.0 load an empty
+  board without an error message. A `.rules` file given with `-dr` was read
+  but its `(fanout off)` was not honoured.
+
+### 13.4 More KiCad 10.0.8 Python findings
+
+- `FOOTPRINT.Flip` on a footprint that is not yet on a board crashes the
+  interpreter. Add it to the board first.
+- `LEFT_RIGHT` in `Flip` mirrors y, not x, as seen in board coordinates. A
+  bottom-side part needs its rotation chosen by looking at where its pads
+  land; `build/placement.json` shows that.
+- `BOX2I.Merge` through the Python wrapper corrupts the heap. Take the four
+  edges and compare them in Python.
+- A custom DRC rule can lower a net-class clearance for one layer:
+  `(layer "In2.Cu") (condition "A.NetClass == 'AC24' && B.NetClass == 'AC24'")`.
+- Two builds of one KiCad release plot the same schematic page with its items
+  in a different order (section 12.5).
+
+### 13.5 What a dense board asks for
+
+The test board routed itself. This one did not: with every net given to the
+autorouter on two layers, a third of the connections were still open after
+three passes. What made it tractable:
+
+1. Planes and pours for ground and 3.3 V, with a via per pad, and those nets
+   kept from the autorouter.
+2. Every current-carrying net written out by hand, as a group where it
+   repeats.
+3. A third routing layer for the logic nets.
+4. No fan-out stage.

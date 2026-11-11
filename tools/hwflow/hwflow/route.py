@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -33,10 +34,34 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def dsn_hash(path: Path) -> str:
-    """Hash of the DSN without its first line, which holds the file's own path."""
+def dsn_hash(path: Path, settings: str = "") -> str:
+    """Hash of the DSN without its first line, which holds the file's own path, and of the router settings."""
     text = path.read_text(encoding="utf-8").split("\n", 1)[1]
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+    return hashlib.sha256((text + settings).encode("utf-8")).hexdigest()
+
+
+def write_settings(config_home: Path, router: dict) -> Path:
+    """Freerouting's settings file, in a directory of the build, with its usage reporting off.
+
+    Freerouting 2.5.0 reports usage to its maker's server unless told not to:
+    the command line with the design file's name, the host name, and board
+    statistics. The defaults are ``disable_analytics: false`` and
+    ``allow_telemetry: true``. This file turns both off. The caller also
+    points the Java proxy settings at a closed local port, so that nothing can
+    leave even if a later version ignores the file.
+    """
+    path = config_home / "freerouting" / "freerouting.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    settings = {
+        "version": VERSION,
+        "profile": {"id": "00000000-0000-0000-0000-000000000000", "email": "", "allow_telemetry": False,
+                    "allow_contact": False},
+        "usage_and_diagnostic_data": {"disable_analytics": True, "track_window_changed": False,
+                                      "track_button_clicked": False},
+        "router": router,
+    }
+    path.write_text(json.dumps(settings, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    return path
 
 
 def fetch_jar(cache: Path) -> Path:
@@ -102,7 +127,9 @@ def main(argv=None) -> int:
     ses = route_dir / f"{name}.ses"
     stamp = route_dir / f"{name}.dsn.sha256"
     stats_file = route_dir / f"{name}.freerouting.json"
-    digest = dsn_hash(dsn)
+    router_file = project / "build" / "router.json"
+    router = json.loads(router_file.read_text(encoding="utf-8")) if router_file.exists() else {}
+    digest = dsn_hash(dsn, json.dumps(router, sort_keys=True) if router else "")
 
     if not args.force and ses.exists() and stamp.exists() and stamp.read_text().strip() == digest:
         print(f"route: DSN unchanged, reusing {ses}")
@@ -111,11 +138,19 @@ def main(argv=None) -> int:
     jar = fetch_jar(Path(args.cache))
     out = project / "build" / f"{name}.ses"
     log = project / "build" / "freerouting.log"
-    cmd = ["java", "-Djava.awt.headless=true", "-jar", str(jar), "--gui.enabled=false",
-           "-de", str(dsn), "-do", str(out), "-mp", str(args.passes)]
+    config_home = (project / "build" / "freerouting-home").resolve()
+    write_settings(config_home, router)
+    env = dict(os.environ)
+    for var in ("XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME"):
+        env[var] = str(config_home)
+    # No way out: any HTTP or HTTPS request goes to a closed port on this machine.
+    blocked = [f"-D{scheme}.proxy{key}={value}" for scheme in ("http", "https")
+               for key, value in (("Host", "127.0.0.1"), ("Port", "9"))]
+    cmd = ["java", "-Djava.awt.headless=true", *blocked, "-jar", str(jar), "--gui.enabled=false",
+           "-de", str(dsn), "-do", str(out), f"--router.autorouter.max_passes={args.passes}"]
     t0 = time.time()
     with open(log, "w") as lg:
-        r = subprocess.run(cmd, stdout=lg, stderr=subprocess.STDOUT, timeout=args.timeout)
+        r = subprocess.run(cmd, stdout=lg, stderr=subprocess.STDOUT, timeout=args.timeout, env=env)
     if r.returncode != 0 or not out.exists():
         sys.stderr.write(f"Freerouting failed, see {log}\n")
         return 1

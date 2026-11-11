@@ -3292,7 +3292,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Package_DIP:SMDIP-6_W9.53mm"
+		(property "Footprint" "ZoneFlow:SMDIP-6_onsemi_646BY"
 			(at 137.16 96.52 0)
 			(hide yes)
 			(show_name no)

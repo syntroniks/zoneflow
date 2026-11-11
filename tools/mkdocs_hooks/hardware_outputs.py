@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """MkDocs hook: publish generated hardware and enclosure files with the site.
 
-The schematic PDF, the per-sheet SVGs and the JLCPCB BOMs are generated into
+The schematic PDF, the per-sheet SVGs, the board renders and plots, the
+assembly drawings, the JLCPCB BOMs and placement files are generated into
 ``hardware/zoneflow-a/output/``; the preliminary BOM is
 ``hardware/bom-preliminary.csv``; the drilling template is generated into
 ``enclosure/output/``. All are committed. This hook adds them to the site,
@@ -26,11 +27,11 @@ EXTRA = [
 
 
 def on_files(files, config):
-    sources = sorted(HW_OUTPUT.glob("schematic-svg/*.svg")) + [
-        HW_OUTPUT / "zoneflow-a-schematic.pdf",
-        HW_OUTPUT / "zoneflow-a-bom-jlcpcb.csv",
-        HW_OUTPUT / "zoneflow-a-bom-jlcpcb-4-zone.csv",
-    ]
+    # Pictures, documents and tables a reader opens in a browser: the schematic, the board renders,
+    # the copper plots, the assembly drawings, the interactive BOM, the BOMs and placement files.
+    # Gerbers, drill files and reports are linked on the repository instead.
+    sources = sorted({src for pattern in ("schematic-svg/*.svg", "*.pdf", "*.png", "*.svg", "*.html", "*.csv")
+                      for src in HW_OUTPUT.glob(pattern)})
     pairs = [(src, f"hardware/zoneflow-a/{src.relative_to(HW_OUTPUT).as_posix()}") for src in sources]
     for src, dest in pairs + EXTRA:
         if src.is_file():

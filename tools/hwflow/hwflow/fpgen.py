@@ -138,6 +138,13 @@ class Footprint:
         self.rect("F.SilkS", x0 - silk_gap, y0 - silk_gap, x1 + silk_gap, y1 + silk_gap, 0.12)
         self.courtyard(x0 - courtyard, y0 - courtyard, x1 + courtyard, y1 + courtyard)
 
+    def clear(self, layer: str) -> int:
+        """Remove every graphic item on one layer (of a footprint copied from the stock library)."""
+        gone = [g for g in self.fp.GraphicalItems() if g.GetLayer() == _LAYER[layer]]
+        for g in gone:
+            self.fp.Delete(g)
+        return len(gone)
+
     def courtyard(self, x0: float, y0: float, x1: float, y1: float, layer: str = "F.CrtYd") -> None:
         self.rect(layer, round(x0, 2), round(y0, 2), round(x1, 2), round(y1, 2), 0.05)
 
