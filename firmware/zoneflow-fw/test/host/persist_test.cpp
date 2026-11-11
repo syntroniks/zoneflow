@@ -277,6 +277,12 @@ TEST(PersistHandOff, StalledFlashWriteDoesNotStallTheControlLoop)
         ctrl.tick();
         tCounting = false;
         allocations += tAllocations;
+        // The loop runs in about a millisecond: let the writer thread start
+        // the write it will stall in before counting (bounded wait). On a
+        // loaded machine it otherwise ran after the loop, and the test failed.
+        for (int spin = 0; out.anyOn() && storage.writesStarted.load() == 0 && spin < 200000; ++spin) {
+            std::this_thread::yield();
+        }
         if (storage.writesStarted.load() > 0 && out.anyOn()) {
             ++stalledTicks;
             // The heartbeat is fresh on every tick: OE keeps toggling.
