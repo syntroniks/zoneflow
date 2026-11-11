@@ -331,3 +331,72 @@ TEST_F(ZoneDriverTest, BudgetIsPerZone)
     EXPECT_EQ(drv.startBlocker(0), StartError::Resting);
     EXPECT_EQ(drv.start(1, 600).acceptedSec, 600u);
 }
+
+// Soak finding (test/soak, chaos seeds 102 and 194): the rev A output stage
+// failed the read-back of the write that switched a zone on (a valve pin
+// stuck high) and stopped the keep-alive, but the driver still marked the
+// zone open and reported it, for one tick, as a run that never watered.
+namespace {
+class FailingOutputs final : public IOutputHal {
+public:
+    bool ready = true;
+    bool failNextOn = false;
+    void setZone(ZoneIndex, bool on) override
+    {
+        if (on && failNextOn) {
+            ready = false;
+        }
+    }
+    void setMaster(bool on) override
+    {
+        if (on && failNextOn) {
+            ready = false;
+        }
+    }
+    void allOff() override {}
+    bool ownsKeepAlive() const override { return true; }
+    bool powerReady() const override { return ready; }
+};
+} // namespace
+
+TEST(ZoneDriverStage, AZoneWhoseWriteFailsIsNotReportedOpen)
+{
+    FakeClock clock;
+    FailingOutputs hal;
+    OutputEnableGuard oe{OutputEnableMode::Toggle, 500};
+    ZoneDriver drv{hal, oe, clock};
+    Listener listener;
+    drv.setListener(&listener);
+    ZoneDriverConfig c;
+    c.zoneEnabled.fill(true);
+    c.maxRunSec.fill(600);
+    drv.init(c);
+    hal.failNextOn = true;
+    ASSERT_TRUE(drv.start(2, 60).ok());
+    EXPECT_EQ(drv.state(2), ValveState::Off);
+    EXPECT_EQ(drv.lastStopReason(2), StopReason::Fault);
+    EXPECT_EQ(drv.outputMask(), 0);
+    for (const auto &[z, st, r] : listener.zones) {
+        EXPECT_NE(st, ValveState::Open);
+    }
+}
+
+TEST(ZoneDriverStage, AMasterWhoseWriteFailsIsNotReportedOn)
+{
+    FakeClock clock;
+    FailingOutputs hal;
+    OutputEnableGuard oe{OutputEnableMode::Toggle, 500};
+    ZoneDriver drv{hal, oe, clock};
+    Listener listener;
+    drv.setListener(&listener);
+    ZoneDriverConfig c;
+    c.zoneEnabled.fill(true);
+    c.maxRunSec.fill(600);
+    c.masterEnabled = true;
+    drv.init(c);
+    hal.failNextOn = true;
+    ASSERT_TRUE(drv.start(2, 60).ok());
+    EXPECT_FALSE(drv.masterOn());
+    EXPECT_EQ(drv.state(2), ValveState::Off);
+    EXPECT_TRUE(listener.master.empty() || !listener.master.back());
+}
