@@ -25,6 +25,9 @@ as it can, because a cell there costs several cells elsewhere. Such a track is a
 It never runs inside the rectangles the board fences off on that layer, and it is listed in the
 routing report.
 
+The ``[[route.keepout]]`` rectangles of the board, which keep the autorouter out of an area of some
+layers, keep this router out as well.
+
 It is a small tool for the last few connections. It does not rip up, it does
 not optimise, and it knows nothing of signal quality: what it routes is listed
 in the routing report for a person to look at.
@@ -322,7 +325,10 @@ def read_board(pcb_path: Path, origin, height, y_up: bool):
             items.append((p.GetNetname(), layers, ("rect", (min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1))),
                           p.m_Uuid.AsString(), hole))
     areas = []                                # (layers, outline, tracks forbidden, vias forbidden, net)
-    for z in board.Zones():
+    # A footprint can carry a rule area of its own (the "no wiring" area under the encoder of
+    # revision A): the board's list of zones does not hold it, DRC enforces it all the same.
+    zones = list(board.Zones()) + [z for fp in board.GetFootprints() for z in fp.Zones()]
+    for z in zones:
         o = z.Outline()
         if o.OutlineCount() == 0:
             continue
@@ -509,9 +515,12 @@ def main(argv=None) -> int:
     # (rectangles). The [[route.keepout]] rectangles of that layer close it too.
     last = route.get("patch_last_resort", {})
     last_layer = last.get("layer")
-    fences = [(frozenset([last_layer]), tuple(r)) for r in last.get("keepout", [])]
-    fences += [(frozenset(k["layers"]), tuple(k["rect"])) for k in route.get("keepout", [])
-               if last_layer in k.get("layers", []) and "rect" in k]
+    # Where the autorouter may not route, the patch router may not either: under a screw head a
+    # track is as wrong from the one as from the other. A rectangle marked "stands_for_copper" only
+    # tells the autorouter of copper it cannot see; this router sees the board and skips it.
+    fences = [(frozenset(k["layers"]), tuple(k["rect"])) for k in route.get("keepout", [])
+              if "rect" in k and not k.get("stands_for_copper", False)]
+    fences += [(frozenset([last_layer]), tuple(r)) for r in last.get("keepout", [])]
     copper = frozenset(layers) | {"In1.Cu"} | ({last_layer} if last_layer else set())
 
     out = Path(args.out) if args.out else design / "patches.toml"
@@ -547,7 +556,7 @@ def main(argv=None) -> int:
         for width, around in sorted(tries, key=lambda t: (-t[0], t[1])):
             window = (min(pa[0], pc[0]) - around, min(pa[1], pc[1]) - around, max(pa[0], pc[0]) + around,
                       max(pa[1], pc[1]) + around)
-            grid = build_grid(items, areas, clearance, net, width, window, layers, extra, pours, b["size"])
+            grid = build_grid(items, areas, clearance, net, width, window, layers, extra, pours, b["size"], fences)
             starts, goals = nodes_of(grid, la, pa), nodes_of(grid, lc, pc)
             for n in starts + goals:
                 grid.blocked[grid.layers[n[0]]][n[2] * grid.w + n[1]] = 0
@@ -559,19 +568,22 @@ def main(argv=None) -> int:
                 why = (f"; at {width:g} mm the first end reaches {reach_of(grid, starts)}, "
                        f"the second {reach_of(grid, goals)}")
         if not done and last_layer:
-            # No path on the routing layers: once more with the last-resort layer, in the wide window.
-            width, around = min(class_width(net), 0.2), 2.5 * WINDOW
+            # No path on the routing layers: once more with the last-resort layer, in the wide window,
+            # at the class width and then at 0.2 mm.
+            around = 2.5 * WINDOW
             window = (min(pa[0], pc[0]) - around, min(pa[1], pc[1]) - around, max(pa[0], pc[0]) + around,
                       max(pa[1], pc[1]) + around)
-            grid = build_grid(items, areas, clearance, net, width, window, layers + [last_layer], extra, pours,
-                              b["size"], fences)
-            grid.cost[-1] = float(last.get("cost", 4.0))
-            starts, goals = nodes_of(grid, la, pa), nodes_of(grid, lc, pc)
-            for n in starts + goals:
-                grid.blocked[grid.layers[n[0]]][n[2] * grid.w + n[1]] = 0
-            path = search(grid, starts, goals) if starts and goals else None
-            if path:
-                done = to_tracks(grid, path, net, width)
+            for width in dict.fromkeys((class_width(net), min(class_width(net), 0.2))):
+                grid = build_grid(items, areas, clearance, net, width, window, layers + [last_layer], extra, pours,
+                                  b["size"], fences)
+                grid.cost[-1] = float(last.get("cost", 4.0))
+                starts, goals = nodes_of(grid, la, pa), nodes_of(grid, lc, pc)
+                for n in starts + goals:
+                    grid.blocked[grid.layers[n[0]]][n[2] * grid.w + n[1]] = 0
+                path = search(grid, starts, goals) if starts and goals else None
+                if path:
+                    done = to_tracks(grid, path, net, width)
+                    break
         if not done:
             failed.append(f"{net}: no path from ({pa[0]:.2f}, {pa[1]:.2f}) to ({pc[0]:.2f}, {pc[1]:.2f}){why}")
             continue
