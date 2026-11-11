@@ -102,6 +102,9 @@ public:
 
     const ZoneDriver &driver() const { return driver_; }
     const Scheduler &scheduler() const { return scheduler_; }
+    // How the two records with two copies were read at begin().
+    RecordLoad runtimeLoad() const { return runtimeLoad_; }
+    RecordLoad budgetLoad() const { return budgetLoad_; }
     uint32_t activeFaults() const { return activeFaults_; }
     bool maintenance() const { return maintenance_; }
     RunError lastRunError() const { return lastRunError_; }
@@ -133,7 +136,9 @@ private:
     void checkCondition(FaultCode code, bool present);
     void acknowledgeHardware(bool repaired);
     void saveRetained(MonoMs now);
-    void restoreRetained(MonoMs now);
+    bool restoreRetained(MonoMs now); // false: no intact record
+    void restoreBudgetFromFlash();
+    void postBudget(MonoMs now);
     void raiseFault(FaultCode code, ZoneIndex zone, uint8_t detail);
     void recordMasterFault();
     void raiseFault(FaultCode code, ZoneIndex zone);
@@ -210,6 +215,10 @@ private:
     void trackRun(ZoneIndex zone, ValveState state, StopReason reason);
 
     PersistMailbox persist_;
+    // The run budget in flash (zf/app/budget.hpp).
+    BudgetPoster budgetPoster_;
+    RecordLoad runtimeLoad_ = RecordLoad::None;
+    RecordLoad budgetLoad_ = RecordLoad::None;
     bool persistDirty_ = false;
     bool persistUrgent_ = false; // a scheduled start was consumed: store it now
     MonoMs lastPersistMs_ = 0;

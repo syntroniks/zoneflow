@@ -1,6 +1,7 @@
 # zf_core: pure C++ logic. Builds as an ESP-IDF component and as a plain
 # static library for host tests (test/host). No ESP-IDF headers allowed here.
 set(ZF_CORE_SOURCES
+    src/budget.cpp
     src/config.cpp
     src/config_json.cpp
     src/config_store.cpp

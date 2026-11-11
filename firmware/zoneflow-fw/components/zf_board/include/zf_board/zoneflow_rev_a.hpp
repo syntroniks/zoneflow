@@ -78,6 +78,10 @@ inline constexpr int kIsenseHiGpio = pm::kIsenseHiGpio;
 inline constexpr int kIsenseLoGpio = pm::kIsenseLoGpio;
 inline constexpr int kIsenseHiAdcChannel = pm::kIsenseHiAdcChannel;
 inline constexpr int kIsenseLoAdcChannel = pm::kIsenseLoAdcChannel;
+// VIN_MON, the rectified supply divided by 31 (hardware design 19.10): a
+// window mean with the current channels, at the same attenuation.
+inline constexpr int kVinMonGpio = pm::kVinMonGpio;
+inline constexpr int kVinMonAdcChannel = pm::kVinMonAdcChannel;
 inline constexpr int kAdcAttenuationDb = pm::kAdcAttenuationDb; // 0 to 1600 mV
 inline constexpr float kIsenseHiMaPerMv = 1.503f;               // 49.9k / 7.5k gain, 0.1 ohm shunt
 inline constexpr float kIsenseLoMaPerMv = 7.50f;                // 10k / 7.5k gain
@@ -125,6 +129,13 @@ inline constexpr bool kLcdBacklightActiveHigh = pm::kTftBlActiveHigh;
 // 1 to 20 kHz (hardware design 15.2 and rule 9).
 inline constexpr uint32_t kLcdBacklightPwmHz = 5000;
 static_assert(kLcdBacklightPwmHz >= 1000 && kLcdBacklightPwmHz <= 20000, "backlight PWM must be 1 to 20 kHz");
+// During the float test (hardware design 19.7, note to step 2b): not a whole
+// multiple of 1 kHz, so that the 1 ms reads of the floating keep-alive pin do
+// not lock to the PWM period and fall on its low part every time, as 5 kHz
+// does. 4.7 kHz is the design's example.
+inline constexpr uint32_t kFloatTestBacklightHz = 4700;
+static_assert(kFloatTestBacklightHz % 1000 != 0 && kFloatTestBacklightHz >= 1000 && kFloatTestBacklightHz <= 20000,
+              "hardware design 19.7: 1 to 20 kHz, not a whole multiple of 1 kHz");
 // ST7789V datasheet v1.3: 66 ns minimum serial write cycle, so 15 MHz is
 // the guaranteed clock (hardware design 15.3). A full frame takes 82 ms.
 inline constexpr uint32_t kLcdSpiHz = 15000000;

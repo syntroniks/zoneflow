@@ -30,6 +30,7 @@
 #include <cstdint>
 #include <string>
 
+#include "zf/app/budget.hpp"
 #include "zf/app/retained.hpp"
 #include "zf/diag/current_monitor.hpp"
 #include "zf/diag/current_sense.hpp"
@@ -136,8 +137,14 @@ class Supervisor final : private zf::IZoneDriverListener {
              zf::IDetectorReferenceStore *reference = nullptr);
 
   // Before the first tick. `retained` is the record kept in RTC memory over
-  // a software restart, or nullptr.
-  void begin(const zf::RetainedRecord *retained);
+  // a software restart, or nullptr. Without it (a power cut, a torn record)
+  // the run budget comes from the copy in flash, read as `budget_load`
+  // (zf/app/budget.hpp: what may have been lost is charged, both copies
+  // unreadable is the worst case).
+  void begin(const zf::RetainedRecord *retained, zf::RecordLoad budget_load = zf::RecordLoad::None,
+             const zf::BudgetRecord *flash_budget = nullptr);
+  // Every tick: true when the run budget should be written to flash now.
+  bool budget_due(zf::BudgetRecord &out) { return this->budget_poster_.due(this->driver_, this->clock_.monoMs(), out); }
   // Every control tick (50 ms). Output stage first, then diagnostics, then
   // the zone driver, which beats the keep-alive heartbeat.
   void tick(const SupervisorInputs &in);
@@ -240,6 +247,7 @@ class Supervisor final : private zf::IZoneDriverListener {
   uint8_t master_faults_ = 0;
   ZoneFault master_fault_ = ZoneFault::None;
   zf::ShortedOutputCheck rise_check_;  // current rose with no output switched
+  zf::BudgetPoster budget_poster_;
   bool master_fault_in_session_ = false;
   zf::MonoMs master_on_since_ms_ = 0;
 

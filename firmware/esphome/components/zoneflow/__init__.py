@@ -38,6 +38,7 @@ CONF_ZERO_CROSS_PIN = "zero_cross_pin"
 CONF_SENSOR_SUPPLY_PIN = "sensor_supply_pin"
 CONF_CURRENT_HIGH_PIN = "current_high_pin"
 CONF_CURRENT_LOW_PIN = "current_low_pin"
+CONF_VIN_MONITOR_PIN = "vin_monitor_pin"
 CONF_EXPANDER_BITS = "expander_bits"
 CONF_ZONE_BITS = "zones"
 CONF_MASTER = "master"
@@ -159,6 +160,10 @@ CONFIG_SCHEMA = cv.All(
             cv.Required(CONF_ZERO_CROSS_PIN): pins.internal_gpio_input_pin_number,
             cv.Required(CONF_CURRENT_HIGH_PIN): pins.internal_gpio_input_pin_number,
             cv.Required(CONF_CURRENT_LOW_PIN): pins.internal_gpio_input_pin_number,
+            # Hardware design 19.10: VIN_MON, GPIO3, read with the current
+            # windows; step 0 needs it in range. Without it the supply check
+            # is skipped and reported as a lost measurement.
+            cv.Optional(CONF_VIN_MONITOR_PIN): pins.internal_gpio_input_pin_number,
             cv.Optional(CONF_SENSOR_SUPPLY_PIN): pins.internal_gpio_output_pin_number,
             cv.Required(CONF_EXPANDER_BITS): EXPANDER_BITS_SCHEMA,
             cv.Optional(CONF_ZONE_COUNT, default=MAX_ZONES): cv.int_range(min=1, max=MAX_ZONES),
@@ -253,6 +258,7 @@ async def to_code(config):
         ("sensor_supply", config.get(CONF_SENSOR_SUPPLY_PIN, -1)),
         ("current_high", config[CONF_CURRENT_HIGH_PIN]),
         ("current_low", config[CONF_CURRENT_LOW_PIN]),
+        ("vin_monitor", config.get(CONF_VIN_MONITOR_PIN, -1)),
     )
     cg.add(var.set_pins(pins_struct))
 

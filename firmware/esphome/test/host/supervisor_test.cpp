@@ -504,3 +504,35 @@ TEST(Supervisor, SupplyLowAndALostMeasurementAreConditions) {
   EXPECT_EQ(r.sup.general_faults() & zfe::kCondSupplyLow, 0u);
   EXPECT_NE(r.sup.general_faults() & zfe::kCondCurrentSenseUnavailable, 0u);
 }
+
+// Firmware architecture section 22, gap 3: after a power cut the run budget
+// comes from flash (zf/app/budget.hpp), as in the standalone firmware.
+TEST(Supervisor, RunBudgetSurvivesAPowerCutThroughFlash) {
+  SupervisorConfig c = Rig::defaults();
+  c.master_enabled = false;
+  zf::BudgetRecord rec;
+  rec.burstMs[0] = 600 * 1000;  // zone 1 used its 600 s
+  rec.burstMs[1] = 100 * 1000;  // zone 2 was open with 100 s used
+  rec.openMask = 0x02;
+  {
+    zf::test::FakeClock clock;
+    zf::OutputEnableGuard guard{zf::OutputEnableMode::Toggle, 500};
+    zf::test::FakeBoard board{guard, clock};
+    Supervisor sup(board, guard, clock, zf::test::revALayout(), c);
+    sup.begin(nullptr, zf::RecordLoad::Certain, &rec);
+    const auto b = sup.driver().exportBudget();
+    EXPECT_EQ(b[0].burstMs, 600u * 1000u);
+    EXPECT_EQ(b[1].burstMs, 100u * 1000u + zf::BudgetRecord::kLostOpenMs);
+    EXPECT_EQ(sup.start_zone(0, 60).error, StartError::Resting);
+  }
+  {
+    // Both copies unreadable: every zone has used its budget.
+    zf::test::FakeClock clock;
+    zf::OutputEnableGuard guard{zf::OutputEnableMode::Toggle, 500};
+    zf::test::FakeBoard board{guard, clock};
+    Supervisor sup(board, guard, clock, zf::test::revALayout(), c);
+    sup.begin(nullptr, zf::RecordLoad::Lost, nullptr);
+    for (uint8_t z = 0; z < 8; ++z)
+      EXPECT_EQ(sup.start_zone(z, 60).error, StartError::Resting) << int(z);
+  }
+}

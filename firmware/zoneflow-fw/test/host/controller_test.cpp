@@ -221,7 +221,8 @@ TEST_F(ControllerTest, ScheduledRunPersistsRuntimeState)
     EXPECT_TRUE(persistWriteOnce(ctrl->persistMailbox(), storage)); // the writer task's job
     ASSERT_EQ(storage.data.count("runtime"), 1u);
     SchedulerPersist p;
-    ASSERT_TRUE(persistFromJson(storage.data["runtime"], p));
+    uint32_t seqRead = 0;
+    ASSERT_TRUE(loadRuntime(storage, p, seqRead) == RecordLoad::Certain);
     ASSERT_EQ(p.count, 1);
     EXPECT_EQ(p.fired[0].key, Scheduler::makeKey(civil::daysFromCivil(2026, 6, 1), 360));
 }

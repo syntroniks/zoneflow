@@ -9,6 +9,7 @@
 
 #include "driver/gpio.h"
 #include "driver/pulse_cnt.h"
+#include "driver/temperature_sensor.h"
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
 #include "esp_adc/adc_continuous.h"
@@ -31,10 +32,11 @@ bool readContactClosed(int gpio)
 
 // ---- current sampling --------------------------------------------------------------------------
 constexpr uint32_t kSamplesPerWindow = board::kIsenseSampleHzPerChannel * board::kIsenseWindowMs / 1000; // 500
-// ISENSE_HI, ISENSE_LO and GPIO7 (the relay read-back, review A2 4.6
-// question 7), each at kIsenseSampleHzPerChannel.
-constexpr uint32_t kChannels = 3;
-// Conversion frames of 10 ms: 3 channels x 50 conversions x 4 bytes.
+// ISENSE_HI, ISENSE_LO, GPIO7 (the relay read-back, review A2 4.6
+// question 7) and VIN_MON (hardware design 19.10), each at
+// kIsenseSampleHzPerChannel: 20 kS/s in all.
+constexpr uint32_t kChannels = 4;
+// Conversion frames of 10 ms: 4 channels x 50 conversions x 4 bytes.
 constexpr uint32_t kConvPerFrame = kChannels * kSamplesPerWindow / 10;
 constexpr uint32_t kFrameBytes = kConvPerFrame * SOC_ADC_DIGI_RESULT_BYTES;
 // A window that took longer than this lost samples (task delayed, pool
@@ -60,6 +62,7 @@ esp_err_t CurrentSampler::start()
     adc_channel_t hi = ADC_CHANNEL_0;
     adc_channel_t lo = ADC_CHANNEL_0;
     adc_channel_t rb = ADC_CHANNEL_0;
+    adc_channel_t vin = ADC_CHANNEL_0;
     esp_err_t err = adc_continuous_io_to_channel(board::kIsenseHiGpio, &unit, &hi);
     if (err == ESP_OK && unit == ADC_UNIT_1) {
         err = adc_continuous_io_to_channel(board::kIsenseLoGpio, &unit, &lo);
@@ -67,13 +70,17 @@ esp_err_t CurrentSampler::start()
     if (err == ESP_OK && unit == ADC_UNIT_1) {
         err = adc_continuous_io_to_channel(board::kRelayOffReadbackGpio, &unit, &rb);
     }
+    if (err == ESP_OK && unit == ADC_UNIT_1) {
+        err = adc_continuous_io_to_channel(board::kVinMonGpio, &unit, &vin);
+    }
     if (err != ESP_OK || unit != ADC_UNIT_1) {
-        ESP_LOGE(kTag, "current sense and relay read-back pins are not on ADC1");
+        ESP_LOGE(kTag, "current sense, relay read-back and VIN_MON pins are not on ADC1");
         return err == ESP_OK ? ESP_ERR_INVALID_ARG : err;
     }
     chHi_ = static_cast<int>(hi);
     chLo_ = static_cast<int>(lo);
     chRb_ = static_cast<int>(rb);
+    chVin_ = static_cast<int>(vin);
 
     adc_continuous_handle_cfg_t handleCfg = {};
     handleCfg.max_store_buf_size = kFrameBytes * 8;
@@ -85,7 +92,7 @@ esp_err_t CurrentSampler::start()
         ESP_LOGE(kTag, "ADC continuous init failed: %s", esp_err_to_name(err));
         return err;
     }
-    const adc_channel_t chans[kChannels] = {hi, lo, rb};
+    const adc_channel_t chans[kChannels] = {hi, lo, rb, vin};
     adc_digi_pattern_config_t pattern[kChannels] = {};
     for (uint32_t i = 0; i < kChannels; ++i) {
         pattern[i].atten = atten();
@@ -110,7 +117,7 @@ esp_err_t CurrentSampler::start()
     }
 
     // Calibration to millivolts, one scheme per channel.
-    void **cali[kChannels] = {&caliHi_, &caliLo_, &caliRb_};
+    void **cali[kChannels] = {&caliHi_, &caliLo_, &caliRb_, &caliVin_};
     for (uint32_t i = 0; err == ESP_OK && i < kChannels; ++i) {
         adc_cali_curve_fitting_config_t c = {};
         c.unit_id = ADC_UNIT_1;
@@ -157,8 +164,12 @@ void CurrentSampler::run()
                 continue;
             }
             const int ch = static_cast<int>(parsed[i].channel);
-            ChannelStats *stats = ch == chHi_ ? &w.hi : ch == chLo_ ? &w.lo : ch == chRb_ ? &w.relayRb : nullptr;
-            void *calib = ch == chHi_ ? caliHi_ : ch == chLo_ ? caliLo_ : caliRb_;
+            ChannelStats *stats = ch == chHi_    ? &w.hi
+                                  : ch == chLo_  ? &w.lo
+                                  : ch == chRb_  ? &w.relayRb
+                                  : ch == chVin_ ? &w.vinMon
+                                                 : nullptr;
+            void *calib = ch == chHi_ ? caliHi_ : ch == chLo_ ? caliLo_ : ch == chRb_ ? caliRb_ : caliVin_;
             if (stats == nullptr) {
                 continue;
             }
@@ -187,6 +198,7 @@ void CurrentSampler::run()
             w.hi.reset();
             w.lo.reset();
             w.relayRb.reset();
+            w.vinMon.reset();
             windowStart = now;
         }
     }
@@ -256,7 +268,17 @@ esp_err_t SensorInputs::init(ZeroCrossInput &zeroCross, CurrentSampler &current)
     if (err != ESP_OK) {
         ESP_LOGE(kTag, "flow counter init failed: %s", esp_err_to_name(err));
     }
-    // A missing flow counter or current sense is not fatal.
+    // The die temperature (hardware design 19.7 item 2), range -10 to 80 C,
+    // whose error ESP-IDF gives as under 1 C. Without it the board does not
+    // commission and reports that it is not commissioned.
+    temperature_sensor_config_t tcfg = TEMPERATURE_SENSOR_CONFIG_DEFAULT(-10, 80);
+    temperature_sensor_handle_t th = nullptr;
+    if (temperature_sensor_install(&tcfg, &th) == ESP_OK && temperature_sensor_enable(th) == ESP_OK) {
+        temp_ = th;
+    } else {
+        ESP_LOGW(kTag, "die temperature sensor not available: the board does not commission");
+    }
+    // A missing flow counter, current sense or temperature is not fatal.
     return ESP_OK;
 }
 
@@ -294,6 +316,15 @@ SensorSample SensorInputs::read()
             s.flowPulses = static_cast<uint32_t>(count);
         }
     }
+
+    const int64_t nowUs = esp_timer_get_time();
+    if (temp_ != nullptr && (tempReadUs_ == 0 || nowUs - tempReadUs_ >= 10'000'000)) {
+        tempReadUs_ = nowUs;
+        tempKnown_ =
+            temperature_sensor_get_celsius(static_cast<temperature_sensor_handle_t>(temp_), &tempC_) == ESP_OK;
+    }
+    s.dieTempKnown = tempKnown_;
+    s.dieTempC = tempC_;
 
     s.currentSenseAvailable = current_ != nullptr && current_->available();
     if (current_ != nullptr) {

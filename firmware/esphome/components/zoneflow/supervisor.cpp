@@ -167,10 +167,19 @@ zf::ZoneDriverConfig Supervisor::driver_config() const {
   return d;
 }
 
-void Supervisor::begin(const zf::RetainedRecord *retained) {
+void Supervisor::begin(const zf::RetainedRecord *retained, zf::RecordLoad budget_load,
+                       const zf::BudgetRecord *flash_budget) {
   driver_.init(driver_config());
-  if (retained == nullptr)
+  if (retained == nullptr) {
+    // A power cut or a torn RTC record: the copy in flash, charged with what
+    // the last write may have missed.
+    std::array<uint32_t, zf::kMaxZones> max_run_ms{};
+    for (std::size_t z = 0; z < zf::kMaxZones; ++z)
+      max_run_ms[z] = driver_.effectiveMaxRunSec(static_cast<zf::ZoneIndex>(z)) * 1000u;
+    const zf::BudgetRecord none{};
+    driver_.restoreBudget(zf::budgetAfterPowerCut(budget_load, flash_budget != nullptr ? *flash_budget : none, max_run_ms));
     return;
+  }
   // The run budget and the latched output-stage fault survive a software
   // restart (firmware security residual risk 10, hardware design 19.7).
   std::array<zf::ZoneBudget, zf::kMaxZones> budget{};

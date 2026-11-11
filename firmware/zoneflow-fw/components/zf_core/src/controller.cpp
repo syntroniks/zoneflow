@@ -79,14 +79,23 @@ void Controller::begin()
     config_ = deps_.config.get();
     configRevision_ = deps_.config.revision();
     driver_.init(driverConfigFrom(config_, boardZones_));
-    restoreRetained(deps_.clock.monoMs());
+    // The run budget: RTC memory after a software restart; the copy in
+    // flash after a power cut or a torn RTC record.
+    if (!restoreRetained(deps_.clock.monoMs())) {
+        restoreBudgetFromFlash();
+    }
 
     if (deps_.runtimeStorage != nullptr) {
-        std::string json;
         SchedulerPersist persisted;
-        if (deps_.runtimeStorage->read(ConfigStore::kRuntimeKey, json) && persistFromJson(json, persisted)) {
-            scheduler_.restore(persisted);
+        uint32_t runtimeSeq = 0;
+        runtimeLoad_ = loadRuntime(*deps_.runtimeStorage, persisted, runtimeSeq);
+        if (runtimeLoad_ == RecordLoad::Certain || runtimeLoad_ == RecordLoad::Uncertain) {
+            scheduler_.restore(persisted, runtimeLoad_ == RecordLoad::Uncertain);
         }
+        BudgetRecord unused;
+        uint32_t budgetSeq = 0;
+        (void)loadBudget(*deps_.runtimeStorage, unused, budgetSeq);
+        persist_.setSequences(runtimeSeq, budgetSeq);
     }
     applyConfig(config_);
     raiseFault(FaultCode::TimeInvalid, kNoZone);
@@ -378,6 +387,7 @@ void Controller::tick()
         raiseFault(FaultCode::StorageError, kNoZone);
     }
     saveRetained(now);
+    postBudget(now);
     if (stateDirty_ || now - lastSnapshotMs_ >= kSnapshotIntervalMs) {
         publishSnapshot(now);
     }
@@ -760,11 +770,34 @@ void Controller::saveRetained(MonoMs now)
     deps_.retained->save(r);
 }
 
-void Controller::restoreRetained(MonoMs now)
+void Controller::restoreBudgetFromFlash()
+{
+    if (deps_.runtimeStorage == nullptr) {
+        return;
+    }
+    BudgetRecord rec;
+    uint32_t seq = 0;
+    budgetLoad_ = loadBudget(*deps_.runtimeStorage, rec, seq);
+    std::array<uint32_t, kMaxZones> maxRunMs{};
+    for (std::size_t z = 0; z < kMaxZones; ++z) {
+        maxRunMs[z] = driver_.effectiveMaxRunSec(static_cast<ZoneIndex>(z)) * 1000u;
+    }
+    driver_.restoreBudget(budgetAfterPowerCut(budgetLoad_, rec, maxRunMs));
+}
+
+void Controller::postBudget(MonoMs now)
+{
+    BudgetRecord r;
+    if (deps_.runtimeStorage != nullptr && budgetPoster_.due(driver_, now, r)) {
+        persist_.postBudget(r);
+    }
+}
+
+bool Controller::restoreRetained(MonoMs now)
 {
     RetainedRecord r;
     if (deps_.retained == nullptr || !deps_.retained->load(r) || !intact(r)) {
-        return;
+        return false;
     }
     std::array<ZoneBudget, kMaxZones> budget{};
     for (std::size_t i = 0; i < kMaxZones; ++i) {
@@ -781,6 +814,7 @@ void Controller::restoreRetained(MonoMs now)
             tripAtMs_[b][k] = age == 0 ? kNoTrip : t - static_cast<int64_t>(age - 1) * 1000;
         }
     }
+    return true;
 }
 
 void Controller::savePersist(MonoMs now)
