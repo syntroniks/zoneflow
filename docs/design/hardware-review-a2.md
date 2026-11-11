@@ -7,6 +7,14 @@ relay drive, the regulator over-voltage question and the output stage of
 [review A1](hardware-review-a1.md) and the changes that followed it. It is
 tracked in [issue #11](https://github.com/syntroniks/zoneflow/issues/11).
 
+**After this review.** The firmware that implemented its self-test raised
+nine questions on the procedure, and the owner decided finding M5. Both are
+answered in [hardware answers A2](hardware-answers-a2.md), which changed
+three things this review had set: the hold of step 2 (1.0 s to 2.0 s), the
+band of step 9 (0.5 to 1.5 became 0.40 to 1.70) and the open state of M5 (a
+detector, U13, now removes drive above 4.0 V on `3V3`). The text below is
+the review as it was written.
+
 No board exists and I had no bench. Every statement here comes from a
 manufacturer data sheet that I opened, a calculation from its figures, or an
 ngspice run that is committed under `hardware/sim/`. Section 11 says which is
@@ -893,7 +901,7 @@ steps 2b and 5b of the self-test, the limits of step 9, and rules 15 to
 
 | Finding | Change | Why not applied |
 |---|---|---|
-| M5 | An over-voltage detector on `3V3` that pulls `EN` low above about 3.6 V. A candidate from the JLCPCB listing is the TI TPS3700DDCR, a window comparator with open-drain outputs, C33002, 5461 in stock on 2026-11-10. I have read its listing and not its data sheet. | A new IC, a divider and a decision. It needs its own review. |
+| M5 (decided since: [hardware answers A2](hardware-answers-a2.md), section 4) | An over-voltage detector on `3V3` that pulls `EN` low above about 3.6 V. A candidate from the JLCPCB listing is the TI TPS3700DDCR, a window comparator with open-drain outputs, C33002, 5461 in stock on 2026-11-10. I have read its listing and not its data sheet. | A new IC, a divider and a decision. It needs its own review. |
 | m6 | 10 kohm in series with `SENS_PWR_EN`, between GPIO45 with R86 and the enable pin of U11 | One more part and net for a failure that needs two faults in a row. The owner may want it anyway. |
 | M2 | 0.1 ohm in series with F5 | By the sum of section 6.3 it would take the worst-case fault current from 53.5 A to 47 A, under the 50 A interrupting rating at 125 V, for 8 mW at full load. Not simulated. One more part and net. The bench test of risk 21 says whether it is needed. |
 | M6 | R89 from 1 kohm to 220 ohm, so that detector B holds through a 1 ms phase | It moves the single-edge and slow-toggling results and wants its own pass through the fault table. The contract change covers the firmware's waveform. |
