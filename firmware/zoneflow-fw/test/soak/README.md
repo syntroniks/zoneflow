@@ -45,7 +45,7 @@ no firmware runs the pin is low.
 | Detector corner | typical, latest release, earliest release, slow charge (review A2), per run |
 | Comparator | trips at a peak of 4.0 to 5.4 A per run (hardware design 19.3 item 12) |
 | Transformer and mains | 50 or 60 Hz; sags to 17 to 22 V; 32 V high line; drop-outs of 20 ms to 2 h; zero-cross bridged to the keep-alive (100 Hz) |
-| ADC | windows of 500 samples per channel, computed from the waveform, clipped at 1.75 V, biased 740 to 840 mV, noise 0.3 to 18 mV; calibration lost for a second to a day |
+| ADC | windows of 500 samples per channel, computed from the waveform, clipped at 1.75 V, biased 740 to 840 mV, noise 0.3 to 15.3 mV; calibration lost for a second to a day |
 | I2C | transient no-acknowledge and timeout, a stuck bus, corrupted reads of a register |
 | Sensors | rain contact wet for hours with bounce at both edges; leaks with every valve shut; flow meter at 450 pulses per litre |
 | Flash (NVS) | every write keeps the flash busy 1 to 8 ms, 30 to 60 ms for 11 % of writes, 100 to 400 ms for 1 %, and stalls the control task for that long. A write in progress at a reset or power loss leaves the old value (60 %), the new one (25 %) or a torn or bit-flipped record (15 %, beyond what NVS promises). Bit rot in a stored value |
@@ -70,7 +70,7 @@ Each traces to a requirement.
 | S5 | A zone is never open while locked out, while the master it needs is locked out, in maintenance, without 24 VAC, or without the output stage in `Ready` | Architecture 3, fault paths |
 | S6 | The relay closes at least 20 ms before the first valve and never onto a driven valve; no two outputs switch on within 100 ms; while the keep-alive runs, the relay is released 40 ms after the last valve and never under one | Hardware design 19.1 rules 4 and 10 |
 | S7 | A zone the driver has open is open in the published state snapshot, and in `GET /api/v1/status` (sampled every 10 minutes of a run) | Display and API report what is driven |
-| S8 | Every scheduled start is started, skipped with a reason or reported missed, once: no start runs twice, none is reported missed after it ran, none is lost. Local time from glibc, day rules written again here, not the firmware's code. Exclusions, each counted: a program edited within 70 s, 25 h after a time zone change, a program with no stored key after boot (policy 5), starts older than a day (policy 1) | Architecture 5 |
+| S8 | Every scheduled start is started, skipped with a reason or reported missed, once: no start runs twice, none is reported missed after it ran, none is lost. Local time from glibc, day rules written again here, not the firmware's code. Exclusions, each counted: a program edited within 70 s, 25 h after a time zone change, a program with no stored key after boot (policy 5), starts older than a day (policy 1). Counted as gaps, not failed: a start run again after a restart cut it before any valve opened (`gap.rerun_of_start_cut_before_watering`), and a start skipped because its key was set while the clock was ahead, after the clock was put back by less than a day (`gap.start_skipped_after_clock_put_back`) | Architecture 5 |
 | S9 | The configuration in effect after every boot validates; a healthy board leaves its start-up test within a minute of a boot | Persistent data never makes the controller unsafe or unbootable |
 | S10 | NVS holds at most 32 keys and 40 kB; the live heap at the end is within 4 MB of day 2; the oracle's own queues are bounded; ASan's leak check at exit | No unbounded growth |
 | S11 | No heap allocation inside `Controller::tick()` (the harness's own bookkeeping excluded); no flash write from the control task while an output is energised; optionally a host-time bound per tick (`--max-tick-us`) | Architecture 2 |
@@ -84,6 +84,13 @@ Each traces to a requirement.
 | `liveness` | No faults, no users, no restarts: programs at 00:00, 01:30, 02:30, 05:00, 06:00, 07:30, 12:00, 18:45, 21:00 and 23:59 local, in any of the time zones, for a simulated year |
 | `halt` | Every two minutes a run starts; 5 to 20 s later one board fault appears (the fault cycles with the seed through every modelled fault); 0 to 400 ms later the firmware hangs or freezes; then a watchdog restart and a repair. Checks S2 with each single fault present while a valve is on |
 | `esphome` | The supervisor glue with the world faults, restarts and halts, and random sprinkler starts and stops, faults cleared and repairs confirmed |
+
+## The CI subset and the long run
+
+| Run | Chaos | Liveness | Halt | ESPHome |
+|---|---|---|---|---|
+| `--ci` (CI, ASan and UBSan, 4 processes) | seeds 1 to 24, 2 days each | seeds 1 and 2, 45 days each | 54 scenarios (every board fault twice), 0.02 days each | seeds 1 to 4, 1 day each |
+| `--long` (`run_long.sh`, no sanitizers) | seeds 1 to 2000, 14 days each | seeds 1 to 32, 365 days each | 1080 scenarios (every board fault 40 times), 0.05 days each | seeds 1 to 160, 5 days each |
 
 ## Shrinking
 

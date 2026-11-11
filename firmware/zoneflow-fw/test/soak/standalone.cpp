@@ -350,6 +350,7 @@ public:
     bool aheadValid = false;
     bool configSeenThisBoot = false;
     uint64_t smallBackJumpPhys = 0;
+    bool runtimeDamagedAtBoot = false;
     std::map<std::pair<uint16_t, int64_t>, uint32_t> dueBoot;
 
     void violation(const char *id, const std::string &detail);
@@ -459,6 +460,7 @@ void Runner::boot()
     d.time.boot();
     // Runtime record as stored: which programs have a key (S8, policy 5).
     storedKeysAtBoot.clear();
+    runtimeDamagedAtBoot = w.nvs.damaged.count(ConfigStore::kRuntimeKey) != 0;
     {
         std::string json;
         SchedulerPersist p;
@@ -1120,7 +1122,12 @@ void Runner::onEvent(const Event &e)
             d->st = Due::St::Pending; // the replayed day, by the firmware's (wrong) clock
             w.count("s8.replayed_after_back_jump");
         }
-        if (d->st == Due::St::Started && !d->watered && dueBoot[{pid, k}] != boots) {
+        if (runtimeDamagedAtBoot && (d->st == Due::St::Started || d->st == Due::St::Skipped) &&
+            dueBoot[{pid, k}] != boots) {
+            w.count("gap.rerun_from_damaged_runtime_record");
+            violation("S8-duplicate-damaged-record", "program " + std::to_string(pid) + " start " + keyText(k) +
+                                                         " ran again from a damaged runtime record");
+        } else if (d->st == Due::St::Started && !d->watered && dueBoot[{pid, k}] != boots) {
             // The restart came before any valve opened for it (the self-test
             // before a run takes seconds): running it now waters once.
             w.count("gap.rerun_of_start_cut_before_watering");
@@ -1229,7 +1236,12 @@ void Runner::onEvent(const Event &e)
             found->st = Due::St::Pending;
             w.count("s8.replayed_after_back_jump");
         }
-        if (found->st == Due::St::Started && !found->watered && dueBoot[{pid, found->key}] != boots) {
+        if (runtimeDamagedAtBoot && dueBoot[{pid, found->key}] != boots) {
+            // The runtime record was damaged beyond what NVS promises (NVS
+            // would have rejected it by its entry CRC); it has no check of
+            // its own.
+            w.count("gap.missed_report_from_damaged_runtime_record");
+        } else if (found->st == Due::St::Started && !found->watered && dueBoot[{pid, found->key}] != boots) {
             w.count("gap.missed_report_for_start_cut_before_watering");
         } else if (found->st == Due::St::Started || found->st == Due::St::Skipped) {
             violation("S8-missed-after-ran", "program " + std::to_string(pid) + " start " + keyText(found->key) +

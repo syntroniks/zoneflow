@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -60,6 +61,9 @@ public:
 
     std::map<std::string, std::string> data;
     double failRate = 0.0; // share of writes that fail (NVS full, driver error)
+    // Keys whose stored value is damaged beyond what NVS promises (torn or
+    // rotten) and not written since.
+    std::set<std::string> damaged;
 
 private:
     struct InFlight {

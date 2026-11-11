@@ -117,7 +117,13 @@ void PhysicalOracle::step(World &w, const FirmwareView &fw, uint64_t dtMs)
             b = Budget{}; // the firmware cannot switch it off; S1 covers it
             continue;
         }
-        if (w.energised(z)) {
+        if (w.energised(z) && fw.running && !fw.halted && !fw.commanded[z]) {
+            // A valve still on after the firmware stopped it by stopping the
+            // keep-alive (a fault path): the detectors let go within their
+            // hold-up. S1 bounds this time; the budget counts commanded time.
+            w.count("s4.uncommanded_tail_ms", dtMs);
+            b.closedMs = 0;
+        } else if (w.energised(z)) {
             b.burstMs += dtMs;
             b.closedMs = 0;
             b.halted = b.halted || fw.halted || !fw.running;

@@ -201,6 +201,7 @@ bool Flash::write(const char *key, std::string_view v)
     std::erase_if(inflight_, [&](const InFlight &x) { return x.untilMs <= w_.phys; });
     inflight_.push_back(std::move(f));
     data[key] = std::string(v);
+    damaged.erase(key);
     w_.flashBusyUntil = std::max(w_.flashBusyUntil, w_.phys + ms);
     w_.count(std::string("flash.writes.") + name_);
     return true;
@@ -255,6 +256,7 @@ void Flash::interrupt()
                     }
                 }
                 w_.count("flash.torn");
+                damaged.insert(f.key);
                 w_.note(std::string("flash write of ") + f.key + " interrupted: record torn");
             }
         }
@@ -274,6 +276,7 @@ void Flash::rot()
     }
     it->second[w_.rng.below(it->second.size())] ^= static_cast<char>(1u << w_.rng.below(8));
     w_.count("flash.bit_rot");
+    damaged.insert(it->first);
     w_.note("bit rot in " + std::string(name_) + "/" + it->first);
 }
 

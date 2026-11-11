@@ -18,6 +18,8 @@
 //   S4  A zone's on-time, added over runs until it has been closed for the
 //       minimum rest, never exceeds its maximum run time, across software
 //       restarts (spec section 2 rule 4, firmware architecture section 20).
+//       On-time is time energised while commanded, or while the firmware is
+//       halted; the tail after a stop by the keep-alive is S1's.
 #pragma once
 
 #include <array>
