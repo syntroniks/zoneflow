@@ -167,7 +167,7 @@ at("R15", 1.81, 2.5, 90)
 at("R16", 1.81, 5.6, 90)
 at("C13", 14.15, 2.6, 90)
 at("R17", 14.15, 5.7, 90)
-at("U2", 3.6, 17.7, 0)
+at("U2", 3.3, 17.7, 0)         # 0.3 mm left of where it was: room for the VBUS stub beside pins 4 to 6
 block("USB series resistors and the pads of the unfitted filter capacitors, above the ESD array.\nFrom their upper ends the pair runs on the bottom side to the module.")
 at("R97", 1.9, 20.95, 90)      # D+
 at("C52", 1.9, 23.92, 90)
@@ -216,7 +216,7 @@ at("D23", 36.7, 12.6, 90)
 at("R37", 36.3, 20.25, 270)
 at("TP17", 104.0, 10.6, 0)     # ISNS, at the far end of the strip
 at("TP1", 38.0, 30.0, 0)
-at("R9", 37.0, 34.75, 0)
+at("R9", 37.0, 34.75, 180)     # the tap at the left, in line with R10 and C9
 at("R10", 37.0, 36.35, 0)
 at("C9", 37.0, 37.95, 0)
 
@@ -252,10 +252,10 @@ at("TP4", 20.0, 55.4, 0)
 # ---- current-sense amplifier, between the two buttons ------------------------------------------
 block("Current-sense amplifier. Channel A (low range) on the left, channel B on the right.")
 at("U8", 35.0, 62.6, 90)
-at("C25", 35.0, 57.65, 0)
+at("C25", 32.3, 67.52, 180)    # above pin 8 of U8, its 3.3 V pad 1.0 mm from the pin's (layout review, L3)
 col("R39 C26", 30.2, 66.0, -1.6)
-at("R46", 31.9, 67.5, 0)        # ADC series resistors, each at its amplifier output; the strip between
-at("R47", 41.0, 67.5, 0)        # them, below the expander, stays free for the lines that leave it
+at("R46", 27.15, 66.2, 180)    # ADC series resistor of the low range: it gave its place above pin 8 to C25
+at("R47", 41.0, 67.5, 0)        # and the one of the high range, at its amplifier output
 at("R38", 30.2, 62.8, 180)     # shunt side towards the amplifier: Kelvin tracks end here
 at("R40", 30.2, 61.2, 180)
 col("R41 C27", 30.2, 59.6, -1.6)
@@ -517,7 +517,9 @@ group_tracks = [
     track(["D1.1", [-1.25, 17.54], "F1.1"], width=1.2, table=G, comment="Output: TVS to the PTC."),
     track(["D1.1", [-1.25, 15.2], [0.25, 15.2], [0.25, 17.3], "F1.1"], width=1.2, table=G,
           comment="Output: from the two vias of the fan-out lane up into the PTC pad, 1.2 mm wide."),
-    track(["F1.1", [0.45, 16.9], {"via": [0.45, 16.0]}, {"via": [0.45, 15.2]}], width=0.6, via=(0.6, 0.3), table=G, stay=True),
+    track(["F1.1", [0.45, 16.9], {"via": [0.45, 16.0]}, {"via": [0.45, 15.2]}, {"via": [0.45, 14.4]},
+           {"via": [0.45, 13.6]}], width=0.7, via=(0.6, 0.3), table=G, stay=True,
+          comment="Four vias, 0.8 mm apart, on the last 2.4 mm of the fan-out lane: see hardware-layout.md, section 6."),
     track(["F1.2", "Q1.2"], width=5.0, table=G, comment="T2: PTC to the triac tab, and vias to the island on B.Cu."),
     track(["F1.2", [2.6, 23.6], {"via": [3.25, 23.6]}], width=1.0, table=G),
     track(["F1.2", [2.6, 24.9], {"via": [3.25, 24.9]}], width=1.0, table=G),
@@ -530,6 +532,7 @@ group_tracks += [
     track(["Q1.1", "R4.2"], width=0.6, table=G, comment="A1: to the gate resistor, and vias to the ISNS plane on In2.Cu."),
     track(["Q1.1", {"via": [2.3, 37.0]}], width=0.6, via=(0.6, 0.3), table=G),
     track(["Q1.1", {"via": [2.3, 33.5]}], width=0.6, via=(0.8, 0.4), table=G),
+    track(["Q1.1", {"via": [1.0, 35.2]}], width=0.6, via=(0.8, 0.4), table=G),
     track(["Q1.3", [-2.28, 36.9], [0.675, 36.9], "R4.1"], width=0.3, table=G, comment="Gate."),
     track(["R4.1", {"via": [0.675, 39.4]}], width=0.3, via=(0.6, 0.3), table=G),
     track(["R3.1", {"via": [-2.71, 39.55]}], width=0.3, via=(0.6, 0.3), table=G, comment="T2 and the opto output."),
@@ -636,17 +639,12 @@ zones = ["# Ground: all of In1.Cu, and pours on both outer layers.",
          zone("GND", ["In1.Cu"], clearance=0.3, min_width=0.25, connect="solid", priority=0),
          zone("GND", ["F.Cu", "B.Cu"], clearance=0.3, min_width=0.25, connect="thermal", thermal_gap=0.3,
               thermal_width=0.4, priority=0),
-         "# 3.3 V: In2.Cu above the LED row, and down both edges to the parts that need it there.",
+         "# 3.3 V: In2.Cu above the LED row, and down both edges to the parts that need it there. It is a\n"
+         "# plane: the autorouter is kept off this layer ([[route.plane]] below), so nothing cuts it but the\n"
+         "# nine opto-output lines written out further down and the clearance holes of the vias.",
          "[[zone]]\nnet = \"3V3\"\nlayers = [\"In2.Cu\"]\n"
          "outline = [[0.5, 109.5], [113.5, 109.5], [113.5, 5.0], [103.9, 5.0], [103.9, 45.3], [9.5, 45.3], "
          "[9.5, 16.0], [0.5, 16.0]]\nclearance = 0.3\nmin_width = 0.25\nconnect = \"solid\"\npriority = 1\n",
-         "# 3.3 V again on B.Cu, over the logic area. The signals routed on In2.Cu cut the pour there into\n"
-         "# pieces; every 3.3 V via reaches both pours, and together they hold. A corridor along the\n"
-         "# keep-alive net is left out: there the ground pour of B.Cu stays, on both sides of it.",
-         "[[zone]]\nnet = \"3V3\"\nlayers = [\"B.Cu\"]\n"
-         "outline = [[0.5, 16.0], [9.5, 16.0], [9.5, 45.3], [103.9, 45.3], [103.9, 5.0], [113.5, 5.0], [113.5, 109.5], "
-         "[0.5, 109.5], [0.5, 80.6], [90.5, 80.6], [90.5, 89.6], [94.3, 89.6], [94.3, 98.9], [98.5, 98.9], [98.5, 76.6], "
-         "[0.5, 76.6]]\nclearance = 0.3\nmin_width = 0.25\nconnect = \"solid\"\npriority = 1\n",
          "# Shunt return: In2.Cu under the triacs. Every A1 terminal drops into it through two vias.",
          zone("/ISNS", ["In2.Cu"], rect=(34.6, 18.6, 103.3, 40.1), clearance=0.5, min_width=0.3, connect="solid",
               priority=2),
@@ -663,9 +661,13 @@ hand = [
     track(["F4.2", [11.815, 21.8], "D1.1"], width=2.0, comment="AC_L: fuse to the surge clamp, the rectifier and the relay contact."),
     track(["F4.2", [11.815, 19.0], [23.2, 19.0], "D2.2"], width=1.0),
     track(["D1.1", [10.6, 21.8], [7.9, 24.5], "K1.13"], width=2.0),
+    track(["D1.2", {"via": [17.95, 20.9]}], width=0.8, via=(0.8, 0.4),
+          comment="Ground of the surge clamp D1: three vias into the plane, where the builder gave it one of 0.3 mm."),
+    track(["D1.2", {"via": [17.95, 22.7]}], width=0.8, via=(0.8, 0.4)),
+    track(["D1.2", {"via": [21.65, 22.65]}], width=0.6, via=(0.6, 0.3)),
     track(["K1.13", "JP1.1"], width=0.5),
     track(["K1.13", [5.9, 26.6], "R55.1"], width=0.5),
-    track(["K1.14", [7.15, 16.3], [9.6, 13.8], [9.6, 10.6], [11.2, 9.0], [27.0, 9.0], [29.0, 7.2], "J2.1"], layer="B.Cu",
+    track(["K1.14", [7.15, 16.3], [9.6, 13.85], [9.6, 12.1], [11.2, 10.5], [26.2, 10.5], [29.4, 7.3], "J2.1"], layer="B.Cu",
           width=2.0, comment="COM: relay contact to the two COM terminals, on B.Cu under the fuse well."),
     track(["J2.1", "J2.2"], layer="B.Cu", width=2.0),
     track(["J2.2", [34.035, 9.0], [35.5, 10.45], "D23.1"], width=1.5),
@@ -697,6 +699,11 @@ hand = [
     track(["R6.2", "C8.1"], width=0.2),
     track(["R4.1", "R3.2"], width=0.2),
     track(["U1.4", [24.925, 35.6], "R2.1"], width=0.2),
+    track(["U1.1", [22.6, 31.095], [22.15, 31.8]], width=0.5,
+          comment="Ground of U1 (LM5164 data sheet, 7.4.1, items 4 and 10): the GND pin tied to the exposed pad on the top\n"
+                  "layer, six vias under the pad (the [[via]] list), a second via at the pin and at the input capacitor C2."),
+    track(["U1.1", {"via": [25.45, 30.35]}], width=0.5, via=(0.6, 0.3)),
+    track(["C2.2", {"via": [25.75, 27.925]}], width=0.6, via=(0.6, 0.3)),
     track(["L1.2", "D25.1"], width=2.0, comment="V_BUCK: the output pad of L1 to the clamp D25 and to C6 and C5."),
     track(["L1.2", [10.925, 28.0], "C6.1"], width=1.1),
     track(["L1.2", [11.5, 28.0], [15.3, 28.0], "C5.1"], width=0.5),
@@ -704,6 +711,60 @@ hand = [
     track(["D25.2", {"via": [15.4, 38.7]}], width=1.0, via=(0.8, 0.4)),
     track(["D25.2", {"via": [14.0, 34.75]}], width=1.0, via=(0.8, 0.4)),
     track(["D25.2", {"via": [15.2, 34.75]}], width=1.0, via=(0.8, 0.4)),
+    "# The 5 V chain, by hand on the outer layers (layout review, L4). Widths: hardware-layout.md, section 6.\n"
+    "# Feedback: the top of the divider (R3) and the ripple capacitor (C7) sense at the pad of D25, on\n"
+    "# their own track, and nothing else is on it.",
+    track(["D25.1", [11.9, 38.9], [13.1, 40.1], [22.6, 40.1], "R3.1"], width=0.3),
+    track(["C7.2", [17.325, 40.1]], width=0.3),
+    "# V_BUCK to the OR-ing diode D3: up the 2.1 mm gap between the anode of D4 and the pins of U3,\n"
+    "# which it shares with V5.",
+    track(["D25.1", [9.9, 38.4], [8.8, 39.5], [8.8, 45.2]], width=0.8),
+    track([[8.8, 45.2], [8.8, 49.6], "D3.2"], width=0.55),
+    "# V_BUCK to the relay coil and its diode.",
+    track(["D25.1", [9.3, 38.6], [4.05, 38.6], "K1.A1"], width=0.5),
+    track(["D5.1", [2.45, 35.6], "K1.A1"], width=0.4),
+    track(["TP2.1", [15.3, 28.0]], width=0.3),
+    "# V_BUCK to the sensor supply switch U11 and the read-back divider: a via at D3, B.Cu north past the\n"
+    "# end of the Kelvin pair, east along y = 63.7, and up beside the Home button.",
+    track(["D3.2", {"via": [8.75, 51.7]}, [8.75, 63.2], [9.25, 63.7], [52.0, 63.7], [54.3, 61.4]], width=0.5, via=(0.6, 0.3)),
+    track(["C47.1", {"via": [54.3, 61.4]}], width=0.5, via=(0.6, 0.3)),
+    track(["C47.1", [54.5, 62.7], [54.5, 66.45], "U11.1"], width=0.3),
+    track(["U11.1", [54.5, 66.45], [54.5, 67.7], [50.175, 67.7], "R93.1"], width=0.2),
+    "# The current-sense amplifier's capacitor C25: 3.3 V straight up from pin 8 of U8, its own ground via.\n"
+    "# The amplifier output of the low range goes over the top of R39 to its series resistor R46.",
+    track(["U8.8", "C25.1"], width=0.3),
+    track(["C25.2", {"via": [30.5, 67.75]}], width=0.3, via=(0.6, 0.3)),
+    track(["R39.2", [30.6, 66.9], [28.4, 66.9], "R46.1"], width=0.2),
+    track(["U2.2", {"via": [3.225, 17.7]}], width=0.3, via=(0.6, 0.3), comment="Ground of the USB ESD array: a via under it."),
+    "# V5: the two cathodes, the test pad, the input capacitor C10 and pin 3 of U3.",
+    track(["D4.1", "D3.1", [3.0, 52.6], "TP3.1"], width=1.0),
+    track(["D3.1", [3.0, 52.3], [4.4, 53.7], [6.6, 53.7], "C10.1"], width=0.8),
+    track(["C10.1", [7.25, 53.4], [7.75, 52.9], [9.3, 52.9], [9.75, 52.45], [9.75, 48.3], [10.25, 47.8], "U3.3"], width=0.7),
+    "# VBUS: the two pads of the USB connector joined on B.Cu under it, the capacitor C13, and on B.Cu\n"
+    "# round the mounting hole, past the relay pins and up at x = 9.6 to two vias below the anode of D4.\n"
+    "# The ESD array U2 takes it from a via on the way.",
+    track(["J5.A9", {"via": [10.45, 8.4]}, [7.2, 8.4], [5.9, 8.4]], width=0.5, via=(0.6, 0.3)),
+    track(["J5.A4", [5.55, 7.9], {"via": [5.9, 8.4]}], width=0.4, via=(0.6, 0.3)),
+    track(["J5.A9", [10.45, 8.4], [14.6, 8.4], [15.8, 7.2], [15.8, 3.0], [14.9, 2.1], "C13.1"], width=0.5),
+    track(["U2.5", [5.5, 17.7], [5.5, 20.3], {"via": [5.6, 20.9]}], width=0.25, via=(0.6, 0.3)),
+    track(["D4.2", {"via": [7.4, 45.2]}, [9.6, 43.0], [9.6, 21.5], [9.0, 20.9], [5.6, 20.9], [5.2, 20.5], [5.2, 15.0],
+           [7.2, 13.0], [7.2, 8.4]], width=0.7, via=(0.6, 0.3)),
+    track(["D4.2", {"via": [6.4, 45.2]}, [7.4, 45.2]], width=0.7, via=(0.6, 0.3)),
+    "# VIN_MON, the tap of the input-voltage divider, to module pin 15 (layout review, L5). Its 100 nF\n"
+    "# capacitor C9 is at the divider, so the line is a low impedance all the way. On B.Cu: across the\n"
+    "# strip of the gate lines left of the first one, east under the opto-triacs, a hop on F.Cu over the\n"
+    "# two ADC lines under the cell holder, north under detector A. Four vias.",
+    track(["C9.1", "R10.1"], width=0.2),
+    track(["R9.2", "R10.1"], width=0.2),
+    track(["C9.1", [36.225, 39.0], [35.0, 39.0], [34.4, 39.6], {"via": [29.2, 39.6]}, [27.9, 39.6], [27.4, 40.1], [27.4, 56.1],
+           [27.9, 56.6], [97.9, 56.6], [98.3, 57.0], {"via": [98.3, 64.9]}, {"via": [98.3, 69.6]}, [98.3, 89.4]],
+          width=0.2, via=(0.6, 0.3)),
+    track(["U4.15", [96.015, 89.9], [96.5, 89.4], {"via": [98.3, 89.4]}], width=0.2, via=(0.6, 0.3)),
+    "# RLY_B_RB, the relay read-back, from its divider to module pin 7: 50 kohm behind it, so it is\n"
+    "# written out. It crosses the keep-alive once, at right angles on F.Cu, west of detector B's guard.",
+    track(["R94.2", "R95.1"], width=0.2),
+    track(["R95.1", [56.2, 70.1], {"via": [56.2, 82.07]}, {"via": [75.9, 82.07]}, [75.9, 99.3], [79.4, 99.3], [79.4, 100.89],
+           "U4.7"], width=0.2, via=(0.6, 0.3)),
     track(["C1.1", "R9.1"], width=0.4),
     track(["C1.1", "TP1.1"], width=0.4),
     "# ISNS: a strip through the lower pads of every TVS and snubber capacitor, then up to the\n"
@@ -774,7 +835,7 @@ more = [
     "# USB D+ and D-: from the series resistors at the ESD array, side by side on B.Cu up the left edge\n"
     "# between the pins of K1, across under the display at y = 95, one step down past the debug header,\n"
     "# to a via at each module pin. 0.25 mm tracks, 0.2 mm apart. Full speed only: not impedance controlled.",
-    track(["U2.3", [1.25, 17.3], [1.25, 19.5], "R97.1"], width=0.25),
+    track(["U2.3", [1.05, 16.75], [1.05, 19.5], "R97.1"], width=0.25),
     track(["U2.6", "R98.1"], width=0.25),
     track(["R97.2", "C52.1"], width=0.25),
     track(["R98.2", "C53.1"], width=0.25),
@@ -857,7 +918,7 @@ more += [
     "# From the series resistors at the amplifier on B.Cu, east along y = 67, south of everything the\n"
     "# keep-alive touches, north under the comparator block and the module to pins 39 and 38. The\n"
     "# filter capacitors C30 and C31 sit on the way.",
-    track(["R46.2", {"via": [33.6, 67.0]}, [33.85, 66.75], [109.2, 66.75], [109.6, 67.15], [109.6, 107.24], [110.3, 107.24]],
+    track(["R46.2", {"via": [25.4, 66.75]}, [109.2, 66.75], [109.6, 67.15], [109.6, 107.24], [110.3, 107.24]],
           width=0.2, via=(0.6, 0.3)),
     track(["U4.39", {"via": [110.3, 107.24]}], width=0.2, via=(0.6, 0.3)),
     track(["C30.1", {"via": [109.6, 86.3]}], width=0.2, via=(0.6, 0.3)),
@@ -944,7 +1005,9 @@ def text(t, x, y, size=1.0, thickness=0.15, layer="F.SilkS", **kw):
 LABEL_Y = 8.25      # the strip behind the terminal headers, kept free of pads: y = 7.6 to 8.9
 labels = ["# Terminal labels, one behind each terminal, as the installer reads them with the plugs in.\n"
           "# The names are those of the wiring page of the manual."]
-labels += [text(t, x, LABEL_Y) for x, t in TERMINALS]
+# Letters 0.8 mm wide and 1.0 mm high: at 1.0 mm wide "FLOW" and "GND" stood 0.1 mm apart on the
+# 3.81 mm pitch and read as one word (layout review, L12).
+labels += [text(t, x, LABEL_Y, width=0.8) for x, t in TERMINALS]
 labels += [
     "# Terminal 2 of the 24 VAC block is the board's ground (hardware design, section 16.1): a ground\n"
     "# symbol right of its label, and the word.",
@@ -991,13 +1054,13 @@ TAIL = '''
 # Layer use: F.Cu parts and signals, In1.Cu ground, In2.Cu supply planes and the valve fan-out,
 # B.Cu signals, the triac heat islands and ground.
 [route]
-layers = ["F.Cu", "In2.Cu", "B.Cu"]   # In2.Cu is also the 3.3 V pour: what is routed there cuts into it
+layers = ["F.Cu", "B.Cu"]             # In1.Cu is the ground plane and In2.Cu the 3.3 V plane: see [[route.plane]]
 plane_layers = ["In2.Cu"]             # for the routing report: a track here is a slot in a pour
 clearance_margin = 0.01               # the autorouter works to 0.01 mm more than DRC checks
 prune = true                          # after routing, take away the escape vias that were not used
 widen = true                          # and give the autorouter's tracks their class width where there is room
 # Nets the autorouter must leave alone: they connect through planes, pours or hand-routed copper.
-exclude = ["GND", "3V3", "/ISNS", "/OUT_*", "/*/T2", "/*/SNB", "/AC_L_IN", "/AC_N", "/AC_L", "/COM",
+exclude = ["GND", "3V3", "V_BUCK", "VBUS", "/VIN_MON", "/RLY_B_RB", "/ISNS", "/OUT_*", "/*/T2", "/*/SNB", "/AC_L_IN", "/AC_N", "/AC_L", "/COM",
            "/Power/VRECT", "VIN_DC", "/Power/VIN_U1", "/Power/UVLO", "/Power/SW", "/Power/BST", "/KA",
            "/Failsafe/KA_N0", "/Failsafe/KA_N1", "/KA_N2", "/Failsafe/KA_INP",
            "/TFT_CS", "/TFT_MOSI", "/TFT_SCLK", "/TFT_DC", "/TFT_RST", "/TFT_BL", "/Display/TFT_LEDA",
@@ -1009,6 +1072,24 @@ exclude = ["GND", "3V3", "/ISNS", "/OUT_*", "/*/T2", "/*/SNB", "/AC_L_IN", "/AC_
 [[route.plane]]
 layer = "In1.Cu"
 net = "GND"
+
+# In2.Cu is the 3.3 V plane over the logic area, with the shunt return plane and the copy of the valve
+# fan-out beside it. The autorouter gets no track on it: what it laid there in the first routing cut
+# the 3.3 V pour into 21 pieces (layout review, L3).
+[[route.plane]]
+layer = "In2.Cu"
+net = "3V3"
+
+# Under the heads of the two pan-head board screws (mounting holes C and D, 5.6 mm heads): no track
+# and no via on F.Cu. The first routing had a USB data line under one and two Qwiic nets under the
+# other (layout review, L7).
+[[route.keepout]]
+layers = ["F.Cu"]
+rect = [1.5, 9.0, 7.5, 15.0]
+
+[[route.keepout]]
+layers = ["F.Cu"]
+rect = [106.5, 9.0, 112.5, 15.0]
 
 # Where the autorouter may put neither track nor via: the valve block on B.Cu (heat islands) and
 # on In2.Cu (shunt plane and fan-out lanes), which it cannot see because they are added afterwards.
@@ -1061,7 +1142,7 @@ rect = [56.6, 78.05, 80.4, 79.15]
 # A via beside every surface-mount pad of a plane net.
 [[plane]]
 net = "GND"
-skip = ["U4.41", "U1.9", "R40.1", "R44.1", "J7.1", "J7.12", "J5.A12", "J5.B1", "U5.2", "U5.12", "U5.21"]   # exposed pads: vias by hand. R40, R44: Kelvin, see below
+skip = ["U4.41", "U1.9", "R40.1", "R44.1", "J7.1", "J7.12", "J5.A12", "J5.B1", "U5.2", "U5.12", "U5.21", "C25.2", "U2.2"]   # exposed pads: vias by hand. R40, R44: Kelvin, see below
 
 [[plane]]
 net = "3V3"
@@ -1070,6 +1151,38 @@ skip = ["J7.8", "J7.9", "U5.24"]     # J7: joined to C38 by a track. U5: its own
 within = [[0.9, 45.7, 113.1, 109.1], [104.4, 5.4, 113.1, 45.7], [0.9, 16.4, 9.1, 45.7]]
 
 @COPPER@
+
+# Six vias under the exposed pad of U1, 1.3 x 1.2 mm apart, into the ground plane and the ground
+# pour on B.Cu (LM5164 data sheet, 7.4.1, item 10; TI's example has six of 0.33 mm).
+[[via]]
+net = "GND"
+at = [20.85, 31.8]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [22.15, 31.8]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [20.85, 33.0]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [22.15, 33.0]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [20.85, 34.2]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [22.15, 34.2]
+size = [0.6, 0.3]
 
 # Ground vias along the keep-alive corridor, 1.5 mm from the track: they tie the ground pour that
 # runs on both sides of it on B.Cu to the ground plane.
@@ -1120,33 +1233,8 @@ size = [0.6, 0.3]
 
 [[via]]
 net = "GND"
-at = [91, 83.5]
-size = [0.6, 0.3]
-
-[[via]]
-net = "GND"
 at = [94.05, 83]
 size = [0.6, 0.3]
-
-# One of the ground vias above is inside the encoder's "no wiring" area on F.Cu. It was there when
-# the board was routed, so it stays in the list, and is taken out again after the routing is
-# imported: moving it would discard the stored routing.
-[[unroute]]
-vias = [[91.0, 83.5]]
-
-# The autorouter joined the four V_DRV pads of RN2 with a bar and a via 0.86 mm from the gate node
-# of Q2. Layout rule 3 wants a rail 1 mm from that node. The bar is taken out; the patch router,
-# which knows the rule, joins the pads again.
-[[unroute]]
-net = "V_DRV"
-box = [43.95, 73.0, 44.9, 75.9]
-
-# The autorouter took V5 from the OR-ing diodes to the regulator U3, the whole 3.3 V load, through
-# a piece 0.3 mm wide where 0.4 mm does not fit on its line. It is taken out with its via and
-# routed again at the width of the class.
-[[unroute]]
-net = "V5"
-box = [8.6, 51.6, 10.05, 53.05]
 
 # No other track or via within 1 mm of the keep-alive net (hardware design, section 8.5).
 [[guard]]

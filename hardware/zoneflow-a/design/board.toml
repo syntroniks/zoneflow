@@ -116,7 +116,7 @@ R15 = [1.81, 2.5, 90]
 R16 = [1.81, 5.6, 90]
 C13 = [14.15, 2.6, 90]
 R17 = [14.15, 5.7, 90]
-U2 = [3.6, 17.7, 0]
+U2 = [3.3, 17.7, 0]
 
 # USB series resistors and the pads of the unfitted filter capacitors, above the ESD array.
 # From their upper ends the pair runs on the bottom side to the module.
@@ -176,7 +176,7 @@ D23 = [36.7, 12.6, 90]
 R37 = [36.3, 20.25, 270]
 TP17 = [104, 10.6, 0]
 TP1 = [38, 30, 0]
-R9 = [37, 34.75, 0]
+R9 = [37, 34.75, 180]
 R10 = [37, 36.35, 0]
 C9 = [37, 37.95, 0]
 
@@ -210,10 +210,10 @@ TP4 = [20, 55.4, 0]
 
 # Current-sense amplifier. Channel A (low range) on the left, channel B on the right.
 U8 = [35, 62.6, 90]
-C25 = [35, 57.65, 0]
+C25 = [32.3, 67.52, 180]
 R39 = [30.2, 66, 0]
 C26 = [30.2, 64.4, 0]
-R46 = [31.9, 67.5, 0]
+R46 = [27.15, 66.2, 180]
 R47 = [41, 67.5, 0]
 R38 = [30.2, 62.8, 180]
 R40 = [30.2, 61.2, 180]
@@ -471,13 +471,13 @@ U1 = [0, 8.8, 90]          # opto-triac: LED side down, pin 1 left; pin 4 (gate)
 # Layer use: F.Cu parts and signals, In1.Cu ground, In2.Cu supply planes and the valve fan-out,
 # B.Cu signals, the triac heat islands and ground.
 [route]
-layers = ["F.Cu", "In2.Cu", "B.Cu"]   # In2.Cu is also the 3.3 V pour: what is routed there cuts into it
+layers = ["F.Cu", "B.Cu"]             # In1.Cu is the ground plane and In2.Cu the 3.3 V plane: see [[route.plane]]
 plane_layers = ["In2.Cu"]             # for the routing report: a track here is a slot in a pour
 clearance_margin = 0.01               # the autorouter works to 0.01 mm more than DRC checks
 prune = true                          # after routing, take away the escape vias that were not used
 widen = true                          # and give the autorouter's tracks their class width where there is room
 # Nets the autorouter must leave alone: they connect through planes, pours or hand-routed copper.
-exclude = ["GND", "3V3", "/ISNS", "/OUT_*", "/*/T2", "/*/SNB", "/AC_L_IN", "/AC_N", "/AC_L", "/COM",
+exclude = ["GND", "3V3", "V_BUCK", "VBUS", "/VIN_MON", "/RLY_B_RB", "/ISNS", "/OUT_*", "/*/T2", "/*/SNB", "/AC_L_IN", "/AC_N", "/AC_L", "/COM",
            "/Power/VRECT", "VIN_DC", "/Power/VIN_U1", "/Power/UVLO", "/Power/SW", "/Power/BST", "/KA",
            "/Failsafe/KA_N0", "/Failsafe/KA_N1", "/KA_N2", "/Failsafe/KA_INP",
            "/TFT_CS", "/TFT_MOSI", "/TFT_SCLK", "/TFT_DC", "/TFT_RST", "/TFT_BL", "/Display/TFT_LEDA",
@@ -489,6 +489,24 @@ exclude = ["GND", "3V3", "/ISNS", "/OUT_*", "/*/T2", "/*/SNB", "/AC_L_IN", "/AC_
 [[route.plane]]
 layer = "In1.Cu"
 net = "GND"
+
+# In2.Cu is the 3.3 V plane over the logic area, with the shunt return plane and the copy of the valve
+# fan-out beside it. The autorouter gets no track on it: what it laid there in the first routing cut
+# the 3.3 V pour into 21 pieces (layout review, L3).
+[[route.plane]]
+layer = "In2.Cu"
+net = "3V3"
+
+# Under the heads of the two pan-head board screws (mounting holes C and D, 5.6 mm heads): no track
+# and no via on F.Cu. The first routing had a USB data line under one and two Qwiic nets under the
+# other (layout review, L7).
+[[route.keepout]]
+layers = ["F.Cu"]
+rect = [1.5, 9.0, 7.5, 15.0]
+
+[[route.keepout]]
+layers = ["F.Cu"]
+rect = [106.5, 9.0, 112.5, 15.0]
 
 # Where the autorouter may put neither track nor via: the valve block on B.Cu (heat islands) and
 # on In2.Cu (shunt plane and fan-out lanes), which it cannot see because they are added afterwards.
@@ -541,7 +559,7 @@ rect = [56.6, 78.05, 80.4, 79.15]
 # A via beside every surface-mount pad of a plane net.
 [[plane]]
 net = "GND"
-skip = ["U4.41", "U1.9", "R40.1", "R44.1", "J7.1", "J7.12", "J5.A12", "J5.B1", "U5.2", "U5.12", "U5.21"]   # exposed pads: vias by hand. R40, R44: Kelvin, see below
+skip = ["U4.41", "U1.9", "R40.1", "R44.1", "J7.1", "J7.12", "J5.A12", "J5.B1", "U5.2", "U5.12", "U5.21", "C25.2", "U2.2"]   # exposed pads: vias by hand. R40, R44: Kelvin, see below
 
 [[plane]]
 net = "3V3"
@@ -568,12 +586,13 @@ layer = "F.Cu"
 width = 1.2
 points = ["D1.1", [-1.25, 15.2], [0.25, 15.2], [0.25, 17.3], "F1.1"]
 
+# Four vias, 0.8 mm apart, on the last 2.4 mm of the fan-out lane: see hardware-layout.md, section 6.
 [[group.channel_power.track]]
 layer = "F.Cu"
-width = 0.6
+width = 0.7
 via = [0.6, 0.3]
 stay = true
-points = ["F1.1", [0.45, 16.9], {via = [0.45, 16]}, {via = [0.45, 15.2]}]
+points = ["F1.1", [0.45, 16.9], {via = [0.45, 16]}, {via = [0.45, 15.2]}, {via = [0.45, 14.4]}, {via = [0.45, 13.6]}]
 
 # T2: PTC to the triac tab, and vias to the island on B.Cu.
 [[group.channel_power.track]]
@@ -638,6 +657,12 @@ layer = "F.Cu"
 width = 0.6
 via = [0.8, 0.4]
 points = ["Q1.1", {via = [2.3, 33.5]}]
+
+[[group.channel_power.track]]
+layer = "F.Cu"
+width = 0.6
+via = [0.8, 0.4]
+points = ["Q1.1", {via = [1, 35.2]}]
 
 # Gate.
 [[group.channel_power.track]]
@@ -777,23 +802,13 @@ thermal_gap = 0.3
 thermal_width = 0.4
 priority = 0
 
-# 3.3 V: In2.Cu above the LED row, and down both edges to the parts that need it there.
+# 3.3 V: In2.Cu above the LED row, and down both edges to the parts that need it there. It is a
+# plane: the autorouter is kept off this layer ([[route.plane]] below), so nothing cuts it but the
+# nine opto-output lines written out further down and the clearance holes of the vias.
 [[zone]]
 net = "3V3"
 layers = ["In2.Cu"]
 outline = [[0.5, 109.5], [113.5, 109.5], [113.5, 5.0], [103.9, 5.0], [103.9, 45.3], [9.5, 45.3], [9.5, 16.0], [0.5, 16.0]]
-clearance = 0.3
-min_width = 0.25
-connect = "solid"
-priority = 1
-
-# 3.3 V again on B.Cu, over the logic area. The signals routed on In2.Cu cut the pour there into
-# pieces; every 3.3 V via reaches both pours, and together they hold. A corridor along the
-# keep-alive net is left out: there the ground pour of B.Cu stays, on both sides of it.
-[[zone]]
-net = "3V3"
-layers = ["B.Cu"]
-outline = [[0.5, 16.0], [9.5, 16.0], [9.5, 45.3], [103.9, 45.3], [103.9, 5.0], [113.5, 5.0], [113.5, 109.5], [0.5, 109.5], [0.5, 80.6], [90.5, 80.6], [90.5, 89.6], [94.3, 89.6], [94.3, 98.9], [98.5, 98.9], [98.5, 76.6], [0.5, 76.6]]
 clearance = 0.3
 min_width = 0.25
 connect = "solid"
@@ -918,6 +933,25 @@ layer = "F.Cu"
 width = 2
 points = ["D1.1", [10.6, 21.8], [7.9, 24.5], "K1.13"]
 
+# Ground of the surge clamp D1: three vias into the plane, where the builder gave it one of 0.3 mm.
+[[track]]
+layer = "F.Cu"
+width = 0.8
+via = [0.8, 0.4]
+points = ["D1.2", {via = [17.95, 20.9]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.8
+via = [0.8, 0.4]
+points = ["D1.2", {via = [17.95, 22.7]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.6
+via = [0.6, 0.3]
+points = ["D1.2", {via = [21.65, 22.65]}]
+
 [[track]]
 layer = "F.Cu"
 width = 0.5
@@ -932,7 +966,7 @@ points = ["K1.13", [5.9, 26.6], "R55.1"]
 [[track]]
 layer = "B.Cu"
 width = 2
-points = ["K1.14", [7.15, 16.3], [9.6, 13.8], [9.6, 10.6], [11.2, 9], [27, 9], [29, 7.2], "J2.1"]
+points = ["K1.14", [7.15, 16.3], [9.6, 13.85], [9.6, 12.1], [11.2, 10.5], [26.2, 10.5], [29.4, 7.3], "J2.1"]
 
 [[track]]
 layer = "B.Cu"
@@ -1072,6 +1106,25 @@ layer = "F.Cu"
 width = 0.2
 points = ["U1.4", [24.925, 35.6], "R2.1"]
 
+# Ground of U1 (LM5164 data sheet, 7.4.1, items 4 and 10): the GND pin tied to the exposed pad on the top
+# layer, six vias under the pad (the [[via]] list), a second via at the pin and at the input capacitor C2.
+[[track]]
+layer = "F.Cu"
+width = 0.5
+points = ["U1.1", [22.6, 31.095], [22.15, 31.8]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.5
+via = [0.6, 0.3]
+points = ["U1.1", {via = [25.45, 30.35]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.6
+via = [0.6, 0.3]
+points = ["C2.2", {via = [25.75, 27.925]}]
+
 # V_BUCK: the output pad of L1 to the clamp D25 and to C6 and C5.
 [[track]]
 layer = "F.Cu"
@@ -1112,6 +1165,189 @@ layer = "F.Cu"
 width = 1
 via = [0.8, 0.4]
 points = ["D25.2", {via = [15.2, 34.75]}]
+
+# The 5 V chain, by hand on the outer layers (layout review, L4). Widths: hardware-layout.md, section 6.
+# Feedback: the top of the divider (R3) and the ripple capacitor (C7) sense at the pad of D25, on
+# their own track, and nothing else is on it.
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["D25.1", [11.9, 38.9], [13.1, 40.1], [22.6, 40.1], "R3.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["C7.2", [17.325, 40.1]]
+
+# V_BUCK to the OR-ing diode D3: up the 2.1 mm gap between the anode of D4 and the pins of U3,
+# which it shares with V5.
+[[track]]
+layer = "F.Cu"
+width = 0.8
+points = ["D25.1", [9.9, 38.4], [8.8, 39.5], [8.8, 45.2]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.55
+points = [[8.8, 45.2], [8.8, 49.6], "D3.2"]
+
+# V_BUCK to the relay coil and its diode.
+[[track]]
+layer = "F.Cu"
+width = 0.5
+points = ["D25.1", [9.3, 38.6], [4.05, 38.6], "K1.A1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.4
+points = ["D5.1", [2.45, 35.6], "K1.A1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["TP2.1", [15.3, 28]]
+
+# V_BUCK to the sensor supply switch U11 and the read-back divider: a via at D3, B.Cu north past the
+# end of the Kelvin pair, east along y = 63.7, and up beside the Home button.
+[[track]]
+layer = "F.Cu"
+width = 0.5
+via = [0.6, 0.3]
+points = ["D3.2", {via = [8.75, 51.7]}, [8.75, 63.2], [9.25, 63.7], [52, 63.7], [54.3, 61.4]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.5
+via = [0.6, 0.3]
+points = ["C47.1", {via = [54.3, 61.4]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["C47.1", [54.5, 62.7], [54.5, 66.45], "U11.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+points = ["U11.1", [54.5, 66.45], [54.5, 67.7], [50.175, 67.7], "R93.1"]
+
+# The current-sense amplifier's capacitor C25: 3.3 V straight up from pin 8 of U8, its own ground via.
+# The amplifier output of the low range goes over the top of R39 to its series resistor R46.
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["U8.8", "C25.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+points = ["C25.2", {via = [30.5, 67.75]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+points = ["R39.2", [30.6, 66.9], [28.4, 66.9], "R46.1"]
+
+# Ground of the USB ESD array: a via under it.
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+points = ["U2.2", {via = [3.225, 17.7]}]
+
+# V5: the two cathodes, the test pad, the input capacitor C10 and pin 3 of U3.
+[[track]]
+layer = "F.Cu"
+width = 1
+points = ["D4.1", "D3.1", [3, 52.6], "TP3.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.8
+points = ["D3.1", [3, 52.3], [4.4, 53.7], [6.6, 53.7], "C10.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.7
+points = ["C10.1", [7.25, 53.4], [7.75, 52.9], [9.3, 52.9], [9.75, 52.45], [9.75, 48.3], [10.25, 47.8], "U3.3"]
+
+# VBUS: the two pads of the USB connector joined on B.Cu under it, the capacitor C13, and on B.Cu
+# round the mounting hole, past the relay pins and up at x = 9.6 to two vias below the anode of D4.
+# The ESD array U2 takes it from a via on the way.
+[[track]]
+layer = "F.Cu"
+width = 0.5
+via = [0.6, 0.3]
+points = ["J5.A9", {via = [10.45, 8.4]}, [7.2, 8.4], [5.9, 8.4]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.4
+via = [0.6, 0.3]
+points = ["J5.A4", [5.55, 7.9], {via = [5.9, 8.4]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.5
+points = ["J5.A9", [10.45, 8.4], [14.6, 8.4], [15.8, 7.2], [15.8, 3], [14.9, 2.1], "C13.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.25
+via = [0.6, 0.3]
+points = ["U2.5", [5.5, 17.7], [5.5, 20.3], {via = [5.6, 20.9]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.7
+via = [0.6, 0.3]
+points = ["D4.2", {via = [7.4, 45.2]}, [9.6, 43], [9.6, 21.5], [9, 20.9], [5.6, 20.9], [5.2, 20.5], [5.2, 15], [7.2, 13], [7.2, 8.4]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.7
+via = [0.6, 0.3]
+points = ["D4.2", {via = [6.4, 45.2]}, [7.4, 45.2]]
+
+# VIN_MON, the tap of the input-voltage divider, to module pin 15 (layout review, L5). Its 100 nF
+# capacitor C9 is at the divider, so the line is a low impedance all the way. On B.Cu: across the
+# strip of the gate lines left of the first one, east under the opto-triacs, a hop on F.Cu over the
+# two ADC lines under the cell holder, north under detector A. Four vias.
+[[track]]
+layer = "F.Cu"
+width = 0.2
+points = ["C9.1", "R10.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+points = ["R9.2", "R10.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["C9.1", [36.225, 39], [35, 39], [34.4, 39.6], {via = [29.2, 39.6]}, [27.9, 39.6], [27.4, 40.1], [27.4, 56.1], [27.9, 56.6], [97.9, 56.6], [98.3, 57], {via = [98.3, 64.9]}, {via = [98.3, 69.6]}, [98.3, 89.4]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U4.15", [96.015, 89.9], [96.5, 89.4], {via = [98.3, 89.4]}]
+
+# RLY_B_RB, the relay read-back, from its divider to module pin 7: 50 kohm behind it, so it is
+# written out. It crosses the keep-alive once, at right angles on F.Cu, west of detector B's guard.
+[[track]]
+layer = "F.Cu"
+width = 0.2
+points = ["R94.2", "R95.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["R95.1", [56.2, 70.1], {via = [56.2, 82.07]}, {via = [75.9, 82.07]}, [75.9, 99.3], [79.4, 99.3], [79.4, 100.89], "U4.7"]
 
 [[track]]
 layer = "F.Cu"
@@ -1511,7 +1747,7 @@ points = ["R31.2", [102.725, 82.2], "C24.1"]
 [[track]]
 layer = "F.Cu"
 width = 0.25
-points = ["U2.3", [1.25, 17.3], [1.25, 19.5], "R97.1"]
+points = ["U2.3", [1.05, 16.75], [1.05, 19.5], "R97.1"]
 
 [[track]]
 layer = "F.Cu"
@@ -1814,7 +2050,7 @@ points = [[97.385, 3.7], [97.385, 3.95]]
 layer = "F.Cu"
 width = 0.2
 via = [0.6, 0.3]
-points = ["R46.2", {via = [33.6, 67]}, [33.85, 66.75], [109.2, 66.75], [109.6, 67.15], [109.6, 107.24], [110.3, 107.24]]
+points = ["R46.2", {via = [25.4, 66.75]}, [109.2, 66.75], [109.6, 67.15], [109.6, 107.24], [110.3, 107.24]]
 
 [[track]]
 layer = "F.Cu"
@@ -2135,6 +2371,38 @@ via_to = "B.Cu"
 points = ["U801.4", {via = [104.54, 53.4]}, [104.54, 40.75], [100.325, 40.75], [100.325, 39.4]]
 
 
+# Six vias under the exposed pad of U1, 1.3 x 1.2 mm apart, into the ground plane and the ground
+# pour on B.Cu (LM5164 data sheet, 7.4.1, item 10; TI's example has six of 0.33 mm).
+[[via]]
+net = "GND"
+at = [20.85, 31.8]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [22.15, 31.8]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [20.85, 33.0]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [22.15, 33.0]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [20.85, 34.2]
+size = [0.6, 0.3]
+
+[[via]]
+net = "GND"
+at = [22.15, 34.2]
+size = [0.6, 0.3]
+
 # Ground vias along the keep-alive corridor, 1.5 mm from the track: they tie the ground pour that
 # runs on both sides of it on B.Cu to the ground plane.
 [[via]]
@@ -2184,33 +2452,8 @@ size = [0.6, 0.3]
 
 [[via]]
 net = "GND"
-at = [91, 83.5]
-size = [0.6, 0.3]
-
-[[via]]
-net = "GND"
 at = [94.05, 83]
 size = [0.6, 0.3]
-
-# One of the ground vias above is inside the encoder's "no wiring" area on F.Cu. It was there when
-# the board was routed, so it stays in the list, and is taken out again after the routing is
-# imported: moving it would discard the stored routing.
-[[unroute]]
-vias = [[91.0, 83.5]]
-
-# The autorouter joined the four V_DRV pads of RN2 with a bar and a via 0.86 mm from the gate node
-# of Q2. Layout rule 3 wants a rail 1 mm from that node. The bar is taken out; the patch router,
-# which knows the rule, joins the pads again.
-[[unroute]]
-net = "V_DRV"
-box = [43.95, 73.0, 44.9, 75.9]
-
-# The autorouter took V5 from the OR-ing diodes to the regulator U3, the whole 3.3 V load, through
-# a piece 0.3 mm wide where 0.4 mm does not fit on its line. It is taken out with its via and
-# routed again at the width of the class.
-[[unroute]]
-net = "V5"
-box = [8.6, 51.6, 10.05, 53.05]
 
 # No other track or via within 1 mm of the keep-alive net (hardware design, section 8.5).
 [[guard]]
@@ -2321,6 +2564,7 @@ layer = "F.SilkS"
 at = [17.805, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "24V~"
@@ -2328,6 +2572,7 @@ layer = "F.SilkS"
 at = [21.615, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "COM"
@@ -2335,6 +2580,7 @@ layer = "F.SilkS"
 at = [30.225, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "COM"
@@ -2342,6 +2588,7 @@ layer = "F.SilkS"
 at = [34.035, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "MV"
@@ -2349,6 +2596,7 @@ layer = "F.SilkS"
 at = [37.845, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "Z1"
@@ -2356,6 +2604,7 @@ layer = "F.SilkS"
 at = [41.655, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "Z2"
@@ -2363,6 +2612,7 @@ layer = "F.SilkS"
 at = [45.465, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "Z3"
@@ -2370,6 +2620,7 @@ layer = "F.SilkS"
 at = [49.275, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "Z4"
@@ -2377,6 +2628,7 @@ layer = "F.SilkS"
 at = [53.085, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "Z5"
@@ -2384,6 +2636,7 @@ layer = "F.SilkS"
 at = [58.295, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "Z6"
@@ -2391,6 +2644,7 @@ layer = "F.SilkS"
 at = [62.105, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "Z7"
@@ -2398,6 +2652,7 @@ layer = "F.SilkS"
 at = [65.915, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "Z8"
@@ -2405,6 +2660,7 @@ layer = "F.SilkS"
 at = [69.725, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "5V"
@@ -2412,6 +2668,7 @@ layer = "F.SilkS"
 at = [78.335, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "FLOW"
@@ -2419,6 +2676,7 @@ layer = "F.SilkS"
 at = [82.145, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "GND"
@@ -2426,6 +2684,7 @@ layer = "F.SilkS"
 at = [85.955, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "RAIN"
@@ -2433,6 +2692,7 @@ layer = "F.SilkS"
 at = [89.765, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "GND"
@@ -2440,6 +2700,7 @@ layer = "F.SilkS"
 at = [93.575, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "AUX"
@@ -2447,6 +2708,7 @@ layer = "F.SilkS"
 at = [97.385, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 [[text]]
 text = "GND"
@@ -2454,6 +2716,7 @@ layer = "F.SilkS"
 at = [101.195, 8.25]
 size = 1
 thickness = 0.15
+width = 0.8
 
 # Terminal 2 of the 24 VAC block is the board's ground (hardware design, section 16.1): a ground
 # symbol right of its label, and the word.
@@ -2687,459 +2950,4 @@ optional = true
 [drc_severity]
 lib_footprint_mismatch = "ignore"
 
-# Tracks that close what the autorouter left open. WRITTEN BY hwflow.patchroute: do not edit.
-# They belong to one stored routing, named by its hash. pcbbuild finish lays them after it
-# has imported that routing, and refuses them for any other: run `make patches` again then.
 
-[patches]
-session = "9013fe2512de6ad46f12fffc2946fbf7361fefc883be1991967c9d70d5e459f6"
-
-# 3V3: (22.47, 78.51) to (19.22, 79.60), 6.8 mm, 0 vias, 0.4 mm wide
-# 3V3: (26.62, 69.80) to (22.47, 77.81), 17.2 mm, 2 vias, 0.4 mm wide
-# 3V3: (27.58, 69.80) to (33.38, 77.60), 25.7 mm, 0 vias, 0.4 mm wide
-# 3V3: (33.38, 57.65) to (33.09, 65.08), 23.2 mm, 1 vias, 0.2 mm wide
-# 3V3: (42.38, 66.10) to (33.09, 65.08), 32.9 mm, 1 vias, 0.4 mm wide
-# 3V3: (74.20, 93.50) to (80.57, 77.30), 23.1 mm, 2 vias, 0.4 mm wide
-# 3V3: (79.79, 76.51) to (74.05, 75.05), 8.1 mm, 0 vias, 0.4 mm wide
-# 3V3: (80.57, 77.30) to (86.84, 77.05), 8.6 mm, 0 vias, 0.4 mm wide
-# 3V3: (107.20, 84.97) to (94.18, 78.40), 36.9 mm, 4 vias, 0.4 mm wide
-# V_DRV: (30.23, 76.83) to (43.50, 75.70), 17.9 mm, 1 vias, 0.4 mm wide
-# V_DRV: (43.50, 74.90) to (43.50, 75.70), 0.8 mm, 0 vias, 0.4 mm wide
-# V_DRV: (43.50, 74.10) to (43.50, 74.90), 0.8 mm, 0 vias, 0.4 mm wide
-# V_DRV: (43.50, 73.30) to (43.50, 74.10), 0.8 mm, 0 vias, 0.4 mm wide
-# V5: (7.25, 54.40) to (16.03, 56.89), 9.9 mm, 1 vias, 0.4 mm wide
-# V5: (11.35, 47.80) to (7.25, 54.40), 8.8 mm, 0 vias, 0.4 mm wide
-# /PGOOD: (18.72, 33.64) to (23.90, 28.00), 10.1 mm, 2 vias, 0.2 mm wide
-# /VIN_MON: (96.01, 90.75) to (36.22, 37.95), 119.8 mm, 10 vias, 0.2 mm wide
-# 3V3: (111.94, 73.51) to (111.84, 50.15), 24.0 mm, 1 vias, 0.4 mm wide
-
-[[patch]]
-layer = "B.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[22.475, 78.51], [22.475, 79.86], [21.975, 80.36], [19.125, 80.36], [18.375, 79.61]]
-
-[[patch]]
-layer = "F.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[18.375, 79.61], [19.225, 79.61]]
-
-[[patch]]
-layer = "B.Cu"
-net = "3V3"
-width = 0.4
-via = [0.6, 0.3]
-stay = true
-points = [[26.625, 69.8], [25.525, 68.7], {via = [25.525, 66.75]}]
-
-[[patch]]
-layer = "In2.Cu"
-net = "3V3"
-width = 0.4
-via = [0.6, 0.3]
-stay = true
-points = [[25.525, 66.75], [23.575, 68.7], {via = [23.575, 69.3]}]
-
-[[patch]]
-layer = "B.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[23.575, 69.3], [22.475, 70.4], [22.475, 78.5]]
-
-[[patch]]
-layer = "F.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[22.475, 78.5], [22.475, 77.8]]
-
-[[patch]]
-layer = "F.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[27.575, 69.8], [26.625, 69.8]]
-
-[[patch]]
-layer = "B.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[26.625, 69.8], [25.525, 68.7], [25.525, 66.75]]
-
-[[patch]]
-layer = "In2.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[25.525, 66.75], [23.575, 68.7], [23.575, 69.3]]
-
-[[patch]]
-layer = "B.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[23.575, 69.3], [23.575, 76.95], [24.375, 77.75], [27.075, 77.75], [27.325, 77.5], [29.875, 77.5], [29.975, 77.6], [33.375, 77.6]]
-
-[[patch]]
-layer = "In2.Cu"
-net = "3V3"
-width = 0.2
-via = [0.6, 0.3]
-stay = true
-points = [[33.395, 57.65], [33.395, 57.7], [32.845, 58.25], [30.345, 58.25], [28.445, 60.15], [28.045, 60.15], {via = [27.645, 60.55]}]
-
-[[patch]]
-layer = "B.Cu"
-net = "3V3"
-width = 0.2
-stay = true
-points = [[27.645, 60.55], [28.295, 59.9], [29.595, 59.9], [29.745, 59.75], [30.395, 59.75], [30.795, 60.15], [30.795, 65], [29.395, 66.4], [29.395, 67.1], [29.745, 67.45], [30.395, 67.45], [31.095, 66.75], [31.095, 66.35], [32.395, 65.05]]
-
-[[patch]]
-layer = "F.Cu"
-net = "3V3"
-width = 0.2
-stay = true
-points = [[32.395, 65.05], [33.095, 65.05]]
-
-[[patch]]
-layer = "In2.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[42.395, 66.075], [38.295, 61.975], [31.195, 61.975], [30.545, 61.325], [29.095, 61.325], [28.845, 61.575], [28.095, 61.575], [27.645, 61.125], [27.645, 60.525]]
-
-[[patch]]
-layer = "B.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[27.645, 60.525], [25.645, 62.525], [25.645, 66.625], [25.545, 66.725]]
-
-[[patch]]
-layer = "F.Cu"
-net = "3V3"
-width = 0.4
-via = [0.6, 0.3]
-stay = true
-points = [[25.545, 66.725], {via = [27.895, 66.725]}]
-
-[[patch]]
-layer = "In2.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[27.895, 66.725], [29.545, 65.075], [32.395, 65.075]]
-
-[[patch]]
-layer = "F.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[32.395, 65.075], [33.095, 65.075]]
-
-[[patch]]
-layer = "B.Cu"
-net = "3V3"
-width = 0.4
-via = [0.6, 0.3]
-stay = true
-points = [[74.2, 93.5], [74.35, 93.5], [76.2, 91.65], {via = [76.2, 80.1]}]
-
-[[patch]]
-layer = "F.Cu"
-net = "3V3"
-width = 0.4
-via = [0.6, 0.3]
-stay = true
-points = [[76.2, 80.1], {via = [76.2, 76.45]}]
-
-[[patch]]
-layer = "B.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[76.2, 76.45], [76.6, 76.85], [79.45, 76.85], [79.8, 76.5]]
-
-[[patch]]
-layer = "F.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[79.8, 76.5], [79.8, 76.65], [80.45, 77.3], [80.6, 77.3]]
-
-[[patch]]
-layer = "B.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[79.8, 76.5], [79.45, 76.85], [77.2, 76.85], [74.4, 74.05], [74.05, 74.05]]
-
-[[patch]]
-layer = "F.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[74.05, 74.05], [74.05, 75.05]]
-
-[[patch]]
-layer = "F.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[80.575, 77.3], [79.925, 76.65], [79.825, 76.65], [79.775, 76.6], [79.775, 76.5]]
-
-[[patch]]
-layer = "B.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[79.775, 76.5], [79.925, 76.35], [86.125, 76.35], [86.825, 77.05]]
-
-[[patch]]
-layer = "F.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[107.175, 84.95], [107.175, 85.8]]
-
-[[patch]]
-layer = "B.Cu"
-net = "3V3"
-width = 0.4
-via = [0.6, 0.3]
-stay = true
-points = [[107.175, 85.8], [107.175, 79.95], {via = [106.475, 79.25]}]
-
-[[patch]]
-layer = "In2.Cu"
-net = "3V3"
-width = 0.4
-via = [0.6, 0.3]
-stay = true
-points = [[106.475, 79.25], [104.325, 77.1], [101.825, 77.1], [96.625, 71.9], {via = [95.725, 71.9]}]
-
-[[patch]]
-layer = "B.Cu"
-net = "3V3"
-width = 0.4
-via = [0.6, 0.3]
-stay = true
-points = [[95.725, 71.9], {via = [94.125, 70.3]}]
-
-[[patch]]
-layer = "F.Cu"
-net = "3V3"
-width = 0.4
-via = [0.6, 0.3]
-stay = true
-points = [[94.125, 70.3], [93.375, 69.55], [92.025, 69.55], [91.425, 70.15], {via = [91.425, 70.3]}]
-
-[[patch]]
-layer = "B.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[91.425, 70.3], [91.425, 74.4], [93.375, 76.35], [93.375, 78.4]]
-
-[[patch]]
-layer = "F.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[93.375, 78.4], [94.175, 78.4]]
-
-[[patch]]
-layer = "In2.Cu"
-net = "V_DRV"
-width = 0.4
-stay = true
-points = [[30.229, 76.85], [30.079, 76.7]]
-
-[[patch]]
-layer = "B.Cu"
-net = "V_DRV"
-width = 0.4
-via = [0.6, 0.3]
-stay = true
-points = [[30.079, 76.7], [34.429, 76.7], [38.029, 80.3], [40.379, 80.3], [42.829, 77.85], [42.829, 77.7], {via = [43.329, 77.2]}]
-
-[[patch]]
-layer = "F.Cu"
-net = "V_DRV"
-width = 0.4
-stay = true
-points = [[43.329, 77.2], [43.479, 77.05], [43.479, 75.7]]
-
-[[patch]]
-layer = "F.Cu"
-net = "V_DRV"
-width = 0.4
-stay = true
-points = [[43.5, 74.9], [43.5, 75.7]]
-
-[[patch]]
-layer = "F.Cu"
-net = "V_DRV"
-width = 0.4
-stay = true
-points = [[43.5, 74.1], [43.5, 74.9]]
-
-[[patch]]
-layer = "F.Cu"
-net = "V_DRV"
-width = 0.4
-stay = true
-points = [[43.5, 73.3], [43.5, 74.1]]
-
-[[patch]]
-layer = "F.Cu"
-net = "V5"
-width = 0.4
-via = [0.6, 0.3]
-stay = true
-points = [[7.25, 54.4], {via = [8.05, 54.4]}]
-
-[[patch]]
-layer = "In2.Cu"
-net = "V5"
-width = 0.4
-stay = true
-points = [[8.05, 54.4], [10.35, 54.4], [12.9, 56.95], [16.05, 56.95], [16.05, 56.9]]
-
-[[patch]]
-layer = "F.Cu"
-net = "V5"
-width = 0.4
-stay = true
-points = [[11.35, 47.8], [10.3, 48.85], [9.85, 48.85], [9.85, 51.95], [8.6, 53.2], [8.15, 53.2], [7.25, 54.1], [7.25, 54.4]]
-
-[[patch]]
-layer = "F.Cu"
-net = "/PGOOD"
-width = 0.2
-via = [0.6, 0.3]
-stay = true
-points = [[18.72, 33.65], [18.62, 33.75], {via = [17.47, 33.75]}]
-
-[[patch]]
-layer = "In2.Cu"
-net = "/PGOOD"
-width = 0.2
-via = [0.6, 0.3]
-stay = true
-points = [[17.47, 33.75], [22.17, 29.05], {via = [22.87, 29.05]}]
-
-[[patch]]
-layer = "F.Cu"
-net = "/PGOOD"
-width = 0.2
-stay = true
-points = [[22.87, 29.05], [23.92, 28]]
-
-[[patch]]
-layer = "F.Cu"
-net = "/VIN_MON"
-width = 0.2
-via = [0.6, 0.3]
-stay = true
-points = [[96.025, 90.75], [95.925, 90.65], {via = [94.725, 90.65]}]
-
-[[patch]]
-layer = "B.Cu"
-net = "/VIN_MON"
-width = 0.2
-via = [0.6, 0.3]
-stay = true
-points = [[94.725, 90.65], [90.525, 90.65], [85.425, 85.55], [82.275, 85.55], {via = [78.175, 81.45]}]
-
-[[patch]]
-layer = "F.Cu"
-net = "/VIN_MON"
-width = 0.2
-via = [0.6, 0.3]
-stay = true
-points = [[78.175, 81.45], [76.575, 81.45], [75.425, 80.3], [75.425, 77.15], [75.375, 77.1], {via = [75.375, 76.35]}]
-
-[[patch]]
-layer = "In2.Cu"
-net = "/VIN_MON"
-width = 0.2
-via = [0.6, 0.3]
-stay = true
-points = [[75.375, 76.35], [75.375, 76.3], [76.275, 75.4], {via = [76.825, 75.4]}]
-
-[[patch]]
-layer = "F.Cu"
-net = "/VIN_MON"
-width = 0.2
-via = [0.6, 0.3]
-stay = true
-points = [[76.825, 75.4], [76.825, 73.6], [82.575, 67.85], {via = [82.575, 66.1]}]
-
-[[patch]]
-layer = "B.Cu"
-net = "/VIN_MON"
-width = 0.2
-via = [0.6, 0.3]
-stay = true
-points = [[82.575, 66.1], [80.125, 63.65], [65.625, 63.65], [55.075, 53.1], {via = [53.075, 53.1]}]
-
-[[patch]]
-layer = "F.Cu"
-net = "/VIN_MON"
-width = 0.2
-via = [0.6, 0.3]
-stay = true
-points = [[53.075, 53.1], [51.075, 51.1], {via = [41.475, 51.1]}]
-
-[[patch]]
-layer = "In2.Cu"
-net = "/VIN_MON"
-width = 0.2
-via = [0.6, 0.3]
-stay = true
-points = [[41.475, 51.1], [37.975, 47.6], {via = [34.825, 47.6]}]
-
-[[patch]]
-layer = "F.Cu"
-net = "/VIN_MON"
-width = 0.2
-via = [0.6, 0.3]
-stay = true
-points = [[34.825, 47.6], [34.625, 47.4], [31.675, 47.4], [31.675, 46.5], [28.225, 43.05], {via = [27.525, 43.05]}]
-
-[[patch]]
-layer = "B.Cu"
-net = "/VIN_MON"
-width = 0.2
-via = [0.6, 0.3]
-stay = true
-points = [[27.525, 43.05], [27.525, 40.6], [30.025, 38.1], {via = [34.125, 38.1]}]
-
-[[patch]]
-layer = "F.Cu"
-net = "/VIN_MON"
-width = 0.2
-stay = true
-points = [[34.125, 38.1], [34.275, 37.95], [36.225, 37.95]]
-
-[[patch]]
-layer = "B.Cu"
-net = "3V3"
-width = 0.4
-via = [0.6, 0.3]
-stay = true
-points = [[111.938, 73.5], [112.138, 73.3], [112.138, 53.95], [111.938, 53.75], [111.938, 53.05], {via = [112.488, 52.5]}]
-
-[[patch]]
-layer = "F.Cu"
-net = "3V3"
-width = 0.4
-stay = true
-points = [[112.488, 52.5], [112.488, 50.8], [111.838, 50.15]]
