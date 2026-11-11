@@ -175,33 +175,37 @@ block("Power entry: surge clamp, rectifier, surge resistor. C1 is under this are
 at("D1", 16.3, 21.8, 0)
 at("D2", 25.2, 20.3, 180)
 at("R1", 29.4, 24.5, 0)
-block("Buck converter. Input capacitors on the right, at pins 1 and 2 and 4 mm from C1. Bootstrap\ncapacitor and inductor on the left, at pins 7 and 8. Output towards the left edge.")
-at("C2", 31.1, 29.4, 270)
-at("C3", 31.1, 34.2, 90)
-at("U1", 25.0, 33.0, 180)
-at("C4", 20.2, 31.73, 270)
-at("L1", 15.9, 33.0, 180)
-at("C5", 14.7, 37.6, 0)
-at("C6", 15.3, 28.5, 0)
-at("R6", 20.2, 28.9, 180)
-at("R4", 21.2, 36.6, 0)
-at("R5", 24.3, 36.6, 0)
-at("R3", 21.2, 38.2, 180)
-at("C8", 24.3, 38.2, 180)
-at("C7", 27.4, 38.2, 0)
-at("R2", 27.4, 36.6, 180)
-at("R8", 23.6, 29.2, 180)
-at("R7", 26.8, 29.2, 180)
-at("TP20", 18.4, 37.7, 0)
-at("TP2", 10.9, 37.7, 0)
+block("Buck converter. From the right: C1 (bottom side), the fuse F5 on end, the input capacitors C2 and C3\nat pins 1 and 2, U1, the bootstrap capacitor at pins 7 and 8, the inductor. F5 is 3.5 mm from the\npads of C1, which are soldered from this side.")
+at("F5", 31.1, 34.255, 270)    # pad 1, VIN_DC, at the top; pad 2, VIN_U1, level with the capacitor pads
+at("C2", 27.55, 29.4, 270)
+at("C3", 27.55, 34.2, 90)
+at("U1", 21.5, 33.0, 180)
+at("C4", 16.7, 31.73, 270)
+at("L1", 12.4, 31.2, 180)
+block("Buck output: C6 under the output pad of L1, C5 beside it, and the clamp D25 above the pad.")
+at("C6", 12.4, 26.55, 0)
+at("C5", 17.2, 26.55, 0)
+at("D25", 12.9, 36.75, 0)      # cathode, V_BUCK, above the output pad of L1
+block("Feedback and ripple network above U1, at the FB pin. R2 at the RON pin. Under-voltage divider\nR7, R8 beside F5: it stays on VIN_DC, before the fuse.")
+at("R6", 18.1, 36.6, 0)
+at("C8", 21.1, 36.6, 0)
+at("R2", 24.1, 36.6, 180)
+at("C7", 18.1, 38.15, 180)
+at("R5", 21.1, 38.15, 180)
+at("R4", 24.1, 38.15, 180)
+at("R3", 24.1, 39.7, 0)
+at("R8", 27.1, 37.3, 0)
+at("R7", 27.1, 38.85, 180)
+at("TP20", 23.9, 28.0, 0)
+at("TP2", 20.9, 28.0, 0)
 block("Between the fuse well and the channel columns: valve-common TVS, shunt, and the input monitor\ndivider around the pads of C1. Only low parts within 2.5 mm of those pads.")
 at("D23", 36.7, 11.6, 90)
 at("R37", 36.3, 19.25, 270)
 at("TP17", 36.3, 25.1, 0)
 at("TP1", 38.0, 30.0, 0)
-at("R9", 36.3, 34.75, 0)
-at("R10", 36.3, 36.35, 0)
-at("C9", 36.3, 37.95, 0)
+at("R9", 37.0, 34.75, 0)
+at("R10", 37.0, 36.35, 0)
+at("C9", 37.0, 37.95, 0)
 
 # ---- right edge ---------------------------------------------------------------------------------
 block("Qwiic: ESD array and PTC at the connector.")
@@ -606,7 +610,7 @@ hand = [
     track(["J1.2", "F1.1"], width=2.0),
     track(["F4.2", [11.815, 21.8], "D1.1"], width=2.0, comment="AC_L: fuse to the surge clamp, the rectifier and the relay contact."),
     track(["F4.2", [11.815, 19.0], [23.2, 19.0], "D2.2"], width=1.0),
-    track(["D1.1", [11.6, 23.6], [9.6, 25.5], "K1.13"], width=2.0),
+    track(["D1.1", [10.6, 21.8], [7.9, 24.5], "K1.13"], width=2.0),
     track(["K1.13", "JP1.1"], width=0.5),
     track(["K1.13", [3.2, 25.5], "R55.1"], width=0.5),
     track(["K1.14", [7.15, 16.3], [9.6, 13.8], [9.6, 10.6], [11.2, 9.0], [27.0, 9.0], [29.0, 7.2], "J2.1"], layer="B.Cu",
@@ -619,11 +623,27 @@ hand = [
           comment="Return: shunt and valve-common TVS to the fuse in the AC_N leg."),
     track(["D23.2", "R37.2"], width=2.0),
     track(["D2.1", [27.2, 23.0], [26.5, 23.6], "R1.1"], width=1.0, comment="Rectifier to the surge resistor."),
-    track(["R1.2", [33.4, 25.6], [33.4, 31.4], [34.5, 32.5], "C1.1"], width=1.0, comment="VIN_DC: surge resistor to C1 and to the buck input capacitors."),
-    track(["C1.1", [33.6, 32.5], "C3.1"], width=1.5),
+    track(["R1.2", [33.75, 25.9], [33.75, 30.6], [35.0, 31.85], "C1.1"], width=1.0, comment="VIN_DC: surge resistor to C1, C1 to the fuse F5."),
+    track(["C1.1", [34.1, 34.4], [34.1, 36.2], [33.6, 36.71], "F5.1"], width=1.5),
+    track(["F5.1", [28.9, 38.3], "R7.1"], width=0.3),
+    track(["F5.2", [29.2, 31.8], [27.55, 31.8]], width=1.5, comment="VIN_U1, behind the fuse: F5 to the input capacitors and pin 2 of U1."),
     track(["C3.1", "C2.1"], width=1.5),
-    track(["C3.1", [29.4, 32.365], "U1.2"], width=1.0),
-    track(["C2.1", [29.5, 30.6], [29.2, 30.0], [28.3, 29.2], "R7.1"], width=0.4),
+    track(["C3.1", [25.9, 32.365], "U1.2"], width=1.0),
+    track(["U1.3", [25.68, 33.635], [25.68, 36.3], [26.275, 36.9], "R8.1"], width=0.2,
+          comment="UVLO: up the slot between the pins of U1 and the input capacitors to its divider."),
+    track(["R8.1", "R7.2"], width=0.2),
+    track(["U1.8", "C4.2"], width=0.6, comment="Switch node: pin 8, the bootstrap capacitor, the inductor. Kept small."),
+    track(["C4.2", "L1.1"], width=0.6),
+    track(["U1.7", "C4.1"], width=0.3),
+    track(["L1.1", [15.5, 33.05], [16.95, 34.5], [16.95, 36.3], "R6.1"], width=0.25,
+          comment="Switch node to the ripple resistor R6, which is at the feedback pin."),
+    track(["L1.2", "D25.1"], width=2.0, comment="V_BUCK: the output pad of L1 to the clamp D25 and to C6 and C5."),
+    track(["L1.2", [10.925, 28.0], "C6.1"], width=1.1),
+    track(["L1.2", [11.5, 28.0], [15.3, 28.0], "C5.1"], width=0.5),
+    track(["D25.2", {"via": [14.0, 38.7]}], width=1.0, via=(0.8, 0.4), comment="D25 anode to the ground plane: four vias."),
+    track(["D25.2", {"via": [15.4, 38.7]}], width=1.0, via=(0.8, 0.4)),
+    track(["D25.2", {"via": [14.0, 34.75]}], width=1.0, via=(0.8, 0.4)),
+    track(["D25.2", {"via": [15.2, 34.75]}], width=1.0, via=(0.8, 0.4)),
     track(["C1.1", "R9.1"], width=0.4),
     track(["C1.1", "TP1.1"], width=0.4),
     "# ISNS: a strip through the lower pads of every TVS and snubber capacitor, then up to the\n"
@@ -742,7 +762,7 @@ TAIL = '''
 layers = ["F.Cu", "In2.Cu", "B.Cu"]   # In1.Cu is the ground plane: the autorouter only passes vias through it
 # Nets the autorouter must leave alone: they connect through planes, pours or hand-routed copper.
 exclude = ["GND", "3V3", "/ISNS", "/OUT_*", "/*/T2", "/*/SNB", "/AC_L_IN", "/AC_N", "/AC_L", "/COM",
-           "/Power/VRECT", "VIN_DC", "/KA", "/*/G", "/*/OGT", "/*/OLA", "/*/LEDA"]
+           "/Power/VRECT", "VIN_DC", "/Power/VIN_U1", "/Power/UVLO", "/Power/SW", "/Power/BST", "/KA", "/*/G", "/*/OGT", "/*/OLA", "/*/LEDA"]
 
 [route.layer_cost]
 "In2.Cu" = 2.5              # In2.Cu is also the 3.3 V pour: use it only where it saves a long way round

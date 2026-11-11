@@ -41,7 +41,7 @@ NETCLASS = {
     # At 24 VAC potential, milliamps: triac gates, opto outputs, snubber mid-points.
     "AC24S": "G OGT SNB",
     # Rectified input, up to 45 V, and the buck converter's switching nodes.
-    "HVDC": "VIN_DC SW BST",
+    "HVDC": "VIN_DC VIN_U1 SW BST",
     # Sensor terminals and the sensor supply output: they leave the enclosure.
     "Field": "T_RAIN T_FLOW T_AUX SENS_5V SP_A SP_B",
     # Supply rails.

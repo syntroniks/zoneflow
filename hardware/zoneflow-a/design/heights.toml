@@ -87,6 +87,9 @@ src = "sheet"      # 4.2 +/- 0.3
 [footprint.Fuse_2920_7451Metric]
 height = 2.1
 src = "sheet"      # BHFUSE BSMD2920, 1.00 to 2.10
+[footprint.Fuse_Littelfuse-NANO2-451_453]
+height = 2.69
+src = "sheet"      # Littelfuse 451/453 series, "Dimensions": 6.10 x 2.69 x 2.69
 [footprint.Fuse_1812_4532Metric]
 height = 1.25
 src = "sheet"      # Littelfuse 1812L020/60, dimension C maximum
