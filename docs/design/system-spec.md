@@ -139,6 +139,12 @@ hardware keep-alive signal.
 A browser-based installer on the project site (WebSerial) that flashes either
 firmware option onto a board over USB, and release builds produced by CI.
 
+A browser demo on the project site: the standalone firmware's core, display
+and REST API compiled to WebAssembly and run on simulated hardware, with the
+web interface as the controller serves it. It lets people try the product
+without a board. It is a simulation: it counts as none of the checks of
+section 8, and the site says so wherever it offers the demo.
+
 ### 4.4 Options kept open, not in the first release
 
 - A board profile for the OpenSprinkler firmware (GPL-3.0), which would bring
@@ -164,6 +170,7 @@ firmware option onto a board over USB, and release builds produced by CI.
 Published with GitHub Pages from this repository.
 
 - Landing page: what it is, features, photos or renders, how to get one.
+- The browser demo of section 4.3, with a page that states what it simulates.
 - Getting started: wiring, first power-up, provisioning, first schedule.
 - Hardware reference: schematic, BOM, design notes, ordering from a fab.
 - Firmware guides for both options, API reference.

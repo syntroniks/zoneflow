@@ -55,6 +55,7 @@ plugins:
 hooks:
   - tools/mkdocs_hooks/hardware_outputs.py
   - tools/mkdocs_hooks/bom_table.py
+  - tools/mkdocs_hooks/demo.py
 
 extra_css:
   - stylesheets/extra.css
@@ -82,6 +83,7 @@ validation:
 
 nav:
   - Home: index.md
+  - Try it in your browser: try-it.md
   - Status and roadmap: status.md
   - Safety: safety.md
   - Getting started:

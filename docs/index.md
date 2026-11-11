@@ -12,6 +12,8 @@ hide:
 
 <p class="zf-lead">An open-source controller for 24 VAC sprinkler valves: 8 zones plus a master valve or pump-start relay, a colour display with a knob, WiFi and Bluetooth LE, and no cloud service.</p>
 
+[Try it in your browser](try-it.md){ .md-button .md-button--primary }
+
 </div>
 
 !!! danger zf-status "Status: designed on paper. Not built. Not tested."
@@ -51,6 +53,7 @@ people who build their own electronics.
 | Enclosure | Parametric model, interference-checked, STL and 3MF files; not printed | [Enclosure](enclosure/index.md) |
 | Standalone firmware | Written; builds in CI; logic covered by host tests; display runs in a desktop simulator | [Web interface](firmware/standalone.md), [display](guide/display.md) |
 | ESPHome package | Written; compiles for the board; logic covered by host tests | [ESPHome](firmware/esphome.md) |
+| Browser demo | The firmware's logic, display and REST API compiled to WebAssembly, on simulated hardware; smoke-tested in CI | [Try it](try-it.md) |
 | Release tooling | Web installer, release workflow, `zfflash` command-line tool; no release published yet | [Installing firmware](firmware/web-installer.md) |
 
 The pictures on this site are renders of the enclosure model, screenshots
