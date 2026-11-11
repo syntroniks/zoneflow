@@ -54,6 +54,7 @@ of its transistor's tolerance and has to be measured.
 | An output's triac fails short after a surge | The firmware sees current with no valve on, opens the relay and stops; if the firmware is also dead, the relay opens when the pulses stop |
 | A shorted valve wire | The over-current latch, within microseconds; the resettable fuse on that output if the latch does not act |
 | The 5 V converter fails with its switch shorted | A clamp holds the 5 V rail under 10 V and a soldered fuse in the converter's input opens. The board goes dark and the relay has no supply |
+| The 3.3 V regulator fails short | A voltage detector sees the logic rail above 4 V and holds the drive enable off, whatever the processor does. The red fault LED lights. The processor itself is not protected and may be damaged |
 | A single failed part in either detector | The other detector, by design. The [single-fault analysis](../design/hardware-design.md#85-single-fault-analysis) goes through each part |
 
 ## How the controller checks it
@@ -88,7 +89,7 @@ those times, which is how an open bleed resistor shows
 ## What it does not cover
 
 - **A valve that sticks open mechanically.** The controller can only remove power. A valve with dirt in it may stay open without power.
-- **A failed 3.3 V regulator.** If it fails short, the processor gets 4.95 V, which is outside its ratings, and the analysis cannot prove what it then does ([review A2](../design/hardware-review-a2.md), finding M5). Both detectors still let go if the pulses stop.
+- **The processor behind a failed 3.3 V regulator.** If the regulator fails short, the processor gets about 5 V, which is outside its ratings, and nothing can be said about what it then does. The valves no longer depend on that: a detector removes drive by hardware ([hardware design, section 9.5](../design/hardware-design.md#95-over-voltage-on-3v3-detector-u13)). The processor and the display may not survive, and the detector cannot be tested once the board is in use.
 - **A solder bridge onto the heartbeat net.** A bridge of a few kilohms or less from that net to a signal that toggles by itself defeats both detectors while the processor is in reset. The pin was chosen so that no such signal is beside it, and the float check looks for it.
 - **Firmware that keeps pulsing while doing the wrong thing.** The hardware checks that the firmware's control loop is running, not that its decisions are right. The maximum run time in the firmware, which no schedule or request can exceed, covers that case as far as software can.
 
