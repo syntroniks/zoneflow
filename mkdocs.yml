@@ -56,6 +56,11 @@ hooks:
   - tools/mkdocs_hooks/hardware_outputs.py
   - tools/mkdocs_hooks/bom_table.py
   - tools/mkdocs_hooks/demo.py
+  - tools/mkdocs_hooks/review_walkthrough.py
+
+# The content files of the review walkthrough are read by its hook, not published.
+exclude_docs: |
+  hardware/review/data/
 
 extra_css:
   - stylesheets/extra.css
@@ -117,6 +122,8 @@ nav:
       - Bill of materials: hardware/bom.md
       - The 4-zone build: hardware/four-zone.md
       - Ordering boards: hardware/ordering.md
+      - Pre-order review walkthrough: hardware/review/index.md
+      - Bench sheet for the review: hardware/review/bench-sheet.md
       - What a controller costs: hardware/cost.md
       - Design notes: hardware/design-notes.md
   - Enclosure:

@@ -7,11 +7,15 @@
     design has never been built. A board ordered after the checklist is a
     first prototype: it may not work, and it may be unsafe to connect.
 
+    **The [pre-order review walkthrough](review/index.md) leads you through
+    that checklist one step at a time**, with a picture of each place on the
+    board, and writes a report at the end.
+
 ## What is still missing
 
 | Missing | Why it matters | Tracked in |
 |---|---|---|
-| The pre-order checklist | The circuit was reviewed twice (reviews A1 and A2) and the layout once, all from files. The layout review ends with [seven things a person must look at](../design/hardware-layout-review.md#17-human-pre-order-checklist) on JLCPCB's order pages, on a 1:1 print and on the screen. | [Issue #11](https://github.com/syntroniks/zoneflow/issues/11) |
+| The pre-order checklist | The circuit was reviewed twice (reviews A1 and A2) and the layout once, all from files. The layout review ends with [seven things a person must look at](../design/hardware-layout-review.md#17-human-pre-order-checklist) on JLCPCB's order pages, on a 1:1 print and on the screen. The [review walkthrough](review/index.md) turns them, and what else the review could not verify, into 47 steps with pictures. | [Issue #11](https://github.com/syntroniks/zoneflow/issues/11) |
 | A prototype and bench tests | Revision A is an engineering prototype until it has been bench-tested. Thermal, short-circuit, surge and fail-safe behaviour are unmeasured. See [status](../status.md#what-only-a-prototype-can-answer). | [Progress log, issue #1](https://github.com/syntroniks/zoneflow/issues/1) |
 | An answer on hand-soldered parts | The relay K1 and the bulk capacitor C1 are through-hole parts on the bottom side. Whether JLCPCB will solder them, or the builder does, has not been asked. | [Mechanical design section 12](../design/mechanical.md) |
 | A look at the assembler's placement preview | `make cpl-check` compares every placement with the footprint JLCPCB's library holds for the part, and all fit. That proves the files agree with the library. Nobody has seen JLCPCB's own preview of an order. | [Layout review, section 5](../design/hardware-layout-review.md#5-the-placement-file-against-jlcpcbs-library) |

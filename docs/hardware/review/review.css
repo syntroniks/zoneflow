@@ -1,0 +1,904 @@
+/* The pre-order review walkthrough and its bench sheet. Colours come from the Material theme's
+   variables, so that the page follows the site's light and dark schemes. */
+
+.zf-review,
+.zf-sheet {
+  --zf-pass: #1a7f37;
+  --zf-fail: #c62828;
+  --zf-unsure: #9a6700;
+  --zf-line: var(--md-default-fg-color--lightest);
+  --zf-soft: var(--md-code-bg-color);
+}
+
+[data-md-color-scheme="slate"] .zf-review,
+[data-md-color-scheme="slate"] .zf-sheet {
+  --zf-pass: #57c26d;
+  --zf-fail: #ff7b72;
+  --zf-unsure: #e3b341;
+}
+
+/* The page needs width for text beside a picture. */
+@media screen and (min-width: 76.25em) {
+  .md-grid:has(#zf-review) {
+    max-width: 96rem;
+  }
+}
+
+.md-typeset .zf-crumbs {
+  margin: 0 0 0.4rem;
+  font-size: 0.7rem;
+  color: var(--md-default-fg-color--light);
+}
+
+.zf-review [hidden] {
+  display: none !important;
+}
+
+/* Tabs ---------------------------------------------------------------------------------------- */
+
+.md-typeset .zf-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  margin: 1rem 0 0;
+  border-bottom: 0.1rem solid var(--zf-line);
+}
+
+.md-typeset .zf-tabs a {
+  padding: 0.5rem 0.9rem;
+  border: 0.05rem solid transparent;
+  border-bottom: 0;
+  border-radius: 0.2rem 0.2rem 0 0;
+  color: var(--md-default-fg-color--light);
+  font-weight: 700;
+}
+
+.md-typeset .zf-tabs a:hover {
+  color: var(--md-accent-fg-color);
+}
+
+.md-typeset .zf-tabs a[aria-current="page"] {
+  color: var(--md-default-fg-color);
+  border-color: var(--zf-line);
+  background: var(--zf-soft);
+  box-shadow: inset 0 0.15rem 0 var(--md-primary-fg-color);
+}
+
+.md-typeset .zf-lead {
+  font-size: 0.85rem;
+  max-width: 46rem;
+}
+
+.md-typeset .zf-table th[scope="row"] {
+  font-weight: 700;
+}
+
+.zf-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.md-typeset .zf-review button.md-button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.md-typeset .zf-review button.md-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Pictures ------------------------------------------------------------------------------------ */
+
+.md-typeset .zf-fig {
+  display: block;
+  margin: 0 0 1rem;
+  width: 100%;
+  max-width: none;
+}
+
+.zf-zoom {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0.05rem solid var(--zf-line);
+  border-radius: 0.2rem;
+  background: #06080c;
+  cursor: zoom-in;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.zf-zoom:focus-visible,
+.zf-lb-view:focus-visible,
+.zf-step:focus-visible {
+  outline: 0.15rem solid var(--md-accent-fg-color);
+  outline-offset: 0.1rem;
+}
+
+.md-typeset .zf-zoom img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.md-typeset .zf-fig figcaption {
+  margin: 0.4rem 0 0;
+  max-width: none;
+  font-style: normal;
+  text-align: left;
+  font-size: 0.7rem;
+  color: var(--md-default-fg-color--light);
+}
+
+.zf-stack {
+  position: relative;
+  display: block;
+}
+
+.md-typeset .zf-stack img + img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.md-typeset .zf-overview {
+  max-width: 50rem;
+}
+
+.md-typeset ol.zf-blocks {
+  columns: 2 22rem;
+  column-gap: 2rem;
+  font-size: 0.75rem;
+}
+
+.md-typeset ol.zf-blocks li {
+  break-inside: avoid;
+}
+
+/* Progress ------------------------------------------------------------------------------------ */
+
+.zf-progress {
+  position: sticky;
+  top: 2.4rem;
+  z-index: 2;
+  padding: 0.5rem 0 0.3rem;
+  background: var(--md-default-bg-color);
+}
+
+.zf-bar {
+  display: flex;
+  height: 0.6rem;
+  border-radius: 0.3rem;
+  background: var(--zf-line);
+  overflow: hidden;
+}
+
+.zf-bar span {
+  display: block;
+  height: 100%;
+  transition: width 0.2s;
+}
+
+.zf-bar-pass { background: var(--zf-pass); }
+.zf-bar-unsure { background: var(--zf-unsure); }
+.zf-bar-fail { background: var(--zf-fail); }
+
+.md-typeset .zf-progress-text {
+  margin: 0.3rem 0 0;
+  font-size: 0.7rem;
+  color: var(--md-default-fg-color--light);
+}
+
+.md-typeset .zf-storage-note {
+  padding: 0.5rem 0.8rem;
+  border-left: 0.2rem solid var(--zf-unsure);
+  background: var(--zf-soft);
+  font-size: 0.75rem;
+}
+
+/* Steps: a list at the side and one step on the stage ---------------------------------------- */
+
+.zf-js .zf-layout {
+  display: grid;
+  grid-template-columns: minmax(10rem, 13rem) minmax(0, 1fr);
+  gap: 1.4rem;
+  align-items: start;
+}
+
+.zf-list {
+  display: none;
+}
+
+.zf-js .zf-list {
+  display: block;
+  position: sticky;
+  top: 5.6rem;
+  max-height: calc(100vh - 6.5rem);
+  overflow-y: auto;
+  padding-right: 0.3rem;
+  font-size: 0.7rem;
+}
+
+.md-typeset .zf-list ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.md-typeset .zf-list li {
+  margin: 0;
+}
+
+.zf-nav-title {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.7rem 0 0.2rem;
+  font-weight: 700;
+  color: var(--md-default-fg-color--light);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.62rem;
+}
+
+.zf-nav-title::after {
+  content: attr(data-count);
+  font-weight: 400;
+}
+
+.md-typeset .zf-list a {
+  display: flex;
+  gap: 0.4rem;
+  align-items: baseline;
+  padding: 0.22rem 0.4rem;
+  border-radius: 0.2rem;
+  color: var(--md-default-fg-color);
+  line-height: 1.3;
+}
+
+.md-typeset .zf-list a:hover {
+  background: var(--zf-soft);
+}
+
+.md-typeset .zf-list a[aria-current="step"] {
+  background: var(--zf-soft);
+  box-shadow: inset 0.15rem 0 0 var(--md-primary-fg-color);
+  font-weight: 700;
+}
+
+.zf-dot {
+  flex: none;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  border: 0.1rem solid var(--md-default-fg-color--lighter);
+  transform: translateY(0.05rem);
+}
+
+a[data-answer="pass"] .zf-dot { background: var(--zf-pass); border-color: var(--zf-pass); }
+a[data-answer="fail"] .zf-dot { background: var(--zf-fail); border-color: var(--zf-fail); border-radius: 0; }
+a[data-answer="unsure"] .zf-dot { background: var(--zf-unsure); border-color: var(--zf-unsure); border-radius: 0; transform: rotate(45deg); }
+
+/* The state is also in words, for a screen reader and for anyone who cannot tell the colours apart. */
+.zf-nav-state {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.md-typeset .zf-group-title {
+  margin-top: 0.4rem;
+}
+
+.zf-group-intro {
+  max-width: 46rem;
+  padding: 0.1rem 0.9rem;
+  margin-bottom: 1rem;
+  border-left: 0.2rem solid var(--md-primary-fg-color);
+  background: var(--zf-soft);
+  font-size: 0.75rem;
+}
+
+.zf-step {
+  margin: 0 0 2rem;
+  padding-top: 0.4rem;
+  border-top: 0.1rem solid var(--zf-line);
+  scroll-margin-top: 6rem;
+}
+
+.zf-js .zf-step {
+  border-top: 0;
+}
+
+.zf-step:focus {
+  outline: none;
+}
+
+.md-typeset .zf-kicker {
+  margin: 0;
+  font-size: 0.68rem;
+  color: var(--md-default-fg-color--light);
+}
+
+.md-typeset .zf-step h3 {
+  margin: 0.15rem 0 0.8rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.zf-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.4rem;
+}
+
+/* In one column the picture comes first: it is what the step is about. */
+@media screen and (max-width: 69.99em) {
+  .zf-figs {
+    order: -1;
+  }
+
+  .md-typeset .zf-fig {
+    max-width: 34rem;
+  }
+}
+
+@media screen and (min-width: 70em) {
+  .zf-cols {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  }
+
+  /* A single picture stays beside the text while the text scrolls. Several scroll with the page. */
+  .zf-js .zf-figs:has(.zf-fig:only-child) {
+    position: sticky;
+    top: 5.6rem;
+    align-self: start;
+  }
+}
+
+.md-typeset .zf-sec h4 {
+  margin: 0 0 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--md-default-fg-color--light);
+}
+
+.md-typeset .zf-sec {
+  margin: 0 0 0.9rem;
+  font-size: 0.78rem;
+}
+
+.md-typeset .zf-sec > p:first-of-type,
+.md-typeset .zf-sec > ul:first-of-type,
+.md-typeset .zf-sec > ol:first-of-type {
+  margin-top: 0;
+}
+
+.md-typeset .zf-check {
+  font-size: 0.86rem;
+}
+
+.md-typeset .zf-good,
+.md-typeset .zf-bad,
+.md-typeset .zf-cannot {
+  padding: 0.5rem 0.8rem 0.1rem;
+  border-left: 0.2rem solid var(--zf-pass);
+  background: var(--zf-soft);
+}
+
+.md-typeset .zf-bad { border-left-color: var(--zf-fail); }
+.md-typeset .zf-cannot { border-left-color: var(--zf-unsure); }
+
+.md-typeset .zf-sec table:not([class]),
+.md-typeset .zf-kicad {
+  font-size: 0.7rem;
+}
+
+.md-typeset table.zf-kicad {
+  display: table;
+  width: 100%;
+  margin: 0.6rem 0;
+  border: 0.05rem solid var(--zf-line);
+  border-collapse: collapse;
+}
+
+.md-typeset .zf-kicad caption {
+  padding: 0.3rem 0.5rem;
+  text-align: left;
+  font-weight: 700;
+  background: var(--zf-soft);
+}
+
+.md-typeset .zf-kicad th,
+.md-typeset .zf-kicad td {
+  padding: 0.25rem 0.5rem;
+  border-top: 0.05rem solid var(--zf-line);
+  vertical-align: top;
+  text-align: left;
+}
+
+.md-typeset .zf-kicad th {
+  width: 7.5rem;
+  font-weight: 400;
+  color: var(--md-default-fg-color--light);
+}
+
+.md-typeset .zf-source,
+.md-typeset .zf-nofig,
+.md-typeset .zf-links {
+  font-size: 0.68rem;
+  color: var(--md-default-fg-color--light);
+}
+
+/* The answer --------------------------------------------------------------------------------- */
+
+.md-typeset .zf-answer {
+  margin: 0.4rem 0 0;
+  padding: 0.7rem 0.9rem 0.9rem;
+  border: 0.1rem solid var(--zf-line);
+  border-radius: 0.3rem;
+}
+
+.zf-step[data-answer="pass"] .zf-answer { border-color: var(--zf-pass); }
+.zf-step[data-answer="fail"] .zf-answer { border-color: var(--zf-fail); }
+.zf-step[data-answer="unsure"] .zf-answer { border-color: var(--zf-unsure); }
+
+.zf-answer legend {
+  padding: 0 0.4rem;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.zf-radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.zf-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  border: 0.1rem solid var(--md-default-fg-color--lighter);
+  border-radius: 0.3rem;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.zf-radio input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+}
+
+.zf-radio-pass:has(input:checked) { border-color: var(--zf-pass); box-shadow: inset 0 0 0 0.1rem var(--zf-pass); }
+.zf-radio-fail:has(input:checked) { border-color: var(--zf-fail); box-shadow: inset 0 0 0 0.1rem var(--zf-fail); }
+.zf-radio-unsure:has(input:checked) { border-color: var(--zf-unsure); box-shadow: inset 0 0 0 0.1rem var(--zf-unsure); }
+.zf-radio:has(input:focus-visible) { outline: 0.15rem solid var(--md-accent-fg-color); outline-offset: 0.1rem; }
+
+.zf-clear-one,
+.zf-filter,
+.zf-lightbox button {
+  padding: 0.3rem 0.7rem;
+  border: 0.05rem solid var(--md-default-fg-color--lighter);
+  border-radius: 0.2rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.zf-note-label {
+  display: block;
+  margin: 0.7rem 0 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--md-default-fg-color--light);
+}
+
+.zf-note,
+.zf-report {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 0.05rem solid var(--md-default-fg-color--lighter);
+  border-radius: 0.2rem;
+  background: var(--md-default-bg-color);
+  color: var(--md-default-fg-color);
+  font: inherit;
+  font-size: 0.78rem;
+  resize: vertical;
+}
+
+.zf-report {
+  font-family: var(--md-code-font-family, monospace);
+  font-size: 0.7rem;
+}
+
+.zf-pager {
+  display: none;
+}
+
+.zf-js .zf-pager {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.2rem 0 2rem;
+}
+
+.zf-keys {
+  font-size: 0.68rem;
+  color: var(--md-default-fg-color--light);
+}
+
+/* Findings ----------------------------------------------------------------------------------- */
+
+.zf-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 1rem 0;
+}
+
+.zf-filter {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.zf-filter span {
+  font-weight: 400;
+  color: var(--md-default-fg-color--light);
+}
+
+.zf-filter[aria-pressed="true"] {
+  border-color: var(--md-primary-fg-color);
+  box-shadow: inset 0 0 0 0.1rem var(--md-primary-fg-color);
+}
+
+.zf-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
+  gap: 1rem;
+}
+
+.zf-finding {
+  padding: 0.8rem 0.9rem 0.3rem;
+  border: 0.05rem solid var(--zf-line);
+  border-radius: 0.3rem;
+  scroll-margin-top: 4rem;
+  font-size: 0.74rem;
+}
+
+.zf-finding.zf-flash {
+  box-shadow: 0 0 0 0.15rem var(--md-accent-fg-color);
+}
+
+.zf-finding header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.md-typeset .zf-finding h3 {
+  flex: 1 1 10rem;
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.zf-where {
+  font-weight: 400;
+  color: var(--md-default-fg-color--light);
+}
+
+.zf-sev,
+.zf-status {
+  padding: 0.1rem 0.5rem;
+  border-radius: 1rem;
+  border: 0.08rem solid currentColor;
+  font-size: 0.64rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.zf-sev-blocking { color: #fff; background: var(--zf-fail); border-color: var(--zf-fail); }
+[data-md-color-scheme="slate"] .zf-sev-blocking { color: #000; }
+.zf-sev-major { color: var(--zf-fail); }
+.zf-sev-minor { color: var(--zf-unsure); }
+.zf-sev-note { color: var(--md-default-fg-color--light); }
+.zf-status { border-style: dashed; color: var(--md-default-fg-color--light); }
+.zf-status-fixed { color: var(--zf-pass); border-style: solid; }
+.zf-status-open { color: var(--zf-unsure); border-style: solid; }
+
+.md-typeset .zf-finding dl {
+  margin: 0.6rem 0;
+}
+
+.md-typeset .zf-finding dt {
+  margin-top: 0.5rem;
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--md-default-fg-color--light);
+}
+
+.md-typeset .zf-finding dd {
+  margin: 0.1rem 0 0;
+}
+
+.zf-earlier-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 26rem), 1fr));
+  gap: 1rem;
+  font-size: 0.75rem;
+}
+
+.zf-earlier {
+  padding: 0.2rem 0.9rem;
+  border: 0.05rem solid var(--zf-line);
+  border-radius: 0.3rem;
+}
+
+/* Result ------------------------------------------------------------------------------------- */
+
+.md-typeset .zf-result-summary {
+  padding: 0.7rem 0.9rem;
+  border-left: 0.25rem solid var(--zf-unsure);
+  background: var(--zf-soft);
+  font-weight: 700;
+}
+
+.md-typeset .zf-result-summary[data-state="pass"] { border-left-color: var(--zf-pass); }
+.md-typeset .zf-result-summary[data-state="fail"] { border-left-color: var(--zf-fail); }
+
+.zf-result-group {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.7rem;
+}
+
+.md-typeset .zf-result-list blockquote {
+  margin: 0.2rem 0 0.4rem;
+}
+
+.md-typeset .zf-report-status {
+  min-height: 1.2rem;
+  font-size: 0.72rem;
+}
+
+/* The enlarged picture ----------------------------------------------------------------------- */
+
+.zf-lightbox {
+  width: 96vw;
+  height: 94vh;
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  border-radius: 0.3rem;
+  background: #06080c;
+  color: #e6e9ef;
+  overflow: hidden;
+}
+
+.zf-lightbox[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.zf-lightbox::backdrop {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.zf-lb-bar {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.4rem 0.6rem;
+  background: #151a22;
+  font-size: 0.7rem;
+}
+
+.zf-lb-caption {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zf-lightbox button {
+  border-color: #6b7482;
+  color: #e6e9ef;
+  min-width: 2rem;
+}
+
+.zf-lb-view {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.zf-lb-view.zf-dragging {
+  cursor: grabbing;
+}
+
+.zf-lb-content {
+  width: 100%;
+  height: 100%;
+  transform-origin: 0 0;
+}
+
+.zf-lb-content img,
+.zf-lb-content .zf-stack,
+.zf-lb-content .zf-stack img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.zf-lb-content .zf-stack img + img {
+  position: absolute;
+  inset: 0;
+}
+
+/* Narrow screens ----------------------------------------------------------------------------- */
+
+@media screen and (max-width: 59.9em) {
+  .zf-js .zf-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .zf-js .zf-list {
+    position: static;
+    max-height: 11rem;
+    border: 0.05rem solid var(--zf-line);
+    border-radius: 0.2rem;
+    padding: 0 0.4rem 0.4rem;
+  }
+
+  .zf-progress {
+    top: 2.4rem;
+  }
+}
+
+/* The bench sheet ---------------------------------------------------------------------------- */
+
+.md-typeset img.zf-true {
+  display: block;
+  max-width: none;
+  background: #fff;
+  border: 0.05rem solid var(--zf-line);
+}
+
+.zf-sheet-page {
+  overflow-x: auto;
+}
+
+.md-typeset table.zf-pin1,
+.md-typeset table.zf-ticks {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.66rem;
+}
+
+.md-typeset .zf-pin1 th,
+.md-typeset .zf-pin1 td,
+.md-typeset .zf-ticks th,
+.md-typeset .zf-ticks td {
+  padding: 0.15rem 0.4rem;
+  border: 0.05rem solid var(--md-default-fg-color--lighter);
+  text-align: left;
+  vertical-align: top;
+}
+
+.md-typeset td.zf-tick {
+  width: 1.4rem;
+  min-width: 1.4rem;
+}
+
+.md-typeset td.zf-line {
+  width: 30%;
+}
+
+/* Print -------------------------------------------------------------------------------------- */
+
+@media print {
+  .md-header,
+  .md-banner,
+  .md-tabs,
+  .md-sidebar,
+  .md-footer,
+  .md-top,
+  .md-content__button,
+  .zf-tabs,
+  .zf-list,
+  .zf-pager,
+  .zf-filters,
+  .zf-actions,
+  .zf-lightbox,
+  .zf-storage-note,
+  .zf-clear-one,
+  .zf-report,
+  .zf-progress {
+    display: none !important;
+  }
+
+  .md-grid {
+    max-width: none !important;
+  }
+
+  .md-content,
+  .md-main__inner {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* On paper the walkthrough is one document: every part and every step. */
+  .zf-review .zf-panel[hidden],
+  .zf-review .zf-step[hidden],
+  .zf-review .zf-group[hidden],
+  .zf-review .zf-finding[hidden] {
+    display: block !important;
+  }
+
+  .zf-js .zf-layout,
+  .zf-cols {
+    display: block;
+  }
+
+  .zf-step,
+  .zf-finding,
+  .zf-fig {
+    break-inside: avoid;
+  }
+
+  .md-typeset .zf-fig {
+    max-width: 120mm;
+  }
+
+  .zf-note {
+    min-height: 14mm;
+  }
+
+  .zf-sheet-page {
+    break-before: page;
+    overflow: visible;
+  }
+
+  .zf-sheet-page:first-child {
+    break-before: auto;
+  }
+
+  .md-typeset table.zf-pin1 {
+    font-size: 6.5pt;
+  }
+
+  .md-typeset .zf-pin1 tr,
+  .md-typeset .zf-ticks tr {
+    break-inside: avoid;
+  }
+
+  .md-typeset img.zf-true {
+    border: 0;
+  }
+}

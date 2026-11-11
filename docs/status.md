@@ -53,7 +53,7 @@ They are in [firmware architecture](design/firmware-architecture.md) and
 
 The order is fixed by what each step needs from the one before it.
 
-1. **Review before fabrication**, [issue #11](https://github.com/syntroniks/zoneflow/issues/11): an independent review of the schematic and the layout. The [layout review](design/hardware-layout-review.md) is written; its human pre-order checklist is open.
+1. **Review before fabrication**, [issue #11](https://github.com/syntroniks/zoneflow/issues/11): an independent review of the schematic and the layout. The [layout review](design/hardware-layout-review.md) is written; its human pre-order checklist is open, and the [review walkthrough](hardware/review/index.md) leads a person through it.
 2. **First prototypes**: a small batch, assembled by JLCPCB, for the bring-up plan and the risk register. There is no issue for this yet; follow the [progress log, issue #1](https://github.com/syntroniks/zoneflow/issues/1).
 3. **Firmware on hardware**, [issue #6](https://github.com/syntroniks/zoneflow/issues/6): set the self-test limits and current thresholds from measurements, tune the display and the encoder.
 4. **First firmware release**, [issue #8](https://github.com/syntroniks/zoneflow/issues/8), and the enclosure printed and fitted, [issue #9](https://github.com/syntroniks/zoneflow/issues/9).

@@ -5,3 +5,13 @@
   Do not order boards yet.
   <a href="{{ 'safety/' | url }}">Read the safety notes</a>.
 {% endblock %}
+
+{# A page with "no_web_fonts: true" in its front matter loads no font from another site and uses
+   the reader's system fonts. The review walkthrough sets it, so that it works without a network. #}
+{% block fonts %}
+  {% if page and page.meta and page.meta.no_web_fonts %}
+    <style>:root{--md-text-font:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;--md-code-font:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}</style>
+  {% else %}
+    {{ super() }}
+  {% endif %}
+{% endblock %}
