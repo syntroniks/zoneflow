@@ -1945,8 +1945,9 @@ pull request) closed the ones that are firmware's, each with a regression
 test in `test/host` (`soak_gaps_test.cpp`, `scheduler_test.cpp`,
 `hardware_answers_test.cpp`, the ESPHome `supervisor_test.cpp`) and an
 invariant in the soak that fails the CI subset; the status of each is in
-brackets. Gaps 1 and 10 are the hardware author's, in a GitHub issue
-labelled `hardware` with the soak evidence.
+brackets. Gaps 1 and 10 are the hardware author's, in
+[issue #45](https://github.com/syntroniks/zoneflow/issues/45) with the soak
+evidence.
 
 1. **The keep-alive net bridged to a net that toggles by itself** (review
    A2 appendix A, a single fault) keeps both detectors on. If the processor
@@ -1955,7 +1956,7 @@ labelled `hardware` with the soak evidence.
    fault ... may leave a valve on after the keep-alive stops") does not hold
    for this fault while the firmware is halted. Step 2b finds the bridge
    before the next run, and fix 4 switches the valve off at the restart.
-   A hardware decision. [Hardware; in the issue for the hardware author.]
+   A hardware decision. [Hardware; issue #45.]
 2. **A failed-short triac waters during every other zone's run.** Its
    current hides inside the run's window; rule 6 only promises that the
    relay opens after the run, when step 6 or the linger check finds it
@@ -2021,7 +2022,7 @@ labelled `hardware` with the soak evidence.
     longest seen in the halt runs was 2.23 s. Whether one falling
     edge recharges the real detectors is a question for the hardware
     author; the interrupt watchdog (300 ms by default) keeps the freeze
-    short. [Hardware; in the issue for the hardware author.]
+    short. [Hardware; issue #45.]
 11. **Commissioning writes `ka_ref` from the control task** (documented in
    section 20). The soak checks that it never happens with a valve
    energised; it did not.
