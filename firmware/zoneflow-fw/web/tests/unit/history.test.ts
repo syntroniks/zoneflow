@@ -33,7 +33,7 @@ describe('history', () => {
 
   it('describes faults, restarts and updates in plain words', () => {
     expect(describeRecord({ id: 1, utc: 1, time_valid: true, type: 'fault_raised', zone: 2, code: 'zone_open_circuit' }).text).toBe(
-      'Fault: No current through a valve (Zone 2)',
+      'Fault: Zone 2: no current',
     );
     const boot = describeRecord({ id: 2, utc: 1, time_valid: true, type: 'boot', reset_reason: 'brownout' });
     expect(boot.detail).toBe('After the supply voltage dropped');

@@ -7,7 +7,7 @@ import { call, type HistoryPage, type HistoryRecord } from '../api/client.ts';
 import { Banner, Button, Card, Empty, Field, PageTitle, Spinner } from '../components/ui.tsx';
 import { t, tk } from '../i18n/index.ts';
 import { formatDayLabel, formatDuration, formatNumber, formatTime } from '../lib/format.ts';
-import { faultTitle } from '../state/alerts.ts';
+import { faultTitleFor } from '../state/alerts.ts';
 import { errorText } from '../state/errors.ts';
 import { dropReasonText } from '../state/events.ts';
 import { deviceNow, eventLog, programs, timeZone, zoneLabel, zones } from '../state/store.ts';
@@ -49,7 +49,7 @@ export function describeRecord(r: HistoryRecord): { text: string; detail?: strin
       return { text: t('ev_run_dropped', { zone: zoneLabel(r.zone), reason: dropReasonText(r.reason) }), tone: 'warning' };
     case 'fault_raised':
     case 'fault_cleared': {
-      const f = faultTitle(r.code) + (r.zone != null ? ` (${zoneLabel(r.zone)})` : '');
+      const f = faultTitleFor(r.code, r.zone != null ? [zoneLabel(r.zone)] : []);
       return { text: t(r.type === 'fault_raised' ? 'ev_fault_raised' : 'ev_fault_cleared', { fault: f }), tone: r.type === 'fault_raised' ? 'error' : 'muted' };
     }
     case 'boot':

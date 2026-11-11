@@ -124,7 +124,7 @@ test('a late refusal arrives on the stream as command_rejected', async ({ page, 
 test('faults are explained and cleared after confirmation', async ({ page, request }) => {
   await openSignedIn(page);
   await mock(request, 'fault', { code: 'zone_open_circuit', zone: 4 });
-  const alert = page.locator('.banner', { hasText: 'No current through a valve on Roses along north' });
+  const alert = page.locator('.banner', { hasText: 'Roses along north fence: no current' });
   await expect(alert).toContainText('Check the wire');
   await page.getByRole('button', { name: 'Clear faults' }).click();
   const dialog = page.getByRole('dialog', { name: 'Clear faults' });
@@ -327,6 +327,22 @@ test('history: grouped by day, summarised per zone, and live', async ({ page }) 
   await page.getByRole('button', { name: 'Stop all' }).first().click();
   await go(page, '/history');
   await expect(page.getByRole('region', { name: 'Today' })).toContainText('Back lawn watered (stopped)');
+  errs.check();
+});
+
+test('sensors: the spare input can hold programs like the rain sensor', async ({ page, request }) => {
+  const errs = watchErrors(page);
+  await openSignedIn(page, '/settings/sensors');
+  await page.getByRole('switch', { name: /Spare input connected/ }).check();
+  await expect(page.getByRole('radio', { name: 'Show only' })).toBeChecked();
+  await page.getByRole('radio', { name: 'Hold programs' }).check();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Saved')).toBeVisible();
+  const cfg = await (await request.get('/api/v1/config')).json();
+  expect(cfg.sensors.spare).toMatchObject({ enabled: true, function: 'inhibit' });
+  await mock(request, 'set', { spare: true });
+  await go(page, '/');
+  await expect(page.locator('.banner', { hasText: 'Spare input is active' })).toBeVisible();
   errs.check();
 });
 

@@ -250,6 +250,9 @@ function SensorsSection() {
         read={(c) => ({
           rain: c.sensors.rain.enabled,
           contact: c.sensors.rain.contact,
+          spare: c.sensors.spare.enabled,
+          spareContact: c.sensors.spare.contact,
+          spareFunction: c.sensors.spare.function,
           flow: c.sensors.flow.enabled,
           ppl: c.sensors.flow.pulses_per_litre,
           leak: c.sensors.flow.leak_threshold_lpm,
@@ -258,6 +261,9 @@ function SensorsSection() {
         write={(c, v) => {
           c.sensors.rain.enabled = v.rain;
           c.sensors.rain.contact = v.contact;
+          c.sensors.spare.enabled = v.spare;
+          c.sensors.spare.contact = v.spareContact;
+          c.sensors.spare.function = v.spareFunction;
           c.sensors.flow.enabled = v.flow;
           c.sensors.flow.pulses_per_litre = v.ppl;
           c.sensors.flow.leak_threshold_lpm = v.leak;
@@ -270,6 +276,7 @@ function SensorsSection() {
             {v.rain && (
               <Choice
                 label={t('rain_contact')}
+                help={t('rain_contact_help')}
                 value={v.contact}
                 onChange={(x) => set({ contact: x })}
                 options={[
@@ -277,6 +284,30 @@ function SensorsSection() {
                   { value: 'no', label: t('contact_no') },
                 ]}
               />
+            )}
+            <Switch label={t('spare_enabled')} help={t('spare_enabled_help')} checked={v.spare} onChange={(x) => set({ spare: x })} disabled={!signedIn.value} />
+            {v.spare && (
+              <>
+                <Choice
+                  label={t('spare_contact')}
+                  value={v.spareContact}
+                  onChange={(x) => set({ spareContact: x })}
+                  options={[
+                    { value: 'nc', label: t('contact_nc') },
+                    { value: 'no', label: t('contact_no') },
+                  ]}
+                />
+                <Choice
+                  label={t('spare_function')}
+                  help={t('spare_function_help')}
+                  value={v.spareFunction}
+                  onChange={(x) => set({ spareFunction: x })}
+                  options={[
+                    { value: 'none', label: t('spare_function_none') },
+                    { value: 'inhibit', label: t('spare_function_inhibit') },
+                  ]}
+                />
+              </>
             )}
             <Switch label={t('flow_enabled')} checked={v.flow} onChange={(x) => set({ flow: x })} disabled={!signedIn.value} />
             {v.flow && (

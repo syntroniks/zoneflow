@@ -82,8 +82,10 @@ for (const scheme of ['light', 'dark'] as const) {
         await shot(page, 'rain-delay');
         await go(page, '/more');
         await shot(page, 'more', true);
-        for (const s of ['device', 'time', 'watering', 'network', 'mqtt', 'security', 'backup', 'firmware', 'system']) {
+        for (const s of ['device', 'time', 'watering', 'sensors', 'network', 'mqtt', 'security', 'backup', 'firmware', 'system']) {
           await go(page, `/settings/${s}`);
+          // Show the spare input's choices (not saved).
+          if (s === 'sensors') await page.getByRole('switch', { name: /Spare input connected/ }).check();
           await page.waitForTimeout(200);
           await shot(page, `settings-${s}`, true);
         }

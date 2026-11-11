@@ -778,6 +778,10 @@ async function control(req: IncomingMessage, res: ServerResponse, url: URL): Pro
         dev.sensors.rainActive = s['rain'];
         dev.emit('sensor_changed', { sensor: 'rain', active: s['rain'] });
       }
+      if (typeof s['spare'] === 'boolean') {
+        dev.sensors.spareActive = s['spare'];
+        dev.emit('sensor_changed', { sensor: 'spare', active: s['spare'] });
+      }
       if (typeof s['time_status'] === 'string') dev.timeStatus = s['time_status'] as 'unset';
       if (typeof s['rest_zone'] === 'number') dev.zones[s['rest_zone'] - 1]!.restMs = Number(s['rest_s'] ?? 900) * 1000;
       if (typeof s['rain_delay_h'] === 'number') dev.setRainDelay(dev.utc() + s['rain_delay_h'] * 3600);
