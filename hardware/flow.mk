@@ -115,14 +115,29 @@ finish: route
 
 # Close what the autorouter left open (hwflow.patchroute): import the stored session without
 # patches, let DRC say what is unconnected, route each such pair, and write $(DESIGN)/patches.toml.
+# A patch can cut a pour of another net in two, so the board is then built with the patches and
+# looked at again, up to three more times, each pass adding to the file. Needs design/layout.py,
+# which is what carries patches.toml into board.toml.
 # Run it once after the board has been routed again; then run make.
+PATCH_DRC = rm -rf build/patch && mkdir -p build/patch \
+	&& cp -r $(PCB) $(NAME).kicad_pro fp-lib-table sym-lib-table lib build/patch/ \
+	&& { cp $(NAME).kicad_dru build/patch/ 2>/dev/null; \
+	     $(KICAD_CLI) pcb drc --refill-zones --save-board --severity-error --severity-warning --format json \
+	     -o build/patch/drc.json build/patch/$(PCB) $(LOG); true; }
+PATCH_ROUTE = $(KICAD_PY) -m hwflow.patchroute . $(DESIGN) --drc build/patch/drc.json
 patches: route
 	$(KICAD_PY) -m hwflow.pcbbuild finish . --session route/$(NAME).ses --design $(DESIGN) --no-patch
-	mkdir -p build/patch && cp $(PCB) $(NAME).kicad_pro build/patch/ && cp $(NAME).kicad_dru build/patch/ 2>/dev/null; true
-	$(KICAD_CLI) pcb drc --refill-zones --save-board --severity-error --severity-warning --format json \
-		-o build/patch/drc.json build/patch/$(PCB) $(LOG); true
-	$(KICAD_PY) -m hwflow.patchroute . $(DESIGN) --drc build/patch/drc.json
-	$(if $(wildcard $(DESIGN)/layout.py),$(KICAD_PY) $(DESIGN)/layout.py .,@true)
+	$(PATCH_DRC)
+	$(PATCH_ROUTE)
+	set -e; for pass in 2 3 4; do \
+		$(KICAD_PY) $(DESIGN)/layout.py .; \
+		$(KICAD_PY) -m hwflow.pcbbuild build $(DESIGN) . --fab-rules $(FAB_RULES); \
+		$(KICAD_PY) -m hwflow.pcbbuild finish . --session route/$(NAME).ses --design $(DESIGN); \
+		$(PATCH_DRC); \
+		if $(PATCH_ROUTE) --check; then break; fi; \
+		$(PATCH_ROUTE) --add; \
+	done
+	$(KICAD_PY) $(DESIGN)/layout.py .
 
 # The first call fills the copper zones and saves the board. Errors and
 # warnings both fail the build; --schematic-parity checks that the board still
@@ -199,13 +214,14 @@ outputs: drc mech rules sch-outputs
 	# Where pin 1 of every polarised part is: what to compare the assembler's placement preview with.
 	$(KICAD_PY) -m hwflow.fab polarity build/placement.json $(OUT)/$(NAME)-pin1.csv
 	# Assembly drawings: part outlines and every reference designator, one page per side.
+	# kicad-cli plots a board PDF without its drawing sheet unless asked for one.
 	$(KICAD_CLI) pcb export pdf --layers "F.Fab,Edge.Cuts" --mode-single --black-and-white \
-		--exclude-drawing-sheet -o $(OUT)/$(NAME)-assembly-top.pdf $(PCB) $(LOG)
+		-o $(OUT)/$(NAME)-assembly-top.pdf $(PCB) $(LOG)
 	$(KICAD_CLI) pcb export pdf --layers "B.Fab,Edge.Cuts" --mode-single --black-and-white --mirror \
-		--exclude-drawing-sheet -o $(OUT)/$(NAME)-assembly-bottom.pdf $(PCB) $(LOG)
+		-o $(OUT)/$(NAME)-assembly-bottom.pdf $(PCB) $(LOG)
 	# The board as a PDF, one page per layer, for a reviewer without KiCad.
 	$(KICAD_CLI) pcb export pdf --layers "F.Cu,$(subst $(space),$(comma),$(INNER_LAYERS))$(if $(INNER_LAYERS),$(comma))B.Cu,F.Silkscreen,B.Silkscreen,F.Mask,B.Mask,F.Paste" \
-		--common-layers "Edge.Cuts" --mode-multipage --exclude-drawing-sheet -o $(OUT)/$(NAME)-board.pdf $(PCB) $(LOG)
+		--common-layers "Edge.Cuts" --mode-multipage -o $(OUT)/$(NAME)-board.pdf $(PCB) $(LOG)
 	$(KICAD_CLI) pcb export step --subst-models --force -o $(OUT)/$(NAME).step $(PCB) $(LOG)
 	$(KICAD_CLI) pcb render --side top --quality high --width 1600 --height 1200 \
 		-o $(OUT)/$(NAME)-top.png $(PCB) $(LOG)
