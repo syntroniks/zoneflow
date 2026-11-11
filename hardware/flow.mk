@@ -52,11 +52,14 @@ PCB := $(NAME).kicad_pcb
 # kicad-cli prints wxWidgets debug lines on stderr. They go to a log file so
 # that the exit code of kicad-cli still decides whether the step passed.
 LOG := 2>> build/kicad-cli.stderr
+comma := ,
+empty :=
+space := $(empty) $(empty)
 
-.PHONY: all schematic footprints layout sch lint erc sch-outputs board route reroute finish drc mech outputs check committed
+.PHONY: all schematic footprints layout sch lint erc sch-outputs board route reroute finish drc mech rules board-check ibom outputs check committed
 .NOTPARALLEL:
 
-all: outputs
+all: outputs ibom
 	@echo "build complete: ERC and DRC passed, outputs are in $(OUT)/"
 
 # The schematic half only: generate, check, and export the schematic deliverables.
@@ -146,7 +149,30 @@ mech: drc
 	$(KICAD_PY) -m hwflow.pcbbuild dump $(DESIGN) .
 	$(if $(MECH_CONTRACT),$(UV_PY) -m hwflow mech . --contract $(MECH_CONTRACT) --heights $(DESIGN)/heights.toml,@true)
 
-outputs: drc mech sch-outputs
+# Layout rules that DRC cannot express, from board.toml: nets that must stay apart on every
+# layer, circuits that must be a set distance apart, nets that must have no test pad.
+rules: drc
+	$(KICAD_PY) -m hwflow.layoutrules . $(DESIGN) --report $(OUT)/reports/layout-rules.md
+
+# Everything that judges the board and needs no display: DRC with schematic parity, the
+# mechanical contract, the layout rules. CI runs this.
+board-check: drc mech rules
+	@echo "board check complete: DRC, mechanical contract and layout rules passed"
+
+# Interactive HTML BOM (github.com/openscopeproject/InteractiveHtmlBom, MIT). Fetched once into the
+# cache, like the autorouter. It imports wx but opens no window.
+IBOM_VERSION ?= 2.12.0
+IBOM_DIR = $(CACHE)/ibom-$(IBOM_VERSION)
+$(IBOM_DIR)/InteractiveHtmlBom/generate_interactive_bom.py:
+	uv pip install --quiet --no-deps --python $(KICAD_PY) --target $(IBOM_DIR) InteractiveHtmlBom==$(IBOM_VERSION)
+
+ibom: drc $(IBOM_DIR)/InteractiveHtmlBom/generate_interactive_bom.py
+	INTERACTIVE_HTML_BOM_NO_DISPLAY=1 PYTHONPATH=$(IBOM_DIR):$(PYTHONPATH) $(KICAD_PY) -m InteractiveHtmlBom.generate_interactive_bom \
+		--no-browser --dest-dir $(abspath $(OUT)) --name-format "$(NAME)-ibom" --include-tracks --include-nets \
+		--extra-fields LCSC $(PCB) >> build/ibom.log 2>&1
+	$(STABILISE)
+
+outputs: drc mech rules sch-outputs
 	# Gerbers, drill and placement all use the drill/place origin, which the
 	# board builder puts on the bottom-left corner of the outline.
 	$(KICAD_CLI) pcb export gerbers --layers "$(GERBER_LAYERS)" --subtract-soldermask --no-protel-ext \
@@ -166,6 +192,9 @@ outputs: drc mech sch-outputs
 		--exclude-drawing-sheet -o $(OUT)/$(NAME)-assembly-top.pdf $(PCB) $(LOG)
 	$(KICAD_CLI) pcb export pdf --layers "B.Fab,Edge.Cuts" --mode-single --black-and-white --mirror \
 		--exclude-drawing-sheet -o $(OUT)/$(NAME)-assembly-bottom.pdf $(PCB) $(LOG)
+	# The board as a PDF, one page per layer, for a reviewer without KiCad.
+	$(KICAD_CLI) pcb export pdf --layers "F.Cu,$(subst $(space),$(comma),$(INNER_LAYERS))$(if $(INNER_LAYERS),$(comma))B.Cu,F.Silkscreen,B.Silkscreen,F.Mask,B.Mask,F.Paste" \
+		--common-layers "Edge.Cuts" --mode-multipage --exclude-drawing-sheet -o $(OUT)/$(NAME)-board.pdf $(PCB) $(LOG)
 	$(KICAD_CLI) pcb export step --subst-models --force -o $(OUT)/$(NAME).step $(PCB) $(LOG)
 	$(KICAD_CLI) pcb render --side top --quality high --width 1600 --height 1200 \
 		-o $(OUT)/$(NAME)-top.png $(PCB) $(LOG)

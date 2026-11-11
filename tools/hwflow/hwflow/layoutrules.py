@@ -181,14 +181,16 @@ def read_board(pcb_path: Path, origin, height, y_up: bool):
         if t.Type() == pcbnew.PCB_VIA_T:
             item = ("via", every, ("circle", xy(t.GetPosition()), pcbnew.ToMM(t.GetWidth(pcbnew.F_Cu)) / 2))
         else:
-            item = ("track", frozenset([t.GetLayer()]), ("seg", xy(t.GetStart()), xy(t.GetEnd()), pcbnew.ToMM(t.GetWidth())))
+            item = ("track", frozenset([t.GetLayer()]),
+                    ("seg", xy(t.GetStart()), xy(t.GetEnd()), pcbnew.ToMM(t.GetWidth())))
         copper.setdefault(net, []).append(item)
     parts: dict[str, dict] = {}
     for fp in board.GetFootprints():
         pads = []
         for p in fp.Pads():
             b = p.GetBoundingBox()
-            (x0, y0), (x1, y1) = xy(pcbnew.VECTOR2I(b.GetLeft(), b.GetTop())), xy(pcbnew.VECTOR2I(b.GetRight(), b.GetBottom()))
+            x0, y0 = xy(pcbnew.VECTOR2I(b.GetLeft(), b.GetTop()))
+            x1, y1 = xy(pcbnew.VECTOR2I(b.GetRight(), b.GetBottom()))
             rect = (min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1))
             layers = frozenset(i for i in copper_ids if p.IsOnLayer(i))
             if not layers:
@@ -202,17 +204,20 @@ def read_board(pcb_path: Path, origin, height, y_up: bool):
 
 def report(rows: list[dict]) -> str:
     out = ["# Layout rules checked on the board file", "",
-           "Written by `hwflow.layoutrules`. Distances in millimetres, from the board file. Nothing was measured on a board.", ""]
+           "Written by `hwflow.layoutrules`. Distances in millimetres, from the board file. "
+           "Nothing was measured on a board.", ""]
     ka = [r for r in rows if r["rule"] == "keepaway"]
     if ka:
         out += ["| Net | Kept away from | Measured | Needed | Found | Nearest point |", "|---|---|---|---|---|---|"]
         for r in ka:
-            out.append(f"| `{r['net']}` | `{r['other']}` | {'plan view, all layers' if r['scope'] == 'plan' else 'same layer'} | "
+            scope = "plan view, all layers" if r["scope"] == "plan" else "same layer"
+            out.append(f"| `{r['net']}` | `{r['other']}` | {scope} | "
                        f"{r['need']:g} | {r['found']:.2f} | ({r['at'][0]:g}, {r['at'][1]:g}) |")
         out.append("")
     for r in rows:
         if r["rule"] == "apart":
-            out.append(f"- {', '.join(r['a'])} and {', '.join(r['b'])}: {r['found']:g} mm apart, {r['need']:g} mm needed.")
+            out.append(f"- {', '.join(r['a'])} and {', '.join(r['b'])}: {r['found']:g} mm apart, "
+                       f"{r['need']:g} mm needed.")
         elif r["rule"] == "perpendicular":
             out.append(f"- {r['parts'][0]} and {r['parts'][1]}: {r['found']:g} degrees to each other.")
         elif r["rule"] == "no_pad":
