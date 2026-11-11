@@ -837,6 +837,57 @@ def remove_dangling(board, conn) -> int:
         removed += n
 
 
+def prune_unused(board) -> int:
+    """Take away the hand-placed vias the routing did not use, and the stubs that led to them.
+
+    ``[route] prune = true``. A via placed ahead of the autorouter as a way out
+    of a pin is of no use if the router left the pin on its own layer. Such a
+    via joins nothing on a second layer; DRC calls it dangling. A net that has
+    a zone is left alone: its vias join the zone, which is not filled yet at
+    this point.
+    """
+    zone_nets = {z.GetNetname() for z in board.Zones() if not z.GetIsRuleArea()}
+    pads: dict = {}
+    for fp in board.GetFootprints():
+        for p in fp.Pads():
+            pads.setdefault(p.GetNetname(), []).append(p)
+    removed = 0
+    while True:
+        by_net: dict = {}
+        for t in board.GetTracks():
+            if t.GetNetname() not in zone_nets:
+                by_net.setdefault(t.GetNetname(), []).append(t)
+        gone = []
+        for net, items in by_net.items():
+            segs = [t for t in items if t.Type() != pcbnew.PCB_VIA_T]
+            vias = [t for t in items if t.Type() == pcbnew.PCB_VIA_T]
+            for v in vias:
+                pos = v.GetPosition()
+                through = any(p.HitTest(pos) and p.GetAttribute() == pcbnew.PAD_ATTRIB_PTH for p in pads.get(net, []))
+                if v.IsLocked() and not through and len({x.GetLayer() for x in segs if x.HitTest(pos)}) < 2:
+                    gone.append(v)
+        if not gone:
+            for net, items in by_net.items():
+                segs = [(t, t.m_Uuid.AsString()) for t in items if t.Type() != pcbnew.PCB_VIA_T]
+                vias = [t for t in items if t.Type() == pcbnew.PCB_VIA_T]
+                for seg, uuid in segs:
+                    if not seg.IsLocked():
+                        continue
+                    for end in (seg.GetStart(), seg.GetEnd()):
+                        held = (any(v.HitTest(end) for v in vias)
+                                or any(u != uuid and o.GetLayer() == seg.GetLayer() and o.HitTest(end) for o, u in segs)
+                                or any(p.HitTest(end) and p.IsOnLayer(seg.GetLayer()) for p in pads.get(net, [])))
+                        if not held:
+                            gone.append(seg)
+                            break
+        if not gone:
+            return removed
+        removed += len(gone)
+        for t in gone:
+            board.Delete(t)
+        del gone, by_net
+
+
 def cmd_build(args) -> int:
     b = Builder(Path(args.project_dir), Path(args.design_dir),
                 Path(args.fab_rules) if args.fab_rules else None)
@@ -918,10 +969,30 @@ def cmd_finish(args) -> int:
         b.board = board
         b.fps = {fp.GetReference(): fp for fp in board.GetFootprints()}
         import fnmatch
-        pats = [p for u in b.cfg.get("unroute", []) for p in u["nets"]]
-        if pats:
-            gone = [t for t in board.GetTracks() if not t.IsLocked()
-                    and any(fnmatch.fnmatchcase(t.GetNetname(), p) for p in pats)]
+        pats = [p for u in b.cfg.get("unroute", []) for p in u.get("nets", [])]
+        spots = [b.pt(v[0], v[1]) for u in b.cfg.get("unroute", []) for v in u.get("vias", [])]
+        boxes = []
+        for u in b.cfg.get("unroute", []):
+            if "box" in u:
+                c1, c2 = b.pt(u["box"][0], u["box"][1]), b.pt(u["box"][2], u["box"][3])
+                boxes.append((u["net"], min(c1.x, c2.x), min(c1.y, c2.y), max(c1.x, c2.x), max(c1.y, c2.y)))
+
+        def boxed(t) -> bool:
+            # "net" with "box": the autorouted copper of one net inside a rectangle, for a piece it laid
+            # where a layout rule does not want it. The patch router then joins what is left.
+            ends = [t.GetPosition()] if t.Type() == pcbnew.PCB_VIA_T else [t.GetStart(), t.GetEnd()]
+            return any(fnmatch.fnmatchcase(t.GetNetname(), net)
+                       and all(x0 <= e.x <= x1 and y0 <= e.y <= y1 for e in ends)
+                       for net, x0, y0, x1, y1 in boxes)
+
+        if pats or spots or boxes:
+            # "vias": a via by its place, whoever laid it. For one that was right for routing and is
+            # wrong on the board, where moving it would change what the stored session was made from.
+            gone = [t for t in board.GetTracks()
+                    if (not t.IsLocked() and (any(fnmatch.fnmatchcase(t.GetNetname(), p) for p in pats) or boxed(t)))
+                    or (t.Type() == pcbnew.PCB_VIA_T
+                        and any(abs(t.GetPosition().x - s.x) < 1000 and abs(t.GetPosition().y - s.y) < 1000
+                                for s in spots))]
             unrouted = len(gone)
             for t in gone:
                 board.Delete(t)
@@ -935,6 +1006,9 @@ def cmd_finish(args) -> int:
                                  "stored in route/: run `make patches` and then make again")
             patched = b._tracks(patches)
     removed = remove_dangling(board, board.GetConnectivity())
+    pruned = 0
+    if args.design_dir and b.cfg.get("route", {}).get("prune", False):
+        pruned = prune_unused(board)
     tracks = list(board.GetTracks())
     if args.design_dir:
         # A layer given to a plane carries no track. The autorouter has put tracks there before
@@ -951,6 +1025,7 @@ def cmd_finish(args) -> int:
         "dangling_stubs_removed": removed,
         "autorouted_items_taken_out": unrouted,
         "patch_segments": patched,
+        "unused_escape_items_removed": pruned,
         "track_segments": sum(1 for t in tracks if t.Type() != pcbnew.PCB_VIA_T),
         "vias": sum(1 for t in tracks if t.Type() == pcbnew.PCB_VIA_T),
         "track_length_mm": round(sum(pcbnew.ToMM(t.GetLength()) for t in tracks if t.Type() != pcbnew.PCB_VIA_T), 1),
@@ -963,8 +1038,8 @@ def cmd_finish(args) -> int:
     stamp_points(pcb_path)
     (project_dir / "build" / "route-stats.json").write_text(json.dumps(stats, indent=1) + "\n", encoding="utf-8")
     print(f"board: {stats['track_segments']} track segments, {stats['vias']} vias "
-          f"({before} items were pre-routed, {removed} dangling stubs removed, {unrouted} autorouted items "
-          f"taken out and {patched} segments patched by hand)")
+          f"({before} items were pre-routed, {removed} dangling stubs removed, {unrouted} items taken out, "
+          f"{patched} segments patched, {pruned} unused escape vias and stubs removed)")
     return 0
 
 
