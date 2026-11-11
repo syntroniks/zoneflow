@@ -31,8 +31,11 @@ bool readContactClosed(int gpio)
 
 // ---- current sampling --------------------------------------------------------------------------
 constexpr uint32_t kSamplesPerWindow = board::kIsenseSampleHzPerChannel * board::kIsenseWindowMs / 1000; // 500
-// Conversion frames of 10 ms: 2 channels x 50 conversions x 4 bytes.
-constexpr uint32_t kConvPerFrame = 2 * kSamplesPerWindow / 10;
+// ISENSE_HI, ISENSE_LO and GPIO7 (the relay read-back, review A2 4.6
+// question 7), each at kIsenseSampleHzPerChannel.
+constexpr uint32_t kChannels = 3;
+// Conversion frames of 10 ms: 3 channels x 50 conversions x 4 bytes.
+constexpr uint32_t kConvPerFrame = kChannels * kSamplesPerWindow / 10;
 constexpr uint32_t kFrameBytes = kConvPerFrame * SOC_ADC_DIGI_RESULT_BYTES;
 // A window that took longer than this lost samples (task delayed, pool
 // overflow): it is dropped, not used.
@@ -56,16 +59,21 @@ esp_err_t CurrentSampler::start()
     adc_unit_t unit = ADC_UNIT_1;
     adc_channel_t hi = ADC_CHANNEL_0;
     adc_channel_t lo = ADC_CHANNEL_0;
+    adc_channel_t rb = ADC_CHANNEL_0;
     esp_err_t err = adc_continuous_io_to_channel(board::kIsenseHiGpio, &unit, &hi);
     if (err == ESP_OK && unit == ADC_UNIT_1) {
         err = adc_continuous_io_to_channel(board::kIsenseLoGpio, &unit, &lo);
     }
+    if (err == ESP_OK && unit == ADC_UNIT_1) {
+        err = adc_continuous_io_to_channel(board::kRelayOffReadbackGpio, &unit, &rb);
+    }
     if (err != ESP_OK || unit != ADC_UNIT_1) {
-        ESP_LOGE(kTag, "current sense pins are not on ADC1");
+        ESP_LOGE(kTag, "current sense and relay read-back pins are not on ADC1");
         return err == ESP_OK ? ESP_ERR_INVALID_ARG : err;
     }
     chHi_ = static_cast<int>(hi);
     chLo_ = static_cast<int>(lo);
+    chRb_ = static_cast<int>(rb);
 
     adc_continuous_handle_cfg_t handleCfg = {};
     handleCfg.max_store_buf_size = kFrameBytes * 8;
@@ -77,31 +85,41 @@ esp_err_t CurrentSampler::start()
         ESP_LOGE(kTag, "ADC continuous init failed: %s", esp_err_to_name(err));
         return err;
     }
-    adc_digi_pattern_config_t pattern[2] = {};
-    for (int i = 0; i < 2; ++i) {
+    const adc_channel_t chans[kChannels] = {hi, lo, rb};
+    adc_digi_pattern_config_t pattern[kChannels] = {};
+    for (uint32_t i = 0; i < kChannels; ++i) {
         pattern[i].atten = atten();
-        pattern[i].channel = static_cast<uint8_t>(i == 0 ? hi : lo);
+        pattern[i].channel = static_cast<uint8_t>(chans[i]);
         pattern[i].unit = ADC_UNIT_1;
         pattern[i].bit_width = SOC_ADC_DIGI_MAX_BITWIDTH;
     }
     adc_continuous_config_t cfg = {};
-    cfg.pattern_num = 2;
+    cfg.pattern_num = kChannels;
     cfg.adc_pattern = pattern;
-    cfg.sample_freq_hz = board::kIsenseSampleHzPerChannel * 2;
+    cfg.sample_freq_hz = board::kIsenseSampleHzPerChannel * kChannels;
     cfg.conv_mode = ADC_CONV_SINGLE_UNIT_1;
     cfg.format = ADC_DIGI_OUTPUT_FORMAT_TYPE2;
     err = adc_continuous_config(handle, &cfg);
+    // adc_continuous_config() turns the pins' digital input buffers off
+    // (gpio_config_as_analog). GPIO7 is still read as a level by the
+    // keep-alive interrupt: turn its buffer back on. Rule 12: still an
+    // input, no pull. If this did not work the pin would read low, which
+    // fails the idle test on the safe side. A bench item.
+    if (err == ESP_OK) {
+        err = gpio_input_enable(static_cast<gpio_num_t>(board::kRelayOffReadbackGpio));
+    }
 
     // Calibration to millivolts, one scheme per channel.
-    for (int i = 0; err == ESP_OK && i < 2; ++i) {
-        adc_cali_curve_fitting_config_t cali = {};
-        cali.unit_id = ADC_UNIT_1;
-        cali.chan = i == 0 ? hi : lo;
-        cali.atten = atten();
-        cali.bitwidth = ADC_BITWIDTH_12;
+    void **cali[kChannels] = {&caliHi_, &caliLo_, &caliRb_};
+    for (uint32_t i = 0; err == ESP_OK && i < kChannels; ++i) {
+        adc_cali_curve_fitting_config_t c = {};
+        c.unit_id = ADC_UNIT_1;
+        c.chan = chans[i];
+        c.atten = atten();
+        c.bitwidth = ADC_BITWIDTH_12;
         adc_cali_handle_t h = nullptr;
-        err = adc_cali_create_scheme_curve_fitting(&cali, &h);
-        (i == 0 ? caliHi_ : caliLo_) = h;
+        err = adc_cali_create_scheme_curve_fitting(&c, &h);
+        *cali[i] = h;
     }
     if (err == ESP_OK) {
         err = adc_continuous_start(handle);
@@ -138,17 +156,18 @@ void CurrentSampler::run()
             if (!parsed[i].valid || parsed[i].unit != ADC_UNIT_1) {
                 continue;
             }
-            const bool isHi = static_cast<int>(parsed[i].channel) == chHi_;
-            const bool isLo = static_cast<int>(parsed[i].channel) == chLo_;
-            if (!isHi && !isLo) {
+            const int ch = static_cast<int>(parsed[i].channel);
+            ChannelStats *stats = ch == chHi_ ? &w.hi : ch == chLo_ ? &w.lo : ch == chRb_ ? &w.relayRb : nullptr;
+            void *calib = ch == chHi_ ? caliHi_ : ch == chLo_ ? caliLo_ : caliRb_;
+            if (stats == nullptr) {
                 continue;
             }
             int mv = 0;
-            if (adc_cali_raw_to_voltage(static_cast<adc_cali_handle_t>(isHi ? caliHi_ : caliLo_),
-                                        static_cast<int>(parsed[i].raw_data), &mv) != ESP_OK) {
+            if (adc_cali_raw_to_voltage(static_cast<adc_cali_handle_t>(calib), static_cast<int>(parsed[i].raw_data),
+                                        &mv) != ESP_OK) {
                 continue;
             }
-            (isHi ? w.hi : w.lo).add(mv);
+            stats->add(mv);
             if (w.hi.n < kSamplesPerWindow) {
                 continue;
             }
@@ -167,6 +186,7 @@ void CurrentSampler::run()
             }
             w.hi.reset();
             w.lo.reset();
+            w.relayRb.reset();
             windowStart = now;
         }
     }
@@ -266,6 +286,7 @@ SensorSample SensorInputs::read()
     s.mainsMilliHz = zc_ != nullptr ? zc_->mainsMilliHz() : 0;
     s.overCurrentTripped = gpio_get_level(static_cast<gpio_num_t>(board::kOverCurrentGpio)) == 0;
     s.sensorSupplyOn = supplyOn_;
+    s.keepAlivePinPlain = keepAlivePinPlain();
 
     if (pcnt_ != nullptr) {
         int count = 0;
