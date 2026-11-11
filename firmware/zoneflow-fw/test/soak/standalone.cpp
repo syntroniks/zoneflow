@@ -409,6 +409,7 @@ public:
     bool configSeenThisBoot = false;
     uint64_t smallBackJumpPhys = 0;
     bool runtimeDamagedAtBoot = false;
+    uint64_t supplyBadPhys = 0; // VIN_MON last out of range (S9)
     std::map<std::pair<uint16_t, int64_t>, uint32_t> dueBoot;
 
     void violation(const char *id, const std::string &detail);
@@ -1120,13 +1121,22 @@ void Runner::afterTick()
             return;
         }
     }
-    // S9: a healthy board leaves the start-up test after a boot.
-    if (!bootChecked && d.mono() > 60'000) {
+    // S9: a healthy board leaves the start-up test after a boot, within a
+    // minute of the supply being in range: step 0 waits while VIN_MON is
+    // under 0.60 V or above 1.50 V (hardware design 19.10), as in a sag.
+    if (st.supplyLow || st.supplyHigh) {
+        supplyBadPhys = w.phys;
+        w.count("s9.supply_out_of_range_ticks");
+    }
+    if (!bootChecked && d.mono() > 60'000 && w.phys - supplyBadPhys > 60'000) {
         bootChecked = true;
         // Commissioning cycles after the start-up test report the same phase.
         if (st.phase == StagePhase::StartupTest && st.selfTestsPassed == 0 && w.boardFault == BoardFault::None &&
             bootDisturbedPhys == 0) {
-            violation("S9-boot-stuck", "start-up self-test still running a minute after boot");
+            violation("S9-boot-stuck", "start-up self-test still running a minute after boot (VIN_MON " +
+                                           std::to_string(st.vinMonMv) + " mV, supply low " +
+                                           std::to_string(st.supplyLow) + ", volts " + std::to_string(w.volts) +
+                                           ", lost " + toString(st.currentLost) + ")");
         }
     }
     checkDeadlines();
