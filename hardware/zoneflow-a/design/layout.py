@@ -949,6 +949,7 @@ TAIL = '''
 # B.Cu signals, the triac heat islands and ground.
 [route]
 layers = ["F.Cu", "In2.Cu", "B.Cu"]   # In1.Cu is the ground plane: the autorouter only passes vias through it
+plane_layers = ["In2.Cu"]             # for the routing report: a track here is a slot in a pour
 # Nets the autorouter must leave alone: they connect through planes, pours or hand-routed copper.
 exclude = ["GND", "3V3", "/ISNS", "/OUT_*", "/*/T2", "/*/SNB", "/AC_L_IN", "/AC_N", "/AC_L", "/COM",
            "/Power/VRECT", "VIN_DC", "/Power/VIN_U1", "/Power/UVLO", "/Power/SW", "/Power/BST", "/KA",

@@ -104,3 +104,38 @@ jobs:
             hardware/zoneflow-a/output/
             hardware/zoneflow-a/build/kicad-cli.stderr
           if-no-files-found: warn
+
+  board:
+    name: check the rev A board
+    runs-on: ubuntu-latest
+    # The same image as the schematic job. It has KiCad's Python module; no display is used.
+    container:
+      image: kicad/kicad:10.0.8
+      options: --user root
+    steps:
+      - name: Install make and git
+        run: apt-get update && apt-get install -y --no-install-recommends make git ca-certificates curl
+
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.3.3
+
+      # Places and pre-routes the board from the sources, checks that the stored
+      # autorouter session was made from exactly that board, imports it, and runs
+      # the checks: DRC with schematic parity and JLCPCB's limits, the mechanical
+      # contract, the layout rules of the fail-safe analysis. The autorouter does
+      # not run here: with --stored-only a session that does not belong to the
+      # sources fails the job.
+      - name: Rebuild the board from the sources and check it
+        run: make -C hardware/zoneflow-a board-check ROUTE_FLAGS=--stored-only
+
+      - name: Keep the reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zoneflow-a-board
+          path: |
+            hardware/zoneflow-a/output/reports/
+            hardware/zoneflow-a/build/kicad-cli.stderr
+            hardware/zoneflow-a/build/silk.json
+          if-no-files-found: warn

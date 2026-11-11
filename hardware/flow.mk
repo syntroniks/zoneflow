@@ -208,6 +208,8 @@ outputs: drc mech rules sch-outputs
 	$(foreach l,$(INNER_LAYERS),$(KICAD_CLI) pcb export svg --layers "$(l),Edge.Cuts" --mode-single \
 		--page-size-mode 2 --exclude-drawing-sheet -o $(OUT)/$(NAME)-$(l).svg $(PCB) $(LOG) &&) true
 	$(KICAD_PY) -m hwflow.report . $(OUT)
+	# What was routed by hand and what by the autorouter, and the things to look at.
+	$(KICAD_PY) -m hwflow.routereport . $(DESIGN) $(OUT)/reports/routing.md
 	$(STABILISE)
 
 # Unit tests, KiCad round-trip tests, and proof that ERC and DRC catch

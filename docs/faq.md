@@ -2,8 +2,8 @@
 
 ## Can I buy one?
 
-No. ZoneFlow is a design on paper. No board has been made, the PCB layout is
-not finished, and nobody sells it. See [status](status.md) and
+No. ZoneFlow is a design on paper. No board has been made, the PCB layout
+has not been reviewed, and nobody sells it. See [status](status.md) and
 [ordering boards](hardware/ordering.md).
 
 ## Does it work?

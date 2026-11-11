@@ -2,9 +2,10 @@
 
 !!! warning "Written from the design; not yet verified on hardware"
     The terminal order and names come from
-    [hardware design section 16.1](../design/hardware-design.md#161-terminal-blocks)
-    and the schematic. The PCB layout is not finished, so the silkscreen
-    labels are not final: compare them with this page when you have a board.
+    [hardware design section 16.1](../design/hardware-design.md#161-terminal-blocks),
+    the schematic and the [PCB layout](../hardware/layout.md). The "Label"
+    column is what the layout prints on the board behind each terminal. No
+    board has been made: compare the labels with this page when you have one.
 
 !!! danger "Before you start"
     - The transformer is unplugged.
@@ -26,12 +27,12 @@ the right end.
 | Block | Terminal | Label | Connect | Notes |
 |---|---|---|---|---|
 | J1 | 1 | 24V~ | Transformer, first wire | Through fuse F4 |
-| J1 | 2 | 24V~ | Transformer, second wire | Through fuse F1. This wire becomes the board's ground. |
+| J1 | 2 | 24V~ and a ground symbol | Transformer, second wire | Through fuse F1. This wire becomes the board's ground. |
 | J2 | 1 | COM | Valve common wire | |
 | J2 | 2 | COM | Second common wire | Only if a second cable needs its own common |
 | J2 | 3 | MV | Master valve, or pump-start relay coil | Other lead to the common |
-| J2 | 4 to 7 | 1 to 4 | Zone valves 1 to 4 | Other lead to the common |
-| J3 | 1 to 4 | 5 to 8 | Zone valves 5 to 8 | Not fitted on the 4-zone build |
+| J2 | 4 to 7 | Z1 to Z4 | Zone valves 1 to 4 | Other lead to the common |
+| J3 | 1 to 4 | Z5 to Z8 | Zone valves 5 to 8 | Not fitted on the 4-zone build |
 | J4 | 1 | 5V | Flow meter supply | Current-limited, 100 mA usable, off on USB power |
 | J4 | 2 | FLOW | Flow meter pulse output | |
 | J4 | 3 | GND | Flow meter ground | |
@@ -45,13 +46,12 @@ the right end.
     ground and the Qwiic ground are all connected to it. In most homes,
     with a transformer whose output is not earthed, either way round works.
     In the cases listed in [safety](../safety.md#usb-and-earthing) it
-    matters. The design asks for terminal 2 to be marked on the silkscreen,
-    for example with a ground symbol.
+    matters. Terminal 2 is the one with the ground symbol printed beside its
+    label. The fuse ratings, `F4 3A T` and `F1 3A T`, are printed above the
+    two fuse holders.
 
 !!! note "To be completed"
-    The silkscreen mark on terminal 2 and the final terminal labels come
-    with the PCB layout, [issue #5](https://github.com/syntroniks/zoneflow/issues/5).
-    This page will then show a photo of the terminal row.
+    This page will show a photo of the terminal row when a board exists.
 
 ## Wire size and stripping
 

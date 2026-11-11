@@ -399,6 +399,30 @@ The opto LED supply `V_DRV` is one 0.3 mm bus under the LED row with a stub to
 each of the eighteen resistors. In each LED cell the three short links are
 written out too.
 
+### 7.13 Flash-over points at the field terminals
+
+The specification asks for PCB spark gaps on field terminals "where layout
+allows", and the hardware design, section 13.4, makes that a layout task for
+every terminal of J2, J3 and J4.
+
+- A ground rail runs on B.Cu below the terminal row. From it a tooth, 0.4 mm
+  wide, points at the pad of every terminal that is not ground: fifteen of
+  them. The solder mask is open over the tip of each tooth, and over the pad
+  as on any pad.
+- The tooth ends 0.6 mm from the pad. That is the smallest gap that keeps the
+  0.5 mm clearance this layout gives the 24 VAC nets; a narrower gap would be
+  bare copper at 24 VAC and ground closer together than anything else on the
+  board.
+- **I did not calculate when such a gap fires.** The figure usually quoted
+  for air, 3 kV/mm, gives about 2 kV for 0.6 mm. The TVS at each terminal
+  clamps at 77 V, so in a surge the TVS acts and the gap does nothing. The gap
+  is the place a flash-over happens first if a TVS has failed open, and not a
+  protection part. A gap narrow enough to fire before a part is damaged would
+  be about 0.1 mm, and would sit across a 24 VAC supply that can feed an arc.
+  I left that out and say so.
+- The 24 VAC input terminals have none: the design does not ask for them
+  there, and that input has the surge clamp D1 behind fuses.
+
 ## 8. Ground and planes
 
 - **One ground.** In1.Cu is ground and nothing else. The only openings are the
@@ -628,8 +652,10 @@ What is weak, most serious first:
    it would be without the keep-alive rule, and each is my reading of what the
    signal tolerates, not a measurement. The ADC lines carry a 1 kohm source
    past the comparator block; the filter capacitor is 18 mm from the pin.
-5. **Parts are tight where a hand has to reach.** The module and the encoder
-   are 0.02 mm of courtyard apart. C1 and K1 are soldered from the top
+5. **Parts are tight where a hand has to reach.** A frame land of the encoder
+   is 1.6 mm from the nearest pad of the module, and the two courtyards are
+   0.02 mm apart; both positions are fixed by the contract.
+   C1 and K1 are soldered from the top
    between other parts; the check keeps parts over 1.5 mm tall 2.5 mm from
    their pads, which is my number.
 6. **The buck output.** C5 hangs on a 0.5 mm track. The feedback divider

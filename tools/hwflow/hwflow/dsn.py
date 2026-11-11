@@ -12,7 +12,6 @@ import fnmatch
 import re
 from pathlib import Path
 
-
 FIXED = "__fixed"       # suffix of the net classes that the autorouter is told to ignore
 
 

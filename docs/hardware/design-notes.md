@@ -48,8 +48,10 @@ beside it, a clamp and a fuse for a failed 5 V converter, a read-back that
 sees a shorted LED supply switch, and two more steps in the self-test.
 Section 25 of the hardware design lists them.
 
-!!! note "To be completed"
-    Notes on the laid-out board (copper widths for the valve current paths,
-    clearances, the spark gaps the specification asks for at the field
-    terminals) come with the layout,
-    [issue #5](https://github.com/syntroniks/zoneflow/issues/5).
+## The laid-out board
+
+The [layout document](../design/hardware-layout.md) has the notes on the board
+as laid out: copper widths for the valve current paths with the calculation
+(section 6), clearances (section 5), what was routed by hand (section 7), the
+layout rules of the fail-safe analysis and how each is checked (section 9),
+and the flash-over points at the field terminals (section 7.13).

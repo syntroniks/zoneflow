@@ -2,8 +2,8 @@
 
 !!! warning "Paper design"
     The schematic is captured and passes the checks named below. No board has
-    been made and nothing has been measured. Layout is tracked in
-    [issue #5](https://github.com/syntroniks/zoneflow/issues/5).
+    been made and nothing has been measured. The board laid out from it is on
+    the [PCB layout](layout.md) page.
 
 The revision A schematic is a KiCad 10 project in
 [`hardware/zoneflow-a/`](https://github.com/syntroniks/zoneflow/tree/main/hardware/zoneflow-a).

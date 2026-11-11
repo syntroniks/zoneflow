@@ -837,7 +837,8 @@ def cmd_build(args) -> int:
     dsn_mod.add_keepouts(dsn, route.get("keepout", []), to_dsn)
     # Read by hwflow.route, which hands them to the autorouter in its settings file.
     (Path(args.project_dir) / "build" / "router.json").write_text(
-        json.dumps(dsn_mod.router_settings(names, route, fixed_classes), indent=1, sort_keys=True) + "\n", encoding="utf-8")
+        json.dumps(dsn_mod.router_settings(names, route, fixed_classes), indent=1, sort_keys=True) + "\n",
+        encoding="utf-8")
     # Zones are added after the DSN is written: the autorouter then routes
     # GND like any other net, and the pour only adds copper on top.
     b.zones()
@@ -977,7 +978,8 @@ def main(argv=None) -> int:
     s = sub.add_parser("finish")
     s.add_argument("project_dir")
     s.add_argument("--session")
-    s.add_argument("--design", dest="design_dir", help="design directory: apply [[unroute]] and [[patch]] of board.toml")
+    s.add_argument("--design", dest="design_dir",
+                   help="design directory: apply [[unroute]] and [[patch]] of board.toml")
     s.set_defaults(fn=cmd_finish)
     s = sub.add_parser("dump")
     s.add_argument("design_dir")

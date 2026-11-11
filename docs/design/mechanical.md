@@ -501,10 +501,12 @@ was rebuilt from the changed contract and `enclosure/tools/check.py` reported
 Two things the layout found and did not change, because they are fixed
 positions:
 
-- The encoder and the module are 0.25 mm apart, land to pad (hardware layout,
-  section 12).
+- The encoder and the module are close: a frame land of the encoder ends
+  0.25 mm short of the line of the module's left pin row, and 1.6 mm from the
+  nearest module pad (hardware layout, section 13). An earlier version of
+  this line gave the 0.25 mm as the land-to-pad distance, which it is not.
 - Nothing can stand beside module pins 38 and 39, so the ADC filter capacitors
-  are 20 mm from them.
+  are 18 mm of track from them (hardware layout, section 7.11).
 
 ## 13. How the files fit together
 

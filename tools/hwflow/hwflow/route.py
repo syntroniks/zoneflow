@@ -137,9 +137,10 @@ def main(argv=None) -> int:
         print(f"route: DSN unchanged, reusing {ses}")
         return 0
     if args.stored_only:
+        stored = stamp.read_text().strip() if stamp.exists() else "none"
         sys.stderr.write(f"route: the session stored in {route_dir} was not made from the board these sources give.\n"
                          f"  hash of this DSN and router settings: {digest}\n"
-                         f"  hash stored with the session:         {stamp.read_text().strip() if stamp.exists() else 'none'}\n"
+                         f"  hash stored with the session:         {stored}\n"
                          "Run make in the board directory on a machine with Java and commit route/ and output/.\n")
         return 1
 
