@@ -25,16 +25,24 @@ void PhysicalOracle::step(World &w, const FirmwareView &fw, uint64_t dtMs)
 
     // ---- S2: halts --------------------------------------------------------------------------
     const bool kaHigh = w.board.kaHigh();
+    const bool kaEdge = kaHigh != kaWasHigh_;
+    if (kaEdge) {
+        kaLastEdgeMs_ = now;
+    }
     if (fw.halted) {
         const uint64_t since = now - fw.lastBeatMs;
         // The firmware's half: the timer interrupt stops the edges.
-        if (!fw.frozen && !fw.off && kaHigh != kaWasHigh_ && since > kEdgeStopMs + kIsrMs && !edgeReported_ &&
+        if (!fw.frozen && !fw.off && kaEdge && since > kEdgeStopMs + kIsrMs && !edgeReported_ &&
             w.board.kaNet == test::KaNet::Pin) {
             edgeReported_ = true;
             fail("S2-edges-after-timeout", "keep-alive edge " + std::to_string(since) + " ms after the last heartbeat");
         }
-        // The system's half: the working detector layer cuts the current.
-        const bool pinHigh = fw.frozen && fw.frozenPinHigh;
+        // The system's half: the working detector layer cuts the current,
+        // its hold-up counted from the last edge on the keep-alive net at the
+        // level the net has kept since (hardware design 19.4). A reset after
+        // a freeze with the pin high pulls it low: one more edge, which in
+        // the board model re-arms the hold-up (counted below).
+        const bool pinHigh = kaHigh;
         const bool aWorks = !faultDisablesA(w.boardFault);
         const bool bWorks = !faultDisablesB(w.boardFault);
         uint64_t hold = UINT64_MAX;
@@ -48,13 +56,18 @@ void PhysicalOracle::step(World &w, const FirmwareView &fw, uint64_t dtMs)
         if (hold != UINT64_MAX && on > 0) {
             // While halted the valves are only on by the board's inertia.
             maxHaltToSafeMs_ = std::max(maxHaltToSafeMs_, since);
-            const uint64_t limit = kEdgeStopMs + hold + 10;
-            if (since > limit && !haltReported_) {
+            const uint64_t edgeAge = now - std::max(kaLastEdgeMs_, fw.lastBeatMs);
+            const uint64_t limit = hold + 10;
+            if (kaLastEdgeMs_ > fw.lastBeatMs + kEdgeStopMs + kIsrMs) {
+                w.count("s2.edge_after_halt_by_reset");
+            }
+            if (edgeAge > limit && !haltReported_) {
                 haltReported_ = true;
-                fail("S2-halt-contract", std::to_string(on) + " output(s) energised " + std::to_string(since) +
+                fail("S2-halt-contract", std::to_string(on) + " output(s) energised " + std::to_string(edgeAge) +
+                                             " ms after the last keep-alive edge, " + std::to_string(since) +
                                              " ms after the last heartbeat (limit " + std::to_string(limit) +
                                              " ms, board fault " + toString(w.boardFault) +
-                                             (pinHigh ? ", pin frozen high)" : ")"));
+                                             (pinHigh ? ", pin high)" : ")"));
             }
         }
         if (hold == UINT64_MAX) {

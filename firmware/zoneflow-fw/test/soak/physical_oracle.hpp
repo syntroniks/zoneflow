@@ -7,11 +7,13 @@
 //       for at most kUncommandedLimitMs while the firmware finds and stops
 //       a fault (spec section 2 rules 1, 3 and 6).
 //   S2  After the firmware halts, no output is energised later than the
-//       last heartbeat plus the heartbeat timeout, one keep-alive period and
-//       the hold-up of a working detector layer, with any one board fault
-//       present (spec section 2 rule 3, hardware design 19.4). The
-//       keep-alive net has no edge later than the timeout plus one period
-//       after the last heartbeat while the timer interrupt still runs.
+//       last edge on the keep-alive net plus the hold-up of a working
+//       detector layer at the net's level, with any one board fault present
+//       (spec section 2 rule 3, hardware design 19.4); and the net has no
+//       edge later than the heartbeat timeout plus one period after the
+//       last heartbeat while the timer interrupt still runs. Together: no
+//       output later than the last heartbeat + 505 ms + the hold-up, unless
+//       a reset pulls a frozen high pin low (one more edge, counted).
 //   S3  At most driver.max_concurrent zones commanded and energised; never
 //       more than three valve bits driven (system spec section 1, hardware
 //       design 19.1 rule 3; the bit count is checked in ObservedBus).
@@ -86,6 +88,7 @@ private:
     };
     std::array<Budget, kMaxZones> budget_{};
     bool kaWasHigh_ = false;
+    uint64_t kaLastEdgeMs_ = 0;
     bool haltReported_ = false;
     bool edgeReported_ = false;
     uint64_t maxUncommandedMs_ = 0;
