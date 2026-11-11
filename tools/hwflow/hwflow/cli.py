@@ -24,7 +24,12 @@ def load_design(design_dir: Path) -> Design:
         spec.loader.exec_module(mod)
     finally:
         sys.path.pop(0)
-    return mod.build()
+    design = mod.build()
+    # A net that carries labels of two classes takes the one listed first in board.toml.
+    board = design_dir / "board.toml"
+    if board.exists():
+        design.netclass_priority = [n for n in project.load_toml(board).get("netclass", {}) if n != "Default"]
+    return design
 
 
 def run(cmd: list[str]) -> subprocess.CompletedProcess:
@@ -42,7 +47,6 @@ def cmd_sch(args) -> int:
     design = load_design(design_dir)
     board_cfg = project.load_toml(design_dir / "board.toml")
     fab = project.load_toml(Path(args.fab_rules))
-    design.netclass_priority = [n for n in board_cfg.get("netclass", {}) if n != "Default"]
 
     flat = schwriter.write(design, out)
     footprints = {p.part.footprint for p in flat.parts if p.part.footprint}
