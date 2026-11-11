@@ -30,32 +30,14 @@ constexpr int kPcntLimit = 30000;
 // longer and is handled by the quadrature decoding itself.
 constexpr uint32_t kGlitchNs = 10000;
 
-ui::ButtonTiming selectTiming()
-{
-    return ui::ButtonTiming{}; // press on the way down: no delay on the most used control
-}
-ui::ButtonTiming backTiming()
-{
-    ui::ButtonTiming t;
-    t.repeatDelayMs = 600;
-    t.repeatMs = 400; // hold Back to climb out of the menus
-    return t;
-}
-ui::ButtonTiming homeTiming()
-{
-    ui::ButtonTiming t;
-    t.longPressMs = 800; // hold: stop all valves
-    return t;
-}
-
 struct Inputs {
     QueueHandle_t queue = nullptr;
     pcnt_unit_handle_t pcnt = nullptr;
     ui::EncoderDecoder encoder{board::kEncoderCountsPerDetent};
     ui::Accelerator accelerator;
-    ui::ButtonDecoder select{selectTiming()};
-    ui::ButtonDecoder back{backTiming()};
-    ui::ButtonDecoder home{homeTiming()};
+    ui::ButtonDecoder select{ui::selectButtonTiming()};
+    ui::ButtonDecoder back{ui::backButtonTiming()};
+    ui::ButtonDecoder home{ui::homeButtonTiming()};
 };
 Inputs sInputs;
 
@@ -79,6 +61,9 @@ void button(ui::ButtonDecoder &decoder, int gpio, ui::Key key, MonoMs now)
         break;
     case ui::ButtonEdge::Repeat:
         send(ui::InputEvent::press(key, ui::InputType::Repeat));
+        break;
+    case ui::ButtonEdge::Hold:
+        send(ui::InputEvent::press(key, ui::InputType::Hold));
         break;
     case ui::ButtonEdge::None:
         break;

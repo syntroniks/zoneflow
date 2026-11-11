@@ -40,7 +40,7 @@ tree. A tree of another version is refused.
 | Key | Control |
 |---|---|
 | Left / Right, Up / Down, mouse wheel | turn the encoder (hold a key to spin; fast spinning accelerates in value pickers) |
-| Enter, Space | press the encoder |
+| Enter, Space | press the encoder (held 3 s on Setup, Network, Show setup code: shows the code) |
 | Backspace, Esc | Back button (hold to repeat) |
 | H, M | Manual/Home button (hold 0.8 s: stop all valves) |
 | F | cut or restore the wire of zone 3 (run it to see the fault) |

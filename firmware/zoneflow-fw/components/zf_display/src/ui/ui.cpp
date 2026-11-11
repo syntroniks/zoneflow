@@ -247,6 +247,9 @@ void Ui::handleInput(const InputEvent &e, MonoMs now)
         moveFocus(e.steps);
     } else if (e.key == Key::Select && e.type == InputType::Press) {
         activateFocused();
+    } else if (e.key == Key::Select && e.type == InputType::Hold) {
+        Ctx c = ctx();
+        top().held(c);
     } else if (e.key == Key::Back && (e.type == InputType::Press || e.type == InputType::Repeat)) {
         back(false);
     } else if (e.key == Key::Home && e.type == InputType::Press) {
@@ -595,6 +598,13 @@ void Ui::tick(MonoMs now)
     if (toastOpen_ && now >= toastUntilMs_) {
         toastOpen_ = false;
         dirty_ = true;
+    }
+    if (!stack_.empty()) {
+        Ctx c = ctx();
+        if (top().tick(c)) {
+            dirty_ = true;
+        }
+        reap();
     }
     rebuild();
 }

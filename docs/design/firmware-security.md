@@ -46,11 +46,37 @@ changed (findings F1 to F7); section 7 lists the risks that remain.
   32-symbol alphabet (no 0/O/1/I; 50 bits, 5 bits from each RNG byte) from
   the hardware RNG with WiFi started, and stores the code itself in NVS
   (the display needs it). The serial console prints it **only while
-  provisioning runs**. The display shows it only inside the QR code, and
-  only while BLE provisioning runs (`DisplayNetworkPort` in
-  `main/display_ports.hpp`); during SoftAP setup the owner needs the serial
-  console or a printed label. The API never returns it. A factory reset keeps it, so a printed label
-  stays valid.
+  provisioning runs**. The API never returns it. A factory reset keeps it,
+  so a note or a printed label stays valid.
+- **The setup code on the display: physical presence.** The code proves
+  that whoever uses it is at the controller, so the controller shows it
+  only to someone who is: under Setup, Network, **Show setup code**, after
+  the encoder switch has been held down for 3 s (`kSelectHoldMs`,
+  `ButtonTiming::holdMs`; the switch's ordinary press does nothing there).
+  The text is hidden again after 60 s, when the backlight dims, and when
+  the screen is left, and the screen keeps no copy afterwards
+  (`SetupCodeScreen` in `zf_display/src/ui/screens_setup.cpp`). Nothing on
+  the network can trigger it: the display takes input only from its own
+  controls. The hold is the security property, not the menu depth: a
+  person who can hold the knob for 3 s can also open the enclosure, read
+  the NVS (section 7, item 1) or press the buttons of a factory reset, so
+  showing the code to them adds no capability an attacker at the device
+  lacks, and it gives an owner with no computer the code for the web
+  interface's first visit and for the setup access point. The hold rules
+  out the accidental case (a brushed knob, a child at the controls), and
+  the timeout limits who can read it over a shoulder later. The QR code on
+  the provisioning screen also holds the code, only while BLE
+  provisioning runs (`DisplayNetworkPort` in `main/display_ports.hpp`).
+  During SoftAP setup the provisioning screen names the access point and
+  points to Show setup code for its passphrase. Host tests:
+  `UiNav.SetupCode*`, `UiButton.SelectHoldFollowsItsPress`.
+- **Re-provisioning from the display.** Setup, Network, Set up WiFi on a
+  controller with stored credentials asks "Restart into WiFi setup?" with
+  Cancel focused, then calls `net::requestProvisioning(Ble)`. It is the
+  same request as `POST /network/reprovision` (Admin), reachable without
+  the admin password because it needs the person at the controls; the
+  stored network is kept and used again after the 15-minute window (F3),
+  so the worst a passer-by can do is a restart and 15 minutes offline.
 - **BLE: ESP-IDF unified provisioning, Security 2.** SRP6a with the setup
   code as password, salt and verifier from `esp_srp_gen_salt_verifier` at
   first boot; the session is AES-256-GCM. A radio eavesdropper learns neither
@@ -323,6 +349,7 @@ login.
 | JSON depth pre-check | `jsonDepthOk` in `json_map.cpp` | `web_http_test.cpp` (JsonDepth) |
 | Static paths, Host check | `zf_web/src/http_util.cpp` | `web_http_test.cpp` |
 | Setup code, QR payload, provisioning windows | `zf_net/src/net_logic.cpp` | `net_logic_test.cpp` |
+| Setup code on the display only after a 3 s hold, hidden on timeout, dim and leave; re-provisioning asks first | `zf_display/src/ui/screens_setup.cpp`, `zf_ui/input.hpp` | `ui_navigation_test.cpp` (SetupCode*, WifiSetup*), `ui_input_test.cpp` (SelectHold*) |
 | Captive DNS parser | `captiveDnsAnswer` | `net_logic_test.cpp` |
 | OTA header check and safety gate | `zf_ota/src/ota_logic.cpp` | `ota_logic_test.cpp` |
 | No secrets in backup or network status | `Api::configBackup`, `Api::networkGet` | `web_api_test.cpp` |
@@ -359,7 +386,9 @@ login.
    WPA (TKIP) clients. Options, not done: a longer code, a separate random
    passphrase per setup shown next to the code, a setup page that uses the
    Security 2 endpoints instead of plain HTTP, and a "full reset" that draws
-   a new code.
+   a new code. The display shows the code to anyone who holds the knob for
+   3 s (4.1). That is deliberate: physical access is the boundary the code
+   stands for, and the same person could read it from the flash.
 7. **A LAN device can keep new clients from logging in.** With more than 16
    addresses it holds the total lock (4.2). Addresses that logged in since
    the last restart still get in, and open sessions keep working; anyone

@@ -24,6 +24,7 @@ std::unique_ptr<Screen> makeFaultScreen(const FaultItem &item);
 std::unique_ptr<Screen> makeSetupScreen();
 std::unique_ptr<Screen> makeNetworkScreen();
 std::unique_ptr<Screen> makeProvisioningScreen();
+std::unique_ptr<Screen> makeSetupCodeScreen();
 std::unique_ptr<Screen> makeTimeScreen();
 std::unique_ptr<Screen> makeTimeZoneScreen();
 std::unique_ptr<Screen> makeDisplayScreen();

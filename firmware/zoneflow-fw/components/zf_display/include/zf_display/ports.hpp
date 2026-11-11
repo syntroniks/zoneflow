@@ -7,7 +7,7 @@
 // without the owning module. The owner replaces the stub with the real thing
 // and passes it to zf::display::start().
 //
-//  INetworkPort   zf_net       WiFi link state and BLE provisioning payload
+//  INetworkPort   zf_net       WiFi link state, provisioning, setup code
 //  IZoneDiagPort  zf_core      per-zone learned current (CurrentMonitor::observedMa)
 //  ISystemPort    main / zf_ota  version strings, restart
 //  ISettingsStore zf_display   the display's own settings (NVS on the device)
@@ -42,6 +42,10 @@ struct NetworkStatus {
     FixedString<17> mac;
     FixedString<31> hostname;
     int8_t rssiDbm = 0; // valid when Connected
+    // While provisioning runs over the setup access point (SoftAP): its
+    // network name, "ZoneFlow-AB12". Empty otherwise. The passphrase is the
+    // setup code.
+    FixedString<31> setupNetwork;
 };
 
 class INetworkPort {
@@ -58,6 +62,17 @@ public:
     virtual bool startProvisioning(char *out, std::size_t outSize) = 0;
     // The user left the QR screen. May be a no-op.
     virtual void stopProvisioning() = 0;
+    // Asked for and confirmed on the display: restart into BLE provisioning
+    // (net::requestProvisioning). The stored network is kept, and used again
+    // if nothing new is set up within 15 minutes. Returns false if there is
+    // no network module; on the device a true return is followed by a
+    // restart.
+    virtual bool restartIntoProvisioning() = 0;
+    // The device's setup code (10 characters), for the Show setup code
+    // screen. The display shows it only after the encoder switch was held
+    // (firmware security 4.1: physical presence). Returns false, with out
+    // empty, if there is no network module.
+    virtual bool setupCode(char *out, std::size_t outSize) = 0;
     // Factory reset, asked for and confirmed on the display.
     // Returns true if the network module takes the whole job: it stops
     // watering, erases all stored data and restarts the device by itself

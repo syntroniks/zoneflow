@@ -17,6 +17,7 @@ enum class InputType : uint8_t {
     Press,     // a click
     LongPress, // held past the long-press time; sent once
     Repeat,    // held: sent at the repeat period
+    Hold,      // still held at the hold time, after its Press; sent once
 };
 
 struct InputEvent {
@@ -53,9 +54,42 @@ struct ButtonTiming {
     // has been down for repeatDelayMs.
     uint16_t repeatDelayMs = 600;
     uint16_t repeatMs = 0;
+    // 0: no hold. Otherwise Hold is sent once when the button has been down
+    // this long. Unlike longPressMs it does not delay Press, so a control can
+    // act on the way down and still offer a deliberate hold.
+    uint16_t holdMs = 0;
 };
 
-enum class ButtonEdge : uint8_t { None, Press, LongPress, Repeat };
+enum class ButtonEdge : uint8_t { None, Press, LongPress, Repeat, Hold };
+
+// The timings of the three controls, shared by the device (src/port) and the
+// simulator. They are first guesses to tune on a board.
+//
+// Encoder switch: Press on the way down, no delay on the most used control.
+// Held for kSelectHoldMs it sends Hold, which only Setup, Network, Show
+// setup code acts on (firmware security 4.1).
+inline constexpr uint16_t kSelectHoldMs = 3000;
+inline ButtonTiming selectButtonTiming()
+{
+    ButtonTiming t;
+    t.holdMs = kSelectHoldMs;
+    return t;
+}
+// Back: hold to climb out of the menus.
+inline ButtonTiming backButtonTiming()
+{
+    ButtonTiming t;
+    t.repeatDelayMs = 600;
+    t.repeatMs = 400;
+    return t;
+}
+// Manual/Home: hold 0.8 s to stop all valves, from any screen.
+inline ButtonTiming homeButtonTiming()
+{
+    ButtonTiming t;
+    t.longPressMs = 800;
+    return t;
+}
 
 class ButtonDecoder {
 public:
@@ -75,20 +109,25 @@ private:
     MonoMs downSinceMs_ = 0;
     MonoMs lastRepeatMs_ = 0;
     bool longSent_ = false;
+    bool holdSent_ = false;
     bool repeating_ = false;
 };
 
 // ---- encoder ---------------------------------------------------------------------
 
 // Turns a free-running quadrature count (4 counts per cycle, as PCNT gives
-// with both channels) into detents. A count lost to contact bounce would
-// leave the count off the detent grid for good, so a remainder that stays
-// unchanged for kSettleMs is dropped.
+// with both channels) into detents. How many counts make one detent depends
+// on the encoder and comes from the board header
+// (board::kEncoderCountsPerDetent: 2 for the rev A EC11J1525402, 15 pulses
+// and 30 detents per turn, hardware design 19.3 item 8). There is no default,
+// so no caller can fall back to a wrong one. A count lost to contact bounce
+// would leave the count off the detent grid for good, so a remainder that
+// stays unchanged for kSettleMs is dropped.
 class EncoderDecoder {
 public:
     static constexpr uint32_t kSettleMs = 250;
 
-    explicit EncoderDecoder(int countsPerDetent = 4) : countsPerDetent_(countsPerDetent) {}
+    explicit EncoderDecoder(int countsPerDetent) : countsPerDetent_(countsPerDetent > 0 ? countsPerDetent : 1) {}
 
     // Returns the detents turned since the last call (clockwise positive).
     int update(int32_t rawCount, MonoMs now);

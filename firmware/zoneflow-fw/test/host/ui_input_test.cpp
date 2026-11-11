@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <vector>
 
+#include "zf_board/board.hpp"
 #include "zf_ui/input.hpp"
 
 using namespace zf;
@@ -93,6 +94,39 @@ TEST(UiButton, RepeatsWhileHeld)
     EXPECT_EQ(rig.count(ButtonEdge::Repeat), 4);
 }
 
+// The encoder switch: Press on the way down as before, and Hold once after
+// three seconds held (Show setup code). A short press gives no Hold.
+TEST(UiButton, SelectHoldFollowsItsPress)
+{
+    ButtonRig rig(selectButtonTiming());
+    rig.hold(true, 100);
+    ASSERT_EQ(rig.edges, (std::vector<ButtonEdge>{ButtonEdge::Press})) << "no delay on the way down";
+    rig.hold(true, kSelectHoldMs - 200);
+    EXPECT_EQ(rig.count(ButtonEdge::Hold), 0) << "not yet";
+    rig.hold(true, 300);
+    EXPECT_EQ(rig.count(ButtonEdge::Hold), 1);
+    rig.hold(true, 5000);
+    rig.hold(false, 100);
+    EXPECT_EQ(rig.edges, (std::vector<ButtonEdge>{ButtonEdge::Press, ButtonEdge::Hold})) << "Hold is sent once";
+
+    rig.edges.clear();
+    rig.hold(true, 500);
+    rig.hold(false, 100);
+    EXPECT_EQ(rig.edges, (std::vector<ButtonEdge>{ButtonEdge::Press}));
+}
+
+TEST(UiButton, HomeHoldStillStopsAndBackStillRepeats)
+{
+    ButtonRig home(homeButtonTiming());
+    home.hold(true, 900);
+    home.hold(false, 100);
+    EXPECT_EQ(home.edges, (std::vector<ButtonEdge>{ButtonEdge::LongPress}));
+    ButtonRig back(backButtonTiming());
+    back.hold(true, 1500);
+    EXPECT_GE(back.count(ButtonEdge::Repeat), 2);
+    EXPECT_EQ(back.count(ButtonEdge::Hold), 0);
+}
+
 TEST(UiButton, HeldAtPowerUpIsNotAPress)
 {
     ButtonTiming t;
@@ -120,23 +154,61 @@ TEST(UiButton, HeldAtPowerUpIsNotAPress)
     EXPECT_EQ(edges, 1) << "works normally after the first release";
 }
 
-TEST(UiEncoder, FourCountsAreOneDetent)
+// Rev A: EC11J1525402, 30 detents and 15 pulses per turn, so one detent is
+// half a quadrature cycle: two of the four edges PCNT counts per cycle
+// (hardware design 19.3 item 8).
+TEST(UiEncoder, RevABoardHasTwoCountsPerDetent) { EXPECT_EQ(board::kEncoderCountsPerDetent, 2); }
+
+TEST(UiEncoder, TwoCountsAreOneDetent)
 {
-    EncoderDecoder enc;
+    EncoderDecoder enc(board::kEncoderCountsPerDetent);
     MonoMs now = 0;
     EXPECT_EQ(enc.update(1000, now), 0) << "first sample only sets the origin";
     EXPECT_EQ(enc.update(1001, now += 1), 0);
-    EXPECT_EQ(enc.update(1003, now += 1), 0);
-    EXPECT_EQ(enc.update(1004, now += 1), 1);
-    EXPECT_EQ(enc.update(1012, now += 1), 2);
-    EXPECT_EQ(enc.update(1004, now += 1), -2);
+    EXPECT_EQ(enc.update(1002, now += 1), 1);
+    EXPECT_EQ(enc.update(1006, now += 1), 2);
+    EXPECT_EQ(enc.update(1002, now += 1), -2);
     EXPECT_EQ(enc.update(1001, now += 1), 0);
     EXPECT_EQ(enc.update(1000, now += 1), -1);
 }
 
+// The PCNT setup of src/port/inputs.cpp counts every edge of both phases.
+// Turning an EC11 by one detent moves it from one rest state to the next:
+// half a cycle, two edges. A full turn of 30 detents must give 30 steps, and
+// back again -30, sampled every 5 ms at a brisk two turns per second.
+TEST(UiEncoder, OneTurnOfTheRevAEncoderGivesThirtySteps)
+{
+    constexpr int kDetentsPerTurn = 30;
+    constexpr int kPulsesPerTurn = 15;
+    constexpr int kEdgesPerTurn = kPulsesPerTurn * 4;
+    static_assert(kEdgesPerTurn / kDetentsPerTurn == board::kEncoderCountsPerDetent);
+    EncoderDecoder enc(board::kEncoderCountsPerDetent);
+    MonoMs now = 0;
+    int32_t count = 0;
+    enc.update(count, now);
+    int steps = 0;
+    for (int edge = 0; edge < kEdgesPerTurn; ++edge) {
+        steps += enc.update(++count, now += 5);
+    }
+    EXPECT_EQ(steps, kDetentsPerTurn);
+    for (int edge = 0; edge < kEdgesPerTurn; ++edge) {
+        steps += enc.update(--count, now += 5);
+    }
+    EXPECT_EQ(steps, 0);
+}
+
+TEST(UiEncoder, OtherEncodersKeepTheirOwnCount)
+{
+    EncoderDecoder enc(4);
+    MonoMs now = 0;
+    enc.update(0, now);
+    EXPECT_EQ(enc.update(2, now += 1), 0);
+    EXPECT_EQ(enc.update(4, now += 1), 1);
+}
+
 TEST(UiEncoder, JitterAroundADetentGivesNoSteps)
 {
-    EncoderDecoder enc;
+    EncoderDecoder enc(board::kEncoderCountsPerDetent);
     MonoMs now = 0;
     enc.update(0, now);
     int steps = 0;
@@ -148,23 +220,23 @@ TEST(UiEncoder, JitterAroundADetentGivesNoSteps)
 
 TEST(UiEncoder, LostCountIsDroppedAtRest)
 {
-    EncoderDecoder enc;
+    EncoderDecoder enc(board::kEncoderCountsPerDetent);
     MonoMs now = 0;
     enc.update(0, now);
-    // One count went missing: the knob rests at 3 instead of 4.
-    EXPECT_EQ(enc.update(3, now += 5), 0);
-    EXPECT_EQ(enc.update(3, now += EncoderDecoder::kSettleMs), 0);
+    // One count went missing: the knob rests at 1 instead of 2.
+    EXPECT_EQ(enc.update(1, now += 5), 0);
+    EXPECT_EQ(enc.update(1, now += EncoderDecoder::kSettleMs), 0);
     // The next full detent counts as one step, not as a step plus a leftover.
-    EXPECT_EQ(enc.update(7, now += 5), 1);
-    EXPECT_EQ(enc.update(11, now += 5), 1);
+    EXPECT_EQ(enc.update(3, now += 5), 1);
+    EXPECT_EQ(enc.update(5, now += 5), 1);
 }
 
 TEST(UiEncoder, SurvivesCounterWrap)
 {
-    EncoderDecoder enc;
+    EncoderDecoder enc(board::kEncoderCountsPerDetent);
     MonoMs now = 0;
     enc.update(INT32_MAX - 1, now);
-    EXPECT_EQ(enc.update(static_cast<int32_t>(static_cast<uint32_t>(INT32_MAX) + 3u), now += 1), 1);
+    EXPECT_EQ(enc.update(static_cast<int32_t>(static_cast<uint32_t>(INT32_MAX) + 1u), now += 1), 1);
 }
 
 TEST(UiAccelerator, SlowTurnsAreOneToOne)

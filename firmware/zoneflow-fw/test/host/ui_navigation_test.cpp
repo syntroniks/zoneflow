@@ -3,6 +3,7 @@
 // the device produces, against the real controller on fake hardware.
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <random>
 
 #include "ui_harness.hpp"
@@ -814,20 +815,202 @@ TEST_F(UiNav, FactoryResetIsLeftToTheNetworkModuleWhenItDoesTheWholeJob)
     EXPECT_EQ(f().toast.text, "Erasing, then restarting");
 }
 
-TEST_F(UiNav, WifiSetupThatNeedsARestartSaysSo)
+// ---- WiFi setup and the setup code --------------------------------------------------------
+
+namespace {
+void openNetwork(UiHarness &h)
+{
+    h.press(); // Menu
+    h.focusRow("Setup");
+    h.press();
+    h.press(); // Network
+}
+} // namespace
+
+// A controller with a stored network cannot provision without a restart.
+// The display asks first, with Cancel focused, because the restart stops a
+// running zone (firmware architecture 12, Re-provision).
+TEST_F(UiNav, WifiSetupOnAConfiguredControllerAsksThenRestartsIntoSetup)
 {
     start();
     h.net.connect();
     h.net.canProvision = false; // zf_net: provisioning only runs after a restart
+    openNetwork(h);
+    ASSERT_EQ(h.focusedRow().label, "Set up WiFi");
+    h.press();
+    ASSERT_EQ(f().kind, FrameKind::Detail);
+    EXPECT_EQ(f().detail.headline, "Restart into WiFi setup?");
+    EXPECT_NE(f().detail.body.find("ESP BLE Provisioning"), std::string::npos);
+    EXPECT_NE(f().detail.body.find("scheduled starts still run"), std::string::npos);
+    EXPECT_EQ(h.focusedButton(), "Cancel");
+    h.press();
+    EXPECT_EQ(h.net.reprovisionRequests, 0);
+    EXPECT_EQ(f().bar.title, "Network");
+
+    h.focusRow("Set up WiFi");
+    h.press();
+    ASSERT_TRUE(h.focusButton("Restart"));
+    h.press();
+    EXPECT_EQ(h.net.reprovisionRequests, 1);
+    EXPECT_EQ(f().toast.text, "Restarting into WiFi setup");
+}
+
+// WiFi is what is broken: the link is down and the web interface is out of
+// reach. The display still gets the controller into setup.
+TEST_F(UiNav, WifiSetupWorksWithTheNetworkDown)
+{
+    start();
+    h.net.connect();
     h.net.net.link = display::WifiLink::Disconnected;
+    h.net.canProvision = false;
+    openNetwork(h);
+    h.press(); // Set up WiFi
+    EXPECT_EQ(f().detail.headline, "Restart into WiFi setup?");
+    ASSERT_TRUE(h.focusButton("Restart"));
+    h.press();
+    EXPECT_EQ(h.net.reprovisionRequests, 1);
+}
+
+// The hold on Manual/Home still stops every valve, also over the question,
+// and does not answer it.
+TEST_F(UiNav, HoldHomeStopsAllOverTheWifiQuestion)
+{
+    start();
+    h.net.connect();
+    h.home();
+    h.press(); // Front lawn
+    h.press(); // minutes
+    ASSERT_TRUE(h.out.anyOn());
+    ASSERT_TRUE(h.focusButton("Menu"));
     h.press();
     h.focusRow("Setup");
     h.press();
     h.press(); // Network
     h.press(); // Set up WiFi
+    ASSERT_EQ(f().detail.headline, "Restart into WiFi setup?");
+    h.holdHome();
+    h.runSec(3);
+    EXPECT_FALSE(h.out.anyOn());
+    EXPECT_EQ(h.net.reprovisionRequests, 0);
+    EXPECT_EQ(f().detail.headline, "Restart into WiFi setup?") << "stop leaves the user where they were";
+}
+
+// A controller without a network (first boot, after a factory reset)
+// provisions by itself: Set up WiFi shows the QR code at once.
+TEST_F(UiNav, WifiSetupWithoutANetworkShowsTheQrCode)
+{
+    start();
+    openNetwork(h);
+    h.press();
+    EXPECT_FALSE(f().detail.qr.empty());
+    EXPECT_EQ(f().detail.headline, "Scan with the app");
+    EXPECT_EQ(h.net.reprovisionRequests, 0);
+}
+
+TEST_F(UiNav, SetupAccessPointNamesItsNetworkAndWhereThePasswordIs)
+{
+    start();
+    h.net.canProvision = false; // no QR code over SoftAP
+    h.net.net.link = display::WifiLink::Provisioning;
+    h.net.net.setupNetwork.assign("ZoneFlow-1A2B");
+    openNetwork(h);
+    h.press();
+    EXPECT_EQ(f().detail.headline, "Join the setup WiFi");
+    EXPECT_NE(f().detail.body.find("ZoneFlow-1A2B"), std::string::npos);
+    EXPECT_NE(f().detail.body.find("Show setup code"), std::string::npos);
+}
+
+// Physical presence: a press does not show the code, a 3 s hold does.
+TEST_F(UiNav, SetupCodeIsShownOnlyAfterAHold)
+{
+    start();
+    h.net.connect();
+    openNetwork(h);
+    ASSERT_TRUE(h.focusRow("Show setup code"));
+    h.press();
     ASSERT_EQ(f().kind, FrameKind::Detail);
-    EXPECT_EQ(f().detail.headline, "WiFi setup is not running");
-    EXPECT_TRUE(f().detail.qr.empty());
+    EXPECT_EQ(f().detail.headline, "Setup code");
+    EXPECT_EQ(buttonLabels(), (Labels{"Hold to show"}));
+    h.press();
+    EXPECT_EQ(f().detail.headline, "Setup code") << "a press is not enough";
+    EXPECT_EQ(f().toast.text, "Keep the knob held down");
+    EXPECT_EQ(h.net.codeReads, 0);
+
+    h.holdSelect();
+    EXPECT_EQ(f().detail.headline, "K7M2Q9XR4T");
+    EXPECT_EQ(buttonLabels(), (Labels{"Hide"}));
+    h.press();
+    EXPECT_EQ(f().detail.headline, "Setup code");
+}
+
+TEST_F(UiNav, SetupCodeHidesAfterAMinute)
+{
+    start();
+    h.net.connect();
+    openNetwork(h);
+    h.focusRow("Show setup code");
+    h.press();
+    h.holdSelect();
+    ASSERT_EQ(f().detail.headline, "K7M2Q9XR4T");
+    // Keep the screen lit with turns, so only the timeout hides it.
+    for (int i = 0; i < 5; ++i) {
+        h.runSec(10);
+        h.turn(1);
+        ASSERT_EQ(f().detail.headline, "K7M2Q9XR4T") << i;
+    }
+    h.runSec(10);
+    EXPECT_EQ(f().detail.headline, "Setup code");
+}
+
+TEST_F(UiNav, SetupCodeHidesWhenTheScreenDimsOrIsLeft)
+{
+    start();
+    h.net.connect();
+    openNetwork(h);
+    h.focusRow("Show setup code");
+    h.press();
+    h.holdSelect();
+    ASSERT_EQ(f().detail.headline, "K7M2Q9XR4T");
+    h.runSec(31); // dims after 30 s
+    EXPECT_EQ(f().detail.headline, "Setup code");
+
+    h.wake();
+    h.holdSelect();
+    ASSERT_EQ(f().detail.headline, "K7M2Q9XR4T");
+    h.back();
+    h.focusRow("Show setup code");
+    h.press();
+    EXPECT_EQ(f().detail.headline, "Setup code") << "coming back does not show it again";
+}
+
+TEST_F(UiNav, NoSetupCodeRowWithoutANetworkModule)
+{
+    start();
+    h.net.net.link = display::WifiLink::Unavailable;
+    openNetwork(h);
+    EXPECT_FALSE(h.focusRow("Show setup code"));
+}
+
+// ---- spare input ------------------------------------------------------------------------------
+
+TEST_F(UiNav, SpareInputThatHoldsProgramsIsNamedOnHome)
+{
+    Config c = demoConfig();
+    c.spare.enabled = true;
+    c.spare.contact = ContactType::NormallyOpen;
+    c.spareFunction = SpareFunction::InhibitLikeRain;
+    h.start(c);
+    h.sensors.sample.spareContactClosed = true;
+    h.runSec(2);
+    EXPECT_EQ(home().lines[1].text, "Spare input on: programs on hold");
+    h.press(); // Menu
+    h.focusRow("Sensors and flow");
+    h.press();
+    h.turn(10);
+    const auto &rows = f().list.rows;
+    const auto use = std::find_if(rows.begin(), rows.end(), [](const Row &r) { return r.label == "Spare input use"; });
+    ASSERT_NE(use, rows.end());
+    EXPECT_EQ(use->value, "Holds programs");
 }
 
 // ---- wizard -------------------------------------------------------------------------------
