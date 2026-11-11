@@ -3,11 +3,13 @@
 
 Reads the finished board and writes ``reports/routing.md``:
 
-- how much copper was laid by hand (locked tracks) and how much by the
+- how much copper was laid by hand (locked tracks), how much by the patch
+  router (the ``[[patch]]`` tracks of board.toml) and how much by the
   autorouter, per layer;
-- for every net with autorouted copper: its class, length, vias, layers, and
-  its narrowest track against the width of its class;
-- the things an autorouter does badly, each as a list to look at: a track
+- for every net with autorouted or patched copper: its class, length, vias,
+  layers, and its narrowest track against the width of its class;
+- every connection the patch router closed;
+- the things a router does badly, each as a list to look at: a track
   narrower than its class asks, a via inside a surface-mount pad, a net much
   longer than the distance between its pins, tracks on a layer that is meant
   to be a plane.
@@ -29,12 +31,37 @@ WANDER = 2.5        # a net this many times longer than its pins are apart is li
 WANDER_MIN = 15.0   # mm: shorter nets are not worth a look
 
 
-def collect(board, plane_layers: list[str]) -> dict:
+def patch_keys(cfg: dict) -> tuple[set, set]:
+    """The segments and vias of the ``[[patch]]`` tracks, as keys in page coordinates, to know them on the board."""
+    b = cfg.get("board", {})
+    ox, oy = b.get("origin", [0.0, 0.0])
+    height, y_up = b.get("size", [0.0, 0.0])[1], bool(b.get("y_up", False))
+
+    def key(p):
+        x, y = p
+        return round(ox + x, 2), round(oy + (height - y if y_up else y), 2)
+
+    segs, vias = set(), set()
+    for t in cfg.get("patch", []):
+        pts = [key(p["via"]) if isinstance(p, dict) else key(p) for p in t["points"]]
+        for a, c in zip(pts, pts[1:]):
+            segs.add((t["layer"], frozenset([a, c])))
+        vias |= {key(p["via"]) for p in t["points"] if isinstance(p, dict)}
+    return segs, vias
+
+
+def collect(board, plane_layers: list[str], patches: tuple[set, set] = (frozenset(), frozenset())) -> dict:
     import pcbnew
 
     nets: dict[str, dict] = defaultdict(lambda: {"auto_len": 0.0, "hand_len": 0.0, "auto_vias": 0, "hand_vias": 0,
+                                                 "patch_len": 0.0, "patch_vias": 0, "patch_min_w": None,
                                                  "layers": set(), "min_w": None, "plane_len": 0.0})
-    per_layer: dict[str, dict] = defaultdict(lambda: {"hand": 0.0, "auto": 0.0})
+    per_layer: dict[str, dict] = defaultdict(lambda: {"hand": 0.0, "patch": 0.0, "auto": 0.0})
+    patch_segs, patch_vias = patches
+
+    def at(v):
+        return round(pcbnew.ToMM(v.x), 2), round(pcbnew.ToMM(v.y), 2)
+
     settings = board.GetDesignSettings().m_NetSettings
     smd = []
     for fp in board.GetFootprints():
@@ -46,6 +73,9 @@ def collect(board, plane_layers: list[str]) -> dict:
         n = nets[t.GetNetname()]
         hand = t.IsLocked()
         if t.Type() == pcbnew.PCB_VIA_T:
+            if at(t.GetPosition()) in patch_vias:
+                n["patch_vias"] += 1
+                continue
             n["hand_vias" if hand else "auto_vias"] += 1
             if not hand:
                 pos = t.GetPosition()
@@ -56,13 +86,19 @@ def collect(board, plane_layers: list[str]) -> dict:
             continue
         length = pcbnew.ToMM(t.GetLength())
         layer = t.GetLayerName()
+        w = pcbnew.ToMM(t.GetWidth())
+        if (str(layer), frozenset([at(t.GetStart()), at(t.GetEnd())])) in patch_segs:
+            per_layer[layer]["patch"] += length
+            n["patch_len"] += length
+            n["layers"].add(layer)
+            n["patch_min_w"] = w if n["patch_min_w"] is None else min(n["patch_min_w"], w)
+            continue
         per_layer[layer]["hand" if hand else "auto"] += length
         if hand:
             n["hand_len"] += length
             continue
         n["auto_len"] += length
         n["layers"].add(layer)
-        w = pcbnew.ToMM(t.GetWidth())
         n["min_w"] = w if n["min_w"] is None else min(n["min_w"], w)
         if layer in plane_layers:
             n["plane_len"] += length
@@ -77,18 +113,23 @@ def collect(board, plane_layers: list[str]) -> dict:
         span[net] = (max(xs) - min(xs)) + (max(ys) - min(ys))      # half the perimeter of the box round the pins
     rows = []
     for net, n in sorted(nets.items()):
-        if n["auto_len"] == 0 and n["auto_vias"] == 0:
+        if n["auto_len"] == 0 and n["auto_vias"] == 0 and n["patch_len"] == 0:
             continue
         nc = settings.GetEffectiveNetClass(net)
+        widths = [x for x in (n["min_w"], n["patch_min_w"]) if x is not None]
         rows.append({"net": net, "class": str(nc.GetName()), "class_width": pcbnew.ToMM(nc.GetTrackWidth()),
-                     "length": round(n["auto_len"] + n["hand_len"], 1), "auto_length": round(n["auto_len"], 1),
-                     "vias": n["auto_vias"], "layers": sorted(n["layers"]), "min_width": n["min_w"],
+                     "length": round(n["auto_len"] + n["hand_len"] + n["patch_len"], 1),
+                     "auto_length": round(n["auto_len"], 1), "patch_length": round(n["patch_len"], 1),
+                     "vias": n["auto_vias"], "patch_vias": n["patch_vias"], "layers": sorted(n["layers"]),
+                     "min_width": min(widths) if widths else None, "patch_min_width": n["patch_min_w"],
                      "span": round(span.get(net, 0.0), 1), "plane_length": round(n["plane_len"], 1)})
     layers = {k: {a: round(b, 1) for a, b in v.items()} for k, v in sorted(per_layer.items())}
     return {"rows": rows, "per_layer": layers,
             "vias_in_pads": vias_in_pads,
-            "hand_nets": sum(1 for n in nets.values() if n["hand_len"] > 0 and n["auto_len"] == 0),
+            "hand_nets": sum(1 for n in nets.values()
+                             if n["hand_len"] > 0 and n["auto_len"] == 0 and n["patch_len"] == 0),
             "hand_vias": sum(n["hand_vias"] for n in nets.values()),
+            "patch_vias": sum(n["patch_vias"] for n in nets.values()),
             "auto_vias": sum(n["auto_vias"] for n in nets.values())}
 
 
@@ -96,13 +137,21 @@ def markdown(data: dict, plane_layers: list[str]) -> str:
     rows = data["rows"]
     out = ["# Routing of the board, as built", "",
            "Written by `hwflow.routereport` from the board file. Lengths in millimetres. \"By hand\" is copper",
-           "written in `design/board.toml` and locked; the rest is the autorouter's.", "",
-           "| Layer | By hand | Autorouter |", "|---|---|---|"]
+           "written in `design/layout.py` or `design/board.toml`; \"patch router\" is the `[[patch]]` tracks that",
+           "`hwflow.patchroute` wrote into `design/patches.toml`; the rest is the autorouter's.", "",
+           "| Layer | By hand | Patch router | Autorouter |", "|---|---|---|---|"]
     for layer, v in data["per_layer"].items():
-        out.append(f"| {layer} | {v['hand']:.0f} | {v['auto']:.0f} |")
-    out += ["", f"{data['hand_nets']} nets are routed by hand alone, {len(rows)} have autorouted copper. "
+        out.append(f"| {layer} | {v['hand']:.0f} | {v['patch']:.0f} | {v['auto']:.0f} |")
+    patched = [r for r in rows if r["patch_length"] > 0]
+    out += ["", f"{data['hand_nets']} nets are routed by hand alone, {len(rows)} have autorouted or patched copper. "
             f"{data['hand_vias']} vias were placed by hand or by the plane fan-out, "
-            f"{data['auto_vias']} by the autorouter.", ""]
+            f"{data['auto_vias']} by the autorouter and {data['patch_vias']} by the patch router.", "",
+            "## Copper laid by the patch router", "",
+            "A maze router closed these after the autorouter. It keeps the clearances and knows nothing else:",
+            "look at each one.", ""]
+    out += [f"- `{r['net']}` ({r['class']}): {r['patch_length']:g} mm, {r['patch_vias']} vias, narrowest "
+            f"{r['patch_min_width']:g} mm (class width {r['class_width']:g} mm)" for r in patched] or ["None."]
+    out.append("")
 
     narrow = [r for r in rows if r["min_width"] is not None and r["min_width"] < r["class_width"] - 1e-6]
     out += ["## Tracks narrower than their net class asks", ""]
@@ -142,7 +191,7 @@ def main(argv=None) -> int:
     name = json.loads((project / "build" / "model.json").read_text(encoding="utf-8"))["name"]
     plane_layers = [str(x) for x in cfg.get("route", {}).get("plane_layers", [])]
     board = pcbnew.LoadBoard(str(project / f"{name}.kicad_pcb"))
-    data = collect(board, plane_layers)
+    data = collect(board, plane_layers, patch_keys(cfg))
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_text(markdown(data, plane_layers), encoding="utf-8")
     (project / "build" / "routing.json").write_text(json.dumps(data, indent=1, default=list) + "\n", encoding="utf-8")
