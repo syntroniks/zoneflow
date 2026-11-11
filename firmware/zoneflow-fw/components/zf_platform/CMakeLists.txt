@@ -11,7 +11,7 @@ idf_component_register(
          src/zero_cross.cpp
     INCLUDE_DIRS include
     REQUIRES zf_core esp_driver_i2c freertos esp_event
-    PRIV_REQUIRES zf_board esp_driver_gpio esp_driver_gptimer esp_driver_pcnt esp_adc esp_timer esp_netif esp_system
+    PRIV_REQUIRES zf_board esp_driver_gpio esp_driver_gptimer esp_driver_pcnt esp_driver_tsens esp_driver_uart esp_adc esp_timer esp_netif esp_system
                   esp_hw_support hal soc nvs_flash lwip log)
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wall -Wextra)
 

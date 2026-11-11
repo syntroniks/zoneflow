@@ -265,8 +265,9 @@
     X(FaultMasterLockBody, "The master valve failed several times in a row, so no zone can run. "                      \
                            "Check: master valve wiring and solenoid. Then clear the fault.")                           \
     X(FaultSenseTitle, "Valve current not measured")                                                                   \
-    X(FaultSenseBody, "The board gets no current reading. Zones still run, but a broken or shorted "                   \
-                      "valve is not noticed. If it stays, the board needs service.")                                   \
+    X(FaultSenseBody, "The board gets no usable current reading. Zones still run, but a broken or shorted "            \
+                      "valve, a stuck relay or a shorted output is not noticed. If it stays, the board needs "         \
+                      "service.")                                                                                      \
     X(FaultTripTitle, "Protection tripped")                                                                            \
     X(FaultTripZoneTitle, "%s: protection tripped") /* zone label */                                                   \
     X(FaultTripBody, "A short made the board switch all valves off for a moment. The other zones carry on. A "         \
@@ -293,7 +294,7 @@
                        "much current the sensors draw (100 mA at most).")                                              \
     X(FaultDcTitle, "%s: valve current lopsided") /* zone label */                                                     \
     X(FaultDcBody, "The valve current flowed in one direction only, so the output that drives it is failing. "         \
-                   "The zone was switched off. The board needs service.")                                              \
+                   "The zone was switched off and locked. The board needs service.")                                   \
     X(FaultMainsTitle, "Mains signal wrong")                                                                           \
     X(FaultMainsBody, "The 24 V AC timing signal is not at mains frequency. Zero-cross switching and current "         \
                       "readings may be off. The board needs service.")                                                 \
@@ -305,7 +306,22 @@
                           "board, then confirm it here.")                                                              \
     X(FaultLearnTitle, "Safety timing not learned")                                                                    \
     X(FaultLearnBody, "The board has not learned how fast its safety circuit switches off. It learns this "            \
-                      "by itself with 24 V AC on. If this stays, the board needs service.")                            \
+                      "by itself with 24 V AC on, at room temperature. If this stays, the board needs service.")       \
+    X(FaultSupplyLowTitle, "24 V AC supply too low")                                                                   \
+    X(FaultSupplyLowBody, "The supply is below what the board needs, so no valve opens. Watering resumes when it "     \
+                          "is back. Check: transformer rating, supply wires and connections.")                         \
+    X(FaultSupplyHighTitle, "24 V AC supply too high")                                                                 \
+    X(FaultSupplyHighBody, "The supply is above what the board allows, so no valve opens. Check: the transformer "     \
+                           "must be a 24 V AC one.")                                                                   \
+    X(FaultRectifierTitle, "Power input circuit failed")                                                               \
+    X(FaultRectifierBody, "24 V AC is connected, but the board's power input gives nothing, so nothing runs. "         \
+                          "Repair the board, then confirm it here.")                                                   \
+    X(FaultOverVoltageTitle, "Logic supply too high")                                                                  \
+    X(FaultOverVoltageBody, "The board's 3.3 V supply is too high. The valves were switched off and nothing runs. "    \
+                            "Repair the board, then confirm it here.")                                                 \
+    X(FaultLatchHeldTitle, "Protection held on")                                                                       \
+    X(FaultLatchHeldBody, "The short-circuit protection is held on with no valve running, and the red light on "       \
+                          "the board stays lit. Nothing runs. Repair the board, then confirm it here.")                \
     X(FaultStep, "Step %s: %s") /* self-test step ("2b"), check name */                                                \
     X(FaultRepaired, "Repaired")                                                                                       \
     X(FaultRepairedAsk, "Was the board repaired?")                                                                     \

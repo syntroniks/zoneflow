@@ -41,6 +41,12 @@ enum class FaultCode : uint8_t {
     KeepAliveBridged, // another net drives the keep-alive net (step 2b float test, rule 16); latched
     RelayGateBleed,   // the relay driver Q1 keeps its gate charge when released: R12 open (step 5b); latched
     NotCommissioned,  // no stored detector release times yet: step 9 uses its absolute limits only; clears itself
+    // Added with the hardware answers to section 19 (issue #41).
+    SupplyLow,         // VIN_MON 0.10 to 0.60 V: below the specified supply; nothing starts; clears itself (19.10)
+    SupplyHigh,        // VIN_MON above 1.50 V: above what the board allows; nothing starts; clears itself (19.10)
+    RectifierFault,    // no rectified supply with mains present: D2, R1 or C1 (19.10); latched, needs repair
+    SupplyOverVoltage, // 3V3 above about 3.6 V (rule 18, U3); latched, needs repair
+    LatchInputHeld,    // the set input of the over-current latch is held low (19.8, U13); latched, needs repair
     Count,
 };
 static_assert(static_cast<unsigned>(FaultCode::Count) <= 32, "fault bitmask is 32 bits");

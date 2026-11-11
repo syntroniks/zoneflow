@@ -26,6 +26,8 @@ public:
         s.overCurrentTripped = board_.latched;
         s.mainsMilliHz = mainsMilliHz;
         s.sensorSupplyOn = true;
+        s.dieTempKnown = true;
+        s.dieTempC = 35.0f;
         return s;
     }
     uint32_t mainsMilliHz = 50000;
@@ -171,7 +173,7 @@ TEST(HardwareController, DetectorFaultStopsEverythingAndNeedsTheRepairConfirmed)
     r.run(50);
     EXPECT_EQ(r.snap().inhibitFlags & kInhibitHardware, 0);
     ASSERT_TRUE(r.ctrl->handle(Command::runZone(0, 30)));
-    EXPECT_TRUE(r.runUntil([&] { return r.board.valveDriven(0); }, 10000));
+    EXPECT_TRUE(r.runUntil([&] { return r.board.valveDriven(0); }, 16000));
 }
 
 TEST(HardwareController, WeldedRelayFaultClearsWithOnePressButIsFoundAgain)

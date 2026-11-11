@@ -27,6 +27,7 @@ struct BoardPins {
   int sensor_supply = -1;    // SENS_PWR_EN, GPIO45: output after start-up, never a pull-up
   int current_high = -1;     // ISENSE_HI, GPIO2, ADC1
   int current_low = -1;      // ISENSE_LO, GPIO1, ADC1
+  int vin_monitor = -1;      // VIN_MON, GPIO3, ADC1 (hardware design 19.10); -1: not read
 };
 
 // The keep-alive guard and the zero-cross tracker live in DRAM and are used
@@ -55,13 +56,21 @@ bool keepalive_pin_plain();
 // Rule 17: a task that streams through a PSRAM buffer while the float test
 // runs (19.7 step 2b). The backlight and display part is in display.yaml,
 // on the zoneflow component's on_float_test trigger.
+// Since the hardware answers (19.7, note to step 2b) the task also sends
+// 0x55 on UART0 at the console baud rate without pause, so that U0TXD
+// toggles at half the baud rate: an idle U0TXD is a steadily high net, which
+// the float test finds only under 1 kohm.
 bool start_float_test_load();
 void set_float_test_load(bool on);
+// ESP32-S3 die temperature, C (hardware design 19.7: commissioning only at
+// 25 to 50 C). False until the sensor answers.
+bool die_temperature(float &celsius);
 // SENS_PWR_EN high: latch the level, then make the pin an output, no pull.
 bool enable_sensor_supply(const BoardPins &pins);
 
-// ADC1 continuous mode on ISENSE_HI, ISENSE_LO and GPIO7 (B_RB, review A2
-// 4.6 question 7; its digital input stays on for the interrupt), 5 kS/s each, 6 dB,
+// ADC1 continuous mode on ISENSE_HI, ISENSE_LO, GPIO7 (B_RB, review A2
+// 4.6 question 7; its digital input stays on for the interrupt) and VIN_MON
+// (GPIO3, hardware design 19.10), 5 kS/s each, 6 dB,
 // calibrated to millivolts, windows of exactly 500 samples (100 ms, whole
 // mains cycles at 50 and 60 Hz). Hardware design 19.2. A task on core 0
 // accumulates; the main loop takes the latest window.
@@ -79,9 +88,11 @@ class CurrentSampler {
   void *cali_hi_ = nullptr;
   void *cali_lo_ = nullptr;
   void *cali_rb_ = nullptr;
+  void *cali_vin_ = nullptr;
   int ch_hi_ = -1;
   int ch_lo_ = -1;
   int ch_rb_ = -1;
+  int ch_vin_ = -1;
   mutable portMUX_TYPE lock_ = portMUX_INITIALIZER_UNLOCKED;
   zf::CurrentWindowStats latest_{};
   std::atomic<bool> running_{false};
@@ -99,6 +110,8 @@ class ExpanderBus final : public zf::hw::IExpanderBus {
   zf::hw::BusStatus read(uint8_t reg, uint8_t &value) override;
   zf::hw::BusStatus probe() override;
   void recover() override;
+  // Both registers of a pair in one transaction (TI SCPS202C figure 31).
+  zf::hw::BusStatus writePair(uint8_t reg, uint8_t v0, uint8_t v1) override;
 
  private:
   i2c::I2CDevice *dev_;

@@ -154,7 +154,11 @@ public:
     // moves each key to the same instant in the new zone, so a change of
     // zone neither skips nor repeats a start.
     void configure(const SchedulerConfig &cfg, const TimeZone &tz);
-    void restore(const SchedulerPersist &state);
+    // `uncertain`: the record read may be older than the newest one written
+    // (its newer copy was damaged). Starts its keys do not cover are then
+    // reported missed, never run: one of them may have run already (each
+    // start runs at most once; firmware architecture section 5).
+    void restore(const SchedulerPersist &state, bool uncertain = false);
     SchedulerPersist persist() const;
 
     void setTimeValid(bool valid);
@@ -207,6 +211,7 @@ private:
     int64_t keyAt(UtcSeconds t) const;
     void rememberAhead();
     void restoreAhead();
+    void rememberSmallBackJump(UtcSeconds now);
     static int64_t keyIn(const TimeZone &tz, UtcSeconds t);
     void notifyQueue();
 
@@ -220,6 +225,7 @@ private:
     std::array<int64_t, kMaxPrograms> keys_{}; // parallel to cfg_.schedule.programs
     SchedulerPersist restored_{};
     bool haveRestored_ = false;
+    bool restoredUncertain_ = false; // until the first evaluation with a valid clock
 
     bool timeValid_ = false;
     bool cursorValid_ = false;
@@ -230,6 +236,12 @@ private:
     std::size_t aheadCount_ = 0;
     UtcSeconds aheadCursor_ = 0;
     bool aheadValid_ = false;
+    // Clock put back by less than a day (missed-start policy 8): per
+    // program, the starts after `replayFloor_` up to `replayKey_` were covered
+    // by a key set while the clock was ahead. When the clock passes them
+    // again they are reported missed, never run. RAM only.
+    std::array<int64_t, kMaxPrograms> replayFloor_{};
+    std::array<int64_t, kMaxPrograms> replayKey_{};
     UtcSeconds lastEvalSecond_ = 0;
     uint8_t inhibit_ = 0;
     UtcSeconds rainDelayUntil_ = 0;

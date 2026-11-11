@@ -52,6 +52,7 @@
 
 #include "board_io.h"
 #include "supervisor.h"
+#include "zf/app/budget.hpp"
 #include "zf/hw/reference_store.hpp"
 
 namespace esphome::zoneflow {
@@ -86,6 +87,52 @@ class PreferenceReferenceStore final : public zf::IDetectorReferenceStore {
     char data[14];
   };
   ESPPreferenceObject pref_;
+};
+
+// The run budget over a power cut (zf/app/budget.hpp): two copies of the
+// standalone firmware's BudgetRecord in ESPHome's preferences, written
+// alternately and synced at once, and a marker written with the first copy.
+// ESPHome's preferences do not say whether a copy is missing or damaged, so
+// a copy that does not load counts as damaged once the other copy's
+// sequence number shows both were written, and both missing with the marker
+// present counts as lost (the worst case).
+class PreferenceBudgetStore {
+ public:
+  void init() {
+    this->a_ = global_preferences->make_preference<zf::BudgetRecord>(fnv1_hash("zoneflow_budget_a"), true);
+    this->b_ = global_preferences->make_preference<zf::BudgetRecord>(fnv1_hash("zoneflow_budget_b"), true);
+    this->marker_ = global_preferences->make_preference<uint32_t>(fnv1_hash("zoneflow_budget_used"), true);
+  }
+  zf::RecordLoad load(zf::BudgetRecord &out) {
+    zf::BudgetRecord a{};
+    zf::BudgetRecord b{};
+    const bool okA = this->a_.load(&a) && zf::intact(a);
+    const bool okB = this->b_.load(&b) && zf::intact(b);
+    uint32_t marker = 0;
+    const bool used = this->marker_.load(&marker) && marker == zf::BudgetRecord::kMagic;
+    const uint32_t newest = std::max(okA ? a.seq : 0u, okB ? b.seq : 0u);
+    // A copy that did not load exists if the marker says one was written and
+    // the newest valid copy is not the first write.
+    const bool presentA = okA || (used && (!okB || newest >= 2));
+    const bool presentB = okB || (used && (!okA || newest >= 2));
+    return zf::chooseBudget(presentA, okA, a, presentB, okB, b, out, this->seq_);
+  }
+  bool save(zf::BudgetRecord r) {
+    r.seq = ++this->seq_;
+    zf::seal(r);
+    bool ok = ((r.seq & 1u) != 0 ? this->a_ : this->b_).save(&r);
+    if (r.seq == 1) {
+      const uint32_t marker = zf::BudgetRecord::kMagic;
+      ok = this->marker_.save(&marker) && ok;
+    }
+    return ok && global_preferences->sync();
+  }
+
+ private:
+  ESPPreferenceObject a_;
+  ESPPreferenceObject b_;
+  ESPPreferenceObject marker_;
+  uint32_t seq_ = 0;
 };
 
 enum class BinaryKind : uint8_t {
@@ -245,6 +292,10 @@ class ZoneFlowComponent : public Component,
   CallbackManager<void(bool)> float_test_callbacks_;
   bool last_float_test_ = false;
   PreferenceReferenceStore reference_;
+  PreferenceBudgetStore budget_store_;
+  float die_temp_c_ = 0.0f;
+  bool die_temp_known_ = false;
+  uint32_t die_temp_ms_ = 0;
   CallbackManager<void()> state_callbacks_;
 
 #ifdef USE_BINARY_SENSOR

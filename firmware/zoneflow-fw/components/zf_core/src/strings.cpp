@@ -57,6 +57,16 @@ const char *toString(FaultCode f)
         return "relay_gate_bleed";
     case FaultCode::NotCommissioned:
         return "not_commissioned";
+    case FaultCode::SupplyLow:
+        return "supply_low";
+    case FaultCode::SupplyHigh:
+        return "supply_high";
+    case FaultCode::RectifierFault:
+        return "rectifier_fault";
+    case FaultCode::SupplyOverVoltage:
+        return "supply_over_voltage";
+    case FaultCode::LatchInputHeld:
+        return "latch_input_held";
     case FaultCode::Count:
         break;
     }
@@ -181,6 +191,12 @@ FaultCode faultCodeFor(HwCheck c)
         return FaultCode::OutputShorted;
     case HwCheck::LatchStuck:
         return FaultCode::TripLatchStuck;
+    case HwCheck::RectifierFault:
+        return FaultCode::RectifierFault;
+    case HwCheck::SupplyOverVoltage:
+        return FaultCode::SupplyOverVoltage;
+    case HwCheck::LatchInputHeld:
+        return FaultCode::LatchInputHeld;
     case HwCheck::StartNoAcknowledge:
     case HwCheck::ExpanderInputs:
     case HwCheck::ExpanderOutputs:

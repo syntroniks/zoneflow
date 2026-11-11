@@ -624,8 +624,14 @@ CurrentWindowStats World::takeWindow(uint32_t seq, MonoMs startMs, MonoMs endMs)
     w.hi = g.hi;
     w.lo = g.lo;
     const int32_t rb = board.relayReadbackMv();
+    // VIN_MON (hardware design 19.10): 0.52 V at 16 VAC, 0.96 V at 24 VAC,
+    // 1.43 V at 32 VAC with no load, roughly linear between; 0 without the
+    // transformer.
+    const double vac = transformer ? volts * 24.0 : 0.0;
+    const int32_t vin = vac < 9.6 ? 0 : static_cast<int32_t>(std::lround(520.0 + (vac - 16.0) * 57.0));
     for (int i = 0; i < 500; ++i) {
         w.relayRb.add(std::min<int32_t>(rb, 1750));
+        w.vinMon.add(std::clamp<int32_t>(vin, 0, 1750));
     }
     return w;
 }
@@ -730,6 +736,13 @@ hw::BusStatus ObservedBus::write(uint8_t reg, uint8_t value)
     if (stopping && relayBefore && !relayAfter) {
         w_.count("s6.relay_released_in_fault_path");
     }
+    // Gap 6, closed: the fault path releases every output in one pair write
+    // (OutputStage::releaseAll). A single-register write there that releases
+    // the relay or some outputs while others stay driven splits the all-off.
+    if (stopping && (before & ~after) != 0 && after != 0) {
+        fail("S6-fault-path-split", "a single write on the fault path left " + std::to_string(std::popcount(after)) +
+                                        " output(s) driven after releasing others");
+    }
     if (relayBefore && !relayAfter && w_.boardFault != BoardFault::R12Open && !stopping) {
         // Rule 4: the relay opens 40 ms after the last valve, not onto one.
         if (after != 0) {
@@ -739,6 +752,30 @@ hw::BusStatus ObservedBus::write(uint8_t reg, uint8_t value)
                  "relay released " + std::to_string(now - lastValveDrivenMs_) + " ms after the last valve");
         }
     }
+    lastDriven_ = after;
+    relayWasOn_ = relayAfter;
+    return st;
+}
+
+hw::BusStatus ObservedBus::writePair(uint8_t reg, uint8_t v0, uint8_t v1)
+{
+    HarnessScope harness;
+    if (transientRate > 0.0 && w_.rng.chance(transientRate)) {
+        w_.count("bus.transient_error");
+        return w_.rng.chance(0.5) ? hw::BusStatus::Nack : hw::BusStatus::Timeout;
+    }
+    const bool relayBefore = w_.board.q1On();
+    const hw::BusStatus st = w_.board.writePair(reg, v0, v1);
+    const uint16_t after = drivenWithRelay();
+    const bool relayAfter = w_.board.q1On();
+    if (std::popcount(after) > 3 && violation) {
+        HarnessScope h;
+        violation("S3-valve-bits", "firmware drives " + std::to_string(std::popcount(after)) + " valve bits low");
+    }
+    if (relayBefore && !relayAfter) {
+        w_.count("s6.relay_released_by_pair_write");
+    }
+    w_.count("s6.pair_writes");
     lastDriven_ = after;
     relayWasOn_ = relayAfter;
     return st;

@@ -83,6 +83,14 @@ void PhysicalOracle::step(World &w, const FirmwareView &fw, uint64_t dtMs)
     bool anyCommanded = false;
     for (std::size_t o = 0; o < kOutputs; ++o) {
         anyCommanded = anyCommanded || (fw.running && fw.commanded[o] && w.energised(o));
+        if (fw.commanded[o] != lastCommanded_[o]) {
+            lastCommanded_[o] = fw.commanded[o];
+            lastChangeMs_ = now;
+        }
+    }
+    if (w.shortedOutput < 0 || !anyCommanded || fw.halted || !w.energised(static_cast<std::size_t>(w.shortedOutput))) {
+        shortedSince_ = 0;
+        shortedReported_ = false;
     }
     for (std::size_t o = 0; o < kOutputs; ++o) {
         const bool unc = w.energised(o) && !(fw.running && fw.commanded[o]);
@@ -92,11 +100,27 @@ void PhysicalOracle::step(World &w, const FirmwareView &fw, uint64_t dtMs)
             continue;
         }
         // A failed-short triac waters with any run: the relay feeds every
-        // valve common, and its current hides inside the run's window. Spec
-        // section 2 rule 6 only promises the relay opens afterwards.
+        // valve common. The firmware finds it by the rise in current with no
+        // output switched and opens the relay (gap 2, closed). Only within
+        // the settle time of an output change, or without a usable current
+        // measurement, does it water until the run ends: counted.
         if (static_cast<int>(o) == w.shortedOutput && anyCommanded) {
-            w.count("gap.shorted_output_watering_ms", dtMs);
+            if (shortedSince_ == 0) {
+                shortedSince_ = now;
+                shortedBlind_ = now - lastChangeMs_ < kRiseBlindMs || !fw.currentUsable;
+            }
             uncommandedSince_[o] = 0;
+            if (shortedBlind_ || !fw.currentUsable) {
+                w.count("gap.shorted_output_in_settle_or_unmeasured_ms", dtMs);
+                continue;
+            }
+            const uint64_t d = now - shortedSince_ + dtMs;
+            w.count("s1.shorted_output_watering_ms", dtMs);
+            if (d > kUncommandedLimitMs && !shortedReported_) {
+                shortedReported_ = true;
+                fail("S1-shorted-output", "failed-short output " + std::to_string(o) + " watered " + std::to_string(d) +
+                                              " ms during another output's run");
+            }
             continue;
         }
         if (uncommandedSince_[o] == 0) {
@@ -152,9 +176,10 @@ void PhysicalOracle::step(World &w, const FirmwareView &fw, uint64_t dtMs)
             if (b.burstMs > limit && !b.reported) {
                 b.reported = true;
                 if (b.lost) {
-                    w.count("gap.budget_lost_over_power_cycle");
-                    w.note("zone " + std::to_string(z) + " on for " + std::to_string(b.burstMs) +
-                           " ms since its last rest: the budget was lost in a power cycle");
+                    // The budget is kept in flash as well since gap 3 was
+                    // closed: a power cycle no longer excuses an overrun.
+                    fail("S4-budget-power-cycle", "zone " + std::to_string(z) + " on for " + std::to_string(b.burstMs) +
+                                                      " ms without a rest, across a power cycle or torn record");
                 } else {
                     fail("S4-budget", "zone " + std::to_string(z) + " on for " + std::to_string(b.burstMs) +
                                           " ms without a rest of " + std::to_string(fw.minRestMs) + " ms, maximum " +

@@ -82,12 +82,20 @@ struct FakeDetector {
     uint32_t holdMs = 600;
     uint32_t holdHighMs = 900;
     uint32_t maxGapMs = 20;
+    // A single rising edge, with the net then held high, lifts the gate of
+    // Q2 to about 1 V, which turns a Q2 with a low threshold on until the
+    // bleed resistors pull the gate down again (hardware design 19.7, note to
+    // step 2; hardware/sim/failsafe/sequence.py): on for this long after the
+    // edge. 0: the edge turns nothing on. Detector B only.
+    uint32_t singleEdgeOnMs = 0;
     Warmup warmup = Warmup::None;
     bool stuckOn = false;
     bool onWhilePinHigh = false;
     bool neverOn = false;
 
     bool on = false;
+    bool pulse = false; // on from a single rising edge (singleEdgeOnMs)
+    uint64_t pulseUntilMs = 0;
     uint64_t toggleSinceMs = 0;
     bool toggling = false;
     uint64_t lastEdgeMs = 0;
@@ -96,6 +104,10 @@ struct FakeDetector {
 
     void step(uint64_t nowMs, bool edge, bool pinHigh)
     {
+        if (edge && pinHigh && !toggling && singleEdgeOnMs > 0) {
+            pulseUntilMs = nowMs + singleEdgeOnMs; // a lone rising edge
+        }
+        pulse = pinHigh && nowMs < pulseUntilMs;
         if (edge) {
             if (!toggling || nowMs - lastEdgeMs > maxGapMs) {
                 toggling = true;
@@ -123,17 +135,25 @@ struct FakeDetector {
         const double full = pinHigh ? holdHighMs : holdMs;
         return static_cast<uint64_t>(full * warmupShare(warmup, toggledMs));
     }
-    bool level(bool pinHigh) const { return stuckOn || on || (onWhilePinHigh && pinHigh); }
+    bool level(bool pinHigh) const { return stuckOn || on || pulse || (onWhilePinHigh && pinHigh); }
 };
 
 // Release times of both detectors at the tolerance corners of review A2
 // (section 4.3, 4.5 and results/warmup.md), 5 ms edges, ms after the last
 // edge with the pin low / with the pin high.
+//
+// After the single rising edge of step 2 the relay read-back stays low for
+// up to 0.68 s at -20 C, 0.83 s at 27 C and 1.33 s at 70 C over the 96
+// healthy corners (hardware answers A2, section 8, `failsafe.py sequence`).
+// The corner with Q2 at 0.65 V and 70 C is the one that needs 1.33 s; the
+// slow-charge corner, at -20 C, takes the 0.68 s. The typical and earliest
+// corners are given none: the simulation names only the longest per
+// temperature.
 enum class DetectorCorner : uint8_t {
     Typical,         // typical parts, 27 C: tA 670 / 1010, tB 570 / 860
-    LatestRelease,   // 70 C, 3.6 V, large capacitors, Q2 at 0.65 V: tA 830 / 1250, tB 1450 / 2190
+    LatestRelease,   // 70 C, 3.6 V, large capacitors, Q2 at 0.65 V: tA 830 / 1250, tB 1450 / 2190, one edge 1.33 s
     EarliestRelease, // 70 C, 3.0 V, small capacitors, Q2 at 1.45 V, leaky diodes: tA 210, tB 100
-    SlowCharge,      // -20 C, 3.0 V, large reservoirs, small pumps: tA 680, tB 200, slow to fill
+    SlowCharge,      // -20 C, 3.0 V, large reservoirs, small pumps: tA 680, tB 200, slow to fill, one edge 0.68 s
 };
 
 // What else drives the keep-alive net (review A2 section 3.3 and appendix A).
@@ -163,12 +183,14 @@ public:
         b.onMs = 40;
         a.warmup = Warmup::None;
         b.warmup = Warmup::None;
+        b.singleEdgeOnMs = 0;
         switch (c) {
         case DetectorCorner::Typical:
             a.holdMs = 670, a.holdHighMs = 1010, b.holdMs = 570, b.holdHighMs = 860;
             break;
         case DetectorCorner::LatestRelease:
             a.holdMs = 830, a.holdHighMs = 1250, b.holdMs = 1450, b.holdHighMs = 2190;
+            b.singleEdgeOnMs = 1330;
             break;
         case DetectorCorner::EarliestRelease:
             a.holdMs = 210, a.holdHighMs = 270, b.holdMs = 100, b.holdHighMs = 130;
@@ -177,6 +199,7 @@ public:
             a.holdMs = 680, a.holdHighMs = 1020, b.holdMs = 200, b.holdHighMs = 300;
             a.warmup = Warmup::SlowDrive;
             b.warmup = Warmup::SlowRelay;
+            b.singleEdgeOnMs = 680;
             break;
         }
     }
@@ -187,7 +210,29 @@ public:
     bool eightZone = true;
     bool sensorFault = false;
     bool acPresent = true;
-    bool vBuck = true;           // false: U1 failed and F5 open, logic on USB (rule 15)
+    bool vBuck = true; // false: U1 failed and F5 open, logic on USB (rule 15)
+    // VIN_MON, GPIO3: the mean of a 100 ms window, mV (hardware design
+    // 19.10: 960 at 24 VAC, 40 VA, typical load). Without 24 VAC the
+    // rectified supply is gone: 0.
+    int32_t vinMonMv = 960;
+    bool rectifierOpen = false; // D2, R1 or C1 failed: VIN_DC is 0 with mains present
+    // The logic rail, mV. The current channels rest at VB = 0.2385 x 3V3
+    // (19.10), 787 mV at 3.30 V. U3 shorted gives 4.66 V or more on 24 VAC.
+    int32_t v3v3Mv = 3300;
+    // Offsets of the rest levels from VB, mV (an amplifier or resistor fault).
+    int32_t restLoOffsetMv = 0;
+    int32_t restHiOffsetMv = 0;
+    // U13 (hardware design 9.5): above 4.04 V on 3V3 its output holds the
+    // set input of the over-current latch low. `ocSetHeld` does the same
+    // without the over-voltage (U13's output shorted low, R13 shorted, U6B or
+    // U6C stuck, ...). Either way the latch sets as soon as KA_OK rises, so
+    // DRV_EN stays low, A_RB never goes high, OC reads high at rest (the
+    // latch needs KA_OK to hold) and low at the first edges of step 3.
+    bool ocSetHeld = false;
+    static constexpr int32_t kU13TripMv = 4040;
+    bool u13Acting() const { return ocSetHeld || v3v3Mv >= kU13TripMv; }
+    int32_t restLevelMv() const { return static_cast<int32_t>(v3v3Mv * 0.2385 + 0.5); }
+    int32_t vinMon() const { return !acPresent || rectifierOpen ? 0 : vinMonMv; }
     bool latchStuck = false;     // the latch does not clear when detector A lets go
     bool relayWelded = false;    // K1 contact welded, JP1 bridged or Q1 shorted
     int32_t shortedOutputMa = 0; // a shorted output device: current whenever K1 is closed
@@ -210,6 +255,12 @@ public:
     bool kaWeakReadsHigh = false;
     // The device does not read the pin while it floats (a firmware fault).
     bool floatNotRead = false;
+    // The ADC delivers no more windows (rule 19: the measurement is lost).
+    bool windowsStopped = false;
+    // An output whose triac conducts in one polarity only (0 to 7 zones, 8
+    // the master; -1 none): while it is driven the window mean moves by 0.82
+    // times the mean-removed rms, as a half-wave sine does (current_sense.hpp).
+    int halfWaveOutput = -1;
     // The processor has stopped with interrupts off (test/soak): the timer
     // interrupt no longer runs, so the pin keeps the level it last had and
     // the read-backs are not sampled.
@@ -235,6 +286,7 @@ public:
     std::vector<std::string> log; // "w06=c0", "r00", "probe", ...
     int maxValvesLow = 0;
     int writes = 0;
+    int pairWrites = 0;
     // The keep-alive waveform while the pin is driven (contract 19.4).
     uint64_t minPhaseMs = UINT64_MAX; // shortest time between two level changes
     uint64_t floatMs = 0;             // total time the pin was an input
@@ -357,11 +409,17 @@ public:
         if (latched && !a.level(kaNetHigh_) && !latchStuck) {
             latched = false; // KA_OK low clears the latch
         }
+        if (u13Acting() && a.level(kaNetHigh_)) {
+            latched = true; // the set input is held low: the latch sets as KA_OK rises
+        }
         update();
         maxValvesLow = std::max(maxValvesLow, valvesLow());
         // Current windows: 100 ms, contiguous. Peak current in the window.
         windowPeak_ = std::max(windowPeak_, currentMa());
-        if (now >= windowStartMs_ + 100) {
+        if (now >= windowStartMs_ + 100 && windowsStopped) {
+            windowStartMs_ = now; // the ADC delivers nothing (rule 19)
+            windowPeak_ = currentMa();
+        } else if (now >= windowStartMs_ + 100) {
             CurrentReading r;
             r.seq = ++windowSeq_;
             r.startMs = windowStartMs_;
@@ -370,6 +428,12 @@ public:
             r.ma = windowPeak_;
             r.rawMa = windowPeak_;
             r.relayReadbackMv = relayReadbackMv();
+            r.vinMonMv = vinMon();
+            r.meanLoMv = restLevelMv() + restLoOffsetMv;
+            r.meanHiMv = restLevelMv() + restHiOffsetMv;
+            windowDcMv_ = halfWaveOutput >= 0 && valveDriven(static_cast<std::size_t>(halfWaveOutput))
+                              ? 0.82 * (windowPeak_ / 1.503)
+                              : 0.0;
             window_ = r;
             windowStartMs_ = now;
             windowPeak_ = currentMa();
@@ -380,6 +444,33 @@ public:
         }
     }
     const CurrentReading &window() const { return window_; }
+    // The latest window as the device's ADC task delivers it: count, sum,
+    // sum of squares and extremes per channel, made from the window's
+    // current (as an rms around the rest level) and its means.
+    CurrentWindowStats windowStats() const
+    {
+        CurrentWindowStats w;
+        w.seq = window_.seq;
+        w.startMs = window_.startMs;
+        w.endMs = window_.endMs;
+        if (window_.seq == 0) {
+            return w;
+        }
+        const auto fill = [](ChannelStats &c, double meanMv, double rmsMv) {
+            constexpr uint32_t kN = 500;
+            c.n = kN;
+            c.sumMv = static_cast<int64_t>(meanMv * kN + 0.5);
+            c.sumSqMv = static_cast<uint64_t>((meanMv * meanMv + rmsMv * rmsMv) * kN + 0.5);
+            c.minMv = static_cast<int32_t>(meanMv - rmsMv * 1.4142);
+            c.maxMv = static_cast<int32_t>(meanMv + rmsMv * 1.4142);
+        };
+        const double ma = window_.ma < 0 ? 0.0 : window_.ma;
+        fill(w.hi, window_.meanHiMv + windowDcMv_, ma / 1.503);
+        fill(w.lo, window_.meanLoMv + windowDcMv_ * 1.503 / 7.50, ma / 7.50);
+        fill(w.relayRb, window_.relayReadbackMv, 0.0);
+        fill(w.vinMon, window_.vinMonMv, 0.0);
+        return w;
+    }
 
     // ---- IExpanderBus ----
     hw::BusStatus write(uint8_t r, uint8_t v) override
@@ -439,6 +530,28 @@ public:
         if (r == corruptReadOf) {
             v ^= 0x01;
         }
+        return hw::BusStatus::Ok;
+    }
+    // One transaction: both registers of a pair change in it, port 1 nine
+    // SCL periods after port 0 (TI SCPS202C figure 31). Logged as one entry.
+    hw::BusStatus writePair(uint8_t r, uint8_t v0, uint8_t v1) override
+    {
+        if (logBus) {
+            log.push_back("w" + hex(r) + "=" + hex(v0) + "," + hex(v1));
+        }
+        if (const auto st = fault(); st != hw::BusStatus::Ok) {
+            return st;
+        }
+        ++writes;
+        ++pairWrites;
+        const auto i = static_cast<std::size_t>((r & 0x06u) == hw::reg::kOutput0   ? 0
+                                                : (r & 0x06u) == hw::reg::kConfig0 ? 2
+                                                                                   : 1);
+        auto &regs = i == 0 ? out : i == 2 ? cfg : pol;
+        regs[0] = v0;
+        regs[1] = v1;
+        update();
+        maxValvesLow = std::max(maxValvesLow, valvesLow());
         return hw::BusStatus::Ok;
     }
     hw::BusStatus probe() override
@@ -542,6 +655,7 @@ private:
     int32_t windowPeak_ = 0;
     uint32_t windowSeq_ = 0;
     CurrentReading window_{};
+    double windowDcMv_ = 0.0;
 };
 
 // Detector release times kept in RAM, for tests.
@@ -585,6 +699,10 @@ struct StageRig {
     bool sensorSupplyOn = true;
     bool senseAvailable = true;
     uint16_t idleThresholdMa = 30;
+    // The ESP32-S3 die temperature (19.7 item 2: commissioning only at 25 to
+    // 50 C). Room temperature unless a test says otherwise.
+    bool dieTempKnown = true;
+    float dieTempC = 35.0f;
     uint64_t ticks = 0;
 
     // Typical release times of the simulated board, as commissioning
@@ -617,6 +735,8 @@ struct StageRig {
         in.currentSenseAvailable = senseAvailable;
         in.idleThresholdMa = idleThresholdMa;
         in.sensorSupplyOn = sensorSupplyOn;
+        in.dieTempKnown = dieTempKnown;
+        in.dieTempC = dieTempC;
         return in;
     }
     void tick()

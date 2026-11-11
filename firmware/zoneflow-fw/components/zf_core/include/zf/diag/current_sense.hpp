@@ -62,6 +62,10 @@ struct CurrentWindowStats {
     // drain (hardware design 7.4, review A2 4.6 question 7). Empty on boards
     // and fakes that do not sample it.
     ChannelStats relayRb;
+    // GPIO3, VIN_MON, as ADC1 channel 2: the rectified supply divided by 31
+    // (hardware design 19.10). Only its window mean is used: the half-wave
+    // ripple swings single samples by up to 0.24 V. Empty if not sampled.
+    ChannelStats vinMon;
 };
 
 enum class CurrentChannel : uint8_t { None, High, Low };
@@ -75,10 +79,12 @@ struct CurrentReading {
     int32_t rawMa = -1; // RMS before the floor is removed
     CurrentChannel channel = CurrentChannel::None;
     bool hiClipped = false;
-    int32_t meanHiMv = 0; // window mean of the high-gain channel (the bias, about 790 mV)
-    int32_t dcMa = 0;     // window mean minus the idle mean, as current; 0 without an idle mean
+    int32_t meanHiMv = -1; // window mean of the high-gain channel (the bias, about 790 mV); -1 if not sampled
+    int32_t meanLoMv = -1; // window mean of the low-gain channel; -1 if not sampled
+    int32_t dcMa = 0;      // window mean minus the idle mean, as current; 0 without an idle mean
     bool dcComponent = false;
     int32_t relayReadbackMv = -1; // window mean of GPIO7; -1 if not sampled
+    int32_t vinMonMv = -1;        // window mean of VIN_MON (GPIO3); -1 if not sampled
 };
 
 struct CurrentSenseConfig {

@@ -138,6 +138,7 @@ zoneflow:
   zero_cross_pin: ${zf_pin_zero_cross}
   current_high_pin: ${zf_pin_isense_hi}
   current_low_pin: ${zf_pin_isense_lo}
+  vin_monitor_pin: ${zf_pin_vin_monitor}
   sensor_supply_pin: ${zf_pin_sensor_supply}
   expander_bits:
     zones:

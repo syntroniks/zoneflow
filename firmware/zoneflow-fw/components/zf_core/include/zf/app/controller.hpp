@@ -16,6 +16,7 @@
 #include "zf/diag/current_monitor.hpp"
 #include "zf/diag/current_sense.hpp"
 #include "zf/diag/sensors.hpp"
+#include "zf/diag/zone_fault_policy.hpp"
 #include "zf/events/command.hpp"
 #include "zf/events/event_bus.hpp"
 #include "zf/events/state.hpp"
@@ -101,6 +102,9 @@ public:
 
     const ZoneDriver &driver() const { return driver_; }
     const Scheduler &scheduler() const { return scheduler_; }
+    // How the two records with two copies were read at begin().
+    RecordLoad runtimeLoad() const { return runtimeLoad_; }
+    RecordLoad budgetLoad() const { return budgetLoad_; }
     uint32_t activeFaults() const { return activeFaults_; }
     bool maintenance() const { return maintenance_; }
     RunError lastRunError() const { return lastRunError_; }
@@ -123,6 +127,7 @@ private:
     void applyConfig(const Config &cfg);
     void updateInhibit();
     void handleCurrent(const CurrentVerdict &v);
+    void handleRise(MonoMs now);
     void handleTrip(bool tripped, MonoMs now);
     void onTrip(MonoMs now);
     bool recordTrip(uint8_t bit, MonoMs now); // true: limit reached
@@ -131,7 +136,9 @@ private:
     void checkCondition(FaultCode code, bool present);
     void acknowledgeHardware(bool repaired);
     void saveRetained(MonoMs now);
-    void restoreRetained(MonoMs now);
+    bool restoreRetained(MonoMs now); // false: no intact record
+    void restoreBudgetFromFlash();
+    void postBudget(MonoMs now);
     void raiseFault(FaultCode code, ZoneIndex zone, uint8_t detail);
     void recordMasterFault();
     void raiseFault(FaultCode code, ZoneIndex zone);
@@ -166,6 +173,9 @@ private:
     // fault resets the count.
     uint8_t masterFaults_ = 0;
     bool masterFaultInSession_ = false;
+    bool masterOpenCircuit_ = false; // the master drew no current: ZoneOpenCircuit stays until cleared
+    // Current rose with no output switched: an output device, or the zone?
+    ShortedOutputCheck riseCheck_;
     MonoMs masterOnSinceMs_ = 0;
     // Hardware over-current latch.
     bool tripSeen_ = false;
@@ -205,6 +215,10 @@ private:
     void trackRun(ZoneIndex zone, ValveState state, StopReason reason);
 
     PersistMailbox persist_;
+    // The run budget in flash (zf/app/budget.hpp).
+    BudgetPoster budgetPoster_;
+    RecordLoad runtimeLoad_ = RecordLoad::None;
+    RecordLoad budgetLoad_ = RecordLoad::None;
     bool persistDirty_ = false;
     bool persistUrgent_ = false; // a scheduled start was consumed: store it now
     MonoMs lastPersistMs_ = 0;

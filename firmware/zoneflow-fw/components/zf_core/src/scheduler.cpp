@@ -107,6 +107,7 @@ const char *toString(RunError e)
 Scheduler::Scheduler(const IClock &clock, IZoneActuator &actuator) : clock_(clock), actuator_(actuator)
 {
     keys_.fill(kNoKey);
+    replayKey_.fill(kNoKey);
 }
 
 int64_t Scheduler::keyIn(const TimeZone &tz, UtcSeconds t)
@@ -144,6 +145,7 @@ void Scheduler::configure(const SchedulerConfig &cfg, const TimeZone &tz)
 
     cfg_ = cfg;
     tz_ = tz;
+    replayKey_.fill(kNoKey); // per program index, and local keys: start again
     auto &sched = cfg_.schedule;
     sched.programCount = std::min<uint8_t>(sched.programCount, kMaxPrograms);
     cfg_.zoneCount = std::min<uint8_t>(cfg_.zoneCount, kMaxZones);
@@ -202,8 +204,9 @@ void Scheduler::configure(const SchedulerConfig &cfg, const TimeZone &tz)
     }
 }
 
-void Scheduler::restore(const SchedulerPersist &state)
+void Scheduler::restore(const SchedulerPersist &state, bool uncertain)
 {
+    restoredUncertain_ = uncertain;
     restored_ = state;
     restored_.count = std::min<uint8_t>(restored_.count, kMaxPrograms);
     haveRestored_ = true;
@@ -613,6 +616,8 @@ void Scheduler::evaluate(UtcSeconds now)
             if (listener_ != nullptr) {
                 listener_->onPersistDirty();
             }
+        } else {
+            rememberSmallBackJump(now);
         }
         cursor_ = now;
         return;
@@ -640,6 +645,7 @@ void Scheduler::evaluate(UtcSeconds now)
             evaluateProgram(i, from, now);
         }
     }
+    restoredUncertain_ = false; // only the catch-up after boot reads the restored keys
 }
 
 void Scheduler::rememberAhead()
@@ -666,6 +672,22 @@ void Scheduler::rememberAhead()
     }
     aheadCursor_ = aheadValid_ ? std::max(aheadCursor_, cursor_) : cursor_;
     aheadValid_ = true;
+}
+
+void Scheduler::rememberSmallBackJump(UtcSeconds now)
+{
+    // The keys stay (each start runs at most once). Starts between now and
+    // each key were consumed while the clock was ahead: run then, reported
+    // missed then, or passed over by an edit. They come round again, and
+    // each is reported missed when the clock reaches it (policy 8).
+    const int64_t nowKey = keyAt(now);
+    for (std::size_t i = 0; i < cfg_.schedule.programCount; ++i) {
+        if (keys_[i] != kNoKey && keys_[i] > nowKey) {
+            const bool extend = replayKey_[i] != kNoKey;
+            replayFloor_[i] = extend ? std::min(replayFloor_[i], nowKey) : nowKey;
+            replayKey_[i] = extend ? std::max(replayKey_[i], keys_[i]) : keys_[i];
+        }
+    }
 }
 
 void Scheduler::restoreAhead()
@@ -702,6 +724,8 @@ void Scheduler::evaluateProgram(std::size_t index, UtcSeconds from, UtcSeconds n
     // The window spans at most kLookBackSec plus DST slack: four local days.
     std::array<Candidate, 4 * kMaxStartTimes> found{};
     std::size_t n = 0;
+    std::array<Candidate, 4 * kMaxStartTimes> replayed{};
+    std::size_t nReplayed = 0;
     const int64_t firstDay = tz_.localDay(from) - 1;
     const int64_t lastDay = tz_.localDay(now);
     for (int64_t day = firstDay; day <= lastDay && n < found.size(); ++day) {
@@ -712,6 +736,14 @@ void Scheduler::evaluateProgram(std::size_t index, UtcSeconds from, UtcSeconds n
             const uint16_t minute = p.startMinutes[s];
             const int64_t key = makeKey(day, minute);
             if (key <= keys_[index]) {
+                // Policy 8: covered by a key set while the clock was ahead.
+                if (replayKey_[index] != kNoKey && key > replayFloor_[index] && key <= replayKey_[index] &&
+                    nReplayed < replayed.size()) {
+                    const UtcSeconds at = tz_.fromLocal(day, static_cast<int32_t>(minute) * 60);
+                    if (at > from && at <= now) {
+                        replayed[nReplayed++] = Candidate{at, key};
+                    }
+                }
                 continue;
             }
             const UtcSeconds at = tz_.fromLocal(day, static_cast<int32_t>(minute) * 60);
@@ -721,6 +753,15 @@ void Scheduler::evaluateProgram(std::size_t index, UtcSeconds from, UtcSeconds n
             found[n++] = Candidate{at, key};
         }
     }
+    for (std::size_t i = 0; i < nReplayed; ++i) {
+        replayFloor_[index] = std::max(replayFloor_[index], replayed[i].key);
+        if (listener_ != nullptr) {
+            listener_->onProgramMissed(p.id, replayed[i].at);
+        }
+    }
+    if (replayKey_[index] != kNoKey && replayFloor_[index] >= replayKey_[index]) {
+        replayKey_[index] = kNoKey; // the clock is back where it was
+    }
     if (n == 0) {
         return;
     }
@@ -728,7 +769,9 @@ void Scheduler::evaluateProgram(std::size_t index, UtcSeconds from, UtcSeconds n
     const Candidate newest = found[n - 1];
     const int64_t grace =
         std::max<int64_t>(static_cast<int64_t>(cfg_.schedule.missedStartGraceMin) * 60, kOnTimeSlackSec);
-    const bool runNewest = now - newest.at <= grace;
+    // Missed-start policy 7: after a runtime record whose newest copy was
+    // damaged, the catch-up runs nothing; it reports.
+    const bool runNewest = now - newest.at <= grace && !restoredUncertain_;
     keys_[index] = newest.key;
     if (listener_ != nullptr) {
         for (std::size_t i = 0; i + 1 < n; ++i) {
