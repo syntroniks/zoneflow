@@ -503,7 +503,11 @@ exclude = ["GND", "3V3", "V_BUCK", "VBUS", "/VIN_MON", "/RLY_B_RB", "/ISNS", "/O
 layer = "In2.Cu"
 cost = 6
 keepout = [[17.8, 23.2, 19.6, 59.5], [17.8, 23.2, 34.7, 25.0], [32.7, 16.7, 34.7, 25.0],
-           [17.8, 57.7, 33.3, 59.5], [31.3, 57.7, 33.3, 63.4]]
+           [17.8, 57.7, 33.3, 59.5], [31.3, 57.7, 33.3, 63.4],
+           # 3 mm either side of the keep-alive net, which is on B.Cu, the layer next to In2.Cu. The
+           # hardware design asks for 1 mm. A first set of patches kept that and ran the rain input
+           # for 17 mm within 2 mm of the keep-alive on In2.Cu: more than a reviewer signs.
+           [41.2, 75.6, 95.5, 81.6], [89.5, 75.6, 95.5, 90.6], [89.5, 84.6, 99.5, 100.1]]
 
 # In1.Cu is the ground plane. Freerouting is told so in the Specctra file, as a power layer with a
 # plane: the "routable" flag of its settings is not obeyed. The build fails if a track is on it.
@@ -3086,7 +3090,7 @@ session = "13cc4d6f28d450546554030a8be7499c717eaa86fe6b7b5a9e6f5a26241c4130"
 # /MCU/STATUS_LED: (15.92, 42.00) to (97.28, 90.75), 161.1 mm, 7 vias, 0.2 mm wide, 8.5 mm of it on In2.Cu
 # /Expander/RLY_A: (49.54, 72.00) to (7.15, 35.60), 70.8 mm, 10 vias, 0.4 mm wide, 12.4 mm of it on In2.Cu
 # /SENS_5V: (78.34, 5.90) to (107.56, 35.50), 61.8 mm, 4 vias, 0.4 mm wide, 18.5 mm of it on In2.Cu
-# /Sensors/N_RAIN: (60.92, 101.05) to (104.86, 27.66), 144.3 mm, 15 vias, 0.2 mm wide, 18.1 mm of it on In2.Cu
+# /Sensors/N_RAIN: (60.92, 101.05) to (104.86, 27.66), 155.9 mm, 13 vias, 0.2 mm wide, 20.7 mm of it on In2.Cu
 
 [[patch]]
 layer = "F.Cu"
@@ -3656,7 +3660,7 @@ net = "/Sensors/N_RAIN"
 width = 0.2
 via = [0.6, 0.3]
 stay = true
-points = [[57.272, 92.763], [54.172, 89.662], [50.822, 89.662], {via = [42.322, 81.162]}]
+points = [[57.272, 92.763], [54.172, 89.662], [48.622, 89.662], {via = [40.672, 81.712]}]
 
 [[patch]]
 layer = "In2.Cu"
@@ -3664,7 +3668,7 @@ net = "/Sensors/N_RAIN"
 width = 0.2
 via = [0.6, 0.3]
 stay = true
-points = [[42.322, 81.162], [42.322, 77.912], [43.122, 77.112], {via = [56.872, 77.112]}]
+points = [[40.672, 81.712], [40.672, 76.712], [39.922, 75.962], [39.922, 72.812], [41.322, 71.412], [41.322, 70.662], [41.022, 70.362], [41.022, 66.512], [41.972, 65.562], {via = [41.972, 62.462]}]
 
 [[patch]]
 layer = "F.Cu"
@@ -3672,7 +3676,7 @@ net = "/Sensors/N_RAIN"
 width = 0.2
 via = [0.6, 0.3]
 stay = true
-points = [[56.872, 77.112], {via = [58.572, 75.412]}]
+points = [[41.972, 62.462], [46.572, 62.462], {via = [48.972, 60.062]}]
 
 [[patch]]
 layer = "B.Cu"
@@ -3680,7 +3684,7 @@ net = "/Sensors/N_RAIN"
 width = 0.2
 via = [0.6, 0.3]
 stay = true
-points = [[58.572, 75.412], [71.722, 75.412], [75.222, 71.912], {via = [76.922, 71.912]}]
+points = [[48.972, 60.062], [49.122, 59.912], [56.922, 59.912], [57.722, 59.112], [66.772, 59.112], [70.122, 62.462], {via = [79.822, 62.462]}]
 
 [[patch]]
 layer = "F.Cu"
@@ -3688,7 +3692,7 @@ net = "/Sensors/N_RAIN"
 width = 0.2
 via = [0.6, 0.3]
 stay = true
-points = [[76.922, 71.912], {via = [78.222, 71.912]}]
+points = [[79.822, 62.462], {via = [86.022, 62.462]}]
 
 [[patch]]
 layer = "B.Cu"
@@ -3696,7 +3700,7 @@ net = "/Sensors/N_RAIN"
 width = 0.2
 via = [0.6, 0.3]
 stay = true
-points = [[78.222, 71.912], [81.722, 68.412], {via = [85.172, 68.412]}]
+points = [[86.022, 62.462], [86.922, 61.562], {via = [86.922, 57.462]}]
 
 [[patch]]
 layer = "F.Cu"
@@ -3704,23 +3708,7 @@ net = "/Sensors/N_RAIN"
 width = 0.2
 via = [0.6, 0.3]
 stay = true
-points = [[85.172, 68.412], [85.622, 68.412], {via = [88.422, 65.612]}]
-
-[[patch]]
-layer = "B.Cu"
-net = "/Sensors/N_RAIN"
-width = 0.2
-via = [0.6, 0.3]
-stay = true
-points = [[88.422, 65.612], {via = [88.422, 57.612]}]
-
-[[patch]]
-layer = "F.Cu"
-net = "/Sensors/N_RAIN"
-width = 0.2
-via = [0.6, 0.3]
-stay = true
-points = [[88.422, 57.612], [87.622, 56.812], {via = [87.622, 55.962]}]
+points = [[86.922, 57.462], [87.622, 56.762], {via = [87.622, 55.962]}]
 
 [[patch]]
 layer = "B.Cu"
@@ -3969,25 +3957,18 @@ points = [[43.5, 73.3], [43.5, 75.7]]
 
 # I2C0_SDA to the clock chip U10. DRC names the nearest two pieces of the net, and the patch router
 # joins exactly those: here they lie on opposite sides of the keep-alive net, where the top side is
-# closed to crossings and In2.Cu and B.Cu are closed 1.1 mm either side. The pull-up R21 is on the
-# same side of the keep-alive as U10, behind the resistor array RN2 and its vias, which shut the
-# two outer layers. So the track goes from U10 to R21 and passes under RN2 on In2.Cu: 16.8 mm
-# there, 1.7 mm from the keep-alive in plan view and outside its keep-out.
+# closed to crossings and In2.Cu and B.Cu are closed too. Pin 23 of U5 is on the same side of the
+# keep-alive as U10, behind the resistor array RN2 and its vias, which shut the two outer layers.
+# The short way under RN2 on In2.Cu would run 9 mm within 2 mm of the keep-alive. This one goes
+# round the south instead: 58 mm, eight vias, 13.5 mm on In2.Cu in two pieces that pass under the
+# ADC lines, and nowhere within 3 mm of the keep-alive on that layer.
 [[patch]]
 layer = "F.Cu"
 net = "/I2C0_SDA"
 width = 0.2
 via = [0.6, 0.3]
 stay = true
-points = [[68.45, 70.09], [67.5, 70.09], {via = [65.1, 72.49]}]
-
-[[patch]]
-layer = "B.Cu"
-net = "/I2C0_SDA"
-width = 0.2
-via = [0.6, 0.3]
-stay = true
-points = [[65.1, 72.49], [64.5, 73.09], {via = [55.1, 73.09]}]
+points = [[68.45, 70.09], [69.55, 68.99], {via = [71.5, 68.99]}]
 
 [[patch]]
 layer = "In2.Cu"
@@ -3995,11 +3976,59 @@ net = "/I2C0_SDA"
 width = 0.2
 via = [0.6, 0.3]
 stay = true
-points = [[55.1, 73.09], [51.55, 76.64], [42.6, 76.64], {via = [40.6, 78.64]}]
+points = [[71.5, 68.99], [69.95, 67.44], {via = [69.95, 65.69]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/I2C0_SDA"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[69.95, 65.69], [68.4, 65.69], {via = [62.5, 59.79]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/I2C0_SDA"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[62.5, 59.79], [61.55, 58.84], {via = [61.55, 58.44]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/I2C0_SDA"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[61.55, 58.44], [57.75, 58.44], [57.5, 58.69], [57.5, 58.74], [57.4, 58.74], [57.4, 58.79], [57.35, 58.79], [57.35, 58.84], [57.25, 58.84], [57.2, 58.89], [55, 58.89], [54.7, 58.59], [49.5, 58.59], {via = [47.95, 60.14]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/I2C0_SDA"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[47.95, 60.14], [46.5, 61.59], {via = [41.9, 61.59]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/I2C0_SDA"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[41.9, 61.59], [38.8, 64.69], [38.8, 66.69], {via = [36.55, 68.94]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/I2C0_SDA"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[36.55, 68.94], [35.9, 69.59], {via = [35.9, 72.29]}]
 
 [[patch]]
 layer = "F.Cu"
 net = "/I2C0_SDA"
 width = 0.2
 stay = true
-points = [[40.6, 78.64], [40, 78.64], [39, 77.64], [39, 77.59]]
+points = [[35.9, 72.29], [35.9, 74.49], [36.8, 75.39], [37.9, 75.39]]

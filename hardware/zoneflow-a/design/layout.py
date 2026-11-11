@@ -1103,7 +1103,11 @@ exclude = ["GND", "3V3", "V_BUCK", "VBUS", "/VIN_MON", "/RLY_B_RB", "/ISNS", "/O
 layer = "In2.Cu"
 cost = 6
 keepout = [[17.8, 23.2, 19.6, 59.5], [17.8, 23.2, 34.7, 25.0], [32.7, 16.7, 34.7, 25.0],
-           [17.8, 57.7, 33.3, 59.5], [31.3, 57.7, 33.3, 63.4]]
+           [17.8, 57.7, 33.3, 59.5], [31.3, 57.7, 33.3, 63.4],
+           # 3 mm either side of the keep-alive net, which is on B.Cu, the layer next to In2.Cu. The
+           # hardware design asks for 1 mm. A first set of patches kept that and ran the rain input
+           # for 17 mm within 2 mm of the keep-alive on In2.Cu: more than a reviewer signs.
+           [41.2, 75.6, 95.5, 81.6], [89.5, 75.6, 95.5, 90.6], [89.5, 84.6, 99.5, 100.1]]
 
 # In1.Cu is the ground plane. Freerouting is told so in the Specctra file, as a power layer with a
 # plane: the "routable" flag of its settings is not obeyed. The build fails if a track is on it.

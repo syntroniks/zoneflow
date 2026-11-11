@@ -6,11 +6,11 @@ written in `design/layout.py` or `design/board.toml`; "patch router" is the `[[p
 
 | Layer | By hand | Patch router | Autorouter |
 |---|---|---|---|
-| B.Cu | 1903 | 459 | 1650 |
-| F.Cu | 1811 | 318 | 2733 |
-| In2.Cu | 444 | 114 | 0 |
+| B.Cu | 1903 | 480 | 1650 |
+| F.Cu | 1811 | 334 | 2733 |
+| In2.Cu | 444 | 113 | 0 |
 
-104 nets are routed by hand alone, 97 have autorouted or patched copper. 386 vias were placed by hand or by the plane fan-out, 164 by the autorouter and 88 by the patch router.
+104 nets are routed by hand alone, 97 have autorouted or patched copper. 386 vias were placed by hand or by the plane fan-out, 164 by the autorouter and 91 by the patch router.
 
 ## Copper laid by the patch router
 
@@ -22,13 +22,13 @@ look at each one.
 - `/CurrentSense/SA_P` (Default): 2 mm, 0 vias, narrowest 0.2 mm (class width 0.2 mm)
 - `/Expander/RLY_A` (Power): 70.8 mm, 10 vias, narrowest 0.4 mm (class width 0.4 mm)
 - `/Expander/RLY_ON` (Default): 3 mm, 1 vias, narrowest 0.2 mm (class width 0.2 mm)
-- `/I2C0_SDA` (Default): 33.5 mm, 3 vias, narrowest 0.2 mm (class width 0.2 mm)
+- `/I2C0_SDA` (Default): 58.1 mm, 8 vias, narrowest 0.2 mm (class width 0.2 mm)
 - `/ISENSE_LO` (Default): 25.9 mm, 1 vias, narrowest 0.2 mm (class width 0.2 mm)
 - `/MCU/STATUS_LED` (Default): 161.1 mm, 7 vias, narrowest 0.2 mm (class width 0.2 mm)
 - `/PGOOD` (Default): 12.3 mm, 2 vias, narrowest 0.2 mm (class width 0.2 mm)
 - `/SENS_5V` (Field): 61.8 mm, 4 vias, narrowest 0.4 mm (class width 0.4 mm)
 - `/SENS_PWR_EN` (Default): 126 mm, 12 vias, narrowest 0.2 mm (class width 0.2 mm)
-- `/Sensors/N_RAIN` (Default): 144.3 mm, 15 vias, narrowest 0.2 mm (class width 0.2 mm)
+- `/Sensors/N_RAIN` (Default): 155.9 mm, 13 vias, narrowest 0.2 mm (class width 0.2 mm)
 - `/T_RAIN` (Field): 22 mm, 1 vias, narrowest 0.4 mm (class width 0.4 mm)
 - `/VB` (Default): 16.8 mm, 6 vias, narrowest 0.2 mm (class width 0.2 mm)
 - `/ZD_MV_N` (Default): 32.9 mm, 5 vias, narrowest 0.2 mm (class width 0.2 mm)
@@ -65,16 +65,16 @@ Each one is a slot in the pour of that layer.
 - `/Connectors/U0TXD`: 3.8 mm
 - `/CurrentSense/SA_N`: 7.1 mm
 - `/Expander/RLY_A`: 12.4 mm
-- `/I2C0_SDA`: 16.8 mm
+- `/I2C0_SDA`: 13.5 mm
 - `/MCU/STATUS_LED`: 8.5 mm
 - `/SENS_5V`: 18.5 mm
-- `/Sensors/N_RAIN`: 18.1 mm
+- `/Sensors/N_RAIN`: 20.7 mm
 - `/VB`: 6.4 mm
 - `/ZD_MV_N`: 11.1 mm
 - `/ZD_Z2_N`: 1.6 mm
 - `/ZD_Z8_N`: 9.3 mm
 
-Total: 114 mm in 11 nets.
+Total: 113 mm in 11 nets.
 
 ## Every net with autorouted copper
 
@@ -117,7 +117,7 @@ Total: 114 mm in 11 nets.
 | `/Failsafe/LED_FLT` | Default | 2.6 | 2.3 | 0 | F.Cu | 0.2 |
 | `/Failsafe/OC_CMP` | Default | 17.4 | 19.3 | 0 | F.Cu | 0.2 |
 | `/I2C0_SCL` | Default | 107 | 80.1 | 3 | B.Cu, F.Cu | 0.2 |
-| `/I2C0_SDA` | Default | 110.7 | 80.8 | 2 | B.Cu, F.Cu, In2.Cu | 0.12 |
+| `/I2C0_SDA` | Default | 135.3 | 80.8 | 2 | B.Cu, F.Cu, In2.Cu | 0.12 |
 | `/ISENSE_HI` | Default | 32.6 | 23.3 | 2 | B.Cu, F.Cu | 0.2 |
 | `/ISENSE_LO` | Default | 120 | 83.3 | 4 | B.Cu, F.Cu | 0.15 |
 | `/KA_OK` | Default | 179.7 | 108.2 | 6 | B.Cu, F.Cu | 0.2 |
@@ -146,7 +146,7 @@ Total: 114 mm in 11 nets.
 | `/SENS_RAIN` | Default | 42.7 | 37 | 2 | B.Cu, F.Cu | 0.2 |
 | `/Sensors/N_AUX` | Default | 132.6 | 121.1 | 10 | B.Cu, F.Cu | 0.2 |
 | `/Sensors/N_FLOW` | Default | 25.9 | 25.4 | 2 | B.Cu, F.Cu | 0.2 |
-| `/Sensors/N_RAIN` | Default | 153.1 | 124.5 | 0 | B.Cu, F.Cu, In2.Cu | 0.2 |
+| `/Sensors/N_RAIN` | Default | 164.7 | 124.5 | 0 | B.Cu, F.Cu, In2.Cu | 0.2 |
 | `/Sensors/SP_A` | Field | 20.4 | 19.1 | 2 | B.Cu, F.Cu | 0.4 |
 | `/Sensors/SP_B` | Field | 39.1 | 6.6 | 2 | B.Cu, F.Cu | 0.4 |
 | `/Sensors/SP_ILIM` | Default | 9.8 | 7.4 | 2 | B.Cu, F.Cu | 0.2 |

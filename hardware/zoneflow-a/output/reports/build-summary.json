@@ -4,8 +4,8 @@
   "footprints": 356,
   "smd": 314,
   "through_hole": 7,
-  "track_segments": 3318,
-  "vias": 638,
+  "track_segments": 3346,
+  "vias": 641,
   "zones": 24
  },
  "drc": {
@@ -37,10 +37,10 @@
   "Default": {
    "class_clearance_mm": 0.2,
    "class_track_width_mm": 0.2,
-   "length_mm": 5931.1,
+   "length_mm": 5967.4,
    "routed_width_max_mm": 2.0,
    "routed_width_min_mm": 0.1,
-   "segments": 2160
+   "segments": 2188
   },
   "Field": {
    "class_clearance_mm": 0.5,
@@ -101,12 +101,12 @@
   "freerouting_version": "2.5.0",
   "freerouting_violations": 1232,
   "items_after_session_import": 3624,
-  "patch_segments": 300,
+  "patch_segments": 328,
   "pre_routed_items": 1639,
-  "track_length_mm": 9432.8,
-  "track_segments": 3318,
+  "track_length_mm": 9469.1,
+  "track_segments": 3346,
   "unused_escape_items_removed": 16,
-  "vias": 638,
+  "vias": 641,
   "wall_seconds": 2381.4,
   "width_pass": {
    "kept_narrow_mm": 1.0,

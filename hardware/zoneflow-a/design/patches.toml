@@ -16,7 +16,7 @@ session = "13cc4d6f28d450546554030a8be7499c717eaa86fe6b7b5a9e6f5a26241c4130"
 # /MCU/STATUS_LED: (15.92, 42.00) to (97.28, 90.75), 161.1 mm, 7 vias, 0.2 mm wide, 8.5 mm of it on In2.Cu
 # /Expander/RLY_A: (49.54, 72.00) to (7.15, 35.60), 70.8 mm, 10 vias, 0.4 mm wide, 12.4 mm of it on In2.Cu
 # /SENS_5V: (78.34, 5.90) to (107.56, 35.50), 61.8 mm, 4 vias, 0.4 mm wide, 18.5 mm of it on In2.Cu
-# /Sensors/N_RAIN: (60.92, 101.05) to (104.86, 27.66), 144.3 mm, 15 vias, 0.2 mm wide, 18.1 mm of it on In2.Cu
+# /Sensors/N_RAIN: (60.92, 101.05) to (104.86, 27.66), 155.9 mm, 13 vias, 0.2 mm wide, 20.7 mm of it on In2.Cu
 
 [[patch]]
 layer = "F.Cu"
@@ -586,7 +586,7 @@ net = "/Sensors/N_RAIN"
 width = 0.2
 via = [0.6, 0.3]
 stay = true
-points = [[57.272, 92.763], [54.172, 89.662], [50.822, 89.662], {via = [42.322, 81.162]}]
+points = [[57.272, 92.763], [54.172, 89.662], [48.622, 89.662], {via = [40.672, 81.712]}]
 
 [[patch]]
 layer = "In2.Cu"
@@ -594,7 +594,7 @@ net = "/Sensors/N_RAIN"
 width = 0.2
 via = [0.6, 0.3]
 stay = true
-points = [[42.322, 81.162], [42.322, 77.912], [43.122, 77.112], {via = [56.872, 77.112]}]
+points = [[40.672, 81.712], [40.672, 76.712], [39.922, 75.962], [39.922, 72.812], [41.322, 71.412], [41.322, 70.662], [41.022, 70.362], [41.022, 66.512], [41.972, 65.562], {via = [41.972, 62.462]}]
 
 [[patch]]
 layer = "F.Cu"
@@ -602,7 +602,7 @@ net = "/Sensors/N_RAIN"
 width = 0.2
 via = [0.6, 0.3]
 stay = true
-points = [[56.872, 77.112], {via = [58.572, 75.412]}]
+points = [[41.972, 62.462], [46.572, 62.462], {via = [48.972, 60.062]}]
 
 [[patch]]
 layer = "B.Cu"
@@ -610,7 +610,7 @@ net = "/Sensors/N_RAIN"
 width = 0.2
 via = [0.6, 0.3]
 stay = true
-points = [[58.572, 75.412], [71.722, 75.412], [75.222, 71.912], {via = [76.922, 71.912]}]
+points = [[48.972, 60.062], [49.122, 59.912], [56.922, 59.912], [57.722, 59.112], [66.772, 59.112], [70.122, 62.462], {via = [79.822, 62.462]}]
 
 [[patch]]
 layer = "F.Cu"
@@ -618,7 +618,7 @@ net = "/Sensors/N_RAIN"
 width = 0.2
 via = [0.6, 0.3]
 stay = true
-points = [[76.922, 71.912], {via = [78.222, 71.912]}]
+points = [[79.822, 62.462], {via = [86.022, 62.462]}]
 
 [[patch]]
 layer = "B.Cu"
@@ -626,7 +626,7 @@ net = "/Sensors/N_RAIN"
 width = 0.2
 via = [0.6, 0.3]
 stay = true
-points = [[78.222, 71.912], [81.722, 68.412], {via = [85.172, 68.412]}]
+points = [[86.022, 62.462], [86.922, 61.562], {via = [86.922, 57.462]}]
 
 [[patch]]
 layer = "F.Cu"
@@ -634,23 +634,7 @@ net = "/Sensors/N_RAIN"
 width = 0.2
 via = [0.6, 0.3]
 stay = true
-points = [[85.172, 68.412], [85.622, 68.412], {via = [88.422, 65.612]}]
-
-[[patch]]
-layer = "B.Cu"
-net = "/Sensors/N_RAIN"
-width = 0.2
-via = [0.6, 0.3]
-stay = true
-points = [[88.422, 65.612], {via = [88.422, 57.612]}]
-
-[[patch]]
-layer = "F.Cu"
-net = "/Sensors/N_RAIN"
-width = 0.2
-via = [0.6, 0.3]
-stay = true
-points = [[88.422, 57.612], [87.622, 56.812], {via = [87.622, 55.962]}]
+points = [[86.922, 57.462], [87.622, 56.762], {via = [87.622, 55.962]}]
 
 [[patch]]
 layer = "B.Cu"

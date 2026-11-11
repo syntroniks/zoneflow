@@ -100,7 +100,7 @@ Written by `hwflow.layoutrules`. Distances in millimetres, from the board file. 
 | `/KA` | `/Failsafe/OC_CMP` | same layer | 1 | 12.26 | (108, 80.02) |
 | `/KA` | `/Failsafe/OV_DIV` | same layer | 1 | 26.28 | (18.2, 86.17) |
 | `/KA` | `/I2C0_SCL` | same layer | 1 | 1.21 | (45.6, 80.2) |
-| `/KA` | `/I2C0_SDA` | same layer | 1 | 1.56 | (51.55, 76.64) |
+| `/KA` | `/I2C0_SDA` | same layer | 1 | 2.04 | (41.87, 79.34) |
 | `/KA` | `/ISENSE_HI` | same layer | 1 | 11.41 | (38.68, 67.5) |
 | `/KA` | `/ISENSE_LO` | same layer | 1 | 3.58 | (93.76, 75.29) |
 | `/KA` | `/ISNS` | same layer | 1 | 16.22 | (32.7, 62.8) |
@@ -157,7 +157,7 @@ Written by `hwflow.layoutrules`. Distances in millimetres, from the board file. 
 | `/KA` | `/SENS_RAIN` | same layer | 1 | 5.56 | (91.4, 102.34) |
 | `/KA` | `/Sensors/N_AUX` | same layer | 1 | 2.96 | (95.88, 82.95) |
 | `/KA` | `/Sensors/N_FLOW` | same layer | 1 | 32.54 | (106.41, 49.2) |
-| `/KA` | `/Sensors/N_RAIN` | same layer | 1 | 1.06 | (56.87, 77.11) |
+| `/KA` | `/Sensors/N_RAIN` | same layer | 1 | 3.13 | (40.67, 81.71) |
 | `/KA` | `/Sensors/SP_A` | same layer | 1 | 14.36 | (70.2, 63.71) |
 | `/KA` | `/Sensors/SP_B` | same layer | 1 | 12.94 | (84, 65.14) |
 | `/KA` | `/Sensors/SP_ILIM` | same layer | 1 | 13.98 | (59.12, 64.2) |
