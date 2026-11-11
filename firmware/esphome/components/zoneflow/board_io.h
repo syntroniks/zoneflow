@@ -19,7 +19,7 @@
 namespace esphome::zoneflow {
 
 struct BoardPins {
-  int keepalive = -1;        // KA, GPIO38: plain GPIO output, every edge decided in the interrupt
+  int keepalive = -1;        // KA, GPIO17: plain GPIO output, every edge decided in the interrupt
   int drive_readback = -1;   // A_RB, GPIO42: input, internal pull-down
   int relay_readback = -1;   // B_RB, GPIO7: input, no pull
   int overcurrent = -1;      // OC, GPIO40: input, no pull, low = latch set
