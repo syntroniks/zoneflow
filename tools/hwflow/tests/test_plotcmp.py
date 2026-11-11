@@ -45,29 +45,32 @@ def test_keep_puts_back_only_the_plots_that_draw_the_same(tmp_path):
     (out / "schematic-svg").mkdir(parents=True)
     same_old = _svg(out / "schematic-svg" / "same.svg", "old", RED, A, B, "</g>\n").read_bytes()
     _svg(out / "schematic-svg" / "changed.svg", "old", RED, A, "</g>\n")
-    (out / "x.pdf").write_bytes(b"old pdf")
+    (out / "x-schematic.pdf").write_bytes(b"old pdf")
+    (out / "x-board.pdf").write_bytes(b"a plot of the board")
     scratch = tmp_path / "build" / "previous-plots"
     plotcmp.stash(out, scratch)
-    assert not (out / "schematic-svg").exists() and not (out / "x.pdf").exists()
+    assert not (out / "schematic-svg").exists() and not (out / "x-schematic.pdf").exists()
+    # The schematic step alone must not lose the board's PDFs: it does not make them again.
+    assert (out / "x-board.pdf").read_bytes() == b"a plot of the board"
 
     (out / "schematic-svg").mkdir()
     _svg(out / "schematic-svg" / "same.svg", "new", RED, B, A, "</g>\n")
     changed_new = _svg(out / "schematic-svg" / "changed.svg", "new", RED, B, "</g>\n").read_bytes()
-    (out / "x.pdf").write_bytes(b"new pdf")
+    (out / "x-schematic.pdf").write_bytes(b"new pdf")
     assert plotcmp.keep(scratch, out) == (1, 1)
     assert (out / "schematic-svg" / "same.svg").read_bytes() == same_old
     assert (out / "schematic-svg" / "changed.svg").read_bytes() == changed_new
-    assert (out / "x.pdf").read_bytes() == b"new pdf"  # a page was redrawn, so the PDF is the new one
+    assert (out / "x-schematic.pdf").read_bytes() == b"new pdf"  # a page was redrawn, so the PDF is the new one
 
     # Nothing redrawn: every plot and the PDF keep their old bytes.
     plotcmp.stash(out, scratch)
     (out / "schematic-svg").mkdir()
     _svg(out / "schematic-svg" / "same.svg", "newer", RED, A, B, "</g>\n")
     _svg(out / "schematic-svg" / "changed.svg", "newer", RED, B, "</g>\n")
-    (out / "x.pdf").write_bytes(b"newer pdf")
+    (out / "x-schematic.pdf").write_bytes(b"newer pdf")
     assert plotcmp.keep(scratch, out) == (2, 0)
     assert (out / "schematic-svg" / "same.svg").read_bytes() == same_old
-    assert (out / "x.pdf").read_bytes() == b"new pdf"
+    assert (out / "x-schematic.pdf").read_bytes() == b"new pdf"
 
 
 def test_netlist_unit_ids_are_sorted(tmp_path):

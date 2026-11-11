@@ -139,6 +139,23 @@ def check_parity(design: Design, out: Path, build: Path, root: Path, nl, net_fil
     return 0
 
 
+def cmd_project(args) -> int:
+    """Write the project file again, exactly as the schematic step writes it.
+
+    KiCad rewrites ``<name>.kicad_pro`` with all its defaults whenever a board
+    is saved. The committed file is the one this tool writes, so that the
+    schematic step, which CI runs alone, reproduces it byte for byte. The
+    board build calls this after its last save.
+    """
+    design_dir, out = Path(args.design_dir), Path(args.project_dir)
+    design = load_design(design_dir)
+    # The net classes of the nets as KiCad names them, which the schematic step left in the model.
+    classes = json.loads((out / "build" / "model.json").read_text(encoding="utf-8"))["netclass"]
+    project.project_file(design, out, project.load_toml(design_dir / "board.toml"),
+                         project.load_toml(Path(args.fab_rules)), classes)
+    return 0
+
+
 def cmd_lint(args) -> int:
     """Plot every sheet and look for text and symbols that collide."""
     design_dir, out = Path(args.design_dir), Path(args.project_dir)
@@ -212,6 +229,11 @@ def main(argv=None) -> int:
     s.add_argument("--fab-rules", required=True, help="fab limits TOML; the .kicad_dru beside it is used too")
     s.add_argument("--no-normalise", action="store_true")
     s.set_defaults(fn=cmd_sch)
+    s = sub.add_parser("project", help="write the project file again, as the schematic step writes it")
+    s.add_argument("design_dir")
+    s.add_argument("project_dir")
+    s.add_argument("--fab-rules", required=True, help="fab limits TOML")
+    s.set_defaults(fn=cmd_project)
     args = ap.parse_args(argv)
     try:
         return args.fn(args)

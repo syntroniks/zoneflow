@@ -64,3 +64,21 @@ def test_export_times_are_taken_out_of_gerber_and_drill_headers(tmp_path):
     text = d.read_text()
     assert "date 2026-11-10T00:00:00+0000" in text and "TF.CreationDate,2026-11-10T00:00:00+00:00" in text
     assert not stable.normalise(g, "2026-11-10")          # a second pass changes nothing
+
+
+def test_export_times_without_a_time_zone_are_taken_out_too(tmp_path):
+    g = tmp_path / "a.gbr"
+    g.write_text("G04 Created by KiCad (PCBNEW 10.0.8) date 2026-11-11 07:36:22*\n%MOMM*%\n")
+    d = tmp_path / "a.drl"
+    d.write_text("M48\n; DRILL file KiCad 10.0.8 date 2026-11-11T07:36:23\n; FORMAT={-:-/ absolute / metric}\n")
+    r = tmp_path / "drc.rpt"
+    r.write_text("** Drc report for a.kicad_pcb **\n** Created on 2026-11-11T07:35:59 **\n** Found 0 violations **\n")
+    s = tmp_path / "a.step"
+    s.write_text("ISO-10303-21;\nHEADER;\nFILE_NAME('a.step','2026-11-11T07:36:34',('Pcbnew'),('Kicad'),\n#1 = X;\n")
+    for f in (g, d, r, s):
+        assert stable.normalise(f, "2026-11-10")
+        assert not stable.normalise(f, "2026-11-10")      # a second pass changes nothing
+    assert "date 2026-11-10 00:00:00*" in g.read_text()
+    assert "date 2026-11-10T00:00:00\n" in d.read_text()
+    assert "** Created on 2026-11-10T00:00:00 **" in r.read_text()
+    assert "FILE_NAME('a.step','2026-11-10T00:00:00',('Pcbnew')" in s.read_text() and "#1 = X;" in s.read_text()

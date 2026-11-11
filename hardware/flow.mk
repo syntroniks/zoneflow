@@ -49,6 +49,10 @@ STABILISE = $(if $(STABLE),$(KICAD_PY) -m hwflow.stable $(SCH) $(OUT),@true)
 PLOTS_STASH = $(if $(STABLE),$(KICAD_PY) -m hwflow.plotcmp stash $(OUT) build/previous-plots,@true)
 PLOTS_KEEP = $(if $(STABLE),$(KICAD_PY) -m hwflow.plotcmp keep build/previous-plots $(OUT),@true)
 PCB := $(NAME).kicad_pcb
+# KiCad rewrites the project file with all its defaults whenever a board is saved. The committed
+# one is the file the schematic step writes, so the steps that save a board put that back: CI runs
+# the schematic step alone and compares.
+PROJECT_FILE = $(UV_PY) -m hwflow project $(DESIGN) . --fab-rules $(FAB_RULES)
 # kicad-cli prints wxWidgets debug lines on stderr. They go to a log file so
 # that the exit code of kicad-cli still decides whether the step passed.
 LOG := 2>> build/kicad-cli.stderr
@@ -147,6 +151,8 @@ drc: finish
 		--format report -o $(OUT)/reports/drc.rpt $(PCB) $(LOG)
 	$(KICAD_CLI) pcb drc --schematic-parity --severity-error --severity-warning --exit-code-violations \
 		--format json -o $(OUT)/reports/drc.json $(PCB) $(LOG)
+	$(STABILISE)
+	$(PROJECT_FILE)
 
 BOM_EXPORT = $(KICAD_CLI) sch export bom --fields 'Value,Reference,Footprint,LCSC,$${QUANTITY}' \
 	--labels 'Value,Reference,Footprint,LCSC,Qty' --group-by 'Value,Footprint,LCSC' \
@@ -197,6 +203,7 @@ ibom: drc $(IBOM_DIR)/InteractiveHtmlBom/generate_interactive_bom.py
 		--no-browser --dest-dir $(abspath $(OUT)) --name-format "$(NAME)-ibom" --include-tracks --include-nets \
 		--extra-fields LCSC $(PCB) >> build/ibom.log 2>&1
 	$(STABILISE)
+	$(PROJECT_FILE)
 
 outputs: drc mech rules sch-outputs
 	# Gerbers, drill and placement all use the drill/place origin, which the
@@ -238,6 +245,7 @@ outputs: drc mech rules sch-outputs
 	# What was routed by hand and what by the autorouter, and the things to look at.
 	$(KICAD_PY) -m hwflow.routereport . $(DESIGN) $(OUT)/reports/routing.md
 	$(STABILISE)
+	$(PROJECT_FILE)
 
 # Unit tests, KiCad round-trip tests, and proof that ERC and DRC catch
 # deliberately broken inputs. Needs the board to have been built.
