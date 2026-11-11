@@ -357,7 +357,11 @@ void Controller::tick()
     driver_.tick();
     scheduler_.tick();
 
-    if (persistDirty_ && now - lastPersistMs_ >= kPersistMinIntervalMs) {
+    // A consumed scheduled start is stored at once: within the rate limit a
+    // power cut lost it, and the start ran again after the restart (system
+    // soak simulation, firmware-architecture.md section 22). Starts are a
+    // few a day, so this adds no flash wear worth counting.
+    if (persistDirty_ && (persistUrgent_ || now - lastPersistMs_ >= kPersistMinIntervalMs)) {
         savePersist(now);
     }
     if (persist_.takeFailure() && (activeFaults_ & faultBit(FaultCode::StorageError)) == 0) {
@@ -736,6 +740,7 @@ void Controller::savePersist(MonoMs now)
     // A plain-data copy for the writer task: no JSON, no heap, no flash here.
     lastPersistMs_ = now;
     persistDirty_ = false;
+    persistUrgent_ = false;
     if (deps_.runtimeStorage != nullptr) {
         persist_.post(scheduler_.persist());
     }
@@ -905,6 +910,7 @@ void Controller::onMasterChanged(bool on)
 
 void Controller::onProgramStarted(uint16_t programId, RunSource source, bool late)
 {
+    persistUrgent_ = persistUrgent_ || source == RunSource::Schedule;
     Event e = makeEvent(EventType::ProgramStarted);
     e.program = ProgramData{programId, source, SkipReason::NothingToRun, late, 0};
     publish(e);
@@ -912,6 +918,7 @@ void Controller::onProgramStarted(uint16_t programId, RunSource source, bool lat
 
 void Controller::onProgramSkipped(uint16_t programId, SkipReason reason)
 {
+    persistUrgent_ = true;
     Event e = makeEvent(EventType::ProgramSkipped);
     e.program = ProgramData{programId, RunSource::Schedule, reason, false, 0};
     publish(e);
@@ -919,6 +926,7 @@ void Controller::onProgramSkipped(uint16_t programId, SkipReason reason)
 
 void Controller::onProgramMissed(uint16_t programId, UtcSeconds scheduledAt)
 {
+    persistUrgent_ = true;
     Event e = makeEvent(EventType::ProgramMissed);
     e.program = ProgramData{programId, RunSource::Schedule, SkipReason::NothingToRun, false, scheduledAt};
     publish(e);
