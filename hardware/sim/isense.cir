@@ -43,10 +43,10 @@ XU8A  a_p a_n isense_lo OPA
 * --- U8B: difference amplifier, gain 49.9k/7.5k = 6.653 --------------------
 R42   isns b_n 7.5k
 R43   b_n  isense_hi 49.9k
-C28   b_n  isense_hi 220p
+C28   b_n  isense_hi 330p
 R44   kn   b_p 7.5k
 R45   b_p  vb  49.9k
-C29   b_p  vb  220p
+C29   b_p  vb  330p
 XU8B  b_p b_n isense_hi OPA
 
 * --- ADC input filters ------------------------------------------------------

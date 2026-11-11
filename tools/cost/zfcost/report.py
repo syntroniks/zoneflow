@@ -160,6 +160,40 @@ def cuts(inp: m.Inputs, qtys=(5, 25, 100)) -> str:
     return table(["Scenario", "Change"] + [f"Saves USD per controller at {n}" for n in qtys], rows)
 
 
+def consolidation(inp: m.Inputs, qtys=QTYS) -> str:
+    """Before and after the BOM consolidation: fee-carrying types, fees per order, cost per controller."""
+    was = m.before_consolidation(inp)
+    rows = []
+    for b in m.BUILDS:
+        for n in qtys:
+            old, new = m.batch_cost(n, b, was), m.batch_cost(n, b, inp)
+            rows.append(
+                [
+                    b,
+                    str(n),
+                    " + ".join(s for _, s in new.orders),
+                    f"{m.fee_types(was, b)} to {m.fee_types(inp, b)}",
+                    f"{usd(old.extended_fee)} to {usd(new.extended_fee)}",
+                    usd(old.total - new.total),
+                    f"{usd(old.per_unit())} to {usd(new.per_unit())}",
+                    usd(old.per_unit() - new.per_unit()),
+                ]
+            )
+    return table(
+        [
+            "Build",
+            "Units",
+            "Service",
+            "Fee-carrying types",
+            "Extended-part fees, USD per batch",
+            "Saved per batch, USD, with duty and part prices",
+            "USD per controller",
+            "Saved per controller, USD",
+        ],
+        rows,
+    )
+
+
 def batch_size(inp: m.Inputs) -> str:
     rows = []
     for b in m.BUILDS:
@@ -285,6 +319,7 @@ BLOCKS = {
     "stock": stock,
     "sensitivity": sensitivity,
     "cuts": cuts,
+    "consolidation": consolidation,
     "batch": batch_size,
     "time": time_table,
     "oneoff": one_off,

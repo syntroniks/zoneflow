@@ -11,13 +11,13 @@ Library footprints: JLCEDA/EasyEDA Official Library (<https://lceda.cn/>, <https
 | `C_0603_1608Metric` | C14858 | `C0603` | 1: C8 | set | 0 | 0.07 | yes |
 | `C_0603_1608Metric` | C15849 | `C0603` | 5: C16 ... | set | 0 | 0.07 | yes |
 | `C_0603_1608Metric` | C1588 | `C0603` | 2: C26 ... | set | 0 | 0.07 | yes |
-| `C_0603_1608Metric` | C1589 | `C0603` | 3: C24 ... | set | 0 | 0.07 | yes |
-| `C_0603_1608Metric` | C16033 | `C0603` | 1: C4 | set | 0 | 0.07 | yes |
+| `C_0603_1608Metric` | C1604 | `C0603` | 1: C4 | set | 0 | 0.07 | yes |
 | `C_0603_1608Metric` | C1613 | `C0603` | 1: C7 | set | 0 | 0.07 | yes |
-| `C_0603_1608Metric` | C1621 | `C0603` | 1: C33 | set | 0 | 0.07 | yes |
 | `C_0603_1608Metric` | C1647 | `C0603` | 1: C36 | set | 0 | 0.07 | yes |
+| `C_0603_1608Metric` | C1664 | `C0603` | 2: C28 ... | set | 0 | 0.07 | yes |
 | `C_0603_1608Metric` | C21122 | `C0603` | 3: C44 ... | set | 0 | 0.07 | yes |
-| `C_0603_1608Metric` | C27675 | `C0603` | 2: C28 ... | set | 0 | 0.07 | yes |
+| `C_0603_1608Metric` | C53987 | `C0603` | 1: C33 | set | 0 | 0.07 | yes |
+| `C_0603_1608Metric` | C57112 | `C0603` | 3: C24 ... | set | 0 | 0.07 | yes |
 | `C_0805_2012Metric` | C15850 | `C0805` | 3: C11 ... | set | 0 | 0.05 | yes |
 | `C_0805_2012Metric` | C1779 | `C0805` | 3: C10 ... | set | 0 | 0.05 | yes |
 | `C_0805_2012Metric` | C18741 | `C0805` | 10: C101 ... | set | 0 | 0.05 | yes |
@@ -84,8 +84,8 @@ Library footprints: JLCEDA/EasyEDA Official Library (<https://lceda.cn/>, <https
 | `SOT-223-3_TabPin2` | C435835 | `SOT-223-4_L6.5-W3.5-P2.30-LS7.0-BR` | 1: U3 | pin 1 | 180 | 0.32 | yes |
 | `SOT-23` | C15127 | `SOT-23_L2.9-W1.3-P1.90-LS2.4-BR` | 1: Q3 | pin 1 | 180 | 0.21 | yes |
 | `SOT-23` | C20917 | `SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR` | 3: Q1 ... | pin 1 | 180 | 0.06 | yes |
-| `SOT-23` | C47546 | `SOT-23-3_L3.0-W1.7-P0.95-LS2.9-BR` | 6: D15 ... | pin 1 | 180 | 0.16 | yes |
 | `SOT-23` | C5218924 | `SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR` | 1: U12 | pin 1 | 180 | 0.06 | yes |
+| `SOT-23` | C7420333 | `SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR` | 6: D15 ... | pin 1 | 180 | 0.06 | yes |
 | `SOT-23-6` | C55266 | `SOT-23-6_L2.9-W1.6-P0.95-LS2.8-BR` | 1: U11 | pin 1 | 180 | 0.21 | yes |
 | `SOT-23-6` | C7519 | `SOT-23-6_L2.9-W1.6-P0.95-LS2.8-BL` | 2: U2 ... | pin 1 | 270 | 0.01 | yes |
 | `SW_Push_1P1T_XKB_TS-1187A` | C318884 | `SW-SMD_4P-L5.1-W5.1-P3.70-LS6.5-TL_H1.5` | 2: SW1 ... | set | 0 | 0.03 | yes |

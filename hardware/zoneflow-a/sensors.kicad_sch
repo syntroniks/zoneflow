@@ -6498,7 +6498,7 @@
 				)
 			)
 		)
-		(property "MPN" "BAT54S,215"
+		(property "MPN" "BAT54S"
 			(at 101.6 137.16 0)
 			(hide yes)
 			(show_name no)
@@ -6509,7 +6509,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Nexperia"
+		(property "Manufacturer" "hongjiacheng"
 			(at 101.6 137.16 0)
 			(hide yes)
 			(show_name no)
@@ -6520,7 +6520,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C47546"
+		(property "LCSC" "C7420333"
 			(at 101.6 137.16 0)
 			(hide yes)
 			(show_name no)
@@ -7641,7 +7641,7 @@
 				)
 			)
 		)
-		(property "MPN" "BAT54S,215"
+		(property "MPN" "BAT54S"
 			(at 101.6 45.72 0)
 			(hide yes)
 			(show_name no)
@@ -7652,7 +7652,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Nexperia"
+		(property "Manufacturer" "hongjiacheng"
 			(at 101.6 45.72 0)
 			(hide yes)
 			(show_name no)
@@ -7663,7 +7663,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C47546"
+		(property "LCSC" "C7420333"
 			(at 101.6 45.72 0)
 			(hide yes)
 			(show_name no)
@@ -7972,7 +7972,7 @@
 				)
 			)
 		)
-		(property "MPN" "BAT54S,215"
+		(property "MPN" "BAT54S"
 			(at 101.6 91.44 0)
 			(hide yes)
 			(show_name no)
@@ -7983,7 +7983,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Nexperia"
+		(property "Manufacturer" "hongjiacheng"
 			(at 101.6 91.44 0)
 			(hide yes)
 			(show_name no)
@@ -7994,7 +7994,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C47546"
+		(property "LCSC" "C7420333"
 			(at 101.6 91.44 0)
 			(hide yes)
 			(show_name no)
