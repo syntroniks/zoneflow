@@ -211,8 +211,17 @@ constexpr uint8_t outReg(uint8_t port) { return port == 0 ? reg::kOutput0 : reg:
 constexpr uint8_t inReg(uint8_t port) { return port == 0 ? reg::kInput0 : reg::kInput1; }
 constexpr uint8_t cfgReg(uint8_t port) { return port == 0 ? reg::kConfig0 : reg::kConfig1; }
 
-// Milliseconds between two interrupt times, never negative.
-uint32_t since(uint32_t later, uint32_t earlier) { return later >= earlier ? later - earlier : 0; }
+// Milliseconds from `earlier` to `later`, two interrupt times, never
+// negative (an event before its reference gives 0). The interrupt's count is
+// 32 bits and wraps after 49.7 days of uptime, so both are taken as ages at
+// the interrupt's latest time `now`, modulo 2^32: exact for ages up to
+// 49.7 days. A later wait, not a hang, when the reference is older still.
+uint32_t since(uint32_t now, uint32_t later, uint32_t earlier)
+{
+    const uint32_t ageEarlier = now - earlier;
+    const uint32_t ageLater = now - later;
+    return ageEarlier > ageLater ? ageEarlier - ageLater : 0;
+}
 
 } // namespace
 
@@ -622,7 +631,7 @@ void OutputStage::tick(const StageTickInput &in)
         if (!startupDone_) {
             begin(Proc::Startup);
         } else if (haveRb && rb.overCurrentLatched && rb.applied == KeepAliveRequest::Off &&
-                   since(rb.nowMs, rb.appliedSinceMs) >= kTripClearMaxMs) {
+                   since(rb.nowMs, rb.nowMs, rb.appliedSinceMs) >= kTripClearMaxMs) {
             fail(HwCheck::LatchStuck); // 19.8: latch or detector A faulty
         } else if (wanted_) {
             begin(Proc::Run);
@@ -682,7 +691,7 @@ void OutputStage::tick(const StageTickInput &in)
         break;
     case Step::TripClear:
         if (rb.applied == KeepAliveRequest::Off) {
-            const uint32_t low = since(rb.nowMs, rb.appliedSinceMs);
+            const uint32_t low = since(rb.nowMs, rb.nowMs, rb.appliedSinceMs);
             if (low >= kTripHoldMs && !rb.overCurrentLatched) {
                 lastActiveEndMs_ = now;
                 enter(in.acPresent ? Step::Idle : Step::NoAc);
@@ -709,11 +718,24 @@ void OutputStage::doPrecheck(const KeepAliveReadbacks &rb)
     // low for 2.5 s, the latch is clear. 2.5 s covers the relay detector's
     // slowest release, 2.19 s with the pin high (review A2 m10).
     guard_.setRequest(KeepAliveRequest::Off);
+    if (!bootScrubDone_) {
+        bootScrubDone_ = true;
+        // After a restart with valves on, the expander can still hold its
+        // outputs: the detectors take up to 0.83 s to let go, and with the
+        // keep-alive net bridged to a net that toggles by itself (review A2
+        // appendix A) they never do. Every pin back to input now rather
+        // than after the 2.5 s below; step 1 then judges the board.
+        if (bus_.probe() == BusStatus::Ok) {
+            (void)bus_.write(reg::kConfig0, 0xFF);
+            (void)bus_.write(reg::kConfig1, 0xFF);
+        }
+    }
     if (rb.overCurrentLatched) {
         onTrip();
         return;
     }
-    if (rb.applied != KeepAliveRequest::Off || since(rb.nowMs, rb.appliedSinceMs) < kKeepAliveLowBeforeStartMs) {
+    if (rb.applied != KeepAliveRequest::Off ||
+        since(rb.nowMs, rb.nowMs, rb.appliedSinceMs) < kKeepAliveLowBeforeStartMs) {
         return; // wait
     }
     if (proc_ == Proc::Run && !wanted_) {
@@ -788,7 +810,7 @@ void OutputStage::doIdleTest(const KeepAliveReadbacks &rb)
 void OutputStage::doPinHigh(const KeepAliveReadbacks &rb)
 {
     // Step 2: a steady high level must enable neither detector.
-    if (rb.applied != KeepAliveRequest::HoldHigh || since(rb.nowMs, rb.appliedSinceMs) < kPinHighHoldMs) {
+    if (rb.applied != KeepAliveRequest::HoldHigh || since(rb.nowMs, rb.nowMs, rb.appliedSinceMs) < kPinHighHoldMs) {
         return;
     }
     if (rb.driveEnabled) {
@@ -810,7 +832,7 @@ void OutputStage::doPinHighRelease(const KeepAliveReadbacks &rb)
     // Step 2 ends with 100 ms low. The float test follows: status().floatTest
     // is already set, so the display, the backlight PWM and the PSRAM are
     // busy before the pin floats (rule 17).
-    if (rb.applied != KeepAliveRequest::Off || since(rb.nowMs, rb.appliedSinceMs) < kPinHighReleaseMs) {
+    if (rb.applied != KeepAliveRequest::Off || since(rb.nowMs, rb.nowMs, rb.appliedSinceMs) < kPinHighReleaseMs) {
         return;
     }
     guard_.setRequest(KeepAliveRequest::Float);
@@ -828,7 +850,7 @@ void OutputStage::doFloat(const KeepAliveReadbacks &rb)
         fail(HwCheck::FloatPinHigh); // another net lifts KA: stop at once, pin driven low
         return;
     }
-    if (since(rb.nowMs, rb.appliedSinceMs) < kFloatTestMs) {
+    if (since(rb.nowMs, rb.nowMs, rb.appliedSinceMs) < kFloatTestMs) {
         return;
     }
     if (rb.floatReads < kFloatMinReads) {
@@ -849,7 +871,7 @@ void OutputStage::doFloat(const KeepAliveReadbacks &rb)
 
 void OutputStage::doFloatRelease(const KeepAliveReadbacks &rb)
 {
-    if (rb.applied != KeepAliveRequest::Off || since(rb.nowMs, rb.appliedSinceMs) < kFloatReleaseMs) {
+    if (rb.applied != KeepAliveRequest::Off || since(rb.nowMs, rb.nowMs, rb.appliedSinceMs) < kFloatReleaseMs) {
         return;
     }
     guard_.setRequest(KeepAliveRequest::Run);
@@ -865,12 +887,12 @@ void OutputStage::doStart(const KeepAliveReadbacks &rb)
     if (rb.applied != KeepAliveRequest::Run) {
         return;
     }
-    const uint32_t elapsed = since(rb.nowMs, rb.appliedSinceMs);
+    const uint32_t elapsed = since(rb.nowMs, rb.nowMs, rb.appliedSinceMs);
     const bool aOn = rb.driveEnabled;
     const bool bOn = !rb.relayOff;
     if (aOn && bOn) {
-        const uint32_t tA = since(rb.driveSinceMs, rb.appliedSinceMs);
-        const uint32_t tB = since(rb.relaySinceMs, rb.appliedSinceMs);
+        const uint32_t tA = since(rb.nowMs, rb.driveSinceMs, rb.appliedSinceMs);
+        const uint32_t tB = since(rb.nowMs, rb.relaySinceMs, rb.appliedSinceMs);
         if (tA > kStartLimitMs) {
             fail(HwCheck::StartDriveTimeout);
             return;
@@ -1292,7 +1314,7 @@ void OutputStage::beginStopTest(const KeepAliveReadbacks &rb)
 {
     // The only way into step 9. Every caller has waited for
     // toggledLongEnough(): 1 s of toggling, above the 0.3 s of 19.7.
-    toggledBeforeStopMs_ = rb.applied == KeepAliveRequest::Run ? since(rb.nowMs, rb.appliedSinceMs) : 0;
+    toggledBeforeStopMs_ = rb.applied == KeepAliveRequest::Run ? since(rb.nowMs, rb.nowMs, rb.appliedSinceMs) : 0;
     guard_.setRequest(KeepAliveRequest::Off);
     enter(Step::StopTest);
 }
@@ -1305,7 +1327,7 @@ void OutputStage::doStopTest(const KeepAliveReadbacks &rb)
     if (rb.applied != KeepAliveRequest::Off) {
         return;
     }
-    const uint32_t elapsed = since(rb.nowMs, rb.appliedSinceMs);
+    const uint32_t elapsed = since(rb.nowMs, rb.nowMs, rb.appliedSinceMs);
     const bool aReleased = !rb.driveEnabled;
     const bool bReleased = rb.relayOff;
     if (!(aReleased && bReleased)) {
@@ -1314,8 +1336,8 @@ void OutputStage::doStopTest(const KeepAliveReadbacks &rb)
         }
         return;
     }
-    const uint32_t tA = since(rb.driveSinceMs, rb.appliedSinceMs);
-    const uint32_t tB = since(rb.relaySinceMs, rb.appliedSinceMs);
+    const uint32_t tA = since(rb.nowMs, rb.driveSinceMs, rb.appliedSinceMs);
+    const uint32_t tB = since(rb.nowMs, rb.relaySinceMs, rb.appliedSinceMs);
     releaseDriveMs_ = static_cast<uint16_t>(tA);
     releaseRelayMs_ = static_cast<uint16_t>(tB);
     // Absolute limits (review A2): wider than every tolerance corner.

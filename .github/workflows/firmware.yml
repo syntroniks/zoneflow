@@ -7,6 +7,8 @@ on:
       - "firmware/**"
       # The ESPHome package has its own workflow (esphome.yml).
       - "!firmware/esphome/**"
+      # The soak simulation (test/soak) also runs the ESPHome supervisor glue.
+      - "firmware/esphome/components/zoneflow/supervisor.*"
       - "hardware/pinmap.yaml"
       - "docs/firmware/openapi.json"
       - "docs/design/display-ui/**"
@@ -16,6 +18,8 @@ on:
       - "firmware/**"
       # The ESPHome package has its own workflow (esphome.yml).
       - "!firmware/esphome/**"
+      # The soak simulation (test/soak) also runs the ESPHome supervisor glue.
+      - "firmware/esphome/components/zoneflow/supervisor.*"
       - "hardware/pinmap.yaml"
       - "docs/firmware/openapi.json"
       - "docs/design/display-ui/**"
@@ -45,6 +49,25 @@ jobs:
         with:
           name: host-test-report
           path: firmware/zoneflow-fw/test/host/build/junit.xml
+          if-no-files-found: ignore
+
+  soak:
+    name: System soak simulation (CI subset)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10.3.3
+      # Deterministic: fixed seeds, simulated time. ASan and UBSan. About
+      # five minutes on a 4-core runner; test/soak/README.md has the list
+      # of invariants and what the subset covers.
+      - name: Build and run the CI subset
+        run: firmware/zoneflow-fw/test/soak/run.sh --ci --jobs 4 --traces --report soak-report.txt
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: soak-report
+          path: soak-report.txt
           if-no-files-found: ignore
 
   display-sim:

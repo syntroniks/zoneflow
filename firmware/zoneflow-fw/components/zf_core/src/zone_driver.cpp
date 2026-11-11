@@ -347,6 +347,13 @@ void ZoneDriver::openZone(ZoneIndex zone, MonoMs now)
     Zone &z = zones_[zone];
     waitForZeroCross();
     hal_.setZone(zone, true);
+    if (!hal_.powerReady()) {
+        // The output stage failed this write (rev A: read-back, bus) and has
+        // stopped the keep-alive. The zone never opened; do not report it
+        // open until the controller catches up on the next tick.
+        forceAllOff(StopReason::Fault, now);
+        return;
+    }
     z.state = ValveState::Open;
     z.openedAtMs = now;
     lastChangeMs_ = now;
@@ -386,6 +393,10 @@ void ZoneDriver::setMaster(bool on, MonoMs now)
         waitForZeroCross(); // turning off needs no alignment (triac)
     }
     hal_.setMaster(on);
+    if (on && !hal_.powerReady()) {
+        forceAllOff(StopReason::Fault, now); // as in openZone()
+        return;
+    }
     masterOn_ = on;
     lastChangeMs_ = now;
     if (on) {

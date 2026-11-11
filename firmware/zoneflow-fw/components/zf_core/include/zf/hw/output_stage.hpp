@@ -347,6 +347,7 @@ private:
     uint8_t bleedPhase_ = 0; // step 5b: 0 start, 1 RLY_ON set, 2 released, 3 output on
     MonoMs bleedSinceMs_ = 0;
     bool startupDone_ = false;
+    bool bootScrubDone_ = false; // first step 0 after start-up: pins left driven back to input
     MonoMs endValvesMs_ = 0;
     bool endWritesDone_ = false;
 

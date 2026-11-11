@@ -176,6 +176,39 @@ TEST(PersistHandOff, ControllerPostsAndWriterStores)
     EXPECT_EQ(p.fired[0].key, Scheduler::makeKey(civil::daysFromCivil(2026, 6, 1), 360));
 }
 
+// Soak finding (test/soak, chaos seed 348 and three others): a power cut a
+// second after a scheduled start, before the 2 s rate limit let the
+// controller post the consumed start, and the start ran again, late, after
+// the restart. A consumed start is now posted on the tick that consumed it.
+TEST(PersistHandOff, ConsumedStartIsPostedOnTheSameTick)
+{
+    FakeClock clock;
+    FakeOutputs out;
+    FakeSensors sensors;
+    OutputEnableGuard oe{OutputEnableMode::Toggle, 500};
+    EventBus bus;
+    StateStore state;
+    MemoryStorage storage;
+    ConfigStore config{storage};
+    ASSERT_TRUE(config.update(scheduledConfig()).ok);
+    clock.utc = utcOf(2026, 6, 1, 5, 59, 59);
+    clock.mono = 300; // just booted: the rate limit has not run out yet
+    Controller ctrl(ControllerDeps{clock, out, sensors, oe, bus, state, config, &storage});
+    ctrl.begin();
+    ctrl.setTimeStatus(TimeStatus::Synced);
+    for (int i = 0; i < 40 && !out.zone[0]; ++i) {
+        clock.advanceMs(50);
+        ctrl.tick();
+    }
+    ASSERT_TRUE(out.zone[0]);
+    // The writer's next poll stores it; a power cut after that cannot repeat it.
+    ASSERT_TRUE(persistWriteOnce(ctrl.persistMailbox(), storage));
+    SchedulerPersist p;
+    ASSERT_TRUE(persistFromJson(storage.data["runtime"], p));
+    ASSERT_EQ(p.count, 1);
+    EXPECT_EQ(p.fired[0].key, Scheduler::makeKey(civil::daysFromCivil(2026, 6, 1), 360));
+}
+
 TEST(PersistHandOff, WriteFailureRaisesStorageError)
 {
     FakeClock clock;
@@ -244,6 +277,12 @@ TEST(PersistHandOff, StalledFlashWriteDoesNotStallTheControlLoop)
         ctrl.tick();
         tCounting = false;
         allocations += tAllocations;
+        // The loop runs in about a millisecond: let the writer thread start
+        // the write it will stall in before counting (bounded wait). On a
+        // loaded machine it otherwise ran after the loop, and the test failed.
+        for (int spin = 0; out.anyOn() && storage.writesStarted.load() == 0 && spin < 200000; ++spin) {
+            std::this_thread::yield();
+        }
         if (storage.writesStarted.load() > 0 && out.anyOn()) {
             ++stalledTicks;
             // The heartbeat is fresh on every tick: OE keeps toggling.

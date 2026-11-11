@@ -306,7 +306,7 @@ struct AppServices {
 | Follow changes | `platform::EventQueueSubscriber` with an `EventMask`, read from the module's task. |
 | Run, stop, pause, resume, skip, rain delay, clear faults, maintenance | `commands.post(Command::...)`. A command the controller refuses publishes `CommandRejected` with the command, its zone or program and the `RunError` (for example `locked_out`, `zone_resting`, `master_locked_out`, `inhibited`). Subscribe to it to answer an API call. |
 | Read config | `config.get()` (typed) or `config.toJson()` (REST, backup). |
-| Change config | `config.updateFromJson(json)` or `config.update(cfg)`; on success post `CommandType::ReloadConfig`. A failed validation returns the JSON path and a message for the API response. |
+| Change config | `config.updateFromJson(json)` or `config.update(cfg)`; on success post `CommandType::ReloadConfig`. A failed validation returns the JSON path and a message for the API response. The controller also applies a new store revision on its next tick, so a configuration that was stored while the command queue was full still takes effect (section 22). |
 | Set the clock | `time.setManual(utc)`. |
 
 Event types: `ZoneChanged`, `MasterChanged`, `QueueChanged`, `ProgramStarted`,
@@ -423,7 +423,14 @@ instants.
 - **Clock set back by more than 24 h** (for example an RTC that was in the
   future, corrected by SNTP): the stored keys are clamped to the new time so
   the schedule resumes. The same check runs on the first valid time after
-  boot, for keys stored while the clock was wrong.
+  boot, for keys stored while the clock was wrong. The keys from before the
+  jump are kept in RAM until the clock passes the old time at its own pace,
+  or jumps forward (more than 60 s) to within a day of it: then the earlier
+  time was the right one, the clock was set back by mistake, and the starts
+  consumed before the mistake are restored as consumed. Without this, a
+  clock set back by days and put right by SNTP reported the day's starts as
+  missed and ran the newest one again (system soak simulation, section 22).
+  A restart in between loses the kept keys.
 - **No valid clock.** If the RTC is missing or reports lost time and SNTP has
   not synced, no scheduled start runs. Manual runs still work.
 - **Time zone change.** The stored keys are local (day, minute) values. On
@@ -1398,7 +1405,7 @@ expander) or an expander fault.
 
 | Section 19.7 | What the firmware does |
 |---|---|
-| Step 0 | Waits for 24 VAC (an AC_ZC edge within 25 ms), the keep-alive low for 2.5 s and the latch clear. Without 24 VAC nothing is tested or run. |
+| Step 0 | Waits for 24 VAC (an AC_ZC edge within 25 ms), the keep-alive low for 2.5 s and the latch clear. Without 24 VAC nothing is tested or run. On the first step 0 after start-up, an expander that still acknowledges gets every pin back to input at once: after a restart with a valve on it can still hold its outputs, for up to 0.83 s on a healthy board and indefinitely with the keep-alive net bridged to a net that toggles by itself (section 22). |
 | Step 1 | `A_RB` low, `B_RB` high, the expander does not acknowledge. `A_RB` reads `V_DRV` since review A2: high with an acknowledge is `idle_drive_enabled` (detector A or the latch), high without one `idle_drive_supply_on` (Q3), an acknowledge with `A_RB` low `idle_expander_answers` (`DRV_EN`). The window mean of GPIO7 between 0.3 and 1.5 V, from the ADC, is `idle_relay_gate_drain` (review A2 4.6 question 7), whatever the digital read says. |
 | Step 2 | Pin held high for 1.0 s, both read-backs unchanged, 100 ms low. At start-up, before every run (the "better" option, 1.1 s) and in a polling cycle when the last one is 24 h old. |
 | Step 2b | With step 2. The guard's request `Float`: the interrupt turns the pin's output driver off (no pull) for 0.5 s and reads the pin every 1 ms; any high read fails at once (`float_pin_high`), then `A_RB` must be low (`float_drive_enabled`) and `B_RB` high (`float_relay_on`). Fewer than 400 reads also fails: the test did not run as written. Then 100 ms driven low. `OutputStageStatus::floatTest` is set from the 100 ms before to the 100 ms after, for rule 17. |
@@ -1713,3 +1720,210 @@ What this means for changes here:
   flag), there is no panic-handler wrap (ESPHome's crash handler already wraps it), and
   the expander is reached through ESPHome's I2C bus, which offers no bus clear after
   start-up. The guide lists the consequences.
+
+## 22. System soak simulation
+
+No board exists, so until now every module had only been tested by its
+author, in unit tests, the display simulator and the browser demo. The
+soak simulation (`test/soak/`, tracking issue #6) runs the whole controller
+for simulated weeks and years against the simulated rev A board and a
+model of the world around it, with invariants checked on every simulated
+tick. It is deterministic from a seed. Its
+[README](https://github.com/syntroniks/zoneflow/blob/main/firmware/zoneflow-fw/test/soak/README.md)
+lists what the world model contains and how to run, trace and shrink a run.
+It is a simulation: it counts as none of the bench checks of system spec
+section 8.
+
+### What runs
+
+The framework-free layers as the browser demo links them: `Controller`
+with the scheduler, zone driver, current monitor and sensors;
+`hw::OutputStage` with its self-test, commissioning and stored reference;
+the keep-alive guard and its interrupt every 5 ms; the config store,
+persistence through `PersistMailbox`, the history log, the time service and
+the retained record; the REST API (`web::Api`, authentication included) and
+the MQTT command path (`parseCommand`, coalesced edits, rate limit). The glue
+is wired as `app_main.cpp` and the platform tasks wire it. A second rig runs
+the ESPHome package's `zfe::Supervisor` on the same board and world.
+
+### Invariants
+
+| Id | Invariant | From |
+|---|---|---|
+| S1 | No output energised without the firmware's command, beyond 2.5 s while a fault is found | Spec 2 rules 1, 3, 6 |
+| S2 | After a halt, no output energised later than the last keep-alive edge + a working detector layer's hold-up at the net's level, with any one board fault; no keep-alive edge later than 505 ms after the last heartbeat while the interrupt runs | Spec 2 rule 3, hardware design 19.4 |
+| S3 | At most `driver.max_concurrent` zones on; never more than three valve bits driven | Spec 1, hardware design 19.1 rule 3 |
+| S4 | Per-zone commanded on-time between rests never above the maximum run time, across software restarts (one tick lost per restart allowed); tails after halts and fault stops counted | Spec 2 rule 4, section 20 |
+| S5 | No zone open while locked out, master locked out, in maintenance, without 24 VAC or without the output stage ready | Section 3 |
+| S6 | Relay 20 ms before the first valve and not onto one; outputs 100 ms apart; relay 40 ms after the last valve while the keep-alive runs | Hardware design 19.1 rules 4, 10 |
+| S7 | A zone the driver has open is open in the snapshot and in `GET /status` | |
+| S8 | Every scheduled start started, skipped or reported missed once, never twice, never lost (local time from glibc, not the firmware's code) | Section 5 |
+| S9 | The configuration after every boot validates; a healthy board leaves its start-up test | |
+| S10 | NVS keys and bytes, the live heap and the oracle's queues bounded; no leak at exit | |
+| S11 | No heap allocation in `Controller::tick()`; no flash write from the control task with a valve on | Section 2 |
+| L | With no faults, every start runs on time and every zone completes its time | Section 5 |
+
+### Runs
+
+All on one 16-core host, without the sanitizers unless noted. Simulated
+time; the control loop ticks every 50 ms and the keep-alive interrupt runs
+every 5 ms, except that idle stretches (nothing wanted, keep-alive off)
+are stepped one second at a time.
+
+| Run | Code | What | Result |
+|---|---|---|---|
+| Development: several hundred chaos seeds of 1 to 14 days, liveness, halt and ESPHome batches | each fix as it came | | Findings 1 to 5 and the model defects below |
+| First long run, stopped after about 26 minutes | before finding 6 | about a third of the 2,000 chaos seeds | Finding 6 and two oracle refinements |
+| Long run (`run_long.sh`), 2 h 32 min | before finding 7 | chaos: 2,000 seeds × 14 days (28,000 simulated days, 4.67 × 10⁹ control ticks, 37,034 boots); liveness: 32 seeds × 365 days (11,680 days); halt: 1,080 scenarios (38,880 halts, 30,199 with a valve on); ESPHome: 160 seeds × 5 days (800 days) | Finding 7 (every liveness seed). Chaos: three seeds ran a start twice from a runtime record the flash model had damaged (gap 9); seed 1842 and halt seed 834 led to the S2 and S4 refinements. ESPHome: no violation |
+| Final verification | final (this pull request's head) | chaos: seeds 1 to 400 × 14 days (5,600 days); liveness: 32 seeds × 365 days (11,680 days); halt: 1,080 scenarios; ESPHome: 64 seeds × 5 days (320 days) | Chaos: one violation, seed 392 again (gap 9, a start run twice from a runtime record the flash model damaged beyond NVS's guarantee). Liveness: 31 seeds clean; seed 12 skipped a program the harness had generated with no zone, fixed in the generator and clean on its rerun. Halt and ESPHome: no violation |
+| CI subset (`--ci`), on every firmware change | ASan, UBSan | chaos 24 × 2 days, liveness 2 × 45 days, 54 halt scenarios, ESPHome 4 × 1 day | No violation; 3 min 49 s on GitHub's runner |
+
+What the chaos part of the long run did, from its counters: 538,039 REST
+calls and 434,661 MQTT messages (7,012 floods), 11,771 power cuts, 11,717
+software restarts, 3,490 brownouts, 4,593 hung control tasks and 3,480
+frozen processors, 311,372 SNTP clock steps, 1,012 clock jumps back by more
+than a day and 10,261 time zone changes; 2,820 bit flips and 4 torn records
+in flash, 952 torn retained records; 1,033 comparator trips; 4,817 board
+faults injected. 74,488 scheduled starts came due in valid time and 7,901
+more were caught up after a restart or a clock jump. The control task never
+allocated (S11) and never wrote flash with a valve on; it wrote `ka_ref`
+2,237 times, always with every valve off. The longest an output stayed
+energised without a command while the firmware ran was 2.05 s (S1, limit
+2.5 s). The longest from a halt's last heartbeat to no energised output was
+1.41 s in chaos and 2.23 s in the halt scenarios.
+
+### Defects found in the firmware, and fixed
+
+Each has a focused regression test in `test/host` that fails without the
+fix (checked by reverting the fix) and passes with it. Numbered in the
+order they were found; 7, the most severe, needed a simulated year without
+a restart (the liveness mode).
+
+| # | Severity | Defect | Fix | Test |
+|---|---|---|---|---|
+| 7 | High | After 49.7 days of uptime the keep-alive interrupt's 32-bit millisecond count wraps. The output stage read "later < earlier" as "not yet", so a keep-alive stopped shortly before the wrap read as low for 0 ms ever after: step 0 waited, and every scheduled and manual run with it, for another 49.7 days, with no fault raised. A stop test across the wrap would have reported a detector fault | Intervals taken as ages at the interrupt's latest time, modulo 2^32, exact up to 49.7 days (a signed difference would hang the same way after 24.8 days with the keep-alive left off). Shared with the ESPHome package | `OutputStage.RunsAcrossTheWrapOfTheInterruptsMillisecondCount` |
+| 1 | Medium | A clock set back by more than a day, then put right (someone set it wrong by hand, SNTP corrected it): the clamp of the keys made the scheduler report the day's starts as missed and run the newest one again inside the grace period, so a zone watered twice | Keep the keys from before such a jump in RAM; restore them when the clock jumps forward to within a day of where it was (section 5) | `SchedulerTest.ClockSetBackDaysThenCorrectedDoesNotRepeatStarts`, `SchedulerTest.BogusFutureClockCorrectedThenSmallStepStillRuns` |
+| 2 | Medium | A restart within about 2.3 s of a scheduled start lost the consumed key (runtime state is posted at most every 2 s, and not before 2 s of uptime): the start ran again after the restart, a zone watered twice | Post the runtime state on the tick that consumed a scheduled start | `PersistHandOff.ConsumedStartIsPostedOnTheSameTick` |
+| 3 | Medium | A configuration write that found the command queue full (REST 503 "stored, reload not queued"; MQTT logged it) left the controller running the old configuration until the next restart, maximum run times and disabled zones included, while `GET /config` showed the new one | `Controller::tick()` applies a new config store revision | `ControllerTest.StoredConfigIsAppliedWithoutItsReloadCommand` |
+| 4 | Low | After a restart with a valve on and the keep-alive net bridged to a net that toggles by itself, the valve stayed driven for the 2.5 s of step 0 into the new boot | On the first step 0 after start-up, an expander that still answers gets every pin back to input (section 20) | `OutputStage.RestartWithTheKeepAliveBridgedSwitchesAValveOffAtOnce` |
+| 5 | Low | When the output stage failed the read-back of a switch-on write, the driver still reported the zone (or master) open for one tick: state, API and history showed a run that never watered. Nothing was energised | `ZoneDriver` checks that power is still ready after the write | `ZoneDriverStage.AZoneWhoseWriteFailsIsNotReportedOpen`, `...AMasterWhoseWriteFailsIsNotReportedOn` |
+| 6 | Low | A configuration edit handled in the control step in which the clock reached a start, before the tick evaluated that second, advanced the keys to the current minute and consumed the start: it neither ran nor was reported missed | `Scheduler::configure` advances keys to the last instant it evaluated, not to now (section 5, policy 6 unchanged) | `SchedulerTest.EditInTheSecondOfAStartDoesNotLoseIt` |
+
+Fixes 4 and 5 are in code the ESPHome package shares (`OutputStage`,
+`ZoneDriver`). Fix 4 adds one I2C address probe to the start-up test;
+`OutputStage.KeepAliveLowTwoSecondsBeforeAnyTest` now expects it.
+
+A host test was flaky on a loaded machine, on `main` too:
+`PersistHandOff.StalledFlashWriteDoesNotStallTheControlLoop` counted
+ticks only after its writer thread had started, and its 1200 ticks take
+about a millisecond (2 of 30 runs failed on `main` while the soak ran;
+10 of 30 after fix 2, which posts earlier). It now waits, bounded, for
+the writer; 0 of 40 failed under the same load.
+
+Not measured: fix 3 runs the configuration reload from `tick()`, which
+puts the tick's own frame under the reload path on the 6 KB control task
+stack. The reload already ran on that task from `handle()`; the added
+frame is a few hundred bytes. A stack high-water mark on a board settles it.
+
+### Defects in the simulated board model
+
+`test/host/fake_board.hpp`, changed here:
+
+- It logged every bus transaction as a string, without bound: a long run
+  ran out of memory. `logBus` turns it off.
+- It held its keep-alive guard by reference for life, so no test could
+  restart the firmware on a board whose detectors were still on.
+  `attach()` hands the pin to a new guard.
+- It had no frozen processor: the timer interrupt always ran. `cpuHalted`
+  keeps the pin at its last level and stops the read-back sampling.
+- Not changed: `window()` reports the peak of the 5 ms currents, not an
+  RMS. The host tests use it as the current reading; the soak computes its
+  own windows from the waveform.
+
+### Requirement gaps
+
+Found by the soak, not fixed here, each counted in its runs:
+
+1. **The keep-alive net bridged to a net that toggles by itself** (review
+   A2 appendix A, a single fault) keeps both detectors on. If the processor
+   then freezes with a valve on, nothing in hardware stops the valve until
+   the processor is reset; spec section 2 rule 3 ("no single component
+   fault ... may leave a valve on after the keep-alive stops") does not hold
+   for this fault while the firmware is halted. Step 2b finds the bridge
+   before the next run, and fix 4 switches the valve off at the restart.
+   A hardware decision.
+2. **A failed-short triac waters during every other zone's run.** Its
+   current hides inside the run's window; rule 6 only promises that the
+   relay opens after the run, when step 6 or the linger check finds it
+   (`gap.shorted_output_watering_ms`).
+3. **The run budget is lost over a power cycle, a brownout or a torn
+   retained record** (section 20 says so for the first two). The record is
+   one copy, so a reset during its write (5 % of resets in the model)
+   loses it too; a zone can then run past its maximum
+   (`gap.budget_lost_over_power_cycle`). Two alternating copies would close
+   the torn case.
+4. **After the clock is put back by less than a day,** starts covered by
+   keys set while it was ahead (a start, or any configuration edit then)
+   are skipped without a missed report
+   (`gap.start_skipped_after_clock_put_back`). The scheduler keeps one key
+   per program and cannot tell a start it ran from one it only passed.
+5. **A start cut by a restart before any valve opened runs again** after
+   the restart, inside the writer's 250 ms poll and the flash write that
+   remain after fix 2 (`gap.rerun_of_start_cut_before_watering`); it waters
+   once, which is the better outcome.
+6. **The fault state releases the relay** in the same write as zones 1 to 4
+   and before zones 5 to 8 (`doFault()` writes port 0 first). Rule 4's 40 ms
+   applies to the run sequence; with the keep-alive already stopped the
+   hardware's own release order is not controlled either.
+7. **The two firmwares differ on a zone fault:** the ESPHome supervisor
+   locks a zone out on an open circuit and on a DC component; the
+   standalone controller stops it, and the next start runs it again. The
+   specification does not say which is wanted.
+8. **The keys kept after a large backward jump (fix 1) are in RAM only;** a
+   restart between the wrong setting and its correction still repeats.
+9. **The runtime record (`runtime`) has no integrity check of its own.**
+   The configuration is validated, the history chunks and the detector
+   reference carry a CRC; the runtime record relies on NVS's entry CRC.
+   The soak's flash model can damage a value beyond what NVS promises:
+   a bit flip in a key then gave missed reports for starts that had run
+   (`gap.missed_report_from_damaged_runtime_record`), and in one seed of
+   the long run (chaos 392, after flipped bits) ran a start a second time
+   (`S8-duplicate-damaged-record`). A CRC in the record would close it;
+   it changes the stored format, so it is left to a separate change.
+10. **A reset after a freeze with the keep-alive pin high** pulls the pin
+    low: one more edge after the last one the firmware made. In the
+    simulated board an edge re-arms a detector's hold-up, so the time from
+    the last heartbeat to no drive can exceed the 1.76 s of hardware design
+    19.4 (0.505 s + the time to the reset + the low-pin hold-up). The
+    longest seen in the halt runs was 2.23 s. Whether one falling
+    edge recharges the real detectors is a question for the hardware
+    author; the interrupt watchdog (300 ms by default) keeps the freeze
+    short.
+11. **Commissioning writes `ka_ref` from the control task** (documented in
+   section 20). The soak checks that it never happens with a valve
+   energised; it did not.
+
+### Not covered
+
+- The display: S7 checks the state snapshot the display reads and the
+  REST API's `GET /status`, not the display logic's frames.
+- The MQTT publishing side, Home Assistant discovery, the event stream,
+  OTA, WiFi and provisioning (WiFi is a flag that gates SNTP and MQTT).
+- Real concurrency. The simulation is single-threaded: the control,
+  persist, history, HTTP and MQTT tasks run in a fixed order, so races
+  between them are not explored. Flash stalls of the control task are
+  modelled (up to 400 ms), and so are the interrupt's 5 ms periods.
+- Real timing and electrical behaviour: the board is the table-level model
+  of `fake_board.hpp`, the current windows are computed from a model
+  waveform, the comparator is a threshold on the peak current.
+- Zero-cross switching (`driver.zero_cross_switching`): no zero-cross
+  input is attached in the rig.
+- The ESPHome package outside its supervisor: the sprinkler and schedule
+  components and the YAML are played by a timer that starts and stops
+  zones.
+- Stack depth, interrupt load and tick time on the ESP32-S3. The slowest
+  host tick was 120 ms on a loaded host in the final chaos run; host time
+  says little about the device.
+- The run budget and history over months with restarts: chaos runs last
+  14 days; only the liveness runs, which have no restarts, last a year.
+
