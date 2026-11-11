@@ -734,6 +734,9 @@ kelvin = [
     "outline = [[32.7, 15.6], [34.8, 15.6], [34.8, 24.9], [19.5, 24.9], [19.5, 57.8], [33.2, 57.8], [33.2, 63.3], "
     "[31.4, 63.3], [31.4, 59.4], [17.9, 59.4], [17.9, 23.3], [32.7, 23.3]]\n",
     "[[rule_area]]\nname = \"Kelvin sense: no pour\"\nlayers = [\"F.Cu\"]\nno_pour = true\nrect = [30.5, 60.95, 39.5, 63.4]\n",
+    "# Under the sensor terminal block the ground pour on F.Cu would be three scraps, each hanging on\n"
+    "# one ground pin by its thermal spokes. The pins have the plane and the rail on B.Cu: no pour here.",
+    "[[rule_area]]\nname = \"J4: no pour scraps\"\nlayers = [\"F.Cu\"]\nno_pour = true\nrect = [76.4, 0.3, 103.2, 7.5]\n",
     "[[rule_area]]\nname = \"Kelvin sense: ground via not tied to the plane here\"\nlayers = [\"In1.Cu\"]\nno_pour = true\n"
     "rect = [31.2, 60.5, 32.6, 61.9]\n",
 ]

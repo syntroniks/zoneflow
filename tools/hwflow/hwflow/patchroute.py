@@ -329,6 +329,10 @@ def build_grid(items, areas, clearance, net, width, window, layers, extra, pours
                                 grid.blocked[name][k] = 1
                     if no_via or area_net:
                         grid.no_via[k] = 1
+    # No via in a surface-mount pad of the net itself: it goes beside the pad.
+    for item_layers, shape in mine:
+        if shape[0] == "rect" and len(item_layers) == 1 and near(shape, via_r):
+            grid.stamp(grid.no_via, shape, via_r * 0.8)
     # Inside its own copper the new track may run even where a neighbour's clearance reaches in.
     for item_layers, shape in mine:
         half = (min(shape[1][2] - shape[1][0], shape[1][3] - shape[1][1]) / 2 if shape[0] == "rect"
