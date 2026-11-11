@@ -1,6 +1,6 @@
 # Bill of materials
 
-!!! warning "Paper design"
+!!! warning "Design values; not yet verified on hardware"
     No board has been made. Stock and prices are what the distributor pages
     showed on 2026-11-10 and will have moved.
 
@@ -10,9 +10,9 @@ repository, and a check that they agree.
 
 | File | What it is | Who writes it |
 |---|---|---|
-| [`hardware/bom-preliminary.csv`](https://github.com/syntroniks/zoneflow/blob/main/hardware/bom-preliminary.csv) | One line per part number, with the maker, the maker's part number, JLCPCB basic or extended, stock, three price breaks, quantities for both builds and notes | A person, from distributor pages. `tools/designsync` writes the reference and quantity columns from the netlist |
-| [`hardware/zoneflow-a/output/zoneflow-a-bom-jlcpcb.csv`](https://github.com/syntroniks/zoneflow/blob/main/hardware/zoneflow-a/output/zoneflow-a-bom-jlcpcb.csv) | The 8-zone build in the format JLCPCB's assembly order takes: comment, designators, footprint, LCSC number, quantity. 92 lines | KiCad, from the schematic |
-| [`hardware/zoneflow-a/output/zoneflow-a-bom-jlcpcb-4-zone.csv`](https://github.com/syntroniks/zoneflow/blob/main/hardware/zoneflow-a/output/zoneflow-a-bom-jlcpcb-4-zone.csv) | The same for the 4-zone build. 91 lines | KiCad, from the schematic, variant `4-zone` |
+| [`hardware/bom-preliminary.csv`](bom-preliminary.csv) | One line per part number, with the maker, the maker's part number, JLCPCB basic or extended, stock, three price breaks, quantities for both builds and notes | A person, from distributor pages. `tools/designsync` writes the reference and quantity columns from the netlist |
+| [`zoneflow-a-bom-jlcpcb.csv`](zoneflow-a/zoneflow-a-bom-jlcpcb.csv) | The 8-zone build in the format JLCPCB's assembly order takes: comment, designators, footprint, LCSC number, quantity. 92 lines | KiCad, from the schematic |
+| [`zoneflow-a-bom-jlcpcb-4-zone.csv`](zoneflow-a/zoneflow-a-bom-jlcpcb-4-zone.csv) | The same for the 4-zone build. 91 lines | KiCad, from the schematic, variant `4-zone` |
 
 The cost estimate and the reasoning behind each part are in
 [hardware design section 18](../design/hardware-design.md#18-bill-of-materials-and-cost-estimate).
@@ -41,3 +41,14 @@ ordered as loose parts:
 
 A placement file that leaves them out comes with the layout,
 [issue #5](https://github.com/syntroniks/zoneflow/issues/5).
+
+## The parts list
+
+One row per part number, read from `hardware/bom-preliminary.csv` when the
+site is built. "8-zone" and "4-zone" are quantities per board. "Datasheet"
+says `read` where the design opened the maker's data sheet and took ratings
+from it, and `listing only` where it relied on the distributor's listing.
+Stock is JLCPCB assembly stock and the price is USD each at 100 pieces, both
+on the date checked.
+
+<!-- zf:bom-table -->

@@ -1,31 +1,27 @@
 # Standalone firmware
 
-!!! note "Phase 2, never run on hardware"
-    `firmware/zoneflow-fw/` has the zone driver, scheduler, configuration and diagnostics (phase 1), and WiFi with BLE and SoftAP provisioning, the [REST API](api.md) with a live event stream, and OTA with rollback (phase 2), and [MQTT with Home Assistant discovery](mqtt.md) (phase 3). The display interface is written and runs in a desktop simulator; see [display interface](../design/display-ui.md). The browser UI, described below, has only run against a mock controller. Nothing has run on a board; the logic is unit-tested on a PC. Work is tracked in [issue #6](https://github.com/syntroniks/zoneflow/issues/6); the design is in [firmware architecture](../design/firmware-architecture.md) and [firmware security](../design/firmware-security.md).
+!!! warning "Written from the design; not yet verified on hardware"
+    The standalone firmware (`firmware/zoneflow-fw/`) is written and builds
+    in CI; its logic is covered by host tests on a PC. Nothing has run on a
+    board. The web interface on this page has run only against a mock
+    controller (`firmware/zoneflow-fw/web/mock/`) that follows the
+    [API](api.md). Expect details to change once it runs on hardware. Work
+    is tracked in [issue #6](https://github.com/syntroniks/zoneflow/issues/6);
+    the design is in [firmware architecture](../design/firmware-architecture.md)
+    and [firmware security](../design/firmware-security.md).
 
-Planned scope, from the [specification](../design/system-spec.md):
-
-- Zone driver that follows the safety rules (outputs off by default, hardware output-enable, maximum run time)
-- Scheduler with programs, start times, weekday, interval and odd-even rules, per-zone durations, seasonal adjustment, rain delay and sensor inhibit. It runs from the RTC when the network is down
-- Persistent configuration with a versioned schema
-- WiFi provisioning over Bluetooth LE, with a fallback access point
-- Local web UI, a documented REST API and a live status stream
-- MQTT with Home Assistant discovery
-- OTA update with rollback
-- Colour display interface driven by the encoder and buttons: zone status, manual run, schedule viewing and editing, rain delay, faults, network setup
-- Flow and current diagnostics: per-zone learned current, fault reporting
-- Host-side unit tests for the scheduler and other pure logic
+The standalone firmware runs the controller on its own: zone driver with the
+safety limits, scheduler, current and flow diagnostics, the
+[display interface](../guide/display.md), WiFi setup over Bluetooth LE or a
+setup access point, this web interface, a [REST API](api.md) with a live
+event stream, [MQTT with Home Assistant discovery](mqtt.md), and updates
+over the network with rollback.
 
 ## Using the web interface
 
-!!! warning "Shown against a mock controller"
-    No board exists yet. The screenshots and the end-to-end tests use a mock
-    controller (`firmware/zoneflow-fw/web/mock/`) that follows the
-    [API](api.md). Expect details to change once the firmware runs on
-    hardware.
-
-Open `http://zoneflow-xxxx.local/` (the last four characters are on the
-display) or the controller's IP address in a browser on the same network.
+Open `http://zoneflow-xxxx.local/` or the controller's IP address in a
+browser on the same network. The display shows both under
+**Menu → Setup → Network**.
 The interface is served by the controller itself and works without internet.
 It follows the phone's light or dark setting and works from 320 px wide.
 
@@ -39,10 +35,12 @@ It follows the phone's light or dark setting and works from 320 px wide.
 
 The first visit sets up the controller in three steps:
 
-1. **Admin password.** Type the 10-character setup code from the
-   controller's display, then choose a password of 8 to 64 characters.
-   The setup code proves you are standing at the controller; it never leaves
-   it.
+1. **Admin password.** Type the 10-character setup code, then choose a
+   password of 8 to 64 characters. The setup code proves you have the
+   controller in hand; the API never returns it. Where to find it:
+   [joining your network](../getting-started/provisioning.md#before-you-start).
+   If you set the password on the setup access point's page, this step is
+   skipped.
 2. **Time zone.** The browser's own zone is suggested. Start times follow
    local time, including summer time.
 3. **Zones.** How many valves are wired, and a name for each.

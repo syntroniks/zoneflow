@@ -1,0 +1,214 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1008 560" width="1008" height="560" font-family="Helvetica, Arial, sans-serif" font-size="13" role="img" aria-labelledby="t d">
+<title id="t">ZoneFlow field wiring</title>
+<desc id="d">Terminal row of the ZoneFlow rev A board, left to right: 24V~ 1 and 2, COM, COM, MV, zones 1 to 8, then 5V, FLOW, GND, RAIN, GND, AUX, GND. A Class 2 transformer feeds the two 24V~ terminals. Every valve has one wire to its zone terminal and one to the shared common wire on COM. The master valve or pump-start relay coil is between MV and the common. A flow meter uses 5V, FLOW and GND; a rain sensor uses RAIN and GND.</desc>
+<rect x="0" y="0" width="1008" height="560" fill="#ffffff"/>
+<rect x="20" y="22" width="968" height="120" rx="6" fill="#eef2f6" stroke="#52606d" stroke-width="1.2"/>
+<text x="30" y="40" fill="#52606d" font-size="12">Board, bottom edge, as the installer sees it (wiring cover off)</text>
+<rect x="34" y="66" width="40" height="22" rx="4" fill="#cbd2d9" stroke="#52606d"/>
+<text x="54" y="81" text-anchor="middle" font-size="10" fill="#1f2933">USB-C</text>
+<rect x="934" y="66" width="40" height="22" rx="4" fill="#cbd2d9" stroke="#52606d"/>
+<text x="954" y="81" text-anchor="middle" font-size="10" fill="#1f2933">Qwiic</text>
+<rect x="95.0" y="44" width="22" height="12" rx="2" fill="#fde68a" stroke="#1f2933" stroke-width="0.8"/>
+<text x="106.0" y="53" text-anchor="middle" font-size="9" fill="#1f2933">F4</text>
+<rect x="133.0" y="44" width="22" height="12" rx="2" fill="#fde68a" stroke="#1f2933" stroke-width="0.8"/>
+<text x="144.0" y="53" text-anchor="middle" font-size="9" fill="#1f2933">F1</text>
+<rect x="86" y="70" width="78" height="52" rx="3" fill="#14532d" opacity="0.12" stroke="#1f2933" stroke-width="1"/>
+<text x="80" y="100" text-anchor="end" fill="#52606d" font-size="11">J1</text>
+<rect x="90.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="106.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="102.0" y1="86" x2="110.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="106.0" y="110" text-anchor="middle" font-size="10" font-weight="bold" fill="#1f2933">24V~</text>
+<rect x="128.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="144.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="140.0" y1="86" x2="148.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="144.0" y="110" text-anchor="middle" font-size="10" font-weight="bold" fill="#1f2933">24V~</text>
+<rect x="184" y="70" width="268" height="52" rx="3" fill="#14532d" opacity="0.12" stroke="#1f2933" stroke-width="1"/>
+<text x="318.0" y="64" text-anchor="middle" fill="#52606d" font-size="11">J2</text>
+<rect x="188.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="204.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="200.0" y1="86" x2="208.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="204.0" y="110" text-anchor="middle" font-size="11" font-weight="bold" fill="#1f2933">COM</text>
+<rect x="226.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="242.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="238.0" y1="86" x2="246.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="242.0" y="110" text-anchor="middle" font-size="11" font-weight="bold" fill="#1f2933">COM</text>
+<rect x="264.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="280.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="276.0" y1="86" x2="284.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="280.0" y="110" text-anchor="middle" font-size="11" font-weight="bold" fill="#1f2933">MV</text>
+<rect x="302.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="318.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="314.0" y1="86" x2="322.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="318.0" y="110" text-anchor="middle" font-size="11" font-weight="bold" fill="#1f2933">1</text>
+<rect x="340.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="356.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="352.0" y1="86" x2="360.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="356.0" y="110" text-anchor="middle" font-size="11" font-weight="bold" fill="#1f2933">2</text>
+<rect x="378.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="394.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="390.0" y1="86" x2="398.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="394.0" y="110" text-anchor="middle" font-size="11" font-weight="bold" fill="#1f2933">3</text>
+<rect x="416.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="432.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="428.0" y1="86" x2="436.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="432.0" y="110" text-anchor="middle" font-size="11" font-weight="bold" fill="#1f2933">4</text>
+<rect x="472" y="70" width="154" height="52" rx="3" fill="#14532d" opacity="0.12" stroke="#1f2933" stroke-width="1"/>
+<text x="549.0" y="64" text-anchor="middle" fill="#52606d" font-size="11">J3</text>
+<rect x="476.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="492.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="488.0" y1="86" x2="496.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="492.0" y="110" text-anchor="middle" font-size="11" font-weight="bold" fill="#1f2933">5</text>
+<rect x="514.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="530.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="526.0" y1="86" x2="534.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="530.0" y="110" text-anchor="middle" font-size="11" font-weight="bold" fill="#1f2933">6</text>
+<rect x="552.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="568.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="564.0" y1="86" x2="572.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="568.0" y="110" text-anchor="middle" font-size="11" font-weight="bold" fill="#1f2933">7</text>
+<rect x="590.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="606.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="602.0" y1="86" x2="610.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="606.0" y="110" text-anchor="middle" font-size="11" font-weight="bold" fill="#1f2933">8</text>
+<rect x="646" y="70" width="268" height="52" rx="3" fill="#14532d" opacity="0.12" stroke="#1f2933" stroke-width="1"/>
+<text x="780.0" y="64" text-anchor="middle" fill="#52606d" font-size="11">J4</text>
+<rect x="650.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="666.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="662.0" y1="86" x2="670.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="666.0" y="110" text-anchor="middle" font-size="11" font-weight="bold" fill="#1f2933">5V</text>
+<rect x="688.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="704.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="700.0" y1="86" x2="708.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="704.0" y="110" text-anchor="middle" font-size="10" font-weight="bold" fill="#1f2933">FLOW</text>
+<rect x="726.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="742.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="738.0" y1="86" x2="746.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="742.0" y="110" text-anchor="middle" font-size="11" font-weight="bold" fill="#1f2933">GND</text>
+<rect x="764.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="780.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="776.0" y1="86" x2="784.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="780.0" y="110" text-anchor="middle" font-size="10" font-weight="bold" fill="#1f2933">RAIN</text>
+<rect x="802.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="818.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="814.0" y1="86" x2="822.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="818.0" y="110" text-anchor="middle" font-size="11" font-weight="bold" fill="#1f2933">GND</text>
+<rect x="840.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="856.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="852.0" y1="86" x2="860.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="856.0" y="110" text-anchor="middle" font-size="11" font-weight="bold" fill="#1f2933">AUX</text>
+<rect x="878.0" y="74" width="32" height="44" rx="2" fill="#ffffff" stroke="#1f2933" stroke-width="0.8"/>
+<circle cx="894.0" cy="86" r="6" fill="none" stroke="#1f2933" stroke-width="0.8"/>
+<line x1="890.0" y1="86" x2="898.0" y2="86" stroke="#1f2933" stroke-width="0.8"/>
+<text x="894.0" y="110" text-anchor="middle" font-size="11" font-weight="bold" fill="#1f2933">GND</text>
+<text x="92.0" y="84" font-size="9" fill="#52606d">1</text>
+<text x="130.0" y="84" font-size="9" fill="#52606d">2</text>
+<text x="150.0" y="170" font-size="10" fill="#c2410c">terminal 2:</text>
+<text x="150.0" y="183" font-size="10" fill="#c2410c">ground leg</text>
+<rect x="50.0" y="300" width="112" height="70" rx="5" fill="#fff7ed" stroke="#c2410c" stroke-width="1.5"/>
+<text x="106.0" y="320" text-anchor="middle" font-weight="bold" fill="#1f2933">Transformer</text>
+<text x="106.0" y="337" text-anchor="middle" font-size="11" fill="#1f2933">24 VAC, Class 2</text>
+<text x="106.0" y="352" text-anchor="middle" font-size="11" fill="#1f2933">output not earthed</text>
+<path d="M106.0,122 L106.0,300" fill="none" stroke="#c2410c" stroke-width="2.2" stroke-linejoin="round"/>
+<path d="M144.0,122 L144.0,300" fill="none" stroke="#c2410c" stroke-width="2.2" stroke-linejoin="round"/>
+<text x="106.0" y="390" text-anchor="middle" font-size="11" fill="#52606d">Mains side: plug-in</text>
+<text x="106.0" y="404" text-anchor="middle" font-size="11" fill="#52606d">or installed by a</text>
+<text x="106.0" y="418" text-anchor="middle" font-size="11" fill="#52606d">qualified person</text>
+<path d="M280.0,122 L280.0,250" fill="none" stroke="#7c3aed" stroke-width="2.2" stroke-linejoin="round"/>
+<rect x="265.0" y="250" width="30" height="46" rx="4" fill="#f0f9ff" stroke="#7c3aed" stroke-width="1.4"/>
+<path d="M272.0,264 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1f2933" stroke-width="1"/>
+<path d="M272.0,276 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1f2933" stroke-width="1"/>
+<text x="280.0" y="291" text-anchor="middle" font-size="10" fill="#1f2933">MV</text>
+<path d="M280.0,296 L280.0,350" fill="none" stroke="#475569" stroke-width="2.2" stroke-linejoin="round"/>
+<circle cx="280.0" cy="350" r="3.2" fill="#475569"/>
+<path d="M318.0,122 L318.0,250" fill="none" stroke="#0369a1" stroke-width="2.2" stroke-linejoin="round"/>
+<rect x="303.0" y="250" width="30" height="46" rx="4" fill="#f0f9ff" stroke="#0369a1" stroke-width="1.4"/>
+<path d="M310.0,264 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1f2933" stroke-width="1"/>
+<path d="M310.0,276 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1f2933" stroke-width="1"/>
+<text x="318.0" y="291" text-anchor="middle" font-size="10" fill="#1f2933">1</text>
+<path d="M318.0,296 L318.0,350" fill="none" stroke="#475569" stroke-width="2.2" stroke-linejoin="round"/>
+<circle cx="318.0" cy="350" r="3.2" fill="#475569"/>
+<path d="M356.0,122 L356.0,250" fill="none" stroke="#0369a1" stroke-width="2.2" stroke-linejoin="round"/>
+<rect x="341.0" y="250" width="30" height="46" rx="4" fill="#f0f9ff" stroke="#0369a1" stroke-width="1.4"/>
+<path d="M348.0,264 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1f2933" stroke-width="1"/>
+<path d="M348.0,276 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1f2933" stroke-width="1"/>
+<text x="356.0" y="291" text-anchor="middle" font-size="10" fill="#1f2933">2</text>
+<path d="M356.0,296 L356.0,350" fill="none" stroke="#475569" stroke-width="2.2" stroke-linejoin="round"/>
+<circle cx="356.0" cy="350" r="3.2" fill="#475569"/>
+<path d="M394.0,122 L394.0,250" fill="none" stroke="#0369a1" stroke-width="2.2" stroke-linejoin="round"/>
+<rect x="379.0" y="250" width="30" height="46" rx="4" fill="#f0f9ff" stroke="#0369a1" stroke-width="1.4"/>
+<path d="M386.0,264 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1f2933" stroke-width="1"/>
+<path d="M386.0,276 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1f2933" stroke-width="1"/>
+<text x="394.0" y="291" text-anchor="middle" font-size="10" fill="#1f2933">3</text>
+<path d="M394.0,296 L394.0,350" fill="none" stroke="#475569" stroke-width="2.2" stroke-linejoin="round"/>
+<circle cx="394.0" cy="350" r="3.2" fill="#475569"/>
+<path d="M432.0,122 L432.0,250" fill="none" stroke="#0369a1" stroke-width="2.2" stroke-linejoin="round"/>
+<rect x="417.0" y="250" width="30" height="46" rx="4" fill="#f0f9ff" stroke="#0369a1" stroke-width="1.4"/>
+<path d="M424.0,264 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1f2933" stroke-width="1"/>
+<path d="M424.0,276 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1f2933" stroke-width="1"/>
+<text x="432.0" y="291" text-anchor="middle" font-size="10" fill="#1f2933">4</text>
+<path d="M432.0,296 L432.0,350" fill="none" stroke="#475569" stroke-width="2.2" stroke-linejoin="round"/>
+<circle cx="432.0" cy="350" r="3.2" fill="#475569"/>
+<path d="M492.0,122 L492.0,250" fill="none" stroke="#0369a1" stroke-width="2.2" stroke-linejoin="round"/>
+<rect x="477.0" y="250" width="30" height="46" rx="4" fill="#f0f9ff" stroke="#0369a1" stroke-width="1.4"/>
+<path d="M484.0,264 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1f2933" stroke-width="1"/>
+<path d="M484.0,276 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1f2933" stroke-width="1"/>
+<text x="492.0" y="291" text-anchor="middle" font-size="10" fill="#1f2933">5</text>
+<path d="M492.0,296 L492.0,350" fill="none" stroke="#475569" stroke-width="2.2" stroke-linejoin="round"/>
+<circle cx="492.0" cy="350" r="3.2" fill="#475569"/>
+<path d="M530.0,122 L530.0,250" fill="none" stroke="#0369a1" stroke-width="2.2" stroke-linejoin="round"/>
+<rect x="515.0" y="250" width="30" height="46" rx="4" fill="#f0f9ff" stroke="#0369a1" stroke-width="1.4"/>
+<path d="M522.0,264 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1f2933" stroke-width="1"/>
+<path d="M522.0,276 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1f2933" stroke-width="1"/>
+<text x="530.0" y="291" text-anchor="middle" font-size="10" fill="#1f2933">6</text>
+<path d="M530.0,296 L530.0,350" fill="none" stroke="#475569" stroke-width="2.2" stroke-linejoin="round"/>
+<circle cx="530.0" cy="350" r="3.2" fill="#475569"/>
+<path d="M568.0,122 L568.0,250" fill="none" stroke="#0369a1" stroke-width="2.2" stroke-linejoin="round"/>
+<rect x="553.0" y="250" width="30" height="46" rx="4" fill="#f0f9ff" stroke="#0369a1" stroke-width="1.4"/>
+<path d="M560.0,264 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1f2933" stroke-width="1"/>
+<path d="M560.0,276 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1f2933" stroke-width="1"/>
+<text x="568.0" y="291" text-anchor="middle" font-size="10" fill="#1f2933">7</text>
+<path d="M568.0,296 L568.0,350" fill="none" stroke="#475569" stroke-width="2.2" stroke-linejoin="round"/>
+<circle cx="568.0" cy="350" r="3.2" fill="#475569"/>
+<path d="M606.0,122 L606.0,250" fill="none" stroke="#0369a1" stroke-width="2.2" stroke-linejoin="round"/>
+<rect x="591.0" y="250" width="30" height="46" rx="4" fill="#f0f9ff" stroke="#0369a1" stroke-width="1.4"/>
+<path d="M598.0,264 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1f2933" stroke-width="1"/>
+<path d="M598.0,276 q4,-6 8,0 q4,6 8,0" fill="none" stroke="#1f2933" stroke-width="1"/>
+<text x="606.0" y="291" text-anchor="middle" font-size="10" fill="#1f2933">8</text>
+<path d="M606.0,296 L606.0,350" fill="none" stroke="#475569" stroke-width="2.2" stroke-linejoin="round"/>
+<circle cx="606.0" cy="350" r="3.2" fill="#475569"/>
+<path d="M204.0,122 L204.0,350 L606.0,350" fill="none" stroke="#475569" stroke-width="2.6" stroke-linejoin="round"/>
+<circle cx="204.0" cy="350" r="3.2" fill="#475569"/>
+<path d="M242.0,122 L242.0,222" fill="none" stroke="#475569" stroke-width="2.0" stroke-linejoin="round" stroke-dasharray="5 4"/>
+<text x="248.0" y="214" font-size="10" fill="#52606d">2nd COM:</text>
+<text x="248.0" y="227" font-size="10" fill="#52606d">second cable</text>
+<text x="405.0" y="370" text-anchor="middle" font-size="12" fill="#475569">Valve common: one wire from COM to one lead of every valve, the master valve included</text>
+<text x="260.0" y="262" font-size="11" fill="#7c3aed" text-anchor="end">Master valve</text>
+<text x="260.0" y="276" font-size="11" fill="#7c3aed" text-anchor="end">or pump-start</text>
+<text x="260.0" y="290" font-size="11" fill="#7c3aed" text-anchor="end">relay coil</text>
+<text x="462.0" y="238" text-anchor="middle" font-size="12" fill="#0369a1">Zone wires: one per valve</text>
+<text x="549.0" y="388" text-anchor="middle" font-size="11" fill="#52606d">J3 (zones 5 to 8) is not fitted on the 4-zone build</text>
+<rect x="648.0" y="270" width="112.0" height="58" rx="5" fill="#ecfdf5" stroke="#047857" stroke-width="1.4"/>
+<text x="704.0" y="292" text-anchor="middle" font-weight="bold" font-size="12" fill="#1f2933">Flow meter</text>
+<text x="704.0" y="308" text-anchor="middle" font-size="10" fill="#1f2933">+   pulse   -</text>
+<text x="704.0" y="321" text-anchor="middle" font-size="10" fill="#52606d">powered, 3 wires</text>
+<path d="M666.0,122 L666.0,270" fill="none" stroke="#b91c1c" stroke-width="2.2" stroke-linejoin="round"/>
+<path d="M704.0,122 L704.0,270" fill="none" stroke="#047857" stroke-width="2.2" stroke-linejoin="round"/>
+<path d="M742.0,122 L742.0,270" fill="none" stroke="#1f2933" stroke-width="2.2" stroke-linejoin="round"/>
+<text x="704.0" y="346" text-anchor="middle" font-size="10" fill="#52606d">2-wire meter: FLOW and GND only</text>
+<text x="704.0" y="360" text-anchor="middle" font-size="10" fill="#52606d">5V: 100 mA at most</text>
+<rect x="762.0" y="200" width="74.0" height="50" rx="5" fill="#ecfdf5" stroke="#047857" stroke-width="1.4"/>
+<text x="799.0" y="218" text-anchor="middle" font-weight="bold" font-size="12" fill="#1f2933">Rain</text>
+<text x="799.0" y="232" text-anchor="middle" font-size="10" fill="#1f2933">sensor</text>
+<text x="799.0" y="245" text-anchor="middle" font-size="10" fill="#52606d">NO or NC</text>
+<path d="M780.0,122 L780.0,200" fill="none" stroke="#047857" stroke-width="2.2" stroke-linejoin="round"/>
+<path d="M818.0,122 L818.0,200" fill="none" stroke="#1f2933" stroke-width="2.2" stroke-linejoin="round"/>
+<rect x="838.0" y="290" width="74.0" height="50" rx="5" fill="#ffffff" stroke="#047857" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="875.0" y="310" text-anchor="middle" font-size="11" fill="#1f2933">Spare</text>
+<text x="875.0" y="325" text-anchor="middle" font-size="10" fill="#52606d">contact</text>
+<path d="M856.0,122 L856.0,290" fill="none" stroke="#047857" stroke-width="2.2" stroke-linejoin="round" stroke-dasharray="5 4"/>
+<path d="M894.0,122 L894.0,290" fill="none" stroke="#1f2933" stroke-width="2.2" stroke-linejoin="round" stroke-dasharray="5 4"/>
+<text x="30" y="470" font-size="12" fill="#1f2933" font-weight="bold">Notes</text>
+<text x="30" y="488" font-size="11.5" fill="#1f2933">Terminal 2 of J1 is the board's ground leg: the sensor GND terminals, the USB ground and the Qwiic ground are the same net.</text>
+<text x="30" y="505" font-size="11.5" fill="#1f2933">Never join a sensor GND to the transformer's other wire, to COM or to any valve wire. Read the USB and earthing rules before connecting USB.</text>
+<text x="30" y="522" font-size="11.5" fill="#1f2933">Drawn from the terminal table in hardware design section 16.1. Silkscreen labels are not final until the PCB layout exists.</text>
+</svg>

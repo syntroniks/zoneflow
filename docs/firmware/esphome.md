@@ -30,7 +30,7 @@ relay, the self-tests and the current measurement. They use the same C++ code as
 | **Day rules** | Weekdays, every N days (1 to 365), odd, even | Every day, weekdays, weekends, odd, even, every 2 or 3 days, any set of weekdays |
 | **Display** | Full menu interface: edit schedules, settings, network | Status screen and manual runs |
 | **Run history** | Kept on the device | Home Assistant's history |
-| **Updates** | OTA with rollback, signed releases | ESPHome OTA, safe mode after repeated boot failures |
+| **Updates** | OTA with automatic rollback; release files with SHA-256 checksums, images not signed | ESPHome OTA, safe mode after repeated boot failures |
 | **Customising** | Configuration through the UI and API | Edit the YAML, add any ESPHome component |
 | **Safety layer** | `zf_core` output stage, zone driver, current checks | The same `zf_core` code |
 

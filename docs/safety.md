@@ -1,129 +1,110 @@
 # Safety
 
 !!! danger "Engineering prototype"
-    ZoneFlow is in early design. It has not been built, bench-tested or
-    certified. Revision A boards will be engineering prototypes until they have
-    been bench-tested. Treat any board you build as an experiment. Do not rely
-    on it for anything where a fault would cause damage or injury.
+    ZoneFlow has not been built, bench-tested or certified. Revision A boards
+    are engineering prototypes until they have been bench-tested. Treat any
+    board you build as an experiment. Do not rely on it where a stuck valve
+    or a fault would cause damage or injury. Know where your water shut-off
+    is.
 
-## Low voltage only
+The rules on this page come from the [system specification](design/system-spec.md)
+and the [hardware design](design/hardware-design.md). They are design rules.
+None has been verified on hardware.
+
+## Class 2, low voltage only
 
 ZoneFlow is designed for **Class 2 (low voltage, power-limited) 24 VAC
-circuits only**.
+circuits only**. There is no mains voltage anywhere on the board.
 
-- Power the board only from a Class 2 sprinkler transformer rated 24 VAC.
-- **Never connect mains voltage to the board.** Not to the AC input, not to a
-  zone terminal, not to a sensor terminal. The board has no mains section, no
-  mains isolation and no mains clearances.
-- Never connect a DC supply to the 24 VAC input.
-- If your valves or pump relay need mains power, switch them with a separate,
-  correctly rated relay or contactor installed by someone qualified to do that
-  work. Use the board's master output only to drive a Class 2 coil.
-- Wire the transformer to the mains with a method that meets your local
-  electrical rules. That work is outside this project. If you are not
-  qualified, use a plug-in transformer or hire an electrician.
-
-## Transformer selection
-
-The design requires 24 VAC nominal, 50/60 Hz, from a Class 2 transformer.
-
-1. Look up the running (holding) current of each valve on its datasheet.
-2. Add up the current of the valves that run at the same time, plus the master
-   valve or pump relay coil.
-3. Choose a transformer rated above that total. Typical sprinkler transformers
-   are rated 750 mA to 1 A. Larger ones are available. If your total is higher
-   than the rating, use a bigger transformer.
-4. Do not size the transformer for the board alone. The board's logic load is
-   small next to the valves.
-
-Board limits from the [specification](design/system-spec.md):
-
-| Item | Limit |
-|---|---|
-| Load per output | 0.5 A continuous, 1.5 A inrush for 100 ms |
-| Outputs on at once | Up to 2 zones plus master |
-| Total continuous | 1.5 A |
-| Input voltage | Must survive 32 VAC RMS continuous |
-
-An unloaded transformer can output more than its rated 24 V. The 32 VAC RMS
-figure covers that case. Check the open-circuit voltage of the transformer you
-choose. These limits are design requirements, not measured results.
-
-## USB and the transformer
-
-The board's ground is one of the two 24 VAC wires. A USB cable joins that
-ground to the computer, and a desktop computer's ground is earth. The reasons
-and the fault paths are in
-[hardware design section 5.3](design/hardware-design.md#53-the-ground-question).
-
-- Use a transformer whose 24 V output is not connected to earth on either
-  side. Sprinkler transformers normally are not. If you are not sure, unplug
-  it and check for continuity between each output terminal and the earth pin.
-- If either output terminal is connected to earth, do not connect a
-  mains-powered computer by USB while the 24 VAC plug is in. This holds
-  whichever way round the two wires are connected.
-- Do not connect a computer by USB while the controller shares its transformer
-  with any other device, unless you have checked that both use the same
-  transformer wire as ground.
-- For work on an installed controller, use a laptop on battery, or pull the
-  24 VAC plug block first. The board runs from USB alone.
-- The sensor GND terminals and the expansion connector's ground are the same
-  net as one transformer wire. Do not join them to other equipment that has
-  its own connection to the transformer.
-- The board has a fuse in each of its two 24 VAC wires. They limit the
-  damage in these cases. They do not make them safe for the USB cable or the
-  computer: a 3 A fuse can take up to a minute to open at the current a
-  small transformer delivers into a short.
-
-## Outdoor wiring and surges
-
-Valve wires usually run tens of metres outdoors. Long outdoor cables pick up
-voltage surges, for example from nearby lightning.
-
-- The design specifies a surge clamp on the AC input, a clamp or snubber on
-  every output, and ESD/TVS protection on every field terminal.
-- **None of this has been tested.** Surge immunity needs a bench test that the
-  project has not done. Do not assume the protection is adequate.
-- Keep valve wires away from mains cables and from overhead power lines.
-- Use cable made for irrigation or low-voltage burial.
-- Consider unplugging the transformer during storms.
-- A damaged board can fail with a valve stuck on. Know where your water shutoff
-  is.
+- Power the board only from a Class 2 sprinkler transformer with a 24 VAC output. [What you need](getting-started/what-you-need.md#transformer) says how to choose one.
+- **Never connect mains voltage to the board**: not to the 24V~ terminals, not to a zone terminal, not to a sensor terminal. The board has no mains isolation and no mains clearances.
+- Never connect a DC supply to the 24V~ terminals.
+- If a pump or valve needs mains power, switch it with a separate, correctly rated relay or contactor that has a 24 VAC coil, installed by someone qualified to do that work. The MV terminal drives only that 24 VAC coil.
+- Connect the transformer to the mains in a way that meets your local electrical rules. That work is outside this project. If you are not qualified, use a plug-in transformer or hire an electrician.
 
 ## Indoor use only
 
-The enclosure and board are for indoor or garage wall mounting. They are **not
+The controller is for indoor or garage wall mounting. It is **not
 weatherproof**.
 
-- Do not mount the controller outdoors or where it can get wet.
-- Do not leave it where condensation or sprinklers can reach it.
-- Run valve wires in through the bottom cable entry with strain relief, as the
-  enclosure design intends. The enclosure has not been built yet.
+- Mount it where it stays dry: no rain, no sprinkler spray, no condensation.
+- Design operating range: **-20 to +50 °C** ambient, non-condensing. The parts are chosen for up to 70 °C inside the enclosure, which is the enclosure's own estimate of the rise. Keep the vents open.
+- Bring valve and sensor cables in through the bottom cable entries with the strain relief, as the [assembly guide](enclosure/assembly.md) shows.
+
+## The two fuses
+
+The board has a 3 A time-lag fuse in each transformer wire: F4 behind 24V~
+terminal 1 and F1 behind terminal 2. Every current the board draws passes
+through both.
+
+- They protect the board's copper and limit damage in a fault. They do not protect valves, wiring or a USB cable.
+- On a fault either fuse can open. **Check both.**
+- Replace only with a 3 A time-lag fuse of the same size: Littelfuse 452 series, 0452003.MRL. A fast fuse would open on every shorted valve wire.
+- Take the 24 VAC plug off before you change a fuse. [Assembly, Later](enclosure/assembly.md#later) shows where they are.
+
+Each output also has a resettable fuse (PTC) that limits current in a dead
+short, and the 5 V sensor supply is current-limited. Those reset themselves.
+
+## USB and earthing
+
+Read this before you connect a computer to the USB-C socket.
+
+The board's ground is one of the two transformer wires, the one on 24V~
+terminal 2. A USB cable joins that ground to the computer's ground, and a
+desktop computer's ground is earth. Depending on how your transformer and
+valve wiring are earthed, plugging in USB can put the transformer's full
+short-circuit current through the USB cable. The fault paths are in
+[hardware design section 5.3](design/hardware-design.md#53-the-ground-question).
+
+The design states four rules. They are repeated here as written:
+
+1. Use a transformer whose 24 V output is not connected to earth on either side. If you are not sure, measure for continuity between each output terminal and the earth pin with the transformer unplugged. If either terminal is earthed, never connect a mains-powered computer by USB while the 24 VAC plug is in, whichever way round the plug is wired.
+2. Never connect a computer by USB while the controller shares its transformer with another device, unless you have checked that both devices have the same leg on the same terminal.
+3. For firmware work on an installed controller, prefer a laptop on battery, or unplug the 24 VAC plug block J1 first. The board runs from USB alone.
+4. Sensor grounds and the Qwiic ground are the same net as transformer terminal 2. Do not join them to any other equipment that has its own connection to the transformer.
+
+And from the same section: the fuses "protect the board traces and limit the
+damage, but they do not make the unsafe cases safe for the cable or the
+computer". A 3 A time-lag fuse can take between 0.2 s and 60 s to open at
+8 A, and a USB cable's ground wire is thin.
+
+A valve wire or a splice that leaks to earth outdoors also makes a path
+across the transformer when an earthed computer is attached. That is one more
+reason to pull the 24 VAC plug before connecting USB.
+
+## Outdoor wiring and surges
+
+Valve wires usually run tens of metres outdoors and pick up surges, for
+example from nearby lightning.
+
+- The design has a surge clamp on the 24 VAC input, on the valve common and on every output and sensor terminal, and a resettable fuse on every output.
+- **None of this has been tested.** Surge immunity is a bench test the project has not done ([risk 6](design/hardware-design.md#20-design-risk-register)). Do not assume the protection is enough.
+- Keep valve wires away from mains cables.
+- Use cable made for irrigation or low-voltage burial, and waterproof splice connectors.
+- A damaged board can fail with a valve on. The relay in the valve common is there for that case, and it has not been tested either.
 
 ## What the design does to limit harm
 
-These are design rules from the specification. None has been verified on
-hardware.
-
-- Outputs are off when the processor is in reset, unpowered, crashed or being
-  flashed. This is meant to be enforced in hardware.
-- A hardware output-enable gates all output drivers. A stuck firmware loses it.
-- Firmware enforces a maximum run time per zone that no schedule or API call
-  can exceed. It counts back-to-back runs together; a zone that reaches the
-  limit stays closed for a rest time (30 minutes by default).
-- The board is meant to detect an open valve, a shorted valve and loss of 24 VAC.
+- **Outputs off by default.** With the processor in reset, unpowered, crashed or being flashed, no valve output has drive. This is enforced in hardware.
+- **Keep-alive.** Firmware must keep sending pulses for any valve to be on. When they stop, drive goes within about a second and the valve-common relay opens. Two detectors with no shared part do this. See [how the fail-safe works](hardware/fail-safe.md).
+- **Valve-common relay.** If an output switch fails short, the relay removes power from every valve.
+- **Over-current cut-off.** A hardware latch removes drive within about 70 microseconds of a short.
+- **Maximum run time.** Firmware keeps each zone under its maximum run time, counted across back-to-back runs, and then keeps it closed for a rest time (30 minutes by default). No schedule, app or automation can exceed it.
+- **Self-tests.** Firmware tests both keep-alive detectors at start-up, before and after every run, and every 10 minutes between runs, and refuses to water when a test fails.
 
 ## Radio
 
-The specification requires an ESP32-S3 module that carries FCC and CE modular
-approval. That covers the module only. The finished board has not been tested
-or certified for radio emissions or for any safety standard.
+The specification requires a radio module with its own FCC and CE modular
+approval, and the design uses the ESP32-S3-WROOM-1 for that. A module
+approval covers the module only. The finished board has not been tested or
+certified for radio emissions or for any safety standard.
 
 ## Verification limits
 
 Before any release, the project will state which checks were done (ERC, DRC,
-simulation, calculation, firmware host tests) and which need a bench: thermal
-behaviour, EMC, surge immunity and RF performance.
+simulation, calculation, firmware host tests) and which need a bench:
+thermal behaviour, EMC, surge immunity and RF performance. The current list
+is on the [status page](status.md).
 
 ## Reporting a safety problem
 
