@@ -5,6 +5,7 @@
 #include <climits>
 
 #include "zf/config/config_json.hpp"
+#include "zf/fault_text.hpp"
 #include "zf/time/time_zone.hpp"
 
 namespace zf {
@@ -55,45 +56,6 @@ constexpr uint32_t kSelfClearing = faultBit(FaultCode::AcLost) | faultBit(FaultC
 constexpr uint32_t kStageFaults = faultBit(FaultCode::KeepAliveDetector) | faultBit(FaultCode::OutputExpander) |
                                   faultBit(FaultCode::RelayWelded) | faultBit(FaultCode::OutputShorted) |
                                   faultBit(FaultCode::TripLatchStuck);
-
-FaultCode faultCodeFor(HwCheck c)
-{
-    switch (c) {
-    case HwCheck::IdleDriveEnabled:
-    case HwCheck::IdleRelayOn:
-    case HwCheck::IdleExpanderAnswers:
-    case HwCheck::PinHighDriveEnabled:
-    case HwCheck::PinHighRelayOn:
-    case HwCheck::StartDriveTimeout:
-    case HwCheck::StartRelayTimeout:
-    case HwCheck::RunDriveLost:
-    case HwCheck::RunRelayLost:
-    case HwCheck::StopDriveRelease:
-    case HwCheck::StopRelayRelease:
-    case HwCheck::StopExpanderAnswers:
-        return FaultCode::KeepAliveDetector;
-    case HwCheck::RelayWelded:
-        return FaultCode::RelayWelded;
-    case HwCheck::OutputShorted:
-        return FaultCode::OutputShorted;
-    case HwCheck::LatchStuck:
-        return FaultCode::TripLatchStuck;
-    case HwCheck::StartNoAcknowledge:
-    case HwCheck::ExpanderInputs:
-    case HwCheck::ExpanderOutputs:
-    case HwCheck::ExpanderConfig:
-    case HwCheck::RelayNoReadback:
-    case HwCheck::RunReadback:
-    case HwCheck::EndNoAcknowledge:
-    case HwCheck::BusError:
-    case HwCheck::TooManyOutputs:
-        return FaultCode::OutputExpander;
-    case HwCheck::None:
-    case HwCheck::Count:
-        break;
-    }
-    return FaultCode::None;
-}
 
 constexpr int64_t kNoTrip = INT64_MIN;
 

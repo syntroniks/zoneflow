@@ -60,6 +60,7 @@ add_executable(zf_host_tests
     civil_test.cpp
     config_test.cpp
     controller_test.cpp
+    fault_text_test.cpp
     diagnostics_test.cpp
     event_bus_test.cpp
     output_enable_test.cpp

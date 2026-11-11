@@ -479,7 +479,7 @@ the REST and backup format. Abbreviated example:
     "spare": {"enabled": false, "contact": "no", "debounce_ms": 200, "function": "none"},
     "flow": {"enabled": false, "pulses_per_litre": 450, "leak_threshold_lpm": 0.5, "leak_detect_s": 60}
   },
-  "diagnostics": {"current_enabled": true, "settle_ms": 500, "idle_max_ma": 60,
+  "diagnostics": {"current_enabled": true, "settle_ms": 500, "idle_max_ma": 30,
                   "short_circuit_ma": 3000, "confirm_samples": 3},
   "schedule": {
     "seasonal_percent": 100,
@@ -840,7 +840,7 @@ Pure logic in `net_logic.hpp` (host-tested), ESP-IDF glue in `net.cpp`.
 | Windows | Unprovisioned: BLE for 10 min, then SoftAP until provisioned (one-way: BLE memory is gone). Re-provisioning a configured device: 15 min, then back to the stored network without a restart. A phone that has completed the Security 2 handshake (`PROTOCOMM_SECURITY_SESSION_SETUP_OK`; a bare BLE connection does not count) or a client on the WPA2 access point holds the window open, for at most 30 min from its start (`heldWindowMaxMs`). |
 | Failures | Wrong password or AP not found: the manager's state machine is reset so the user can retry in the same session. |
 | QR payload | `{"ver":"v1","name":"ZoneFlow-XXXX","username":"wifiprov","pop":"<code>","transport":"ble"}`, the format of the ESP-IDF `wifi_prov_mgr` example and Espressif's apps. `net::setupInfo()` returns it for the display; nothing sends it over the network. |
-| Re-provision | `net::requestProvisioning(transport)` stores the request and restarts. The display module binds it to a long-press; the API has `POST /network/reprovision`. |
+| Re-provision | `net::requestProvisioning(transport)` stores the request and restarts. The display offers it under Setup, Network, Set up WiFi, after the question "Restart into WiFi setup?" (Cancel focused); the API has `POST /network/reprovision`. The restart stops a running zone like any restart: the queue is not resumed, and the program it belonged to does not start again (its start was consumed). While provisioning waits, the controller runs as usual: scheduled starts run if the clock is valid, which after the restart means the backup clock (PCF8563), since SNTP needs the network. Pinned by `Reprovisioning.*` in `test/host/controller_test.cpp`. |
 | Factory reset | `net::factoryReset()`: maintenance on, wait until the snapshot shows every output off (5 s max), keep the identity in RAM, `nvs_flash_erase()`, erase the stored core dump (`esp_core_dump_image_erase()`), write the identity back, restart. Power loss between erase and rewrite gives a new setup code. |
 
 ### Status

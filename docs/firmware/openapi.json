@@ -4815,7 +4815,7 @@
           "idle_max_ma": {
             "type": "integer",
             "minimum": 0,
-            "default": 60
+            "default": 30
           },
           "short_circuit_ma": {
             "type": "integer",

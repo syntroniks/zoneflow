@@ -1488,7 +1488,7 @@ export interface components {
             current_enabled: boolean;
             /** @default 500 */
             settle_ms: number;
-            /** @default 60 */
+            /** @default 30 */
             idle_max_ma: number;
             /** @default 3000 */
             short_circuit_ma: number;

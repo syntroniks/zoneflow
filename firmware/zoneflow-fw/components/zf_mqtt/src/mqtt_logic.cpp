@@ -1187,7 +1187,7 @@ void addDeviceEntities(Builder &b, const Config &cfg, const Identity &id)
     Builder::str(cur, "value_template", "{{ value_json.valve_current_ma }}");
     Builder::str(cur, "entity_category", "diagnostic");
 
-    cJSON *ac = b.add("ac_power", kBinarySensor, "24 VAC supply");
+    cJSON *ac = b.add("ac_power", kBinarySensor, "24 V AC supply");
     Builder::str(ac, "device_class", "power");
     Builder::str(ac, "state_topic", t.sensors());
     Builder::str(ac, "value_template", "{{ 'ON' if value_json.ac_present else 'OFF' }}");
@@ -1208,7 +1208,7 @@ void addDeviceEntities(Builder &b, const Config &cfg, const Identity &id)
     Builder::str(board, "json_attributes_template", "{{ value_json.hardware | tojson }}");
     Builder::str(board, "entity_category", "diagnostic");
 
-    cJSON *supply = b.add("sensor_supply", kBinarySensor, "Sensor supply fault");
+    cJSON *supply = b.add("sensor_supply", kBinarySensor, "Sensor supply overloaded");
     Builder::str(supply, "device_class", "problem");
     Builder::str(supply, "state_topic", t.sensors());
     Builder::str(supply, "value_template", "{{ 'ON' if value_json.sensor_supply_fault else 'OFF' }}");
