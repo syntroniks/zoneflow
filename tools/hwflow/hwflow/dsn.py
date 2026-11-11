@@ -116,6 +116,38 @@ def add_keepouts(dsn: Path, keepouts: list[dict], to_dsn) -> int:
     return len(lines)
 
 
+def add_planes(dsn: Path, planes: list[dict], rect: tuple[float, float, float, float]) -> int:
+    """Declare plane layers: the only way found to keep Freerouting 2.5.0 off a copper layer.
+
+    ``[[route.plane]]`` names a ``layer`` and the ``net`` of its plane. The
+    layer's type becomes ``power`` and a plane polygon of that net, ``rect``
+    in the file's coordinates, is added to the structure. With the type alone
+    Freerouting says "declared as a power layer but no plane is defined for
+    it" and routes on the layer all the same. The ``routable`` flag of its
+    settings file is read and not obeyed: with it set to false, 2.5.0 put
+    more track on this layer than on any other.
+    """
+    if not planes:
+        return 0
+    text = dsn.read_text(encoding="utf-8")
+    lines = []
+    x0, y0, x1, y1 = rect
+    for p in planes:
+        old = f"(layer {p['layer']}\n      (type signal)"
+        if text.count(old) != 1:
+            raise ValueError(f"the Specctra file has no signal layer {p['layer']}")
+        text = text.replace(old, f"(layer {p['layer']}\n      (type power)")
+        net = p["net"] if re.fullmatch(r"[^\s()\"]+", p["net"]) else f'"{p["net"]}"'
+        lines.append(f"    (plane {net} (polygon {p['layer']} 0  {x0:.0f} {y0:.0f}  {x1:.0f} {y0:.0f}  "
+                     f"{x1:.0f} {y1:.0f}  {x0:.0f} {y1:.0f}  {x0:.0f} {y0:.0f}))")
+    marker = "\n    (via "
+    if marker not in text:
+        raise ValueError("the Specctra file has no via list to put the planes before")
+    head, tail = text.split(marker, 1)
+    dsn.write_text(head + "\n" + "\n".join(lines) + marker + tail, encoding="utf-8")
+    return len(lines)
+
+
 def router_settings(board_layers: list[str], route: dict, ignore: list[str] | None = None) -> dict:
     """Freerouting's ``router`` settings for a board: which layers it may route on, and at what cost.
 

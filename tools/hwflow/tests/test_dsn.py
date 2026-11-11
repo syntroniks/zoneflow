@@ -74,6 +74,26 @@ def test_no_pattern_changes_nothing(tmp_path):
     assert f.read_text() == TEXT
 
 
+def test_a_plane_layer_gets_its_type_and_its_plane(tmp_path):
+    f = tmp_path / "a.dsn"
+    f.write_text(TEXT)
+    assert dsn.add_planes(f, [{"layer": "F.Cu", "net": "GND"}], (0, -900, 1000, 0)) == 1
+    out = f.read_text()
+    assert "(layer F.Cu\n      (type power)" in out
+    assert "(plane GND (polygon F.Cu 0  0 -900  1000 -900  1000 0  0 0  0 -900))" in out
+    assert out.index("(plane GND") < out.index('(via "Via[0-3]')
+    assert out.count("(") == out.count(")")
+
+
+def test_a_plane_on_a_layer_the_file_does_not_have_is_refused(tmp_path):
+    f = tmp_path / "a.dsn"
+    f.write_text(TEXT)
+    with pytest.raises(ValueError):
+        dsn.add_planes(f, [{"layer": "In1.Cu", "net": "GND"}], (0, 0, 1, 1))
+    assert dsn.add_planes(f, [], (0, 0, 1, 1)) == 0
+    assert f.read_text() == TEXT
+
+
 def test_router_settings_name_the_ignored_classes():
     s = dsn.router_settings(["F.Cu", "B.Cu"], {}, ["b__fixed", "a__fixed"])
     assert s["autorouter"] == {"ignore_net_classes": ["a__fixed", "b__fixed"]}

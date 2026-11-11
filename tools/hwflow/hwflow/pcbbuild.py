@@ -858,6 +858,8 @@ def cmd_build(args) -> int:
         return pcbnew.ToMM(p.x) * 1000.0, -pcbnew.ToMM(p.y) * 1000.0
 
     dsn_mod.add_keepouts(dsn, route.get("keepout", []), to_dsn)
+    (px0, py0), (px1, py1) = to_dsn(0.5, 0.5), to_dsn(b.w - 0.5, b.h - 0.5)
+    dsn_mod.add_planes(dsn, route.get("plane", []), (min(px0, px1), min(py0, py1), max(px0, px1), max(py0, py1)))
     # Read by hwflow.route, which hands them to the autorouter in its settings file.
     (Path(args.project_dir) / "build" / "router.json").write_text(
         json.dumps(dsn_mod.router_settings(names, route, fixed_classes), indent=1, sort_keys=True) + "\n",
@@ -903,6 +905,15 @@ def cmd_finish(args) -> int:
         patched = b._tracks(b.cfg.get("patch", []))
     removed = remove_dangling(board, board.GetConnectivity())
     tracks = list(board.GetTracks())
+    if args.design_dir:
+        # A layer given to a plane carries no track. The autorouter has put tracks there before
+        # without any check noticing: the plane's pour simply flows round them.
+        plane_layers = {p["layer"] for p in b.cfg.get("route", {}).get("plane", [])}
+        stray = sorted({f"{t.GetNetname()} on {t.GetLayerName()}" for t in tracks
+                        if t.Type() != pcbnew.PCB_VIA_T and str(t.GetLayerName()) in plane_layers})
+        if stray:
+            raise BoardError(f"{len(stray)} nets have tracks on a plane layer: " + ", ".join(stray[:12])
+                             + (" ..." if len(stray) > 12 else ""))
     stats = {
         "pre_routed_items": before,
         "items_after_session_import": after,
