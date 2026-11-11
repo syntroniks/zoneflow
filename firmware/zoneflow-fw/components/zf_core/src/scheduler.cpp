@@ -131,6 +131,8 @@ void Scheduler::configure(const SchedulerConfig &cfg, const TimeZone &tz)
     // unchanged, a key can name a later local time than the start it stands
     // for, and the next start would count as already run.
     if (configured_ && !(tz == tz_)) {
+        aheadValid_ = false; // local keys of the old zone
+        aheadCount_ = 0;
         for (std::size_t i = 0; i < oldCount; ++i) {
             if (oldKeys[i] != kNoKey) {
                 const int64_t day = civil::floorDiv(oldKeys[i], 1440);
@@ -154,8 +156,12 @@ void Scheduler::configure(const SchedulerConfig &cfg, const TimeZone &tz)
         p.startCount = static_cast<uint8_t>(std::unique(first, first + p.startCount) - first);
     }
 
+    // Advance to the last instant evaluated, not to now: a start at an
+    // instant after it (the same second as this edit, before the tick that
+    // evaluates it) has not passed and still runs.
     const bool advance = configured_ && timeValid_;
-    const int64_t nowKey = advance ? keyAt(clock_.nowUtc()) : kNoKey;
+    const UtcSeconds evaluated = cursorValid_ ? std::min(cursor_, clock_.nowUtc()) : clock_.nowUtc();
+    const int64_t nowKey = advance ? keyAt(evaluated) : kNoKey;
     for (std::size_t i = 0; i < kMaxPrograms; ++i) {
         int64_t key = kNoKey;
         if (i < sched.programCount) {
@@ -599,6 +605,7 @@ void Scheduler::evaluate(UtcSeconds now)
         }
     } else if (now < cursor_) {
         if (cursor_ - now > kLargeBackJumpSec) {
+            rememberAhead();
             const int64_t k = keyAt(now);
             for (std::size_t i = 0; i < cfg_.schedule.programCount; ++i) {
                 keys_[i] = std::min(keys_[i], k);
@@ -610,6 +617,19 @@ void Scheduler::evaluate(UtcSeconds now)
         cursor_ = now;
         return;
     }
+    if (aheadValid_) {
+        if (now - cursor_ > kForwardJumpSec && now >= aheadCursor_ - kLookBackSec) {
+            // Back to the time the clock had before it went back: starts
+            // consumed then stay consumed.
+            restoreAhead();
+            if (listener_ != nullptr) {
+                listener_->onPersistDirty();
+            }
+        } else if (now >= aheadCursor_) {
+            aheadValid_ = false; // the clock passed it at its own pace
+            aheadCount_ = 0;
+        }
+    }
     const UtcSeconds from = std::max(cursor_, now - kLookBackSec);
     cursor_ = now;
     if (from >= now) {
@@ -620,6 +640,45 @@ void Scheduler::evaluate(UtcSeconds now)
             evaluateProgram(i, from, now);
         }
     }
+}
+
+void Scheduler::rememberAhead()
+{
+    // Two large jumps back in a row: keep the furthest point and the highest
+    // key of each program.
+    for (std::size_t i = 0; i < cfg_.schedule.programCount; ++i) {
+        if (keys_[i] == kNoKey) {
+            continue;
+        }
+        const uint16_t id = cfg_.schedule.programs[i].id;
+        std::size_t j = 0;
+        while (j < aheadCount_ && aheadKeys_[j].programId != id) {
+            ++j;
+        }
+        if (j == aheadCount_) {
+            if (aheadCount_ == aheadKeys_.size()) {
+                continue;
+            }
+            aheadKeys_[aheadCount_++] = {id, keys_[i]};
+        } else {
+            aheadKeys_[j].key = std::max(aheadKeys_[j].key, keys_[i]);
+        }
+    }
+    aheadCursor_ = aheadValid_ ? std::max(aheadCursor_, cursor_) : cursor_;
+    aheadValid_ = true;
+}
+
+void Scheduler::restoreAhead()
+{
+    for (std::size_t i = 0; i < cfg_.schedule.programCount; ++i) {
+        for (std::size_t j = 0; j < aheadCount_; ++j) {
+            if (aheadKeys_[j].programId == cfg_.schedule.programs[i].id) {
+                keys_[i] = keys_[i] == kNoKey ? aheadKeys_[j].key : std::max(keys_[i], aheadKeys_[j].key);
+            }
+        }
+    }
+    aheadValid_ = false;
+    aheadCount_ = 0;
 }
 
 void Scheduler::evaluateProgram(std::size_t index, UtcSeconds from, UtcSeconds now)

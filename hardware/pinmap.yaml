@@ -96,7 +96,9 @@ gpio:
     notes: >-
       Strapping pin (JTAG source), ignored unless eFuses are burned; the
       divider holds it low at reset. Rectified supply VIN_DC divided by 31
-      (300k / 10k). 24 VAC gives about 1.0 V, 32 VAC about 1.43 V.
+      (300k / 10k). 24 VAC gives about 1.0 V, 32 VAC about 1.43 V. Read the
+      mean of a 100 ms window: 0.60 to 1.20 V is the specified supply, and
+      step 0 of the self-test requires 0.60 to 1.50 V. Design section 19.10.
 
   - gpio: 4
     signal: SENS_RAIN
@@ -140,10 +142,11 @@ gpio:
       Read-back of the relay keep-alive detector. High, about 3.05 V, means
       Q2 is off, so K1 cannot close. Low means Q2 is on. Must be high before
       every run and low within 150 ms of starting KEEPALIVE. After
-      KEEPALIVE stops it must go high within 1.0 s. It reads low without
-      24 VAC, because the pull-up R93 is on V_BUCK. Input only, no internal
-      pull. As an ADC input it also shows a gate-to-drain short of Q2 as a
-      level between 0.3 and 1.0 V. Design section 7.4.
+      KEEPALIVE stops it must go high within 0.05 to 1.6 s (design section
+      19.7, step 9). It reads low without 24 VAC and with VIN_DC under 9 V,
+      because the pull-up R93 is on V_BUCK. Input only, no internal pull.
+      It is also read as an ADC input: a mean between 0.3 and 1.5 V is a
+      gate-to-drain short of Q2. Design sections 7.4 and 19.7.
 
   - gpio: 8
     signal: I2C0_SDA
@@ -325,7 +328,10 @@ gpio:
     notes: >-
       Low while the hardware over-current latch is set. The latch is set by
       the comparators and cleared only by stopping KEEPALIVE. Input only:
-      R87 keeps this pin from changing the latch even if it is driven.
+      R87 keeps this pin from changing the latch even if it is driven. U13
+      holds the set input of the latch low while 3V3 is above 4.0 V; this
+      pin then goes low as soon as KEEPALIVE runs, with no valve on. Design
+      sections 9.5 and 19.8.
 
   - gpio: 41
     signal: AC_ZC

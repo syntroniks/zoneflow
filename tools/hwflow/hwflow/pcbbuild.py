@@ -267,6 +267,7 @@ class Builder:
 
     def footprints(self) -> None:
         place = self.placements()
+        self.clearance_overrides: list[str] = []
         sheet_of = {p["ref"]: p for p in self.model["parts"]}
         pad_net: dict[tuple[str, str], str] = {}
         for name, nodes in self.nl.nets.items():
@@ -305,7 +306,18 @@ class Builder:
             fp.SetExcludedFromBOM(not comp.in_bom)
             x, y, rot, side = place[ref]
             fp.SetPosition(self.pt(x, y))
+            # A clearance that a library footprint brings with it outranks the net class of its pads,
+            # in the zone fill and in DRC, and neither says so. KiCad's TI_SO-PowerPAD-8 has 0.2 mm:
+            # with it the ground pour stood 0.2 mm from the 45 V input pin and the switch node of the
+            # buck converter, where their class asks for 0.4 mm. Clearances are those of board.toml.
+            if fp.GetLocalClearance() is not None:
+                self.clearance_overrides.append(f"{ref} ({pcbnew.ToMM(fp.GetLocalClearance()):g} mm)")
+                fp.SetLocalClearance(None)
             for pad in fp.Pads():
+                if pad.GetLocalClearance() is not None:
+                    self.clearance_overrides.append(
+                        f"{ref}.{pad.GetNumber()} ({pcbnew.ToMM(pad.GetLocalClearance()):g} mm)")
+                    pad.SetLocalClearance(None)
                 name = pad_net.get((ref, pad.GetNumber()))
                 if name:
                     pad.SetNet(self.net(name))
@@ -766,7 +778,8 @@ class Builder:
             item.SetLayer(self.layer(t.get("layer", "F.SilkS")))
             item.SetPosition(self.pt(t["at"][0], t["at"][1]))
             size = mm(t.get("size", 1.0))
-            item.SetTextSize(pcbnew.VECTOR2I(size, size))
+            # "width" narrows the letters and leaves their height, for a label that has to fit a pitch
+            item.SetTextSize(pcbnew.VECTOR2I(mm(t["width"]) if "width" in t else size, size))
             item.SetTextThickness(mm(t.get("thickness", 0.15)))
             if item.GetLayer() in (pcbnew.B_SilkS, pcbnew.B_Cu, pcbnew.B_Fab):
                 item.SetMirrored(True)
@@ -894,6 +907,9 @@ def cmd_build(args) -> int:
     b.new_board()
     b.outline()
     b.footprints()
+    if b.clearance_overrides:
+        print("footprints: clearance override of the library footprint removed from "
+              + ", ".join(b.clearance_overrides))
     n_pre = b.preroutes()
     n_guard = b.guards()
     n_fan, no_via = b.fanout()
@@ -1015,13 +1031,16 @@ def cmd_finish(args) -> int:
         pruned = prune_unused(board)
     tracks = list(board.GetTracks())
     if args.design_dir:
-        # A layer given to a plane carries no track. The autorouter has put tracks there before
-        # without any check noticing: the plane's pour simply flows round them.
+        # A layer given to a plane carries no autorouted track. The autorouter has put tracks there
+        # before without any check noticing: the plane's pour simply flows round them. What is written
+        # out in board.toml is locked and may be there: the plane of one net can share its layer with
+        # hand-routed copper of others, as the 3.3 V plane of the rev A board does.
         plane_layers = {p["layer"] for p in b.cfg.get("route", {}).get("plane", [])}
         stray = sorted({f"{t.GetNetname()} on {t.GetLayerName()}" for t in tracks
-                        if t.Type() != pcbnew.PCB_VIA_T and str(t.GetLayerName()) in plane_layers})
+                        if t.Type() != pcbnew.PCB_VIA_T and str(t.GetLayerName()) in plane_layers
+                        and not t.IsLocked()})
         if stray:
-            raise BoardError(f"{len(stray)} nets have tracks on a plane layer: " + ", ".join(stray[:12])
+            raise BoardError(f"{len(stray)} nets have autorouted tracks on a plane layer: " + ", ".join(stray[:12])
                              + (" ..." if len(stray) > 12 else ""))
     stats = {
         "pre_routed_items": before,

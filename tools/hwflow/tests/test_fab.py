@@ -32,6 +32,28 @@ def test_cpl_applies_rotations_and_leaves_out_a_variants_parts(tmp_path):
                      "--variant", "none"]) == 1
 
 
+def test_cpl_correction_for_one_part_number_and_its_offset_turns_with_the_part(tmp_path):
+    (tmp_path / "pos.csv").write_text(
+        "Ref,Val,Package,PosX,PosY,Rot,Side\nU1,a,SOT-23-6,10.0,20.0,0,top\nU2,b,SOT-23-6,30.0,20.0,0,top\n"
+        "Q1,t,TO-252-2,50.0,30.0,-90,top\nQ2,t,TO-252-2,60.0,30.0,0,top\n")
+    (tmp_path / "rot.csv").write_text("footprint_regex,rotation,dx,dy,lcsc\n^SOT-23-6,270,0,0,C7519\n^SOT-23,180,0,0,\n"
+                                      "^TO-252-2,270,-1.5,0,C155588\n")
+    (tmp_path / "bom.csv").write_text("Comment,Designator,Footprint,LCSC Part #,Quantity\nx,U1,SOT-23-6,C7519,1\n"
+                                      "y,U2,SOT-23-6,C55266,1\nt,\"Q1,Q2\",TO-252-2,C155588,2\n")
+    out = tmp_path / "cpl.csv"
+    assert fab.main(["cpl", str(tmp_path / "pos.csv"), str(out), "--rotations", str(tmp_path / "rot.csv"),
+                     "--bom", str(tmp_path / "bom.csv")]) == 0
+    rows = {r["Designator"]: r for r in _rows(out)}
+    assert rows["U1"]["Rotation"] == "270"          # the row for its part number
+    assert rows["U2"]["Rotation"] == "180"          # another part in the same package: the general row
+    # the offset is along the footprint's own x: with the part at -90 degrees that is up the board, at 0 to the left
+    assert (rows["Q1"]["Mid X"], rows["Q1"]["Mid Y"], rows["Q1"]["Rotation"]) == ("50.0000mm", "31.5000mm", "180")
+    assert (rows["Q2"]["Mid X"], rows["Q2"]["Mid Y"], rows["Q2"]["Rotation"]) == ("58.5000mm", "30.0000mm", "270")
+    # without the BOM a row that names a part number fits nothing
+    assert fab.main(["cpl", str(tmp_path / "pos.csv"), str(out), "--rotations", str(tmp_path / "rot.csv")]) == 0
+    assert {r["Designator"]: r["Rotation"] for r in _rows(out)}["U1"] == "180"
+
+
 def test_pin_1_table_lists_polarised_parts_only(tmp_path):
     def part(ref, fp, pads, body, rot=0, dnp=False):
         return {"ref": ref, "footprint": fp, "side": "top", "rot": rot, "at": [0, 0], "dnp": dnp, "body": body,

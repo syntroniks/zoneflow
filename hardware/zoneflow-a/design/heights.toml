@@ -57,6 +57,9 @@ src = "package"
 [footprint.SOT-23]
 height = 1.25
 src = "package"
+[footprint.TSOT-23-6]
+height = 1.1
+src = "sheet"      # TI drawing DDC0006A in the TPS3701 data sheet: "SOT-23 - 1.1 max height"
 [footprint.SOT-23-6]
 height = 1.45
 src = "package"

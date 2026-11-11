@@ -19,7 +19,7 @@ hide:
 !!! danger zf-status "Status: designed on paper. Not built. Not tested."
     - No ZoneFlow board has been made. No firmware has run on one.
     - Every figure on this site is a design value, a calculation or a simulation result. None is a measurement.
-    - **Do not order boards yet.** The PCB layout has not been reviewed and no prototype has been bench-tested. See [ordering boards](hardware/ordering.md).
+    - **Do not order boards yet.** The PCB layout has had an independent review, but nobody has gone through its pre-order checklist, and no prototype has been bench-tested. See [ordering boards](hardware/ordering.md).
     - ZoneFlow has no safety, EMC or radio certification.
 
     Read the [safety notes](safety.md) before you build anything from this

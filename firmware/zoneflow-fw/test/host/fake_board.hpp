@@ -148,10 +148,14 @@ enum class KaNet : uint8_t {
 
 class FakeBoard final : public hw::IExpanderBus {
 public:
-    FakeBoard(OutputEnableGuard &guard, FakeClock &clock) : guard_(guard), clock_(clock)
+    FakeBoard(OutputEnableGuard &guard, FakeClock &clock) : guard_(&guard), clock_(clock)
     {
         setCorner(DetectorCorner::Typical);
     }
+
+    // The board outlives a firmware boot (test/soak): after a restart the
+    // keep-alive pin belongs to the new firmware's guard.
+    void attach(OutputEnableGuard &guard) { guard_ = &guard; }
 
     void setCorner(DetectorCorner c)
     {
@@ -206,6 +210,13 @@ public:
     bool kaWeakReadsHigh = false;
     // The device does not read the pin while it floats (a firmware fault).
     bool floatNotRead = false;
+    // The processor has stopped with interrupts off (test/soak): the timer
+    // interrupt no longer runs, so the pin keeps the level it last had and
+    // the read-backs are not sampled.
+    bool cpuHalted = false;
+    // Record every bus transaction in `log`. Long runs turn it off: the log
+    // grows by one string per transaction.
+    bool logBus = true;
     // Expander pins forced by a fault, per port: they read (and act) low or high.
     std::array<uint8_t, 2> pinStuckLow{0, 0};
     std::array<uint8_t, 2> pinStuckHigh{0, 0};
@@ -295,8 +306,8 @@ public:
     // pin is an input the interrupt reads it every 1 ms.
     void step5ms(uint32_t periodMs = 5)
     {
-        const bool level = guard_.step(periodMs);
-        pinInput_ = guard_.pinIsInput();
+        const bool level = cpuHalted ? pinLevel_ : guard_->step(periodMs);
+        pinInput_ = cpuHalted ? pinInput_ : guard_->pinIsInput();
         const uint64_t now = clock_.mono;
         ++periods_;
         // The net's own toggling, for a bridge to a net that toggles.
@@ -330,7 +341,9 @@ public:
         if (pinInput_) {
             floatMs += periodMs;
             for (uint32_t i = 0; i < periodMs && !floatNotRead; ++i) {
-                guard_.sampleFloat(reads && (kaNet != KaNet::ToggleStrong || (i & 1u) == 0));
+                if (!cpuHalted) {
+                    guard_->sampleFloat(reads && (kaNet != KaNet::ToggleStrong || (i & 1u) == 0));
+                }
             }
         } else if (level != pinLevel_) {
             minPhaseMs = std::min<uint64_t>(minPhaseMs, now - pinChangedMs_);
@@ -362,14 +375,18 @@ public:
             windowPeak_ = currentMa();
         }
         // B_RB is pulled up from V_BUCK: it reads low without 24 VAC (7.4).
-        guard_.sample(vDrv(), relayReadbackHigh(), latched);
+        if (!cpuHalted) {
+            guard_->sample(vDrv(), relayReadbackHigh(), latched);
+        }
     }
     const CurrentReading &window() const { return window_; }
 
     // ---- IExpanderBus ----
     hw::BusStatus write(uint8_t r, uint8_t v) override
     {
-        log.push_back("w" + hex(r) + "=" + hex(v));
+        if (logBus) {
+            log.push_back("w" + hex(r) + "=" + hex(v));
+        }
         if (const auto st = fault(); st != hw::BusStatus::Ok) {
             return st;
         }
@@ -396,7 +413,9 @@ public:
     }
     hw::BusStatus read(uint8_t r, uint8_t &v) override
     {
-        log.push_back("r" + hex(r));
+        if (logBus) {
+            log.push_back("r" + hex(r));
+        }
         if (const auto st = fault(); st != hw::BusStatus::Ok) {
             return st;
         }
@@ -424,7 +443,9 @@ public:
     }
     hw::BusStatus probe() override
     {
-        log.push_back("probe");
+        if (logBus) {
+            log.push_back("probe");
+        }
         if (busStuck) {
             return hw::BusStatus::Timeout;
         }
@@ -509,7 +530,7 @@ private:
         return static_cast<uint8_t>((level & ~pinStuckLow[port]) | pinStuckHigh[port]);
     }
 
-    OutputEnableGuard &guard_;
+    OutputEnableGuard *guard_;
     FakeClock &clock_;
     bool kaNetHigh_ = false;
     bool pinInput_ = false;

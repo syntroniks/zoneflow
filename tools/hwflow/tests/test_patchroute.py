@@ -156,3 +156,29 @@ def test_a_straightened_track_stays_on_free_cells_and_turns_by_45_degrees():
 def test_a_path_of_one_cell_or_two_is_left_alone():
     assert pr.straighten(bytearray(100), 10, [(3, 3)]) == [(3, 3)]
     assert pr.straighten(bytearray(100), 10, [(3, 3), (4, 4)]) == [(3, 3), (4, 4)]
+
+
+def test_a_last_resort_layer_is_used_only_under_the_wall_and_not_inside_a_fence():
+    two = ["F.Cu", "B.Cu"]
+    outer = frozenset(two)
+    wall = ("/B", outer, ("seg", (5.0, 0.0), (5.0, 8.0), 0.3), "", 0.0)
+
+    def grid(layers, fences=()):
+        g = pr.build_grid([wall], [], clearance, "/A", 0.2, (0.5, 0.5, 10.5, 6.5), layers, [], {"GND"}, (12.0, 8.0),
+                          list(fences))
+        if "In2.Cu" in layers:
+            g.cost[layers.index("In2.Cu")] = 6.0
+        return g
+
+    assert route(grid(two), (1.0, 3.0), (9.0, 3.0)) is None              # a wall on both routing layers
+    g = grid(two + ["In2.Cu"])
+    tracks = pr.to_tracks(g, route(g, (1.0, 3.0), (9.0, 3.0)), "/A", 0.2)
+    inner = [t for t in tracks if t["layer"] == "In2.Cu"]
+    assert len(inner) == 1 and sum(1 for t in tracks if "via" in t) == 2
+    xs = [(p["via"] if isinstance(p, dict) else p)[0] for p in inner[0]["points"]]
+    # it costs six times as much there, so the run on the plane layer is no longer than the wall asks:
+    # 0.3 wall, twice the clearance, the via's radius and the track's half width on each side
+    assert max(xs) - min(xs) < 2.2
+    # with the plane layer fenced off where the wall is, there is no way again
+    fence = [(frozenset(["In2.Cu"]), (4.0, 0.0, 6.0, 8.0))]
+    assert route(grid(two + ["In2.Cu"], fence), (1.0, 3.0), (9.0, 3.0)) is None

@@ -129,8 +129,14 @@ public:
     // grace setting. Also bounds the look-back after a forward time jump.
     static constexpr int64_t kLookBackSec = 24 * 3600;
     // Clock set back by more than this: the stored keys are treated as
-    // wrong (clock was in the future) and clamped to now.
+    // wrong (clock was in the future) and clamped to now. The keys from
+    // before are kept until the clock either passes them or jumps forward
+    // again to within a day of where it was: then the earlier time was the
+    // right one, and the starts consumed before the jump are not run or
+    // reported again.
     static constexpr int64_t kLargeBackJumpSec = 24 * 3600;
+    // A step forward of more than this is a clock jump, not a late tick.
+    static constexpr int64_t kForwardJumpSec = 60;
     // A start that runs this much after its scheduled time is reported late.
     static constexpr int64_t kLateThresholdSec = 60;
     // Delay between a start time and its evaluation that still counts as
@@ -199,6 +205,8 @@ private:
     void processQueue();
     void stopFront();
     int64_t keyAt(UtcSeconds t) const;
+    void rememberAhead();
+    void restoreAhead();
     static int64_t keyIn(const TimeZone &tz, UtcSeconds t);
     void notifyQueue();
 
@@ -216,6 +224,12 @@ private:
     bool timeValid_ = false;
     bool cursorValid_ = false;
     UtcSeconds cursor_ = 0;
+    // Keys (by program id) and the cursor from before the last large backward
+    // jump; see kLargeBackJumpSec.
+    std::array<SchedulerPersist::Fired, kMaxPrograms> aheadKeys_{};
+    std::size_t aheadCount_ = 0;
+    UtcSeconds aheadCursor_ = 0;
+    bool aheadValid_ = false;
     UtcSeconds lastEvalSecond_ = 0;
     uint8_t inhibit_ = 0;
     UtcSeconds rainDelayUntil_ = 0;

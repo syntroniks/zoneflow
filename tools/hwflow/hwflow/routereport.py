@@ -102,6 +102,8 @@ def collect(board, plane_layers: list[str], patches: tuple[set, set] = (frozense
             n["patch_len"] += length
             n["layers"].add(layer)
             n["patch_min_w"] = w if n["patch_min_w"] is None else min(n["patch_min_w"], w)
+            if layer in plane_layers:
+                n["plane_len"] += length
             continue
         per_layer[layer]["hand" if hand else "auto"] += length
         if hand:
@@ -178,7 +180,7 @@ def markdown(data: dict, plane_layers: list[str]) -> str:
     out += [f"- `{r['net']}`: {r['length']:g} mm of track for {r['span']:g} mm" for r in wander] or ["None."]
     if plane_layers:
         on_plane = [r for r in rows if r["plane_length"] > 0]
-        out += ["", f"## Autorouted tracks on {', '.join(plane_layers)}", "",
+        out += ["", f"## Autorouted and patched tracks on {', '.join(plane_layers)}", "",
                 "Each one is a slot in the pour of that layer.", ""]
         out += [f"- `{r['net']}`: {r['plane_length']:g} mm" for r in on_plane] or ["None."]
         out += ["", f"Total: {sum(r['plane_length'] for r in on_plane):.0f} mm in {len(on_plane)} nets."]

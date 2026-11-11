@@ -19,6 +19,15 @@ passes: the first on the board without patches; then, with ``--add``, on the
 board with the patches laid, for what they opened. ``--check`` only says
 whether the report still has something open.
 
+A board may name one more layer as a last resort (``[route.patch_last_resort]``): a plane layer
+that the router uses only for a connection with no path on the routing layers, and then as little
+as it can, because a cell there costs several cells elsewhere. Such a track is a slot in the plane.
+It never runs inside the rectangles the board fences off on that layer, and it is listed in the
+routing report.
+
+The ``[[route.keepout]]`` rectangles of the board, which keep the autorouter out of an area of some
+layers, keep this router out as well.
+
 It is a small tool for the last few connections. It does not rip up, it does
 not optimise, and it knows nothing of signal quality: what it routes is listed
 in the routing report for a person to look at.
@@ -55,6 +64,7 @@ class Grid:
         self.w = int(round((x1 - x0) / GRID)) + 1
         self.h = int(round((y1 - y0) / GRID)) + 1
         self.layers = layers
+        self.cost = [1.0] * len(layers)   # what one cell of track costs on each layer
         self.blocked = {name: bytearray(self.w * self.h) for name in layers}
         self.no_via = bytearray(self.w * self.h)
         self.own_vias: set = set()       # cells where a via of the net already is: change layer there for free
@@ -104,6 +114,7 @@ def search(grid: Grid, starts, goals):
     """A* from any start node to any goal node. A node is (layer index, ix, iy). Returns the nodes of the path."""
     w, h, names = grid.w, grid.h, grid.layers
     blocked = [grid.blocked[n] for n in names]
+    costs = grid.cost
     goal_set = set(goals)
     gx = sum(g[1] for g in goals) / len(goals)
     gy = sum(g[2] for g in goals) / len(goals)
@@ -137,7 +148,7 @@ def search(grid: Grid, starts, goals):
             if dx and dy and (b[iy * w + nx] or b[ny * w + ix]):
                 continue                      # no cutting a corner between two blocked cells
             nxt = (layer, nx, ny)
-            c = cost + step
+            c = cost + step * costs[layer]
             if c < best.get(nxt, 1e18):
                 best[nxt] = c
                 came[nxt] = node
@@ -314,7 +325,10 @@ def read_board(pcb_path: Path, origin, height, y_up: bool):
             items.append((p.GetNetname(), layers, ("rect", (min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1))),
                           p.m_Uuid.AsString(), hole))
     areas = []                                # (layers, outline, tracks forbidden, vias forbidden, net)
-    for z in board.Zones():
+    # A footprint can carry a rule area of its own (the "no wiring" area under the encoder of
+    # revision A): the board's list of zones does not hold it, DRC enforces it all the same.
+    zones = list(board.Zones()) + [z for fp in board.GetFootprints() for z in fp.Zones()]
+    for z in zones:
         o = z.Outline()
         if o.OutlineCount() == 0:
             continue
@@ -344,8 +358,11 @@ def inside(poly, x, y) -> bool:
     return hit
 
 
-def build_grid(items, areas, clearance, net, width, window, layers, extra, pours, size):
-    """The obstacle grid for one net in one window. ``extra`` adds clearance to nets by pattern."""
+def build_grid(items, areas, clearance, net, width, window, layers, extra, pours, size, fences=()):
+    """The obstacle grid for one net in one window. ``extra`` adds clearance to nets by pattern.
+
+    ``fences`` are rectangles closed to tracks on some layers, as (layers, (x0, y0, x1, y1)).
+    """
     x0, y0, x1, y1 = window
     grid = Grid(max(0.5, x0), max(0.5, y0), min(size[0] - 0.5, x1), min(size[1] - 0.5, y1), layers)
     own = clearance(net)
@@ -416,6 +433,10 @@ def build_grid(items, areas, clearance, net, width, window, layers, extra, pours
                                 grid.blocked[name][k] = 1
                     if no_via or area_net:
                         grid.no_via[k] = 1
+    for fence_layers, (fx0, fy0, fx1, fy1) in fences:
+        for name in layers:
+            if name in fence_layers:
+                grid._rect(grid.blocked[name], (fx0, fy0, fx1, fy1), width / 2 + MARGIN)
     # No via in a surface-mount pad of the net itself: it goes beside the pad.
     for item_layers, shape in mine:
         if shape[0] == "rect" and len(item_layers) == 1 and near(shape, via_r):
@@ -490,6 +511,17 @@ def main(argv=None) -> int:
     extra += [(k["net"], k["from"], k.get("except", []), float(k["distance"])) for k in cfg.get("keepaway", [])]
     pours = {p["net"] for p in cfg.get("plane", [])}
     ox, oy = b["origin"]
+    # [route.patch_last_resort]: layer, cost (cells of track that one cell there is worth) and keepout
+    # (rectangles). The [[route.keepout]] rectangles of that layer close it too.
+    last = route.get("patch_last_resort", {})
+    last_layer = last.get("layer")
+    # Where the autorouter may not route, the patch router may not either: under a screw head a
+    # track is as wrong from the one as from the other. A rectangle marked "stands_for_copper" only
+    # tells the autorouter of copper it cannot see; this router sees the board and skips it.
+    fences = [(frozenset(k["layers"]), tuple(k["rect"])) for k in route.get("keepout", [])
+              if "rect" in k and not k.get("stands_for_copper", False)]
+    fences += [(frozenset([last_layer]), tuple(r)) for r in last.get("keepout", [])]
+    copper = frozenset(layers) | {"In1.Cu"} | ({last_layer} if last_layer else set())
 
     out = Path(args.out) if args.out else design / "patches.toml"
     entries, notes, failed = [], [], []
@@ -524,7 +556,7 @@ def main(argv=None) -> int:
         for width, around in sorted(tries, key=lambda t: (-t[0], t[1])):
             window = (min(pa[0], pc[0]) - around, min(pa[1], pc[1]) - around, max(pa[0], pc[0]) + around,
                       max(pa[1], pc[1]) + around)
-            grid = build_grid(items, areas, clearance, net, width, window, layers, extra, pours, b["size"])
+            grid = build_grid(items, areas, clearance, net, width, window, layers, extra, pours, b["size"], fences)
             starts, goals = nodes_of(grid, la, pa), nodes_of(grid, lc, pc)
             for n in starts + goals:
                 grid.blocked[grid.layers[n[0]]][n[2] * grid.w + n[1]] = 0
@@ -535,15 +567,36 @@ def main(argv=None) -> int:
             if starts and goals:
                 why = (f"; at {width:g} mm the first end reaches {reach_of(grid, starts)}, "
                        f"the second {reach_of(grid, goals)}")
+        if not done and last_layer:
+            # No path on the routing layers: once more with the last-resort layer, in the wide window,
+            # at the class width and then at 0.2 mm.
+            around = 2.5 * WINDOW
+            window = (min(pa[0], pc[0]) - around, min(pa[1], pc[1]) - around, max(pa[0], pc[0]) + around,
+                      max(pa[1], pc[1]) + around)
+            for width in dict.fromkeys((class_width(net), min(class_width(net), 0.2))):
+                grid = build_grid(items, areas, clearance, net, width, window, layers + [last_layer], extra, pours,
+                                  b["size"], fences)
+                grid.cost[-1] = float(last.get("cost", 4.0))
+                starts, goals = nodes_of(grid, la, pa), nodes_of(grid, lc, pc)
+                for n in starts + goals:
+                    grid.blocked[grid.layers[n[0]]][n[2] * grid.w + n[1]] = 0
+                path = search(grid, starts, goals) if starts and goals else None
+                if path:
+                    done = to_tracks(grid, path, net, width)
+                    break
         if not done:
             failed.append(f"{net}: no path from ({pa[0]:.2f}, {pa[1]:.2f}) to ({pc[0]:.2f}, {pc[1]:.2f}){why}")
             continue
-        length = sum(math.hypot(q[0] - p[0], q[1] - p[1]) for e in done
-                     for p, q in zip([x["via"] if isinstance(x, dict) else x for x in e["points"]],
-                                     [x["via"] if isinstance(x, dict) else x for x in e["points"]][1:]))
+        def run_length(e):
+            pts = [x["via"] if isinstance(x, dict) else x for x in e["points"]]
+            return sum(math.hypot(q[0] - p[0], q[1] - p[1]) for p, q in zip(pts, pts[1:]))
+
+        length = sum(run_length(e) for e in done)
+        on_last = sum(run_length(e) for e in done if e["layer"] == last_layer)
         vias = sum(1 for e in done if "via" in e)
         notes.append(f"{net}: ({pa[0]:.2f}, {pa[1]:.2f}) to ({pc[0]:.2f}, {pc[1]:.2f}), {length:.1f} mm, "
-                     f"{vias} vias, {done[0]['width']:g} mm wide")
+                     f"{vias} vias, {done[0]['width']:g} mm wide"
+                     + (f", {on_last:.1f} mm of it on {last_layer}" if on_last else ""))
         entries += done
         # what was just laid is an obstacle for what follows
         for e in done:
@@ -551,8 +604,7 @@ def main(argv=None) -> int:
             for p, q in zip(pts, pts[1:]):
                 items.append((net, frozenset([e["layer"]]), ("seg", tuple(p), tuple(q), e["width"]), "", 0.0))
             if "via" in e:
-                items.append((net, frozenset(layers) | {"In1.Cu"}, ("circle", tuple(pts[-1]), VIA[0] / 2), "",
-                              VIA[1] / 2))
+                items.append((net, copper, ("circle", tuple(pts[-1]), VIA[0] / 2), "", VIA[1] / 2))
     stamp = project / "route" / f"{name}.dsn.sha256"
     session = stamp.read_text().strip() if stamp.exists() else ""
     out.write_text(toml(entries, session, notes), encoding="utf-8")

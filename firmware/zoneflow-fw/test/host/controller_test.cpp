@@ -241,6 +241,25 @@ TEST_F(ControllerTest, NoScheduleWhileTimeUnset)
     EXPECT_TRUE(ctrl->handle(Command::runZone(1, 5)));
 }
 
+// Soak finding (test/soak, chaos seeds 106 and 161): during a flood of
+// commands a configuration write found the command queue full and answered
+// "stored, reload not queued". The controller kept running the old
+// configuration until the next restart, while GET /config showed the new one.
+TEST_F(ControllerTest, StoredConfigIsAppliedWithoutItsReloadCommand)
+{
+    start();
+    ctrl->handle(Command::runZone(0, 600));
+    tick();
+    ASSERT_TRUE(out.zone[0]);
+    Config c = config.get();
+    c.zones[0].enabled = false; // stored; the ReloadConfig command is lost
+    ASSERT_TRUE(config.update(c).ok);
+    tick();
+    EXPECT_FALSE(out.anyOn());
+    EXPECT_FALSE(state.snapshot().zones[0].enabled);
+    EXPECT_FALSE(ctrl->handle(Command::runZone(0, 60)));
+}
+
 TEST_F(ControllerTest, ConfigReloadKeepsRunningZoneWhenDriverSettingsUnchanged)
 {
     start();

@@ -15,4 +15,6 @@ GERBER_LAYERS := F.Cu,In1.Cu,In2.Cu,B.Cu,F.Paste,B.Paste,F.Silkscreen,B.Silkscre
 INNER_LAYERS := In1.Cu In2.Cu
 # C1, K1 and the terminal headers are soldered by hand after assembly: they are not in the placement file.
 POS_FLAGS := --smd-only
+# On two routing layers the autorouter needs about 70 s for a pass of this board and 30 passes.
+ROUTE_LIMITS := --timeout 7200 --passes 30
 include ../flow.mk

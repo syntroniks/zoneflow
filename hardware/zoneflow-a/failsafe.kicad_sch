@@ -2894,6 +2894,192 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "ZoneFlow:TPS3701DDC"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "U"
+				(at -10.16 13.97 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Value" "TPS3701DDCR"
+				(at -10.16 11.43 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Footprint" "Package_TO_SOT_SMD:TSOT-23-6"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" "https://www.ti.com/lit/ds/symlink/tps3701.pdf"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Window voltage detector, 0.4 V thresholds, open-drain outputs, SOT-23-thin-6"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "TPS3701DDC_0_1"
+				(rectangle
+					(start -10.16 10.16)
+					(end 10.16 -7.62)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "TPS3701DDC_1_1"
+				(pin open_collector line
+					(at 12.7 0 180)
+					(length 2.54)
+					(name "~{OUTA}"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 0 -10.16 90)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 0 0)
+					(length 2.54)
+					(name "INA"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -12.7 2.54 0)
+					(length 2.54)
+					(name "INB"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 0 12.7 270)
+					(length 2.54)
+					(name "VDD"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin open_collector line
+					(at 12.7 2.54 180)
+					(length 2.54)
+					(name "~{OUTB}"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "6"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "ZoneFlow:V5"
 			(power global)
 			(pin_numbers
@@ -3394,6 +3580,18 @@
 		(uuid "131d1459-4b6a-5b7c-8fa5-c9a3667e6e0c")
 	)
 	(rectangle
+		(start 269.24 30.48)
+		(end 405.13 83.82)
+		(stroke
+			(width 0)
+			(type dash)
+		)
+		(fill
+			(type none)
+		)
+		(uuid "141c38b9-38be-5390-9e9d-3640085f37b0")
+	)
+	(rectangle
 		(start 25.4 139.7)
 		(end 208.28 203.2)
 		(stroke
@@ -3439,6 +3637,17 @@
 		)
 		(uuid "0c444da9-0253-5af3-943e-3ca2c380055f")
 	)
+	(text "FAIL-SAFE GATE (hardware design section 8) and OVER-CURRENT LATCH (section 9).\n\nDetector A. Firmware toggles KA (GPIO17) every 5 ms. It needs an edge at least every 20 ms\nand no phase shorter than 2.5 ms (the second is for detector B on the expander sheet).\nEach rising edge pushes charge through C22 and D7 into C23. R30 and R91 (two, so that one open\nresistor only doubles the hold-up) drain it. U6A switches on at 1.55 V on KA_N2 and off at 0.94 V\n(R31, R32 hysteresis; reference 1.32 V from R34, R35). With 5 ms edges V_DRV is on 13 to 22 ms\nafter the first edge and off 0.21 to 0.83 s after the last, 1.25 s if the pin stops high\n(simulated corners of review A2). A steady level, high or low, never enables it.\nR33 holds KA low while the ESP32 is in reset. It is 2.2k so that a net behind a 10k pull-up\ncannot run the detectors through a solder bridge.\n\nDRV_EN = KA_OK AND NOT FAULT. Low does three things: Q3 removes V_DRV from every opto LED, the\nexpander is held in reset, and the expander bit that drives relay transistor Q1 is released.\nV_DRV_RB (through R92) is V_DRV, behind Q3, read on GPIO42: firmware times detector A with it\nand sees a shorted Q3 as drive that is on with no keep-alive.\n\nOver-current. U6B pulls OC_TRIP_N low above VH (1.425 V), U6C below VL (0.188 V): 4.6 A peak in\neither polarity, 4.0 to 5.4 A over tolerance, about 70 us after a short begins (R52, C33: 47 us).\nU7A and U7B latch it. D8 lights while FAULT is set. Only KA_OK going low clears the latch.\nR87 stops GPIO40 from overdriving the latch node if it is ever left as an output.\n\nU7 is a 74HC132: Schmitt inputs for the slow edges of the open-collector comparators.\n\n3V3 over-voltage (section 9.5). If U3 shorts, 3V3 goes to V5 and the ESP32 is outside its\nratings. U13 pulls OC_TRIP_N low while 3V3 is above 4.04 V (3.91 to 4.17 V): DRV_EN is then\nlow whatever KA does, and D8 is lit. C55 with the divider is 1 ms. U13 can only remove drive."
+		(exclude_from_sim no)
+		(at 149.86 210.82 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left top)
+		)
+		(uuid "2e69992e-5e4a-5ccc-98bb-6c6aed3867f2")
+	)
 	(text "Latch and drive enable"
 		(exclude_from_sim no)
 		(at 265.43 127.66 0)
@@ -3461,16 +3670,16 @@
 		)
 		(uuid "c2e3d99d-1f21-5cc1-8ea6-10956cabc603")
 	)
-	(text "FAIL-SAFE GATE (hardware design section 8) and OVER-CURRENT LATCH (section 9).\n\nDetector A. Firmware toggles KA (GPIO17) every 5 ms. It needs an edge at least every 20 ms\nand no phase shorter than 2.5 ms (the second is for detector B on the expander sheet).\nEach rising edge pushes charge through C22 and D7 into C23. R30 and R91 (two, so that one open\nresistor only doubles the hold-up) drain it. U6A switches on at 1.55 V on KA_N2 and off at 0.94 V\n(R31, R32 hysteresis; reference 1.32 V from R34, R35). With 5 ms edges V_DRV is on 13 to 22 ms\nafter the first edge and off 0.21 to 0.83 s after the last, 1.25 s if the pin stops high\n(simulated corners of review A2). A steady level, high or low, never enables it.\nR33 holds KA low while the ESP32 is in reset. It is 2.2k so that a net behind a 10k pull-up\ncannot run the detectors through a solder bridge.\n\nDRV_EN = KA_OK AND NOT FAULT. Low does three things: Q3 removes V_DRV from every opto LED, the\nexpander is held in reset, and the expander bit that drives relay transistor Q1 is released.\nV_DRV_RB (through R92) is V_DRV, behind Q3, read on GPIO42: firmware times detector A with it\nand sees a shorted Q3 as drive that is on with no keep-alive.\n\nOver-current. U6B pulls OC_TRIP_N low above VH (1.425 V), U6C below VL (0.188 V): 4.6 A peak in\neither polarity, 4.0 to 5.4 A over tolerance, about 70 us after a short begins (R52, C33: 47 us).\nU7A and U7B latch it. D8 lights while FAULT is set. Only KA_OK going low clears the latch.\nR87 stops GPIO40 from overdriving the latch node if it is ever left as an output.\n\nU7 is a 74HC132: Schmitt inputs for the slow edges of the open-collector comparators."
+	(text "3V3 over-voltage: U13 holds the set input of the latch low above 4.0 V"
 		(exclude_from_sim no)
-		(at 149.86 210.82 0)
+		(at 270.51 33.68 0)
 		(effects
 			(font
-				(size 1.27 1.27)
+				(size 1.778 1.778)
 			)
-			(justify left top)
+			(justify left bottom)
 		)
-		(uuid "ca30cc6c-6c6c-51c4-a12d-35e1d4154e4c")
+		(uuid "ed30fa18-7acc-5d3c-b32e-a7fcfdb27a88")
 	)
 	(junction
 		(at 185.42 116.84)
@@ -3489,6 +3698,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "19758503-5706-5bd2-a8fc-0eaa29e11739")
+	)
+	(junction
+		(at 320.04 55.88)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "3c7bc5c4-7eda-556d-a06f-cf4ad1bf634a")
 	)
 	(junction
 		(at 355.6 137.16)
@@ -3531,6 +3746,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "62f1a240-a89d-57f8-a886-cf74aac59eb4")
+	)
+	(junction
+		(at 307.34 55.88)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "63149472-f47e-557c-8310-a8fe7f78a14c")
 	)
 	(junction
 		(at 142.24 172.72)
@@ -3634,6 +3855,10 @@
 		(color 0 0 0 0)
 		(uuid "fd858af3-7ddc-5e66-b4a6-818bdfe27f77")
 	)
+	(no_connect
+		(at 365.76 58.42)
+		(uuid "42598596-e945-5b15-8e0c-05d37c977d0f")
+	)
 	(wire
 		(pts
 			(xy 149.86 101.6) (xy 149.86 104.14)
@@ -3713,6 +3938,16 @@
 			(type default)
 		)
 		(uuid "05f0818c-9a6c-5b22-875d-3df6e28eb1a6")
+	)
+	(wire
+		(pts
+			(xy 320.04 55.88) (xy 340.36 55.88)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "06df4cb0-a7d4-50ee-836f-8c0a3b0a5c21")
 	)
 	(wire
 		(pts
@@ -3886,6 +4121,16 @@
 	)
 	(wire
 		(pts
+			(xy 353.06 68.58) (xy 353.06 76.2)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2d501d97-1b8c-508f-aba7-33eea1656391")
+	)
+	(wire
+		(pts
 			(xy 384.81 218.44) (xy 384.81 220.98)
 		)
 		(stroke
@@ -3936,6 +4181,16 @@
 	)
 	(wire
 		(pts
+			(xy 279.4 62.23) (xy 279.4 64.77)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "34122355-08ef-5d82-a145-99faa66f1371")
+	)
+	(wire
+		(pts
 			(xy 124.46 91.44) (xy 137.16 91.44)
 		)
 		(stroke
@@ -3963,6 +4218,16 @@
 			(type default)
 		)
 		(uuid "3863c0e2-7c6d-52f2-bcaf-81cfd4cb4c09")
+	)
+	(wire
+		(pts
+			(xy 365.76 55.88) (xy 378.46 55.88)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3a7fcad7-fe09-58bc-ae2b-c3cb6b63dd94")
 	)
 	(wire
 		(pts
@@ -4023,6 +4288,16 @@
 			(type default)
 		)
 		(uuid "49474cf6-d34b-5838-874d-c701d6f35b1b")
+	)
+	(wire
+		(pts
+			(xy 307.34 66.04) (xy 307.34 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "49910c6e-0520-58d4-8680-5bfb68460921")
 	)
 	(wire
 		(pts
@@ -4196,6 +4471,16 @@
 	)
 	(wire
 		(pts
+			(xy 320.04 66.04) (xy 320.04 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6b97bd66-f23c-504c-97b4-ef9877940792")
+	)
+	(wire
+		(pts
 			(xy 317.5 152.4) (xy 320.04 152.4)
 		)
 		(stroke
@@ -4223,6 +4508,16 @@
 			(type default)
 		)
 		(uuid "7031d4a4-4cca-5f60-813c-e82ae07ecdb3")
+	)
+	(wire
+		(pts
+			(xy 335.28 58.42) (xy 335.28 66.04)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "724bb9b4-2022-5da3-b506-648037f15669")
 	)
 	(wire
 		(pts
@@ -4273,6 +4568,16 @@
 			(type default)
 		)
 		(uuid "7e7f8a45-0be9-54a4-8686-fdb91153dbf7")
+	)
+	(wire
+		(pts
+			(xy 294.64 55.88) (xy 307.34 55.88)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "80a371f8-51ef-5193-96a0-6a460a8bd58a")
 	)
 	(wire
 		(pts
@@ -4566,6 +4871,36 @@
 	)
 	(wire
 		(pts
+			(xy 340.36 58.42) (xy 335.28 58.42)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c9c7eaef-d45b-57a3-800c-f719591652d2")
+	)
+	(wire
+		(pts
+			(xy 279.4 54.61) (xy 279.4 52.07)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cc7c74b7-7444-5652-aa91-ee67c548bc9e")
+	)
+	(wire
+		(pts
+			(xy 307.34 55.88) (xy 320.04 55.88)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ce046171-6fd7-5855-8251-6f4fe46b05be")
+	)
+	(wire
+		(pts
 			(xy 185.42 127) (xy 185.42 129.54)
 		)
 		(stroke
@@ -4766,6 +5101,16 @@
 	)
 	(wire
 		(pts
+			(xy 353.06 45.72) (xy 353.06 40.64)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f36be834-3015-51b4-9441-6b35671b0f64")
+	)
+	(wire
+		(pts
 			(xy 190.5 76.2) (xy 198.12 76.2)
 		)
 		(stroke
@@ -4783,6 +5128,16 @@
 			(type default)
 		)
 		(uuid "f6511132-76be-58a1-9b0e-42124cc60e78")
+	)
+	(wire
+		(pts
+			(xy 294.64 48.26) (xy 294.64 45.72)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f863a131-11fe-5f31-8c40-d03968c26081")
 	)
 	(wire
 		(pts
@@ -4814,18 +5169,28 @@
 		)
 		(uuid "fa6c5312-52f0-576d-9a72-f0ed4dbd2dcc")
 	)
+	(wire
+		(pts
+			(xy 307.34 55.88) (xy 307.34 58.42)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fb365c9f-7ad1-5143-8964-68d7e0525090")
+	)
+	(wire
+		(pts
+			(xy 320.04 55.88) (xy 320.04 58.42)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fd03aa82-107d-5fae-bf8c-5a2636ceed3f")
+	)
 	(label "KA_N0"
 		(at 67.31 86.36 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "0d66738e-3e42-53cf-a4ec-2a962a3f22ad")
-	)
-	(label "KA_REF"
-		(at 198.12 109.22 0)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -4842,7 +5207,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "35dfad7c-74bb-5972-958e-01ad2b8e998a")
+		(uuid "1b3a489a-d902-51a2-a67d-150f5fc34c09")
 	)
 	(label "KA_N1"
 		(at 88.9 86.36 0)
@@ -4852,27 +5217,17 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "57016ae4-315b-5ad7-b859-b3ea49f1b359")
+		(uuid "3e3ec2de-3078-57a6-9ec4-e27b173749d5")
 	)
-	(label "FAULT_N"
-		(at 304.8 139.7 0)
+	(label "KA_REF"
+		(at 198.12 109.22 0)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
 			(justify left bottom)
 		)
-		(uuid "6af2de36-6b5c-5743-8a45-fd131b5f1026")
-	)
-	(label "LED_FLT"
-		(at 321.31 170.18 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "9a8edc46-cd0e-582b-92ca-bb002d36258e")
+		(uuid "8a691e8c-7b0c-5fc2-9d65-1dcf1bf08b86")
 	)
 	(label "OC_CMP"
 		(at 78.74 172.72 0)
@@ -4882,7 +5237,27 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "a497cb65-3eb9-5e1d-adce-c136187488a1")
+		(uuid "9a8edc46-cd0e-582b-92ca-bb002d36258e")
+	)
+	(label "OV_DIV"
+		(at 330.2 55.88 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "a0e7914c-cdf8-529f-8f3a-069838ee86e9")
+	)
+	(label "FAULT_N"
+		(at 304.8 139.7 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "b29a3551-d85c-5a22-9e82-be38576a5952")
 	)
 	(label "DRV_EN_N"
 		(at 355.6 165.1 0)
@@ -4892,117 +5267,17 @@
 			)
 			(justify left bottom)
 		)
+		(uuid "edad0d44-fe79-5d87-a8c9-4e0bcc5790bf")
+	)
+	(label "LED_FLT"
+		(at 321.31 170.18 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
 		(uuid "ef33f616-3420-5790-8630-76eb86a0334a")
-	)
-	(hierarchical_label "ISENSE_LO"
-		(shape input)
-		(at 38.1 172.72 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "0098766e-2122-5a1b-b8bb-665a0ac2d834")
-	)
-	(hierarchical_label "FAULT"
-		(shape output)
-		(at 312.42 182.88 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "145878b8-3fe8-5cc4-bd25-8eb9d850871d")
-	)
-	(hierarchical_label "OC_TRIP_N"
-		(shape output)
-		(at 187.96 187.96 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "34874a36-eab0-5f3c-9c6f-43e0b3197d29")
-	)
-	(hierarchical_label "OC_FAULT_N"
-		(shape output)
-		(at 332.74 152.4 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "34b615eb-f651-5794-91a4-4486b52596c3")
-	)
-	(hierarchical_label "VH"
-		(shape input)
-		(at 91.44 157.48 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "3a47140e-0d2b-5d58-9e65-dca1af0b485e")
-	)
-	(hierarchical_label "DRV_EN"
-		(shape output)
-		(at 391.16 137.16 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "6cce452e-b089-5170-bc6f-9ca13eb1f279")
-	)
-	(hierarchical_label "V_DRV_RB"
-		(shape output)
-		(at 394.97 226.06 270)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "9b16287f-dbfa-59d4-84b4-33d47beb7843")
-	)
-	(hierarchical_label "KA"
-		(shape input)
-		(at 38.1 86.36 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "acdf5a24-8b90-5c3d-8bb1-745e4ffb4cc8")
-	)
-	(hierarchical_label "KA_N2"
-		(shape output)
-		(at 127 78.74 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "b11e8807-2370-5b08-9a4e-87a476706a50")
-	)
-	(hierarchical_label "KA_OK"
-		(shape output)
-		(at 340.36 93.98 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "d5be2bae-8f10-57e4-9a5d-dc6f65ff1037")
 	)
 	(hierarchical_label "VL"
 		(shape input)
@@ -5013,7 +5288,128 @@
 			)
 			(justify right)
 		)
-		(uuid "dca308ea-ad78-5d39-a9aa-6c2d550f1236")
+		(uuid "145878b8-3fe8-5cc4-bd25-8eb9d850871d")
+	)
+	(hierarchical_label "KA"
+		(shape input)
+		(at 38.1 86.36 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "15d91c75-9cb9-5d12-b101-e41cea8c2ae7")
+	)
+	(hierarchical_label "VH"
+		(shape input)
+		(at 91.44 157.48 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "2db2e212-14bf-5562-b7e7-f4951544b29c")
+	)
+	(hierarchical_label "OC_FAULT_N"
+		(shape output)
+		(at 332.74 152.4 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "3129a4e6-5fd4-5991-8aa8-1c0024f70335")
+	)
+	(hierarchical_label "KA_OK"
+		(shape output)
+		(at 340.36 93.98 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "34874a36-eab0-5f3c-9c6f-43e0b3197d29")
+	)
+	(hierarchical_label "OC_TRIP_N"
+		(shape output)
+		(at 187.96 187.96 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "34b615eb-f651-5794-91a4-4486b52596c3")
+	)
+	(hierarchical_label "V_DRV_RB"
+		(shape output)
+		(at 394.97 226.06 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "697542cd-ffb0-512d-be2f-7da7f31d4c4c")
+	)
+	(hierarchical_label "ISENSE_LO"
+		(shape input)
+		(at 38.1 172.72 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right)
+		)
+		(uuid "6aad9ea9-daa1-5a07-917b-0d7101d4f388")
+	)
+	(hierarchical_label "KA_N2"
+		(shape output)
+		(at 127 78.74 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "79e257e1-ef56-5df5-b757-fed9636b3884")
+	)
+	(hierarchical_label "DRV_EN"
+		(shape output)
+		(at 391.16 137.16 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "904dcdd9-7c6a-5511-a09e-330fa1780181")
+	)
+	(hierarchical_label "OC_TRIP_N"
+		(shape output)
+		(at 378.46 55.88 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "913b201c-8671-52b2-a4b6-df8c20696df0")
+	)
+	(hierarchical_label "FAULT"
+		(shape output)
+		(at 312.42 182.88 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "9b16287f-dbfa-59d4-84b4-33d47beb7843")
 	)
 	(symbol
 		(lib_id "Device:R")
@@ -5389,8 +5785,8 @@
 		)
 	)
 	(symbol
-		(lib_id "ZoneFlow:3V3")
-		(at 109.22 226.06 0)
+		(lib_id "ZoneFlow:V5")
+		(at 50.8 231.14 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -5400,7 +5796,7 @@
 		(dnp no)
 		(uuid "090e33d9-f51a-53a9-a800-de61d4aab78a")
 		(property "Reference" "#PWR0070"
-			(at 111.252 223.52 0)
+			(at 52.832 228.6 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5411,8 +5807,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "3V3"
-			(at 109.22 222.25 0)
+		(property "Value" "V5"
+			(at 50.8 227.33 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -5422,7 +5818,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 109.22 226.06 0)
+			(at 50.8 231.14 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5433,7 +5829,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 109.22 226.06 0)
+			(at 50.8 231.14 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5443,8 +5839,8 @@
 				)
 			)
 		)
-		(property "Description" "3.3 V logic rail"
-			(at 109.22 226.06 0)
+		(property "Description" "5 V bus after the OR-ing diodes"
+			(at 50.8 231.14 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5584,6 +5980,84 @@
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
 					(reference "R87")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 91.44 91.44 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "1c58c8ba-c332-5988-958c-9809965b6d71")
+		(property "Reference" "#PWR0078"
+			(at 93.98 91.44 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "GND"
+			(at 91.44 95.25 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 91.44 91.44 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 91.44 91.44 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 91.44 91.44 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "f28a4a51-ace6-5571-a026-9642db48e87f")
+		)
+		(instances
+			(project "zoneflow-a"
+				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
+					(reference "#PWR0078")
 					(unit 1)
 				)
 			)
@@ -5745,6 +6219,287 @@
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
 					(reference "U6")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "ZoneFlow:3V3")
+		(at 353.06 40.64 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "2567b7f5-9ce0-5003-a4a7-6ca914d5674e")
+		(property "Reference" "#PWR0082"
+			(at 355.092 38.1 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "3V3"
+			(at 353.06 36.83 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 353.06 40.64 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 353.06 40.64 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "3.3 V logic rail"
+			(at 353.06 40.64 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "3dc346ca-c478-5fb7-807e-074e003d85f3")
+		)
+		(instances
+			(project "zoneflow-a"
+				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
+					(reference "#PWR0082")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 109.22 256.54 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "2780829e-50a5-5399-b266-62d8cb757a53")
+		(property "Reference" "#PWR0074"
+			(at 111.76 256.54 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "GND"
+			(at 109.22 260.35 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 109.22 256.54 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 109.22 256.54 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 109.22 256.54 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "c2f09a06-e8dc-55a5-beb8-5e5c23212b86")
+		)
+		(instances
+			(project "zoneflow-a"
+				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
+					(reference "#PWR0074")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:C")
+		(at 279.4 58.42 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "2aea70a8-4792-59ea-9d7d-36e4fd3067ef")
+		(property "Reference" "C56"
+			(at 282.702 57.15 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "100n"
+			(at 282.702 59.69 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+			(at 279.4 58.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 279.4 58.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Unpolarized capacitor"
+			(at 279.4 58.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Spec" "100 nF 50 V X7R"
+			(at 279.4 58.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "CC0603KRX7R9BB104"
+			(at 279.4 58.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Manufacturer" "YAGEO"
+			(at 279.4 58.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C14663"
+			(at 279.4 58.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "50546cba-8243-53fb-8962-22b63a3f667d")
+		)
+		(pin "2"
+			(uuid "49db9b8b-31d2-5cc3-b9e1-72300ac15fdb")
+		)
+		(instances
+			(project "zoneflow-a"
+				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
+					(reference "C56")
 					(unit 1)
 				)
 			)
@@ -5952,8 +6707,8 @@
 		)
 	)
 	(symbol
-		(lib_id "power:GND")
-		(at 91.44 91.44 0)
+		(lib_id "ZoneFlow:3V3")
+		(at 137.16 234.95 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -5962,8 +6717,8 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "2fa88722-a1e7-520e-9417-629c0cc270a7")
-		(property "Reference" "#PWR0073"
-			(at 93.98 91.44 0)
+		(property "Reference" "#PWR0076"
+			(at 139.192 232.41 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5974,8 +6729,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "GND"
-			(at 91.44 95.25 0)
+		(property "Value" "3V3"
+			(at 137.16 231.14 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -5985,7 +6740,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 91.44 91.44 0)
+			(at 137.16 234.95 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5996,7 +6751,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 91.44 91.44 0)
+			(at 137.16 234.95 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6006,8 +6761,8 @@
 				)
 			)
 		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 91.44 91.44 0)
+		(property "Description" "3.3 V logic rail"
+			(at 137.16 234.95 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6023,15 +6778,15 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0073")
+					(reference "#PWR0076")
 					(unit 1)
 				)
 			)
 		)
 	)
 	(symbol
-		(lib_id "ZoneFlow:V5")
-		(at 78.74 234.95 0)
+		(lib_id "power:GND")
+		(at 320.04 68.58 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -6041,7 +6796,7 @@
 		(dnp no)
 		(uuid "2fcb1d18-1c1b-5092-8ee5-99836ed956fd")
 		(property "Reference" "#PWR0067"
-			(at 80.772 232.41 0)
+			(at 322.58 68.58 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6052,8 +6807,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "V5"
-			(at 78.74 231.14 0)
+		(property "Value" "GND"
+			(at 320.04 72.39 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6063,7 +6818,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 78.74 234.95 0)
+			(at 320.04 68.58 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6074,7 +6829,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 78.74 234.95 0)
+			(at 320.04 68.58 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6084,8 +6839,8 @@
 				)
 			)
 		)
-		(property "Description" "5 V bus after the OR-ing diodes"
-			(at 78.74 234.95 0)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 320.04 68.58 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6845,8 +7600,145 @@
 		)
 	)
 	(symbol
-		(lib_id "ZoneFlow:3V3")
-		(at 137.16 234.95 0)
+		(lib_id "ZoneFlow:TPS3701DDC")
+		(at 353.06 58.42 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "489ec53c-50f0-59a9-99b1-6588f1d4189a")
+		(property "Reference" "U13"
+			(at 356.87 43.18 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "TPS3701DDCR"
+			(at 356.87 46.36 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Package_TO_SOT_SMD:TSOT-23-6"
+			(at 353.06 58.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://www.ti.com/lit/ds/symlink/tps3701.pdf"
+			(at 353.06 58.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Window voltage detector, 0.4 V thresholds, open-drain outputs, SOT-23-thin-6"
+			(at 353.06 58.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Spec" "TPS3701DDCR window voltage detector, 0.4 V thresholds, open-drain outputs"
+			(at 353.06 58.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "TPS3701DDCR"
+			(at 353.06 58.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Manufacturer" "Texas Instruments"
+			(at 353.06 58.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C132788"
+			(at 353.06 58.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "4"
+			(uuid "c366b586-fc15-55b1-bf03-caed55a3fe92")
+		)
+		(pin "3"
+			(uuid "54799e36-8d18-54f3-accd-4838ac19d2fd")
+		)
+		(pin "6"
+			(uuid "a4c19406-02cf-5ed1-8f4f-53567a5b18f6")
+		)
+		(pin "1"
+			(uuid "70748621-41e9-5281-bcfd-5efc3ddc6053")
+		)
+		(pin "5"
+			(uuid "c912c6bd-9ed2-512d-a7b5-a46ff6437ffe")
+		)
+		(pin "2"
+			(uuid "e579798f-f8b4-564c-a27a-a523f27ddc7c")
+		)
+		(instances
+			(project "zoneflow-a"
+				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
+					(reference "U13")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 50.8 251.46 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -6856,7 +7748,7 @@
 		(dnp no)
 		(uuid "4b660ce8-e364-5a36-8d44-6abecd6e7841")
 		(property "Reference" "#PWR0071"
-			(at 139.192 232.41 0)
+			(at 53.34 251.46 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6867,8 +7759,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "3V3"
-			(at 137.16 231.14 0)
+		(property "Value" "GND"
+			(at 50.8 255.27 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6878,7 +7770,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 137.16 234.95 0)
+			(at 50.8 251.46 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6889,7 +7781,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 137.16 234.95 0)
+			(at 50.8 251.46 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6899,8 +7791,8 @@
 				)
 			)
 		)
-		(property "Description" "3.3 V logic rail"
-			(at 137.16 234.95 0)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 50.8 251.46 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7501,8 +8393,8 @@
 		)
 	)
 	(symbol
-		(lib_id "ZoneFlow:V_DRV")
-		(at 389.89 208.28 0)
+		(lib_id "power:GND")
+		(at 345.44 170.18 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -7511,8 +8403,8 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "55861a83-9a9d-5ae2-bfcd-7bcccfd00ea8")
-		(property "Reference" "#PWR0075"
-			(at 391.922 205.74 0)
+		(property "Reference" "#PWR0079"
+			(at 347.98 170.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7523,8 +8415,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "V_DRV"
-			(at 389.89 204.47 0)
+		(property "Value" "GND"
+			(at 345.44 173.99 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -7534,7 +8426,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 389.89 208.28 0)
+			(at 345.44 170.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7545,7 +8437,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 389.89 208.28 0)
+			(at 345.44 170.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7555,8 +8447,8 @@
 				)
 			)
 		)
-		(property "Description" "Opto LED supply, on only while the fail-safe circuit allows drive"
-			(at 389.89 208.28 0)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 345.44 170.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7572,7 +8464,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0075")
+					(reference "#PWR0079")
 					(unit 1)
 				)
 			)
@@ -7702,6 +8594,131 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:C")
+		(at 320.04 62.23 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "63661d76-6678-5630-b591-06ddfa3ec526")
+		(property "Reference" "C55"
+			(at 323.342 60.96 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "10n"
+			(at 323.342 63.5 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+			(at 320.04 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 320.04 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Unpolarized capacitor"
+			(at 320.04 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Spec" "10 nF 50 V X7R"
+			(at 320.04 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "CL10B103KB8NNNC"
+			(at 320.04 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Manufacturer" "Samsung Electro-Mechanics"
+			(at 320.04 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C1589"
+			(at 320.04 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "0a25d742-56aa-5ff0-a773-14818f316dc5")
+		)
+		(pin "2"
+			(uuid "0b7a0f06-dc1d-5d04-8a6c-45bf7d8ada99")
+		)
+		(instances
+			(project "zoneflow-a"
+				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
+					(reference "C55")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "ZoneFlow:3V3")
 		(at 345.44 185.42 0)
 		(unit 1)
@@ -7774,6 +8791,84 @@
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
 					(reference "#PWR0062")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 335.28 66.04 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "6f9e3eb3-5008-5f0d-9374-067102ed121e")
+		(property "Reference" "#PWR0081"
+			(at 337.82 66.04 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "GND"
+			(at 335.28 69.85 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 335.28 66.04 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 335.28 66.04 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 335.28 66.04 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "bd2949e2-bbc1-5b4b-a4a9-60221e6e1692")
+		)
+		(instances
+			(project "zoneflow-a"
+				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
+					(reference "#PWR0081")
 					(unit 1)
 				)
 			)
@@ -8477,8 +9572,8 @@
 		)
 	)
 	(symbol
-		(lib_id "power:GND")
-		(at 345.44 170.18 0)
+		(lib_id "Device:R")
+		(at 294.64 52.07 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -8486,10 +9581,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "87313f64-2b67-5868-925f-bbaa5698771c")
-		(property "Reference" "#PWR0074"
-			(at 347.98 170.18 0)
-			(hide yes)
+		(uuid "85f66f2e-a835-5d2e-96af-14c9af222807")
+		(property "Reference" "R13"
+			(at 296.926 50.8 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -8499,18 +9593,19 @@
 				(justify left)
 			)
 		)
-		(property "Value" "GND"
-			(at 345.44 173.99 0)
+		(property "Value" "1M"
+			(at 296.926 53.34 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
+				(justify left)
 			)
 		)
-		(property "Footprint" ""
-			(at 345.44 170.18 0)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 294.64 52.07 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8521,7 +9616,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 345.44 170.18 0)
+			(at 294.64 52.07 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8531,8 +9626,52 @@
 				)
 			)
 		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 345.44 170.18 0)
+		(property "Description" "Resistor"
+			(at 294.64 52.07 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Spec" "1M 1%"
+			(at 294.64 52.07 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "0603WAF1004T5E"
+			(at 294.64 52.07 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 294.64 52.07 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C22935"
+			(at 294.64 52.07 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8543,20 +9682,23 @@
 			)
 		)
 		(pin "1"
-			(uuid "4f182569-75ce-5832-ad1e-c9d997c486d9")
+			(uuid "4771e404-6924-596b-a452-175b31d5241f")
+		)
+		(pin "2"
+			(uuid "439aef88-382c-5f47-9e51-c09f4b35832f")
 		)
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0074")
+					(reference "R13")
 					(unit 1)
 				)
 			)
 		)
 	)
 	(symbol
-		(lib_id "power:GND")
-		(at 137.16 247.65 0)
+		(lib_id "ZoneFlow:V5")
+		(at 78.74 234.95 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -8566,7 +9708,7 @@
 		(dnp no)
 		(uuid "886141e4-993a-5538-80c8-426ffb813e45")
 		(property "Reference" "#PWR0072"
-			(at 139.7 247.65 0)
+			(at 80.772 232.41 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8577,8 +9719,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "GND"
-			(at 137.16 251.46 0)
+		(property "Value" "V5"
+			(at 78.74 231.14 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -8588,7 +9730,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 137.16 247.65 0)
+			(at 78.74 234.95 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8599,7 +9741,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 137.16 247.65 0)
+			(at 78.74 234.95 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8609,8 +9751,8 @@
 				)
 			)
 		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 137.16 247.65 0)
+		(property "Description" "5 V bus after the OR-ing diodes"
+			(at 78.74 234.95 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9408,8 +10550,8 @@
 		)
 	)
 	(symbol
-		(lib_id "ZoneFlow:V5")
-		(at 50.8 231.14 0)
+		(lib_id "ZoneFlow:3V3")
+		(at 294.64 45.72 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -9419,7 +10561,7 @@
 		(dnp no)
 		(uuid "9f5d9ede-4527-5b6a-80d1-4f10db090736")
 		(property "Reference" "#PWR0065"
-			(at 52.832 228.6 0)
+			(at 296.672 43.18 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9430,8 +10572,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "V5"
-			(at 50.8 227.33 0)
+		(property "Value" "3V3"
+			(at 294.64 41.91 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -9441,7 +10583,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 50.8 231.14 0)
+			(at 294.64 45.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9452,7 +10594,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 50.8 231.14 0)
+			(at 294.64 45.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9462,8 +10604,8 @@
 				)
 			)
 		)
-		(property "Description" "5 V bus after the OR-ing diodes"
-			(at 50.8 231.14 0)
+		(property "Description" "3.3 V logic rail"
+			(at 294.64 45.72 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9480,6 +10622,84 @@
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
 					(reference "#PWR0065")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "ZoneFlow:V_DRV")
+		(at 389.89 208.28 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "a222038a-ac0d-58eb-ae59-402becf6adfd")
+		(property "Reference" "#PWR0080"
+			(at 391.922 205.74 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "V_DRV"
+			(at 389.89 204.47 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 389.89 208.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 389.89 208.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Opto LED supply, on only while the fail-safe circuit allows drive"
+			(at 389.89 208.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "cc63a5bd-3d77-5583-baa2-2d2dfd835e7d")
+		)
+		(instances
+			(project "zoneflow-a"
+				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
+					(reference "#PWR0080")
 					(unit 1)
 				)
 			)
@@ -9611,8 +10831,8 @@
 		)
 	)
 	(symbol
-		(lib_id "power:GND")
-		(at 78.74 247.65 0)
+		(lib_id "ZoneFlow:3V3")
+		(at 279.4 52.07 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -9622,7 +10842,7 @@
 		(dnp no)
 		(uuid "a4760fb1-30be-51ac-98d1-476df8e742d1")
 		(property "Reference" "#PWR0068"
-			(at 81.28 247.65 0)
+			(at 281.432 49.53 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9633,8 +10853,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "GND"
-			(at 78.74 251.46 0)
+		(property "Value" "3V3"
+			(at 279.4 48.26 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -9644,7 +10864,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 78.74 247.65 0)
+			(at 279.4 52.07 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9655,7 +10875,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 78.74 247.65 0)
+			(at 279.4 52.07 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9665,8 +10885,8 @@
 				)
 			)
 		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 78.74 247.65 0)
+		(property "Description" "3.3 V logic rail"
+			(at 279.4 52.07 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9683,6 +10903,84 @@
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
 					(reference "#PWR0068")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 353.06 76.2 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "a4f663bb-9a5b-5cc1-a082-d573b567eb63")
+		(property "Reference" "#PWR0083"
+			(at 355.6 76.2 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "GND"
+			(at 353.06 80.01 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 353.06 76.2 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 353.06 76.2 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 353.06 76.2 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "1cd3b543-ecf9-51fd-bb67-52fbae21f28b")
+		)
+		(instances
+			(project "zoneflow-a"
+				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
+					(reference "#PWR0083")
 					(unit 1)
 				)
 			)
@@ -10236,6 +11534,131 @@
 	)
 	(symbol
 		(lib_id "Device:R")
+		(at 307.34 62.23 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "b6ffd9ac-e74c-54b0-affc-3bb70c732abf")
+		(property "Reference" "R100"
+			(at 309.626 60.96 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "110k"
+			(at 309.626 63.5 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 307.34 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 307.34 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 307.34 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Spec" "110k 1%"
+			(at 307.34 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "0603WAF1103T5E"
+			(at 307.34 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
+			(at 307.34 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C25805"
+			(at 307.34 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "80e37a4b-3c4c-530d-aa75-8cfee1c34b26")
+		)
+		(pin "2"
+			(uuid "cf8b5f6c-dd18-528f-bb5e-0bdb108c0a40")
+		)
+		(instances
+			(project "zoneflow-a"
+				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
+					(reference "R100")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
 		(at 185.42 110.49 0)
 		(unit 1)
 		(body_style 1)
@@ -10354,6 +11777,162 @@
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
 					(reference "R34")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 137.16 247.65 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "bc96d161-ad39-5dc2-90ef-d1ab23886f73")
+		(property "Reference" "#PWR0077"
+			(at 139.7 247.65 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "GND"
+			(at 137.16 251.46 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 137.16 247.65 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 137.16 247.65 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 137.16 247.65 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "5edf9ecd-dbb2-53f5-984e-62125027dcaf")
+		)
+		(instances
+			(project "zoneflow-a"
+				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
+					(reference "#PWR0077")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "ZoneFlow:3V3")
+		(at 109.22 226.06 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "bd87b706-ff7d-5af3-9637-2f7a6aff4fd2")
+		(property "Reference" "#PWR0075"
+			(at 111.252 223.52 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "3V3"
+			(at 109.22 222.25 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 109.22 226.06 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 109.22 226.06 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "3.3 V logic rail"
+			(at 109.22 226.06 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "462056d2-33d8-5d24-95cd-7f89fbe2c6cb")
+		)
+		(instances
+			(project "zoneflow-a"
+				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
+					(reference "#PWR0075")
 					(unit 1)
 				)
 			)
@@ -10734,7 +12313,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 50.8 251.46 0)
+		(at 307.34 68.58 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -10744,7 +12323,7 @@
 		(dnp no)
 		(uuid "d2b70a55-7cdb-581f-bc43-d57173d4e8db")
 		(property "Reference" "#PWR0066"
-			(at 53.34 251.46 0)
+			(at 309.88 68.58 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10756,7 +12335,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 50.8 255.27 0)
+			(at 307.34 72.39 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10766,7 +12345,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 50.8 251.46 0)
+			(at 307.34 68.58 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10777,7 +12356,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 50.8 251.46 0)
+			(at 307.34 68.58 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10788,7 +12367,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 50.8 251.46 0)
+			(at 307.34 68.58 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10812,7 +12391,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 109.22 256.54 0)
+		(at 279.4 64.77 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -10822,7 +12401,7 @@
 		(dnp no)
 		(uuid "d5d611ca-76a7-583b-8875-69cab558648f")
 		(property "Reference" "#PWR0069"
-			(at 111.76 256.54 0)
+			(at 281.94 64.77 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10834,7 +12413,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 109.22 260.35 0)
+			(at 279.4 68.58 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10844,7 +12423,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 109.22 256.54 0)
+			(at 279.4 64.77 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10855,7 +12434,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 109.22 256.54 0)
+			(at 279.4 64.77 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10866,7 +12445,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 109.22 256.54 0)
+			(at 279.4 64.77 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10883,6 +12462,84 @@
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
 					(reference "#PWR0069")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 78.74 247.65 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "d6b3cbc1-a933-5dc8-b961-b67bb8c3ad9b")
+		(property "Reference" "#PWR0073"
+			(at 81.28 247.65 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "GND"
+			(at 78.74 251.46 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 78.74 247.65 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 78.74 247.65 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 78.74 247.65 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "62a58e15-fa07-5dd9-b5cc-693d9b0a1965")
+		)
+		(instances
+			(project "zoneflow-a"
+				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
+					(reference "#PWR0073")
 					(unit 1)
 				)
 			)

@@ -168,7 +168,7 @@ Baseline for ZoneFlow: per-zone fault alert with auto-off, flow meter with leak 
 - **One board, two firmwares:** ESPHome (HA-native `valve` entities, on-device scheduler) and OpenSprinkler-compatible or custom firmware.
 - **BLE provisioning out of the box.** OS, hwstar and 30hours use serial, Web Tools or a SoftAP.
 - **Matter Water Valve / Irrigation System endpoint.** No open project ships one yet, and HA support is pending.
-- **JLC-assemblable, single 24VAC input, about one third of OS4's €239 price.** The BOM cost is unverified.
+- **JLC-assemblable, single 24VAC input.** The [cost estimate](../hardware/cost.md) of 2026-11-11 puts a finished 8-zone controller at about 54 USD landed in the US for 100 units and 125 USD for 5, before labour, against OS4's €239 retail price.
 
 ---
 

@@ -115,3 +115,8 @@ thickness = 0.15
 # The ESP32 antenna, the USB-C shell and the terminal blocks sit on the board
 # edge on purpose; their silkscreen outlines cross it and the fab clips them.
 silk_edge_clearance = "ignore"
+# This board uses KiCad's own ESP32-S3-WROOM-1 footprint, which has twelve vias with a 0.2 mm hole in
+# its ground pad. JLCPCB charges for a hole under 0.3 mm and hardware/rules/jlcpcb.toml fails DRC on
+# one. This board tests the flow and is never ordered, so the finding is switched off here and only
+# here. The product board drills those vias 0.3 mm (zoneflow-a/design/footprints.py).
+drill_out_of_range = "ignore"

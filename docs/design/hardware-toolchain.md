@@ -339,14 +339,14 @@ one so that one set covers both.
 | Limit | Value used | Page text |
 |---|---|---|
 | Track width and spacing | 0.10 mm | "0.10 / 0.10 mm (4 / 4 mil)" for 1 and 2 layers, 0.09 mm multilayer |
-| Via hole | 0.20 mm | "Preferred Min. Via hole size: 0.2mm". The absolute minimum is 0.15 mm |
-| Via diameter | 0.45 mm | A 0.2 mm hole "with via diameter less than 0.45mm, will cost more" |
+| Any hole | 0.30 mm | The smallest hole with no extra charge. The help article "In what cases will there be charged extra?", last updated 2026-11-10 and read 2026-11-11, says holes below "the standard size (diameter of 0.3mm or more)" cost more. The capabilities page still says "Preferred Min. Via hole size: 0.2mm". The two disagree; `jlcpcb.toml` has both and follows the article |
+| Via diameter | 0.45 mm | "Via diameter should be 0.1mm(0.15mm preferred) larger than Via hole size" |
 | PTH pad annular ring | 0.18 mm | 2-layer "absolute minimum 0.18 mm", multilayer 0.15 mm |
 | PTH hole to track | 0.28 mm | "0.35mm is recommended, minimum 0.28mm" |
 | Via hole to track, NPTH to track | 0.20 mm | "Via hole to Track 0.2mm", "NPTH to Track 0.2mm" |
 | Via hole to via hole | 0.20 mm | "Via Hole-to-Hole Spacing 0.2mm" |
 | Pad hole to pad hole | 0.45 mm | "Pad Hole-to-Hole Spacing 0.45mm" |
-| SMD pad to pad, different nets | 0.15 mm | "SMD pad to pad clearance (different nets) 0.15mm" |
+| SMD pad to pad, different nets | no rule | "SMD pad to pad clearance (different nets) 0.15mm". Every net class asks for 0.2 mm or more, so the classes keep this limit. It was a rule of its own until the layout review of revision A and did harm: see below |
 | Copper to routed board edge | 0.20 mm | "Copper clearance from routed board edges: ≧0.2 mm". V-cut edges need 0.4 mm |
 | Silkscreen text | 1.0 mm high, 0.15 mm line | "Minimum text height 40 mil (1.0mm)", "Minimum Line Width ≥0.15mm" |
 | Pad to silkscreen | 0.15 mm | "Pad To Silkscreen 0.15mm" |
@@ -358,6 +358,23 @@ constraints in `.kicad_pro`. Limits that depend on the item type are rules in
 
 I read the page through a text extraction tool, not in a browser. Read it
 again before an order.
+
+**Two things the layout review of revision A changed here.**
+
+- **A hole under 0.3 mm fails DRC.** The board-wide minimum is 0.30 mm and a
+  rule in `jlcpcb.kicad_dru` names the reason in the report. Before, 0.20 mm
+  was allowed, and the module footprint brought twelve such holes with it.
+  On 2026-11-11 JLCPCB's quote priced them with a surcharge, a material
+  upgrade and a four-wire test (the project's cost analysis found it). The
+  toolchain test board keeps KiCad's stock module footprint and switches the
+  finding off in its own `board.toml`, with the reason.
+- **A clearance in a custom rule is not a floor.** `jlcpcb.kicad_dru` had a
+  rule that gave every pair of surface-mount pads a clearance of 0.15 mm.
+  KiCad takes a custom rule in place of the net-class clearance for every
+  pair it fits, so two pads 0.15 mm apart passed DRC whatever their nets. On
+  revision A it hid one pair, the solder jumper JP1, which now has a rule of
+  its own in the board's `design/rules.kicad_dru`. A rule that lowers a
+  clearance belongs to one named pair, never to a pad type.
 
 ## 9. Known limits
 
@@ -392,13 +409,14 @@ again before an order.
 - **`silk_edge_clearance` is ignored on the test board** because the antenna,
   USB-C and terminal outlines cross the edge on purpose. That also hides
   reference text that hangs over the edge. Look at the render.
-- **JLCPCB rotation corrections are unverified.** The table has seven rows:
-  six copied from the Fabrication-Toolkit project and one, for the SO-8 with
-  an exposed pad, given the SOIC rotation by analogy. Most package families of
-  the revision A board have no row and are placed with KiCad's rotation; the
-  table's header lists them. None was checked against JLCPCB's placement
-  preview. `output/<name>-pin1.csv` lists where pin 1 of
-  every polarised part is, to compare the preview with.
+- **JLCPCB placement corrections are checked against JLCPCB's library, not
+  against its preview.** `make cpl-check` (section 13.12) compares every
+  placement with the footprint that the JLCEDA library holds for the part's
+  LCSC number. The table of corrections was rewritten from that comparison in
+  the layout review of revision A: with the seven rows it had before, 26
+  placements of that board were wrong. The check does not prove that the
+  library footprint is how the part lies in its tape. Still compare JLCPCB's
+  preview with `output/<name>-pin1.csv` when ordering.
 - **The CPL lists through-hole parts** such as terminal blocks, unless the
   board Makefile sets `POS_FLAGS := --smd-only`.
 - **Board exports are not byte-stable.** Gerbers, drill files, reports, the
@@ -517,7 +535,7 @@ routing will take more effort than every other step combined.
 ## 12. Capture from a design netlist
 
 The revision A board, `hardware/zoneflow-a/`, was designed on paper first.
-`hardware/netlist.yaml` lists its 348 components, the part number of each and
+`hardware/netlist.yaml` lists its 353 components, the part number of each and
 the net on every pin, and it was reviewed before any schematic existed. The
 schematic must therefore be that netlist, drawn. `hwflow.capture` makes it so.
 This section describes what was added to the flow for it and what was checked.
@@ -579,8 +597,9 @@ a changed value, a changed part number, a part added, a part removed, a pin
 map the wrong way round, a renamed net) and checks that each one is
 reported: `tools/hwflow/tests/test_capture_parity.py`.
 
-Result on revision A, `make schematic`, 2026-11-10, after the two parts and
-one net that hardware review A2 added: "348 components and 199
+Result on revision A, `make schematic`, 2026-11-11, after the two parts and
+one net that hardware review A2 added and the five parts and one net of
+[hardware answers A2](hardware-answers-a2.md): "353 components and 200
 nets of the design netlist match KiCad's netlist pin for pin; fitted parts
 match in 2 build(s)".
 
@@ -721,7 +740,8 @@ layout itself is described in [hardware layout](hardware-layout.md).
 | `[route] prune = true` | After the import, remove a hand-placed escape via or stub that nothing came to use (13.10) |
 | `[route] widen = true` | After the import, give every autorouted track the width of its net class where DRC allows (13.11) |
 | `[[unroute]]`, `[[patch]]`, `[patches]` | Changes to the routed board that do not disturb the stored routing (13.10) |
-| `[[route.keepout]]` | Rectangles of one layer where the autorouter may put neither track nor via: the planes and islands that are added as zones after the Specctra file is written |
+| `[[route.keepout]]` | Rectangles of some layers where the autorouter may put neither track nor via. The patch router keeps out of them too, unless the rectangle is marked `stands_for_copper = true`: that mark is for planes and islands that are added as zones after the Specctra file is written, which only the autorouter cannot see |
+| `[route.patch_last_resort] layer, cost, keepout` | A plane layer that the patch router may use for a connection with no path on the routing layers (13.13) |
 | `[route.layer_cost]` | A cost factor for a layer, to make the autorouter use it less |
 | `[[text]] angle, justify, optional` | A turned or left- or right-aligned text, and a text the builder may drop if it collides (13.6) |
 | `[[line]]` | Straight silkscreen strokes, for a mark that is not text |
@@ -965,7 +985,7 @@ imported session has a track on such a layer.
 The autorouter does not give the same result twice, and a change to the
 placement or to the hand-routed copper changes the Specctra file and so
 discards the stored session. On the revision A board Freerouting also ends
-with connections open: fifteen in the stored run, after 28 passes. To close
+with connections open: seventeen in the stored run, after 29 passes. To close
 them without routing again, `board.toml` has tables that act after the
 session is imported, in `pcbbuild finish`:
 
@@ -991,7 +1011,7 @@ hole keeps 0.3 mm from every other hole, and no via goes into a surface-mount
 pad. It tries the width of the net class first, then 0.25 and 0.2 mm, in a
 window 9 mm round the two ends and then 22.5 mm. A found path is then
 straightened. From each corner it goes to the farthest cell of the path that
-one 45 degree bend reaches over free cells. Twelve tests in `tests/test_patchroute.py` run it
+one 45 degree bend reaches over free cells. Thirteen tests in `tests/test_patchroute.py` run it
 on made-up boards.
 
 `make patches` runs it in passes. The first is on the board without patches.
@@ -1006,6 +1026,12 @@ shortest. `output/reports/routing.md` lists every net it touched, so that a
 person looks at each.
 
 After the board is routed again, run `make patches` and then `make`.
+
+**Patches by hand.** `design/patches-hand.toml`, if it exists, is copied into
+`board.toml` after `patches.toml`. It holds `[[unroute]]` and `[[patch]]`
+entries for what the patch router cannot close by itself, with the reason for
+each. They belong to the stored routing like the others. Before `make
+patches` on a new routing, delete its entries.
 
 ### 13.11 The autorouter narrows tracks and does not say so
 
@@ -1036,3 +1062,89 @@ stays narrow, with its length.
 The settings file of 2.5.0 has `router.automatic_neckdown` and
 `router.neck_width_um`. I did not try them. A new routing run does not give
 the same board, and the width pass makes the result independent of them.
+
+### 13.12 The placement file against the assembler's library
+
+`hwflow/cplcheck.py`, `make cpl-check`. Added by the
+[layout review](hardware-layout-review.md), which found the placement file
+wrong for 26 parts.
+
+JLCPCB places the footprint that its own library holds for an LCSC number,
+with that footprint's origin on the coordinate of the placement file, turned
+by the file's rotation. The library is the JLCEDA/EasyEDA Official Library
+(<https://lceda.cn/>, <https://easyeda.com>). The check fetches the library
+footprint of every part number of the BOM into `hardware/.cache/jlc-library/`,
+which is not committed, puts it on the board as the placement file says, and
+fails unless
+
+- every library pad lands within 0.6 mm of a pad of the board. A heat tab or
+  ground pad is left out of this, because two land patterns for one package
+  draw it differently;
+- pad 1 of the library lands on pad 1 of the board, for a part with numbered
+  pins;
+- the cathode of the library lands on pad 1, for a diode or an LED whose
+  library pins are named. A footprint named `-BI` in the library is a
+  bidirectional part and is compared as a set of pads.
+
+`hardware/rules/jlcpcb-cpl-rotations.csv` holds the corrections. A row may
+name one LCSC number, because two parts in one package can lie differently
+in the library: the two SOT-23-6 parts of revision A do. A row may also move
+the placement point, by an offset in the footprint's own frame, because the
+library's origin is not always where KiCad's anchor is: for the module it is
+3.6 mm away.
+
+It needs the network the first time and is not part of `make`. Five tests in
+`tests/test_cplcheck.py` run it on made-up footprints. Its report goes to
+`output/reports/placement-check.md`.
+
+### 13.13 More that the layout review added
+
+- **Clearance overrides of library footprints are removed.** KiCad's
+  `TI_SO-PowerPAD-8` has a clearance of 0.2 mm written into the footprint. A
+  footprint's own clearance outranks the net class of its pads in the zone
+  fill and in DRC. The ground pour stood 0.2 mm from the 45 V input pin and
+  the switch node of the buck converter, where their class asks for 0.4 mm,
+  and DRC had nothing to say. `pcbbuild` now removes such an override from
+  every footprint and pad it places and prints which.
+- **The silkscreen cleaner compares text with text.** DRC measures stroke
+  against stroke, so two designators could stand flush against each other
+  and read as one word. `silk.crowded_texts` finds two texts on one line that
+  are less than 0.5 mm apart, and any two whose boxes overlap;
+  `silk.off_board` finds a text within 0.3 mm of the outline or beyond it.
+  Both feed the same loop as the DRC findings: the designator moves, or is
+  hidden. A `[[text]]` may have `width`, for letters narrower than they are
+  high.
+- **A second plane.** `[[route.plane]]` may be given twice. Revision A has
+  In1.Cu as the ground plane and In2.Cu as the 3.3 V plane, and the
+  autorouter routes on the two outer layers only.
+- **The autorouter's time limit.** `hwflow.route` stops the autorouter after
+  `--timeout` seconds, 1800 by default, and nothing is kept of a run that is
+  stopped. Routing revision A on two layers takes longer than that on the
+  build machine. A board Makefile may set `ROUTE_LIMITS`; revision A has
+  `--timeout 7200 --passes 30`.
+- **The patch router's last resort.** With two planes, revision A is routed
+  on F.Cu and B.Cu, and the hand-routed buses on B.Cu are walls that a
+  signal can cross only on F.Cu. Seven connections had no path on the two
+  layers. `[route.patch_last_resort]` names a plane layer that the patch
+  router may then use. A cell of track there costs `cost` cells elsewhere,
+  six on revision A, so it passes under the obstacle and comes up again.
+  `keepout` lists rectangles of that layer where it may not go: on revision
+  A the Kelvin sense pair and 3 mm either side of the keep-alive net, which
+  run on B.Cu, the layer next to it. Each such track is a slot in the plane.
+  The note of the patch says how much of it is on that layer, and the
+  routing report lists it.
+- **The patch router and keep-outs.** It used to read the rule areas of the
+  board file and nothing else. It now keeps out of every `[[route.keepout]]`
+  rectangle as well, and reads the rule areas that footprints carry. Before,
+  it laid a track under a screw head and two across a closed stretch of the
+  keep-alive net, and DRC had no objection to either.
+- **A limit of the patch router, not changed.** It joins the two items that
+  DRC names as unconnected. Another pin of the same net may be much easier
+  to reach. Where that is so, write the patch by hand.
+- **A limit of the plane-via placer, not changed.** `[[plane]]` gives a pad
+  a via of its own only if no via of the same net is within `reach`, 2.5 mm
+  by default. Otherwise it joins the pad to that via with a 0.3 mm stub. That
+  is right for a decoupling capacitor beside its pin. It is wrong for a pad
+  that carries current or heat: on revision A the tab of the 3.3 V regulator
+  was joined to a capacitor's via 3.8 mm away and had no via of its own.
+  Name such a pad in `skip` and write its vias in the `[[via]]` list.

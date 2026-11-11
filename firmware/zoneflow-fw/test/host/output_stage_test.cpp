@@ -125,7 +125,9 @@ TEST(OutputStage, KeepAliveLowTwoSecondsBeforeAnyTest)
 {
     StageRig r;
     r.run(1500);
-    EXPECT_TRUE(r.board.log.empty()); // step 0 still waiting
+    // Step 0 still waiting. The only transaction is the start-up probe for
+    // outputs left driven, which a healthy board does not acknowledge.
+    EXPECT_EQ(r.board.log, std::vector<std::string>{"probe"});
     EXPECT_FALSE(r.board.kaHigh());
 }
 
@@ -529,6 +531,80 @@ TEST(OutputStage, FaultFromBeforeARestartIsRestored)
     EXPECT_EQ(r.phase(), StagePhase::Fault);
     EXPECT_EQ(r.fault(), HwCheck::StopRelayRelease);
     EXPECT_FALSE(r.board.kaHigh());
+}
+
+// Soak finding (test/soak, halt seeds 20 and 47): a valve was on, the
+// keep-alive net was bridged to a net that toggles by itself (review A2
+// appendix A, "KA bridged to TFT_BL"), and the firmware froze. Neither
+// detector lets go, so the expander keeps the valve driven. After the
+// restart the new firmware left it driven through the 2.5 s of step 0
+// before step 1 found the bridge. It now turns every pin back to input on
+// the first tick of the start-up test.
+TEST(OutputStage, RestartWithTheKeepAliveBridgedSwitchesAValveOffAtOnce)
+{
+    StageRig r;
+    startUp(r);
+    powerUp(r, 2);
+    r.stage.setZone(2, true);
+    ASSERT_TRUE(r.board.valveDriven(2));
+    r.board.kaNet = KaNet::ToggleStrong;
+
+    // A new boot: a new guard and a new output stage on the same board.
+    OutputEnableGuard guard{OutputEnableMode::Toggle, 500};
+    r.board.attach(guard);
+    hw::OutputStage stage(r.board, guard, r.clock, revALayout(), hw::OutputStageConfig{}, &r.reference);
+    uint64_t driven = 0;
+    for (uint64_t t = 0; t < 3000; t += 5) {
+        r.clock.advanceMs(5);
+        r.board.step5ms();
+        if (r.clock.mono % 50 == 0) {
+            guard.heartbeat(static_cast<uint32_t>(r.clock.mono));
+            stage.tick(r.input());
+        }
+        driven += r.board.valveDriven(2) ? 5 : 0;
+    }
+    EXPECT_LE(driven, 100u); // two ticks, not the 2.5 s of step 0
+    EXPECT_EQ(stage.status().phase, StagePhase::Fault);
+    EXPECT_EQ(r.board.valvesLow(), 0);
+}
+
+// Soak finding (test/soak, liveness seeds 10, 11 and 14 of the long run):
+// the keep-alive interrupt counts its time in 32-bit milliseconds, which
+// wrap after 49.7 days of uptime. The stage took "later < earlier" for
+// "not yet", so a keep-alive stopped shortly before the wrap read as low
+// for 0 ms ever after: step 0 waited, and every run with it, for another
+// 49.7 days, with no fault raised. The keep-alive is also left off for 49.7
+// days before that, which a signed difference would read as negative.
+TEST(OutputStage, RunsAcrossTheWrapOfTheInterruptsMillisecondCount)
+{
+    StageRig r;
+    r.sensorSupplyOn = false; // no polling cycles while time is fast-forwarded
+    startUp(r);
+    // Fast-forward the interrupt's time (it counts the periods it is
+    // given) to 20 s before 2^32 ms, with the keep-alive stopped.
+    constexpr uint64_t kWrap = uint64_t{1} << 32;
+    constexpr uint32_t kStride = 1'000'000;
+    while (r.clock.mono + kStride < kWrap - 20'000) {
+        r.clock.advanceMs(kStride);
+        r.board.step5ms(kStride);
+        r.tick();
+    }
+    // StageRig ticks when its clock is a multiple of 50 ms; 2^32 is not.
+    r.run((kWrap - 20'000) / 50 * 50 - r.clock.mono);
+    // A run whose stop test ends a few seconds before the wrap.
+    powerUp(r);
+    r.stage.requestPower(false, 0xFF);
+    ASSERT_TRUE(r.runUntil([&] { return r.phase() == StagePhase::Idle; }, 10'000)) << toString(r.fault());
+    ASSERT_LT(r.clock.mono, kWrap);
+    r.run((kWrap + 1'000) / 50 * 50 - r.clock.mono); // past the wrap
+    // The next run starts as usual.
+    r.stage.requestPower(true, 0);
+    EXPECT_TRUE(r.runUntil([&] { return r.stage.powerReady(); }, 8'000)) << toString(r.phase());
+    EXPECT_EQ(r.fault(), HwCheck::None);
+    // And its stop test, across nothing, still measures the detectors.
+    r.stage.requestPower(false, 0xFF);
+    ASSERT_TRUE(r.runUntil([&] { return r.phase() == StagePhase::Idle; }, 10'000)) << toString(r.fault());
+    EXPECT_EQ(r.fault(), HwCheck::None);
 }
 
 TEST(OutputStage, TrippedGuardHaltsWithoutBusTraffic)

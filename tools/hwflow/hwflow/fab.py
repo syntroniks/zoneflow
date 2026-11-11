@@ -5,25 +5,58 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 import re
 import sys
 from pathlib import Path
 
 
-def read_rotations(path: Path | None) -> list[tuple[re.Pattern, float, float, float]]:
+def read_rotations(path: Path | None) -> list[tuple[re.Pattern, float, float, float, str]]:
+    """Rows of the correction table: footprint pattern, rotation, dx, dy and, optionally, one LCSC number.
+
+    A row with a number applies to that part only. The assembler's library holds one footprint per
+    part number, and two parts in one package can lie differently in it.
+    """
     rows = []
     if path and path.exists():
         with open(path, newline="", encoding="utf-8") as fh:
             for row in csv.reader(r for r in fh if not r.startswith("#")):
                 if not row or row[0] == "footprint_regex":
                     continue
-                rows.append((re.compile(row[0]), float(row[1]), float(row[2] or 0), float(row[3] or 0)))
+                rows.append((re.compile(row[0]), float(row[1]), float(row[2] or 0), float(row[3] or 0),
+                             row[4].strip() if len(row) > 4 else ""))
     return rows
+
+
+def read_part_numbers(path: Path | None) -> dict[str, str]:
+    """Designator -> LCSC number, from the JLCPCB BOM this package writes."""
+    numbers: dict[str, str] = {}
+    if path and path.exists():
+        with open(path, newline="", encoding="utf-8") as fh:
+            for row in csv.DictReader(fh):
+                for ref in row["Designator"].split(","):
+                    numbers[ref.strip()] = row.get("LCSC Part #", "").strip()
+    return numbers
+
+
+def correct(rotations, package: str, lcsc: str, x: float, y: float, rot: float) -> tuple[float, float, float, bool]:
+    """The placement the assembler needs for a part that KiCad has at x, y, turned by rot.
+
+    The first row that fits is used. Its offset is in the footprint's own frame, x to the right and
+    y up with the footprint at rotation 0, so it turns with the part. This is for the top side.
+    """
+    for pat, d_rot, dx, dy, only in rotations:
+        if pat.search(package) and (not only or only == lcsc):
+            a = math.radians(rot)
+            return (x + dx * math.cos(a) - dy * math.sin(a), y + dx * math.sin(a) + dy * math.cos(a),
+                    (rot + d_rot) % 360, True)
+    return x, y, rot, False
 
 
 def cmd_cpl(args) -> int:
     """KiCad position CSV (Ref,Val,Package,PosX,PosY,Rot,Side) -> JLCPCB CPL."""
     rotations = read_rotations(Path(args.rotations) if args.rotations else None)
+    numbers = read_part_numbers(Path(args.bom) if args.bom else None)
     skip = {r for r in (args.exclude or "").split(",") if r}
     if args.variant:
         import json
@@ -39,14 +72,9 @@ def cmd_cpl(args) -> int:
         for row in csv.DictReader(fh):
             if row["Ref"] in skip:
                 continue
-            rot = float(row["Rot"])
-            x, y = float(row["PosX"]), float(row["PosY"])
-            for pat, d_rot, dx, dy in rotations:
-                if pat.search(row["Package"]):
-                    rot = (rot + d_rot) % 360
-                    x, y = x + dx, y + dy
-                    corrected += 1
-                    break
+            x, y, rot, hit = correct(rotations, row["Package"], numbers.get(row["Ref"], ""),
+                                     float(row["PosX"]), float(row["PosY"]), float(row["Rot"]))
+            corrected += hit
             out_rows.append({
                 "Designator": row["Ref"],
                 "Mid X": f"{x:.4f}mm",
@@ -141,6 +169,7 @@ def main(argv=None) -> int:
     c.add_argument("pos")
     c.add_argument("out")
     c.add_argument("--rotations")
+    c.add_argument("--bom", help="the JLCPCB BOM, for correction rows that name one LCSC number")
     c.add_argument("--exclude", help="comma-separated references to leave out")
     c.add_argument("--variant", help="leave out the parts this build variant does not fit (needs --model)")
     c.add_argument("--model", help="build/model.json, which lists the parts each variant leaves out")

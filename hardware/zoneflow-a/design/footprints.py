@@ -227,6 +227,12 @@ def esp32_module() -> Footprint:
     twelve lands along the bottom starting 2.015 from the side, ground pad of nine 0.9 squares
     centred 7.5 from the left edge and 10.29 from the bottom edge. Its keep-out, 15 mm around the
     6 mm antenna end, is on the outer layers only. This copy puts it on every copper layer.
+
+    The stock footprint has twelve vias in the ground pad, 0.6 mm with a 0.2 mm hole. JLCPCB charges
+    for a hole under 0.3 mm (hardware/rules/jlcpcb.toml), and nothing asks for 0.2 here: the module
+    datasheet draws "Via for thermal pad" without a size and says the pad need not be soldered at
+    all. This copy drills them 0.3 mm in a 0.7 mm land, the 0.2 mm ring that the fab rules ask of a
+    footprint hole. They stay where the stock footprint has them, 0.99 mm apart.
     """
     f = Footprint("ESP32-S3-WROOM-1", "ESP32-S3-WROOM-1 module, land pattern of datasheet figure 10, antenna "
                   "keep-out on all copper layers", "ESP32-S3 WiFi BLE module", from_stock="RF_Module:ESP32-S3-WROOM-1")
@@ -234,6 +240,12 @@ def esp32_module() -> Footprint:
     if len(zones) != 1:
         raise SystemExit("the stock ESP32-S3-WROOM-1 footprint no longer has exactly one keep-out")
     import pcbnew
+    vias = [p for p in f.fp.Pads() if p.GetAttribute() == pcbnew.PAD_ATTRIB_PTH]
+    if len(vias) != 12 or any(p.GetNumber() != "41" or p.GetDrillSize().x != pcbnew.FromMM(0.2) for p in vias):
+        raise SystemExit("the stock ESP32-S3-WROOM-1 footprint no longer has twelve 0.2 mm vias in its ground pad")
+    for p in vias:
+        p.SetDrillSize(pcbnew.VECTOR2I(pcbnew.FromMM(0.3), pcbnew.FromMM(0.3)))
+        p.SetSize(pcbnew.F_Cu, pcbnew.VECTOR2I(pcbnew.FromMM(0.7), pcbnew.FromMM(0.7)))
     zones[0].SetLayerSet(pcbnew.LSET.AllCuMask())
     zones[0].SetZoneName("Antenna keep-out")
     # The stock courtyard is the module body 0.25 beyond the pads plus the keep-out bar. Redrawn with

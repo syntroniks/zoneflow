@@ -14,3 +14,11 @@
 (rule "high-impedance nodes at their pads"
   (condition "A.NetClass == 'HiZ' && A.Type == 'Pad'")
   (constraint clearance (min 0.2mm)))
+
+# The solder jumper JP1 bridges the contact of relay K1 on a board built without the relay. Its
+# two pads, AC_L and COM, are 0.3 mm apart in KiCad's footprint, closer than the 0.5 mm of their
+# class: that is what makes it bridgeable. The two nets are joined whenever the relay is closed.
+# This is the one pair of pads on the board that is closer than its net class allows.
+(rule "solder jumper JP1: pads 0.3 mm apart by design"
+  (condition "A.Type == 'Pad' && B.Type == 'Pad' && A.memberOfFootprint('JP1') && B.memberOfFootprint('JP1')")
+  (constraint clearance (min 0.25mm)))
