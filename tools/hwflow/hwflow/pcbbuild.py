@@ -1031,13 +1031,16 @@ def cmd_finish(args) -> int:
         pruned = prune_unused(board)
     tracks = list(board.GetTracks())
     if args.design_dir:
-        # A layer given to a plane carries no track. The autorouter has put tracks there before
-        # without any check noticing: the plane's pour simply flows round them.
+        # A layer given to a plane carries no autorouted track. The autorouter has put tracks there
+        # before without any check noticing: the plane's pour simply flows round them. What is written
+        # out in board.toml is locked and may be there: the plane of one net can share its layer with
+        # hand-routed copper of others, as the 3.3 V plane of the rev A board does.
         plane_layers = {p["layer"] for p in b.cfg.get("route", {}).get("plane", [])}
         stray = sorted({f"{t.GetNetname()} on {t.GetLayerName()}" for t in tracks
-                        if t.Type() != pcbnew.PCB_VIA_T and str(t.GetLayerName()) in plane_layers})
+                        if t.Type() != pcbnew.PCB_VIA_T and str(t.GetLayerName()) in plane_layers
+                        and not t.IsLocked()})
         if stray:
-            raise BoardError(f"{len(stray)} nets have tracks on a plane layer: " + ", ".join(stray[:12])
+            raise BoardError(f"{len(stray)} nets have autorouted tracks on a plane layer: " + ", ".join(stray[:12])
                              + (" ..." if len(stray) > 12 else ""))
     stats = {
         "pre_routed_items": before,
