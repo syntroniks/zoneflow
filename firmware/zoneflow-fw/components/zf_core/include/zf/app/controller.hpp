@@ -45,7 +45,8 @@ struct ControllerDeps {
 
 class Controller final : private IZoneDriverListener, private ISchedulerListener {
 public:
-    // Runtime state is written at most this often.
+    // Runtime state is written at most this often, except that a consumed
+    // scheduled start is posted on the tick that consumed it.
     static constexpr uint32_t kPersistMinIntervalMs = 2000;
     // A snapshot is published at least this often.
     static constexpr uint32_t kSnapshotIntervalMs = 1000;
@@ -67,7 +68,9 @@ public:
     // Outputs off, runtime state restored, configuration applied.
     void begin();
 
-    // Applies the ConfigStore's current configuration.
+    // Applies the ConfigStore's current configuration if its revision moved.
+    // tick() calls it too, so a stored configuration takes effect even when
+    // its ReloadConfig command could not be queued.
     void reloadConfig();
 
     void setTimeStatus(TimeStatus status);
@@ -203,6 +206,7 @@ private:
 
     PersistMailbox persist_;
     bool persistDirty_ = false;
+    bool persistUrgent_ = false; // a scheduled start was consumed: store it now
     MonoMs lastPersistMs_ = 0;
     bool stateDirty_ = true;
     MonoMs lastSnapshotMs_ = 0;
