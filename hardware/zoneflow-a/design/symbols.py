@@ -77,6 +77,16 @@ def tlv803e():
                description="3.0 V supply supervisor, open-drain active-low reset, 200 ms delay")
 
 
+def tps3701():
+    # TI SBVS240C, DDC (SOT-23-thin, 6 pins): 1 OUTA, 2 GND, 3 INA, 4 INB, 5 VDD, 6 OUTB. OUTB is low
+    # while INB is above 0.4 V, OUTA while INA is below it. Both outputs are open drain.
+    return box("TPS3701DDC", "U", "TPS3701DDCR", [("4", "INB", IN), ("3", "INA", IN)],
+               [("6", "~{OUTB}", OC), ("1", "~{OUTA}", OC)], top=[("5", "VDD", PWR)], bottom=[("2", "GND", PWR)],
+               min_width=20.32, footprint="Package_TO_SOT_SMD:TSOT-23-6",
+               datasheet="https://www.ti.com/lit/ds/symlink/tps3701.pdf",
+               description="Window voltage detector, 0.4 V thresholds, open-drain outputs, SOT-23-thin-6")
+
+
 def usb_c_16p():
     # HRO TYPE-C-31-M-12 drawing, pin table. Every contact is its own pin, so no pin numbers are stacked.
     right = [(["A4", "A9", "B4", "B9"], "VBUS", PAS), None, (["A7", "B7"], "D-", PAS), (["A6", "B6"], "D+", PAS),
@@ -106,7 +116,7 @@ def tft_panel():
 
 def symbols():
     return [
-        esp32_s3_wroom_1(), tca9539(), tps2553(), tlv803e(), usb_c_16p(), fpc_12(), tft_panel(),
+        esp32_s3_wroom_1(), tca9539(), tps2553(), tlv803e(), tps3701(), usb_c_16p(), fpc_12(), tft_panel(),
         # TI SLCS006S numbers the comparators 1 to 4 with outputs on pins 1, 2, 14 and 13. KiCad's LM2901
         # has them as units B, A, D, C. The design document says U6A to U6D in TI's order, so the units are
         # renumbered: A = pins 1, 6, 7; B = 2, 4, 5; C = 14, 8, 9; D = 13, 10, 11.

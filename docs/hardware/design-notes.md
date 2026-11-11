@@ -48,6 +48,14 @@ beside it, a clamp and a fuse for a failed 5 V converter, a read-back that
 sees a shorted LED supply switch, and two more steps in the self-test.
 Section 25 of the hardware design lists them.
 
+[Hardware answers A2](../design/hardware-answers-a2.md) answered the
+questions the firmware raised when it implemented that self-test, and the
+one finding the review had left to the owner. It added a detector that
+removes drive if the 3.3 V regulator fails short, lengthened one step of
+the self-test that failed healthy boards in simulation, and set the limits
+of the stop test from more simulation. Section 26 of the hardware design
+lists the changes.
+
 !!! note "To be completed"
     Notes on the laid-out board (copper widths for the valve current paths,
     clearances, the spark gaps the specification asks for at the field

@@ -35,7 +35,7 @@ SHEETS = {
     "usb": "J5 R15 R16 U2 R97 R98 C52 C53 C13 D4 D3 C10 U3 C11 C12 R17",
     "mcu": "U4 C14 C15 R18 C16 U12 C54 SW1 R19 SW2 R20 D6 R21 R22",
     "failsafe": "R33 R29 C22 D7 C23 R30 R91 R31 R32 C24 R34 R35 R36 U6.1 U6.2 U6.3 U6.5 C19 U7 C20 Q3 R25 R26 C21 R92 "
-                "R52 C33 R53 R54 D8 R87",
+                "R52 C33 R53 R54 D8 R87 U13 R13 R100 C55 C56",
     "isense": "R37 U8 C25 R38 R39 C26 R40 R41 C27 R42 R43 C28 R44 R45 C29 R46 C30 R47 C31 R48 R49 R50 R51 C32 "
               "R55 R56 C34 D9 R88 R57 R58 U6.4",
     "expander": "U5 C18 RN1 RN2 RN3 R96 R27 R28 K1 D5 Q1 R11 R12 Q2 R89 C51 D22 R14 R90 C50 R93 R94 R95 D23 JP1",
@@ -791,6 +791,7 @@ def failsafe(s):
     s.frame(*P(20, 46), *P(204, 102), "Detector A: keep-alive edges on KA charge C23; U6A compares it with 1.32 V")
     s.frame(*P(20, 110), *P(164, 160), "Over-current window comparator on ISENSE_LO")
     s.frame(*P(208, 98), *P(319, 192), "Latch and drive enable")
+    s.frame(*P(212, 24), *P(319, 66), "3V3 over-voltage: U13 holds the set input of the latch low above 4.0 V")
     # Diode pump. No DC path from KA: C22 passes edges only.
     r29 = s.attach("R29", 1, P(46, 68), RIGHT)
     s.wire(P(30, 68), r29[1])
@@ -906,6 +907,22 @@ def failsafe(s):
     r92 = hang(s, "R92", 311, 164)
     s.wire(r92[2], P(311, 178))
     s.label(P(311, 178), DOWN)
+    # 3V3 over-voltage detector. R13 and R100 put 0.4 V on INB with 3V3 at 4.04 V. OUTB is open drain
+    # on OC_TRIP_N, beside the two comparator outputs. Comparator A is not used: INA to ground, OUTA open.
+    u13 = s.place("U13", P(278, 46), ref_at=P(281, 34), value_at=P(281, 36.5))
+    s.attach("R13", 2, P(232, 44), UP)
+    s.wire(P(232, 44), u13["INB"])
+    s.label(P(260, 44), UP)
+    hang(s, "R100", 242, 44)
+    hang(s, "C55", 252, 44)
+    s.wire(u13["INA"], P(264, 46))
+    s.wire(P(264, 46), P(264, 52))
+    s.label(P(264, 52), DOWN)
+    lead(s, u13["VDD"], (u13["VDD"].pos[0], P(0, 32)[1]), UP)
+    lead(s, u13["GND"], (u13["GND"].pos[0], P(0, 60)[1]), DOWN)
+    s.wire(u13["~{OUTB}"], P(298, 44))
+    s.label(P(298, 44), RIGHT)
+    s.place("C56", P(220, 46))
     # Supply pins of the two logic packages.
     s.place("U6", P(42, 190), unit=5, ref_at=P(44, 189), value_at=P(44, 191.5))
     s.place("C19", P(62, 190))
@@ -933,7 +950,11 @@ def failsafe(s):
            "U7A and U7B latch it. D8 lights while FAULT is set. Only KA_OK going low clears the latch.\n"
            "R87 stops GPIO40 from overdriving the latch node if it is ever left as an output.\n"
            "\n"
-           "U7 is a 74HC132: Schmitt inputs for the slow edges of the open-collector comparators.",
+           "U7 is a 74HC132: Schmitt inputs for the slow edges of the open-collector comparators.\n"
+           "\n"
+           "3V3 over-voltage (section 9.5). If U3 shorts, 3V3 goes to V5 and the ESP32 is outside its\n"
+           "ratings. U13 pulls OC_TRIP_N low while 3V3 is above 4.04 V (3.91 to 4.17 V): DRV_EN is then\n"
+           "low whatever KA does, and D8 is lit. C55 with the divider is 1 ms. U13 can only remove drive.",
            P(118, 166))
     s.note("LAYOUT (section 8.5): TP8 on KA_N2 keeps ground around it. No pad on KA_N1.\n"
            "Keep this pump (R29, C22, D7) at least 10 mm from the relay pump (R89, C51, D22).",

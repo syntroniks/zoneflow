@@ -22,14 +22,23 @@ STEP = 0.5e-3  # output grid of every run
 
 # ---- self-test timeline, seconds (design section 19.7) -------------------
 T_IDLE = 0.30          # step 1: read both read-backs, address the expander
-T_HIGH0, T_HIGH1 = 0.35, 1.35   # step 2: pin held high for 1.0 s
+# Step 2: the pin is held high. Review A2 gave it 1.0 s. One rising edge lifts
+# the gate of Q2 to about 1 V, and at the corner that releases latest (70 C,
+# a Q2 of 0.65 V that drifts by -4.5 mV/K, large capacitors) the relay
+# read-back needs up to 1.33 s to read high again: a healthy board failed
+# the step. The hold is 2.0 s since the answers to the firmware's questions
+# (design section 19.7).
+T_HIGH_HOLD = 2.0
+T_HIGH0 = 0.35
+T_HIGH1 = T_HIGH0 + T_HIGH_HOLD
 # Steps 2b and 5b are not in the sequence as review A2 found it. The review
 # adds them. 2b: the pin is made an input for 0.5 s and must read low all
 # the time. 5b: RLY_ON is set and then released without being driven low;
 # R12 must discharge the gate of Q1, so an output switched on afterwards
 # must draw no current.
-T_FLOAT0, T_FLOAT1 = 1.45, 1.95
-T_START = 2.05         # step 3: toggling starts, 100 ms after step 2b
+T_FLOAT0 = T_HIGH1 + 0.10
+T_FLOAT1 = T_FLOAT0 + 0.50
+T_START = T_FLOAT1 + 0.10   # step 3: toggling starts, 100 ms after step 2b
 T_START_LIMIT = 0.150  # both read-backs and the acknowledge within 150 ms
 T_PORTS = T_START + 0.16    # step 4a: read the input ports
 T_CONFIG = T_START + 0.17   # step 4b, 4c: output and configuration registers
@@ -140,8 +149,8 @@ class Oscillates(Exception):
 
 # Nets and parts of the over-current latch. A fault on one of them may set
 # the latch by itself, so the check below does not apply to it.
-LATCH_REFS = ("U7", "U6", "R53")
-LATCH_NETS = ("FAULT", "FAULT_N", "OC_TRIP_N", "OC_CMP", "OC_FAULT_N")
+LATCH_REFS = ("U7", "U6", "R53", "U13", "R13", "R100", "C55")
+LATCH_NETS = ("FAULT", "FAULT_N", "OC_TRIP_N", "OC_CMP", "OC_FAULT_N", "OV_DIV")
 
 
 def _on_latch(p: Prim) -> bool:

@@ -8,6 +8,16 @@ questions about the keep-alive fail-safe of design sections 7 and 8:
 2. Over tolerance, temperature and supply, do the two detectors hold while
    the pin toggles and let go in time when it stops?
 
+The answers to the firmware's questions on the self-test
+(`docs/design/hardware-answers-a2.md`) added four runs, which answer three
+more:
+
+3. What may a board store as its own release times, and how wide must the
+   band around them be? (`commission`)
+4. Does the self-test pass on a healthy board at every corner? (`sequence`)
+5. Are the valves off if the 3.3 V regulator shorts, whatever the processor
+   then does? (`ldo`, and `floatload` for the float test)
+
 No board exists. The runs check the circuit as drawn in
 `hardware/netlist.yaml` against behavioural part models. They do not replace
 a bench test.
@@ -19,11 +29,17 @@ a bench test.
     uv run hardware/sim/failsafe/failsafe.py bridges     # resistance sweep of a bridge onto the keep-alive net
     uv run hardware/sim/failsafe/failsafe.py duty        # how lopsided the keep-alive may be
     uv run hardware/sim/failsafe/failsafe.py warmup      # release times against how long the keep-alive ran
+    uv run hardware/sim/failsafe/failsafe.py commission  # learning limits and the band of step 9
+    uv run hardware/sim/failsafe/failsafe.py sequence    # the self-test on a healthy board at every corner
+    uv run hardware/sim/failsafe/failsafe.py ldo         # U3 shorted, with and without the detector U13
+    uv run hardware/sim/failsafe/failsafe.py floatload   # what a bridged net must do for the float test to see it
     uv run hardware/sim/failsafe/failsafe.py compare --tag asfound   # against the author's table
     uv run hardware/sim/failsafe/failsafe.py deck Q3.S-D.short selftest --out /tmp/deck.cir
 
-Needs `ngspice` (47 was used) and `uv`. `faults` and `corners` use every
-core and take 10 to 20 minutes each on a 16-core machine. Results are
+Needs `ngspice` (47 was used) and `uv`. `faults`, `corners` and
+`commission` use every core and take 10 to 30 minutes each on a 16-core
+machine. `commission --summary-only` and `ldo --summary-only` write the
+tables again from the result file without running anything. Results are
 written to `results/` and committed. `--netlist <file>` runs another
 netlist and `--tag <name>` names the result files. The results for the
 netlist as review A2 found it were made that way, from the file of pull
@@ -60,6 +76,10 @@ the design document says is simulated as wired.
 | `bridges.py` | The resistance sweep of a bridge onto the keep-alive net |
 | `duty.py` | The two phases of the keep-alive swept at the worst corner for detector B |
 | `warmup.py` | The stop test after 0.1 to 2 s of toggling |
+| `commission.py` | 264 boards, each healthy and with one bleed resistor open, at seven temperatures: what a commissioning cycle measures, which limits tell the boards apart, and the band of step 9 |
+| `sequence.py` | The self-test sequence with no fault at the 96 corners, and how long the relay read-back stays low after a single edge |
+| `ldo.py` | U3 shorted: a dead processor, an erratic one, a pin joined to its supply, no edges, and the threshold of U13 |
+| `floatload.py` | A bridge onto the keep-alive net from a net that is high for 10 to 90 % of the time, or steadily |
 | `author_table.py` | The fault table of design sections 7.3 and 8.5 as merged in pull request #20, one entry per fault, for `compare` |
 | `failsafe.py` | Command line, result tables |
 
@@ -135,6 +155,7 @@ Every model is behavioural and is fitted to the data sheet figures quoted in
 | LM2901 | Four comparators: offset, input bias current out of the pins, open-collector output that sinks 16 mA | TI SLCS006S |
 | 74HC132 | Four NAND gates, Schmitt inputs at 0.55 and 0.36 x VCC, 80 ohm outputs, input clamp diodes | Nexperia rev 8, interpolated to 3.3 V |
 | TCA9539 | Reset input, three pins with an output-enable and a level bit each; a reset or a loss of supply clears the bits | TI SCPS202C. The model treats the device as reset only below 0.3 x VCC on RESET, the choice that keeps the bits longest. |
+| TPS3701 | Comparator B only: a switch with 5.2 mV of hysteresis at 0.400 V on INB, an input current, a 22 us delay and an open-drain output of 30 ohm that is off below 1.7 V of supply | TI SBVS240C. `ldo` moves the threshold to 397 and 403 mV, the input current to +/-25 nA and the divider resistors by 1 %. Comparator A is not connected on the board and not modelled. |
 | G5NB | 125 ohm and 0.2 H; the inductance is assumed | Omron |
 | ESP32 pins | Keep-alive: push-pull through 30 ohm or high-impedance. Read-backs: inputs, 45 kohm pull-down on GPIO42 | ESP32-S3 datasheet v2.2, table 5-4 |
 | Supplies | `V_BUCK`, `V5` and `3V3` as sources chained in that order, each limited to 1.5 A and unable to sink, with the bulk capacitance of the rail | Design section 4. The current limit is the peak limit of U1, taken for all three. |
@@ -167,6 +188,15 @@ Limits to keep in mind when reading a result:
   a rail at the wrong voltage are simulated with the models above, which
   keep working by their equations. What a real part does outside its
   ratings is not known.
+- **The capacitors do not change with temperature.** A board keeps the
+  values it was given. An X5R part may move by 15 % over its range. This
+  matters for `commission`, where one board is run from -20 to 70 C: the
+  temperature factors it finds are a lower bound.
+- **The MOSFET conducts further below its threshold than a real one.** The
+  model gives 27 mA at the data sheet threshold, which the sheet defines at
+  250 uA. Release times that end at "the read-back is high again" are
+  therefore upper bounds. This is the pessimistic direction for the hold of
+  step 2 and for tB.
 - **Sources that stand in for nets outside the scope run at 500 Hz**: the
   PSRAM strobe, the backlight PWM, the boot log. The real signals are faster.
   Both detectors are rectifiers, and `../keepalive_faults.cir` shows the
@@ -190,3 +220,29 @@ Sections 3 and 4 of the review discuss them.
 | `corners-grid.csv`, `corners-mc.csv`, `corners-noedge.csv`, `corners.md` | The corner runs on the netlist with the changes, and their summary |
 | `duty.csv`, `duty.md` | Gate margin of Q2 against the two phases of the keep-alive |
 | `warmup.csv`, `warmup.md` | Release times against how long the keep-alive ran before the stop |
+| `commission.csv`, `commission.md` | What a commissioning cycle measures on healthy and faulty boards, the learning limits and the band |
+| `sequence.csv`, `sequence.md` | The sequence on a healthy board at every corner |
+| `ldo.csv`, `ldo.md` | A shorted 3.3 V regulator, with and without U13 |
+| `floatload.csv`, `floatload.md` | The float test against the duty of the bridged net |
+
+### Which netlist and which sequence each result is for
+
+The answers to the firmware's questions changed two things that results
+depend on: the netlist gained the over-voltage detector U13 with four
+passive parts, and step 2 of the sequence holds the pin high for 2.0 s
+where it held it for 1.0 s.
+
+| Result | Netlist | Sequence |
+|---|---|---|
+| `faults`, `bridges`, `sequence`, `ldo`, `floatload` | With U13 | Step 2 at 2.0 s |
+| `commission` | Before U13 | Does not run the sequence |
+| `corners`, `duty`, `warmup` | Before U13, as review A2 ran them | Do not run the sequence |
+| `asfound*` | Pull request #20 | As merged there, and as review A2 left it |
+
+U13 pulls the latch input only with `3V3` above 3.9 V, and no run of the
+last three groups goes above 3.6 V. As a check, `sequence` ran the 96
+corners of the grid with U13 in the deck and found the same range of
+release times as `corners`: tA 0.22 to 0.83 s and tB 0.10 to 1.45 s.
+Appendix A of review A2 is the fault table as that review ran it, without
+U13 and with 1.0 s in step 2. `faults.md` is the table for the board as it
+is now.

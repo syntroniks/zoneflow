@@ -26,8 +26,8 @@ Landed cost per controller with the enclosure, from the
 
 | Build | 5 units | 25 units | 100 units |
 |---|---|---|---|
-| 8-zone | 134.23 USD | 73.25 USD | 54.37 USD |
-| 4-zone | 126.98 USD | 66.62 USD | 48.62 USD |
+| 8-zone | 136.01 USD | 74.18 USD | 54.97 USD |
+| 4-zone | 128.76 USD | 67.56 USD | 49.22 USD |
 
 The 4-zone build drops 45 parts but no part type, so it pays the same
 per-order fees and the same board: it saves 5.75 to 7.25 USD.

@@ -1558,6 +1558,59 @@ components:
     pins:
       "1": "FAULT_N"
       "2": "OC_FAULT_N"
+  - ref: U13
+    value: "TPS3701DDCR window voltage detector, 0.4 V thresholds, open-drain outputs"
+    package: "SOT-23-6 thin"
+    lcsc: C132788
+    block: "G current sense and over-current latch"
+    variant: "all"
+    note: "Holds the set input of the latch low while 3V3 is above 4.0 V, so that a shorted U3 leaves no drive. Section 9.5"
+    pins:
+      "1 OUTA": "NC"
+      "2 GND": "GND"
+      "3 INA": "GND"
+      "4 INB": "OV_DIV"
+      "5 VDD": "3V3"
+      "6 OUTB": "OC_TRIP_N"
+  - ref: R13
+    value: "1M 1%"
+    package: "0603"
+    lcsc: C22935
+    block: "G current sense and over-current latch"
+    variant: "all"
+    note: "Over-voltage divider, 1/10.09: 0.4 V at the pin with 3V3 at 4.04 V"
+    pins:
+      "1": "3V3"
+      "2": "OV_DIV"
+  - ref: R100
+    value: "110k 1%"
+    package: "0603"
+    lcsc: C25805
+    block: "G current sense and over-current latch"
+    variant: "all"
+    pins:
+      "1": "OV_DIV"
+      "2": "GND"
+  - ref: C55
+    value: "10 nF 50 V X7R"
+    package: "0603"
+    lcsc: C1589
+    block: "G current sense and over-current latch"
+    variant: "all"
+    note: "With the divider, 1 ms: a spike on 3V3 does not set the latch"
+    pins:
+      "1": "OV_DIV"
+      "2": "GND"
+  - ref: C56
+    value: "100 nF 50 V X7R"
+    package: "0603"
+    lcsc: C14663
+    block: "G current sense and over-current latch"
+    variant: "all"
+    note: "At U13"
+    pins:
+      "1": "3V3"
+      "2": "GND"
   - ref: R55
     value: "100k 1% 200 V 0.25 W"
     package: "1206"
