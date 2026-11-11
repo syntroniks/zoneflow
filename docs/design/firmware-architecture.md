@@ -1702,6 +1702,29 @@ Not checked, because it needs a board: whether the float test sees a real
 bridge, whether the ADC and the digital read of GPIO7 work together, the
 release times and the learning limits, the interrupt load at 1 kHz.
 
+### Verification after the hardware answers and the soak gaps
+
+No board exists. The checks run on the change that follows the hardware
+answers (issue #41) and closes the soak's firmware gaps (section 22):
+
+| Check | Result |
+|---|---|
+| `test/host/run.sh` (ASan, UBSan) | 859 tests pass, 44 of them new: `HardwareAnswers` (28: the hold of step 2 and the 1.33 s single-edge pulse of the hot corner, step 2b before every run with step 2 daily, the band at both edges, commissioning temperature and its retry, `VIN_MON` low, high, absent, a brown-out on USB, both rest levels high, one out, windows that stop, a held latch input, U3 shorted with U13, the pair write of the fault path and its bound, the controller's conditions), `ZoneFaultPolicy` (3), `ShortedOutput` (3), `BudgetOverPowerCut` (6), `RuntimeRecord` (2), `SchedulerTest` (2 for policy 8), `SelfTestA2` (1, an open bleed resistor on detector B that commissions); appendix A has one row fewer (D22 open is inside the wider band now, tested with the band). Each fix was reverted once to see its test fail. |
+| ESPHome host tests | 45 pass, 4 new (the open-circuit policy rewritten, the DC lockout, a failed-short output, the supply and lost-measurement conditions, the budget from flash). |
+| `idf.py build`, ESP-IDF v5.5.6 | No warnings. `zoneflow-fw.bin` 2,099,824 bytes, 50.1 % of the 4,194,304-byte OTA slot. |
+| `esphome config` and `esphome compile` | Pass for the 8-zone and 4-zone examples and `factory.yaml`; the 8-zone application is 1,394,359 bytes, static RAM 166,935 of 341,760 bytes. `ruff check` passes. |
+| Release dry run | `zfrelease package`, `package-prebuilt`, `assemble`, `verify` (every check), the installer page test (5 of 5), `zfflash fetch` and `stage-site` pass. |
+| Display simulator | 75 scenes, byte-identical to the committed pictures (the changed texts are on screens no scene shows). |
+| Web UI | `check:api` (types regenerated from `openapi.json`), type check, 188 unit tests. |
+| clang-format 23.1.4 | Clean on every file of `firmware/zoneflow-fw`. |
+| Soak CI subset (`--ci`, ASan, UBSan) | No violation, about 3 minutes locally (before the S9 change of the final commit; CI runs it on the head). |
+
+Not checked, because it needs a board: four ADC channels at 20 kS/s, the
+real `VIN_MON` and rest levels, the die temperature against the board's
+(risk 30), whether the float test with its new load finds a real bridge
+(risk 27), U13 at a real 5 V rail, and the wear of the budget record over
+years.
+
 ### Questions for the hardware author
 
 Review A2 section 4.6 answered questions 1, 2, 3, 5 and 7. The answers and
