@@ -41,8 +41,10 @@ ordered as loose parts:
 - J1 to J4, the terminal headers.
 - DS1, the display panel, which plugs into J7.
 
-A placement file that leaves them out comes with the layout,
-[issue #5](https://github.com/syntroniks/zoneflow/issues/5).
+The placement files leave them out:
+[8-zone](zoneflow-a/zoneflow-a-cpl-jlcpcb.csv),
+[4-zone](zoneflow-a/zoneflow-a-cpl-jlcpcb-4-zone.csv). See
+[ordering boards](ordering.md).
 
 ## The parts list
 

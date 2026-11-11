@@ -444,12 +444,6 @@ def scenario_basic_passives(inp: Inputs) -> Inputs:
     return inp.copy(basic_override=frozenset(GENERIC_EXTENDED_PASSIVES))
 
 
-def scenario_vias(inp: Inputs) -> Inputs:
-    new = inp.copy()
-    new.a["pcb_hole"] = "0p3"
-    return new
-
-
 def scenario_selftap(inp: Inputs) -> Inputs:
     new = inp.copy()
     new.a["fastener"] = "selftap"
@@ -476,7 +470,6 @@ SCENARIOS = {
         "Seven extended passives of common values replaced by basic parts of the same value",
         scenario_basic_passives,
     ),
-    "vias": ("The twelve 0.2 mm thermal vias under U1 enlarged to 0.3 mm", scenario_vias),
     "issue31": (
         "Issue #31: no output snubbers; zone LED in series with the opto-triac LED",
         scenario_issue31,

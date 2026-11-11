@@ -7,9 +7,9 @@
 
 snapshot_date = "2026-11-11"
 
-# --- The board, from the layout on branch hw/rev-a-layout (pull request #39) ---
+# --- The board, from the layout after its independent review ---
 [board]
-source = "hardware/zoneflow-a/output on branch hw/rev-a-layout at 7ec8e75 (PR #39): build-summary.json, the JLCPCB BOM and placement files, zoneflow-a.kicad_pcb; docs/design/hardware-layout.md sections 2 and 12"
+source = "hardware/zoneflow-a/ after the layout review (docs/design/hardware-layout-review.md): the JLCPCB BOM and placement files in output/, zoneflow-a.kicad_pcb, the drill files"
 date_checked = "2026-11-11"
 width_mm = 114
 height_mm = 110
@@ -17,17 +17,17 @@ layers = 4
 thickness_mm = 1.6
 outer_copper_oz = 1
 inner_copper_oz = 0.5
-smallest_hole_mm = 0.2
-footprints = 351
-# Parts in the placement file (SMT, top side only), per build: 307 and 262.
-# Added to both here: the five SMT parts of the 3V3 over-voltage detector
-# (U13, R13, R100, C55, C56; hardware design section 9.5), which are in
-# hardware/netlist.yaml and not yet in that layout.
+# 0.3 mm since the layout review (finding L9): the twelve vias in the ground
+# pad of the module U4 were 0.2 mm and are drilled 0.3 mm now.
+smallest_hole_mm = 0.3
+footprints = 356
+# Parts in the placement file (SMT, top side only), per build. The five SMT
+# parts of the 3V3 over-voltage detector (U13, R13, R100, C55, C56; hardware
+# design section 9.5) are on the board and in these counts.
 placements = { "8-zone" = 312, "4-zone" = 267 }
 # Distinct soldered pins of the placed parts, counted from the pads of each
 # placed footprint in zoneflow-a.kicad_pcb (a pin with several pads, such as
-# the module's ground pad and its via pads, counts once): 836 and 726. Plus
-# 14 for the five parts above: six for U13 and two for each of the others.
+# the module's ground pad and its via pads, counts once).
 smt_joints = { "8-zone" = 850, "4-zone" = 740 }
 # Through-hole parts left out of the placement file. C1 and K1 sit on the
 # bottom side and are soldered from the top; the four headers are on top.
@@ -45,10 +45,11 @@ plugged_refs = ["DS1"]
 source = "JLCPCB online quote calculator, cart.jlcpcb.com/quote (calculationGoodsCostsNew), no login"
 date_checked = "2026-11-11"
 # Board price per order (engineering fee + board + test + other), USD, by the
-# quantity of boards ordered. "via_0p3": smallest hole 0.3 mm, the default.
-# "via_0p2": smallest hole 0.2 mm, which this layout needs (twelve thermal
-# vias under U1); selecting it also selects TG155 material and the 4-wire
-# Kelvin test, and the calculator adds those charges.
+# quantity of boards ordered. "via_0p3": smallest hole 0.3 mm, the default,
+# and what the layout has since its review. "via_0p2": smallest hole 0.2 mm,
+# which the layout needed before (twelve vias in the ground pad of the module
+# U4); selecting it also selects TG155 material and the 4-wire Kelvin test,
+# and the calculator adds those charges.
 quantities = [5, 10, 20, 25, 30, 50, 75, 100, 150, 200]
 via_0p3 = [32.80, 40.50, 56.00, 63.70, 71.40, 102.40, 131.50, 165.40, 233.40, 301.20]
 via_0p2 = [71.89, 82.28, 103.17, 113.57, 123.98, 165.76, 208.35, 255.73, 350.68, 445.45]

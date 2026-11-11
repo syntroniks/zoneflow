@@ -24,6 +24,7 @@ from pathlib import Path
 
 import pcbnew
 
+from . import dsn as dsn_mod
 from . import netlist as netlist_mod
 
 FOOTPRINT_DIR = os.environ.get("KICAD10_FOOTPRINT_DIR", "/usr/share/kicad/footprints")
@@ -91,6 +92,10 @@ def stamp_copper(board) -> None:
             a, b = sorted([(t.GetStart().x, t.GetStart().y), (t.GetEnd().x, t.GetEnd().y)])
             k = ("seg", t.GetNetname(), t.GetLayer(), a, b, t.GetWidth())
         keyed.append((k, t))
+    # Two passes. An item may be given the UUID another item still has from an earlier stamping,
+    # which KiCad's debug build reports as an assertion. Park them all on unused values first.
+    for i, (_, t) in enumerate(keyed):
+        set_uuid(t, "parked", i)
     for k, t in keyed:
         n = seen.get(k, 0)
         seen[k] = n + 1
@@ -113,7 +118,12 @@ class Builder:
         b = self.cfg["board"]
         self.ox, self.oy = b["origin"]
         self.w, self.h = b["size"]
+        # y_up: board coordinates have their origin at the bottom-left corner and y pointing up,
+        # the frame of a mechanical drawing. The default is KiCad's: top-left, y down.
+        self.y_up = bool(b.get("y_up", False))
+        self.fp_dirs = [project_dir / d for d in self.model.get("footprint_dirs", [])]
         self.board = None
+        self.optional_texts: set[str] = set()     # UUIDs of [[text]] entries marked optional
         self.fps: dict[str, pcbnew.FOOTPRINT] = {}
         self.nets: dict[str, pcbnew.NETINFO_ITEM] = {}
 
@@ -138,8 +148,24 @@ class Builder:
         return self._layers[name]
 
     def pt(self, x: float, y: float) -> pcbnew.VECTOR2I:
-        """Board coordinates (origin top-left of the outline) to page coordinates."""
-        return pcbnew.VECTOR2I(mm(self.ox + x), mm(self.oy + y))
+        """Board coordinates to page coordinates."""
+        return pcbnew.VECTOR2I(mm(self.ox + x), mm(self.oy + (self.h - y if self.y_up else y)))
+
+    def offset(self, dx: float, dy: float) -> pcbnew.VECTOR2I:
+        """An offset in board axes as a page vector."""
+        return pcbnew.VECTOR2I(mm(dx), mm(-dy if self.y_up else dy))
+
+    def rotate(self, dx: float, dy: float, deg: float) -> tuple[float, float]:
+        """Rotate an offset in board axes the way KiCad rotates a footprint: counter-clockwise on screen."""
+        a = math.radians(deg if self.y_up else -deg)
+        return (dx * math.cos(a) - dy * math.sin(a), dx * math.sin(a) + dy * math.cos(a))
+
+    def load_footprint(self, lib: str, name: str):
+        """A footprint from a project-local library if the project has that library, else from KiCad's."""
+        for d in self.fp_dirs:
+            if (d / f"{lib}.pretty").is_dir():
+                return pcbnew.FootprintLoad(str(d / f"{lib}.pretty"), name)
+        return pcbnew.FootprintLoad(f"{FOOTPRINT_DIR}/{lib}.pretty", name)
 
     # ---- board, outline ---------------------------------------------------
     def new_board(self) -> None:
@@ -155,6 +181,29 @@ class Builder:
         if mask is not None:
             ds.m_SolderMaskMinWidth = mm(mask)
         ds.SetAuxOrigin(pcbnew.VECTOR2I(mm(self.ox), mm(self.oy + self.h)))
+        self._title_block()
+
+    def _title_block(self) -> None:
+        """Give the board the title block of the root schematic sheet.
+
+        Tools that read a board take its date from here, and fall back to the
+        file's modification time when it is empty, which changes on every build.
+        """
+        sch = self.project_dir / f"{self.name}.kicad_sch"
+        if not sch.exists():
+            return
+        import re
+        m = re.search(r"\(title_block\b(.*?)\n\t\)", sch.read_text(encoding="utf-8"), flags=re.S)
+        if not m:
+            return
+        fields = dict(re.findall(r'\((title|date|rev|company) "([^"]*)"\)', m.group(1)))
+        tb = self.board.GetTitleBlock()
+        tb.SetTitle(fields.get("title", ""))
+        tb.SetDate(fields.get("date", ""))
+        tb.SetRevision(fields.get("rev", ""))
+        tb.SetCompany(fields.get("company", ""))
+        for n, text in re.findall(r'\(comment (\d) "([^"]*)"\)', m.group(1)):
+            tb.SetComment(int(n) - 1, text)
 
     def _edge(self, shape) -> None:
         shape.SetLayer(pcbnew.Edge_Cuts)
@@ -189,12 +238,21 @@ class Builder:
             self.nets[name] = n
         return self.nets[name]
 
+    def groups(self):
+        """(schematic sheet, group table) for every [group.NAME] of board.toml.
+
+        The sheet is the table's ``sheet`` key, or NAME. Two groups may place
+        parts of one sheet, each with its own origin per instance: the power
+        half and the logic half of a channel, on two different pitches.
+        """
+        return [(g.get("sheet", name), g) for name, g in self.cfg.get("group", {}).items()]
+
     def placements(self) -> dict[str, tuple[float, float, float, str]]:
         place: dict[str, tuple[float, float, float, str]] = {}
         for ref, v in self.cfg.get("place", {}).items():
             place[ref] = (v[0], v[1], v[2] if len(v) > 2 else 0, v[3] if len(v) > 3 else "F")
         by_local = {(p["sheet"], p["sheet_path"], p["local_ref"]): p["ref"] for p in self.model["parts"]}
-        for sheet, group in self.cfg.get("group", {}).items():
+        for sheet, group in self.groups():
             for sheet_path, origin in group.get("at", {}).items():
                 gx, gy = origin[0], origin[1]
                 grot = origin[2] if len(origin) > 2 else 0
@@ -202,13 +260,14 @@ class Builder:
                     key = (sheet, sheet_path, local)
                     if key not in by_local:
                         raise BoardError(f"group {sheet}: no part {local} in sheet instance {sheet_path}")
-                    dx, dy = _rotate(v[0], v[1], grot)
+                    dx, dy = self.rotate(v[0], v[1], grot)
                     rot = (v[2] if len(v) > 2 else 0) + grot
                     place[by_local[key]] = (gx + dx, gy + dy, rot, v[3] if len(v) > 3 else "F")
         return place
 
     def footprints(self) -> None:
         place = self.placements()
+        self.clearance_overrides: list[str] = []
         sheet_of = {p["ref"]: p for p in self.model["parts"]}
         pad_net: dict[tuple[str, str], str] = {}
         for name, nodes in self.nl.nets.items():
@@ -225,7 +284,7 @@ class Builder:
             if ":" not in comp.footprint:
                 raise BoardError(f"{ref} has no footprint")
             lib, fpname = comp.footprint.split(":", 1)
-            fp = pcbnew.FootprintLoad(f"{FOOTPRINT_DIR}/{lib}.pretty", fpname)
+            fp = self.load_footprint(lib, fpname)
             if fp is None:
                 raise BoardError(f"{ref}: footprint {comp.footprint} not found")
             fp.SetFPID(pcbnew.LIB_ID(lib, fpname))
@@ -243,19 +302,34 @@ class Builder:
             fp.SetSheetfile(f"{sheet_of[ref]['sheet']}.kicad_sch")
             if comp.dnp:
                 fp.SetDNP(True)
+            # As the symbol says, whatever the library footprint says: DRC's parity check compares the two.
+            fp.SetExcludedFromBOM(not comp.in_bom)
             x, y, rot, side = place[ref]
             fp.SetPosition(self.pt(x, y))
+            # A clearance that a library footprint brings with it outranks the net class of its pads,
+            # in the zone fill and in DRC, and neither says so. KiCad's TI_SO-PowerPAD-8 has 0.2 mm:
+            # with it the ground pour stood 0.2 mm from the 45 V input pin and the switch node of the
+            # buck converter, where their class asks for 0.4 mm. Clearances are those of board.toml.
+            if fp.GetLocalClearance() is not None:
+                self.clearance_overrides.append(f"{ref} ({pcbnew.ToMM(fp.GetLocalClearance()):g} mm)")
+                fp.SetLocalClearance(None)
+            for pad in fp.Pads():
+                if pad.GetLocalClearance() is not None:
+                    self.clearance_overrides.append(
+                        f"{ref}.{pad.GetNumber()} ({pcbnew.ToMM(pad.GetLocalClearance()):g} mm)")
+                    pad.SetLocalClearance(None)
+                name = pad_net.get((ref, pad.GetNumber()))
+                if name:
+                    pad.SetNet(self.net(name))
+            stamp_footprint(fp, f"{comp.sheet_tstamps}{comp.tstamp}")
+            # Added before it is flipped: FOOTPRINT.Flip on a footprint that is not on a board
+            # crashes KiCad 10.0.8's Python module.
+            self.board.Add(fp)
             if side == "B":
                 fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
             elif side != "F":
                 raise BoardError(f"{ref}: side must be F or B")
             fp.SetOrientationDegrees(rot)
-            for pad in fp.Pads():
-                name = pad_net.get((ref, pad.GetNumber()))
-                if name:
-                    pad.SetNet(self.net(name))
-            stamp_footprint(fp, f"{comp.sheet_tstamps}{comp.tstamp}")
-            self.board.Add(fp)
             self.fps[ref] = fp
 
     # ---- copper -----------------------------------------------------------
@@ -304,6 +378,11 @@ class Builder:
             layer = self.layer(t.get("layer", "F.Cu"))
             other = self.layer(t.get("via_to", "B.Cu"))
             net = None
+            if "net" in t:
+                # a track that touches no pad names its net
+                net = self.board.FindNet(t["net"])
+                if net is None:
+                    raise BoardError(f"track {t['points']}: no net named {t['net']}")
             pts: list[tuple[pcbnew.VECTOR2I, bool]] = []
             for p in t["points"]:
                 if isinstance(p, str):
@@ -316,7 +395,7 @@ class Builder:
                 else:
                     via = isinstance(p, dict)
                     xy = p["via"] if via else p
-                    dx, dy = _rotate(xy[0], xy[1], origin[2])
+                    dx, dy = self.rotate(xy[0], xy[1], origin[2])
                     pts.append((self.pt(origin[0] + dx, origin[1] + dy), via))
             if net is None:
                 raise BoardError(f"track {t['points']}: needs at least one pad to take its net from")
@@ -324,38 +403,345 @@ class Builder:
             # asking the net settings by name gives a usable NETCLASS.
             nc = self.board.GetDesignSettings().m_NetSettings.GetEffectiveNetClass(net.GetNetname())
             width = mm(t["width"]) if "width" in t else nc.GetTrackWidth()
+            # "via = [diameter, drill]" overrides the via of the net class for this track.
+            via_dia, via_drill = (mm(t["via"][0]), mm(t["via"][1])) if "via" in t else \
+                (nc.GetViaDiameter(), nc.GetViaDrill())
             for (a, _), (b, b_via) in zip(pts, pts[1:]):
-                seg = pcbnew.PCB_TRACK(self.board)
-                seg.SetStart(a)
-                seg.SetEnd(b)
-                seg.SetWidth(width)
-                seg.SetLayer(layer)
-                seg.SetNet(net)
-                seg.SetLocked(True)
-                self.board.Add(seg)
-                count += 1
+                if a.x != b.x or a.y != b.y:          # a via placed where the track already is: no segment
+                    seg = pcbnew.PCB_TRACK(self.board)
+                    seg.SetStart(a)
+                    seg.SetEnd(b)
+                    seg.SetWidth(width)
+                    seg.SetLayer(layer)
+                    seg.SetNet(net)
+                    seg.SetLocked(True)
+                    self.board.Add(seg)
+                    count += 1
                 if b_via:
                     v = pcbnew.PCB_VIA(self.board)
                     v.SetPosition(b)
                     v.SetViaType(pcbnew.VIATYPE_THROUGH)
                     v.SetLayerPair(pcbnew.F_Cu, pcbnew.B_Cu)
-                    v.SetWidth(pcbnew.F_Cu, nc.GetViaDiameter())
-                    v.SetDrill(nc.GetViaDrill())
+                    v.SetWidth(pcbnew.F_Cu, via_dia)
+                    v.SetDrill(via_drill)
                     v.SetNet(net)
                     v.SetLocked(True)
                     self.board.Add(v)
-                    layer, other = other, layer
+                    if not t.get("stay", False):
+                        layer, other = other, layer
+        return count
+
+    def vias(self) -> int:
+        """[[via]]: a via on its own, for stitching a pour to a plane. ``net``, ``at`` and ``size = [d, drill]``."""
+        count = 0
+        for v in self.cfg.get("via", []):
+            net = self.board.FindNet(v["net"])
+            if net is None:
+                raise BoardError(f"via at {v['at']}: no net named {v['net']}")
+            via = pcbnew.PCB_VIA(self.board)
+            via.SetPosition(self.pt(v["at"][0], v["at"][1]))
+            via.SetViaType(pcbnew.VIATYPE_THROUGH)
+            via.SetLayerPair(pcbnew.F_Cu, pcbnew.B_Cu)
+            via.SetWidth(pcbnew.F_Cu, mm(v.get("size", [0.6, 0.3])[0]))
+            via.SetDrill(mm(v.get("size", [0.6, 0.3])[1]))
+            via.SetNet(net)
+            via.SetLocked(True)
+            self.board.Add(via)
+            count += 1
         return count
 
     def preroutes(self) -> int:
         self.board.SynchronizeNetsAndNetClasses(True)
         count = self._tracks(self.cfg.get("track", []))
+        count += self.vias()
         by_local = {(p["sheet"], p["sheet_path"], p["local_ref"]): p["ref"] for p in self.model["parts"]}
-        for sheet, group in self.cfg.get("group", {}).items():
+        for sheet, group in self.groups():
             for sheet_path, origin in group.get("at", {}).items():
                 o = (origin[0], origin[1], origin[2] if len(origin) > 2 else 0)
                 count += self._tracks(group.get("track", []), o,
                                       lambda r, s=sheet, sp=sheet_path: by_local[(s, sp, r)])
+        return count
+
+    # ---- plane fan-out ----------------------------------------------------
+    def _clearance(self, net_a: str, net_b: str) -> float:
+        """Clearance in mm between two nets: the larger of their net-class clearances, or a guard distance."""
+        classes, of = self.cfg.get("netclass", {}), self.model.get("netclass", {})
+        default = classes.get("Default", {}).get("clearance", 0.2)
+        c = max(classes.get(of.get(n, "Default"), {}).get("clearance", default) for n in (net_a, net_b))
+        for g in self.cfg.get("guard", []):
+            if g["net"] in (net_a, net_b) and net_a != net_b:
+                c = max(c, float(g["distance"]))
+        # [[keepaway]] on one layer (see hwflow.layoutrules): a plane via of a net that must stay
+        # away keeps that distance from the start.
+        import fnmatch
+        for k in self.cfg.get("keepaway", []):
+            if k.get("scope", "plan") != "layer" or net_a == net_b:
+                continue
+            for own, other in ((net_a, net_b), (net_b, net_a)):
+                if own == k["net"] and any(fnmatch.fnmatchcase(other, p) for p in k["from"]) \
+                        and not any(fnmatch.fnmatchcase(other, p) for p in k.get("except", [])):
+                    c = max(c, float(k["distance"]))
+        return c
+
+    def guards(self) -> int:
+        """[[guard]]: keep every other track and via a set distance from the hand-routed tracks of a net.
+
+        A net-class clearance cannot do this: it would also apply at the pads,
+        where the neighbours are closer than the guard distance. Instead a rule
+        area that forbids tracks and vias is laid along each side of every
+        pre-routed segment of the net that is at least ``min_length`` long, on
+        that segment's layer, ``trim`` short of the segment's ends so that the
+        pads there can still be reached. Pours are allowed in it: the ground
+        pour fills both strips. The autorouter gets the strips as keep-outs.
+        """
+        count = 0
+        for g in self.cfg.get("guard", []):
+            dist, trim, min_len = float(g["distance"]), float(g.get("trim", 1.5)), float(g.get("min_length", 4.0))
+            segs = [t for t in self.board.GetTracks() if t.Type() != pcbnew.PCB_VIA_T and t.GetNetname() == g["net"]]
+            if not segs:
+                raise BoardError(f"guard: net {g['net']} has no pre-routed track")
+            for t in segs:
+                ax, ay = pcbnew.ToMM(t.GetStart().x), pcbnew.ToMM(t.GetStart().y)
+                bx, by = pcbnew.ToMM(t.GetEnd().x), pcbnew.ToMM(t.GetEnd().y)
+                length = math.hypot(bx - ax, by - ay)
+                if length < min_len:
+                    continue
+                ux, uy = (bx - ax) / length, (by - ay) / length
+                ax, ay, bx, by = ax + ux * trim, ay + uy * trim, bx - ux * trim, by - uy * trim
+                near, far = pcbnew.ToMM(t.GetWidth()) / 2 + 0.25, pcbnew.ToMM(t.GetWidth()) / 2 + dist
+                for side in (1, -1):
+                    nx, ny = -uy * side, ux * side
+                    z = pcbnew.ZONE(self.board)
+                    z.SetIsRuleArea(True)
+                    z.SetDoNotAllowZoneFills(False)
+                    z.SetDoNotAllowTracks(True)
+                    z.SetDoNotAllowVias(True)
+                    z.SetDoNotAllowPads(False)
+                    z.SetDoNotAllowFootprints(False)
+                    ls = pcbnew.LSET()
+                    ls.AddLayer(t.GetLayer())
+                    z.SetLayerSet(ls)
+                    z.SetZoneName(f"guard {g['net']}")
+                    for px, py in ((ax + nx * near, ay + ny * near), (bx + nx * near, by + ny * near),
+                                   (bx + nx * far, by + ny * far), (ax + nx * far, ay + ny * far)):
+                        z.AppendCorner(pcbnew.VECTOR2I(mm(px), mm(py)), -1)
+                    set_uuid(z, "guard", g["net"], count)
+                    self.board.Add(z)
+                    count += 1
+        return count
+
+    def fanout(self) -> tuple[int, list[str]]:
+        """[[plane]]: a short track and a via beside every surface-mount pad of a plane net.
+
+        A net that connects through an inner plane or a pour is not given to the
+        autorouter (see ``[route] exclude``). Its through-hole pads reach the
+        plane by themselves; every surface-mount pad gets a via here. The via is
+        put at the nearest point around the pad where it and its stub keep the
+        clearance to every pad, track, via and hole of another net. Returns the
+        number of vias and the pads for which no place was found.
+        """
+        planes = self.cfg.get("plane", [])
+        if not planes:
+            return 0, []
+        to_mm = pcbnew.ToMM
+        pads = []       # (net, x0, y0, x1, y1, on_front, on_back, through, pad)
+        holes = []      # (x, y, radius) of unplated holes
+        keepouts = []   # boxes where a footprint forbids vias
+        for fp in self.board.GetFootprints():
+            for pad in fp.Pads():
+                bb = pad.GetBoundingBox()
+                box = (to_mm(bb.GetLeft()), to_mm(bb.GetTop()), to_mm(bb.GetRight()), to_mm(bb.GetBottom()))
+                attr = pad.GetAttribute()
+                if attr == pcbnew.PAD_ATTRIB_NPTH:
+                    holes.append((to_mm(pad.GetPosition().x), to_mm(pad.GetPosition().y),
+                                  to_mm(pad.GetDrillSize().x) / 2))
+                    continue
+                through = attr == pcbnew.PAD_ATTRIB_PTH
+                pads.append((pad.GetNetname(), *box, through or pad.IsOnLayer(pcbnew.F_Cu),
+                             through or pad.IsOnLayer(pcbnew.B_Cu), through, pad))
+            for z in fp.Zones():
+                if z.GetIsRuleArea() and z.GetDoNotAllowVias():
+                    bb = z.GetBoundingBox()
+                    keepouts.append((to_mm(bb.GetLeft()), to_mm(bb.GetTop()), to_mm(bb.GetRight()),
+                                     to_mm(bb.GetBottom())))
+        segs, vias = [], []   # (net, ax, ay, bx, by, width, layer) and (net, x, y, diameter)
+        for t in self.board.GetTracks():
+            if t.Type() == pcbnew.PCB_VIA_T:
+                vias.append((t.GetNetname(), to_mm(t.GetPosition().x), to_mm(t.GetPosition().y),
+                             to_mm(t.GetWidth(pcbnew.F_Cu))))
+            else:
+                segs.append((t.GetNetname(), to_mm(t.GetStart().x), to_mm(t.GetStart().y), to_mm(t.GetEnd().x),
+                             to_mm(t.GetEnd().y), to_mm(t.GetWidth()), t.GetLayer()))
+        limits = (self.ox + 0.6, self.oy + 0.6, self.ox + self.w - 0.6, self.oy + self.h - 0.6)
+
+        def d_rect(x, y, r):
+            return math.hypot(max(r[0] - x, 0.0, x - r[2]), max(r[1] - y, 0.0, y - r[3]))
+
+        def d_seg(x, y, ax, ay, bx, by):
+            vx, vy = bx - ax, by - ay
+            n = vx * vx + vy * vy
+            t = 0.0 if n == 0 else max(0.0, min(1.0, ((x - ax) * vx + (y - ay) * vy) / n))
+            return math.hypot(x - ax - t * vx, y - ay - t * vy)
+
+        def stub_clear(c, vx, vy) -> bool:
+            """The straight stub from the pad centre to (vx, vy) keeps its distance on the front layer."""
+            n = max(1, int(math.hypot(vx - c["cx"], vy - c["cy"]) / 0.1))
+            for i in range(n + 1):
+                sx, sy = c["cx"] + (vx - c["cx"]) * i / n, c["cy"] + (vy - c["cy"]) * i / n
+                if any(math.hypot(sx - hx, sy - hy) < c["w"] / 2 + hr + 0.3 for hx, hy, hr in holes):
+                    return False
+                for o in c["pads"]:
+                    if o[0] != c["net"] and o[5] and \
+                            d_rect(sx, sy, o[1:5]) < c["w"] / 2 + self._clearance(c["net"], o[0]):
+                        return False
+                for v in c["vias"]:
+                    if v[0] != c["net"] and math.hypot(sx - v[1], sy - v[2]) < \
+                            c["w"] / 2 + v[3] / 2 + self._clearance(c["net"], v[0]):
+                        return False
+                for g in c["segs"]:
+                    if g[0] != c["net"] and g[6] == pcbnew.F_Cu and \
+                            d_seg(sx, sy, *g[1:5]) < c["w"] / 2 + g[5] / 2 + self._clearance(c["net"], g[0]):
+                        return False
+            return True
+
+        def site_ok(c, vx, vy) -> bool:
+            """A via of this net may sit at (vx, vy)."""
+            r = c["dia"] / 2
+            if not (limits[0] <= vx <= limits[2] and limits[1] <= vy <= limits[3]):
+                return False
+            if c["within"] and not any(b0 <= vx <= b2 and b1 <= vy <= b3 for b0, b1, b2, b3 in c["within"]):
+                return False  # the plane is not there
+            if d_rect(vx, vy, c["box"]) < r + 0.1:
+                return False  # not in the pad itself
+            if any(d_rect(vx, vy, k) < r + 0.2 for k in keepouts):
+                return False
+            if any(math.hypot(vx - hx, vy - hy) < r + hr + 0.3 for hx, hy, hr in holes):
+                return False
+            for o in c["pads"]:
+                if d_rect(vx, vy, o[1:5]) < r + (0.1 if o[0] == c["net"] else self._clearance(c["net"], o[0])):
+                    return False
+            for v in c["vias"]:
+                need = 0.75 if v[0] == c["net"] else r + v[3] / 2 + self._clearance(c["net"], v[0])
+                if math.hypot(vx - v[1], vy - v[2]) < need:
+                    return False
+            for g in c["segs"]:
+                if g[0] != c["net"] and d_seg(vx, vy, *g[1:5]) < r + g[5] / 2 + self._clearance(c["net"], g[0]):
+                    return False
+            return stub_clear(c, vx, vy)
+
+        def find_site(c, pad, reach):
+            """(x, y, new via?) for one pad, or None."""
+            box, cx, cy = c["box"], c["cx"], c["cy"]
+            # A via of the same net that is already within reach is used again.
+            for v in sorted(c["vias"], key=lambda v: math.hypot(v[1] - cx, v[2] - cy)):
+                if v[0] == c["net"] and d_rect(v[1], v[2], box) <= reach and stub_clear(c, v[1], v[2]):
+                    return v[1], v[2], False
+            fc = pad.GetParentFootprint().GetPosition()
+            off = (cx - to_mm(fc.x), cy - to_mm(fc.y))
+            away = math.atan2(off[1], off[0]) if abs(off[0]) + abs(off[1]) > 0.05 else 0.0
+            angles = sorted((math.radians(a) for a in range(0, 360, 15)),
+                            key=lambda a: abs((a - away + math.pi) % (2 * math.pi) - math.pi))
+            step = 0.0
+            while step <= reach:
+                for a in angles:
+                    ux, uy = math.cos(a), math.sin(a)
+                    ex = (box[2] - box[0]) / 2 / abs(ux) if abs(ux) > 1e-9 else 1e9
+                    ey = (box[3] - box[1]) / 2 / abs(uy) if abs(uy) > 1e-9 else 1e9
+                    d = min(ex, ey) + c["dia"] / 2 + 0.1 + step
+                    vx, vy = round(cx + d * ux, 3), round(cy + d * uy, 3)
+                    if site_ok(c, vx, vy):
+                        return vx, vy, True
+                step += 0.15
+            return None
+
+        made, failed = 0, []
+        for plane in planes:
+            net_name = plane["net"]
+            if net_name not in self.nets:
+                raise BoardError(f"plane net {net_name} is not in the netlist")
+            dia, drill = plane.get("via", [0.6, 0.3])
+            reach = float(plane.get("reach", 2.5))
+            skip = set(plane.get("skip", []))
+            # "within": rectangles, in board coordinates, that the plane covers. A via goes only there.
+            within = []
+            for x0, y0, x1, y1 in plane.get("within", []):
+                (ax, ay), (bx, by) = self.pt(x0, y0), self.pt(x1, y1)
+                within.append((to_mm(min(ax, bx)), to_mm(min(ay, by)), to_mm(max(ax, bx)), to_mm(max(ay, by))))
+            targets = [q for q in pads if q[0] == net_name and not q[7] and q[5]]
+            targets.sort(key=lambda q: (_ref_key(q[8].GetParentFootprint().GetReference()), q[8].GetNumber(),
+                                        q[1], q[2]))
+            for q in targets:
+                pad = q[8]
+                ref = pad.GetParentFootprint().GetReference()
+                label = f"{ref}.{pad.GetNumber()}"
+                if label in skip or ref in skip:
+                    continue
+                box = q[1:5]
+                near = (box[0] - reach - 2, box[1] - reach - 2, box[2] + reach + 2, box[3] + reach + 2)
+                ctx = {
+                    "net": net_name, "box": box, "cx": (box[0] + box[2]) / 2, "cy": (box[1] + box[3]) / 2,
+                    "within": within,
+                    "dia": dia, "w": min(float(plane.get("stub_width", 0.3)), box[2] - box[0], box[3] - box[1]),
+                    "pads": [o for o in pads if o[8] is not pad and o[1] < near[2] and o[3] > near[0]
+                             and o[2] < near[3] and o[4] > near[1]],
+                    "vias": [v for v in vias if near[0] < v[1] < near[2] and near[1] < v[2] < near[3]],
+                    "segs": [g for g in segs if min(g[1], g[3]) < near[2] and max(g[1], g[3]) > near[0]
+                             and min(g[2], g[4]) < near[3] and max(g[2], g[4]) > near[1]],
+                }
+                site = find_site(ctx, pad, reach)
+                if site is None:
+                    failed.append(label)
+                    continue
+                vx, vy, new = site
+                seg = pcbnew.PCB_TRACK(self.board)
+                seg.SetStart(pcbnew.VECTOR2I(mm(ctx["cx"]), mm(ctx["cy"])))
+                seg.SetEnd(pcbnew.VECTOR2I(mm(vx), mm(vy)))
+                seg.SetWidth(mm(ctx["w"]))
+                seg.SetLayer(pcbnew.F_Cu)
+                seg.SetNet(self.nets[net_name])
+                seg.SetLocked(True)
+                self.board.Add(seg)
+                segs.append((net_name, ctx["cx"], ctx["cy"], vx, vy, ctx["w"], pcbnew.F_Cu))
+                if new:
+                    v = pcbnew.PCB_VIA(self.board)
+                    v.SetPosition(pcbnew.VECTOR2I(mm(vx), mm(vy)))
+                    v.SetViaType(pcbnew.VIATYPE_THROUGH)
+                    v.SetLayerPair(pcbnew.F_Cu, pcbnew.B_Cu)
+                    v.SetWidth(pcbnew.F_Cu, mm(dia))
+                    v.SetDrill(mm(drill))
+                    v.SetNet(self.nets[net_name])
+                    v.SetLocked(True)
+                    self.board.Add(v)
+                    vias.append((net_name, vx, vy, dia))
+                    made += 1
+        return made, failed
+
+    def rule_areas(self) -> int:
+        """[[rule_area]]: a region of some layers where pours, tracks or vias are not allowed."""
+        count = 0
+        for i, r in enumerate(self.cfg.get("rule_area", [])):
+            z = pcbnew.ZONE(self.board)
+            z.SetIsRuleArea(True)
+            z.SetDoNotAllowZoneFills(bool(r.get("no_pour", False)))
+            z.SetDoNotAllowTracks(bool(r.get("no_tracks", False)))
+            z.SetDoNotAllowVias(bool(r.get("no_vias", False)))
+            z.SetDoNotAllowPads(False)
+            z.SetDoNotAllowFootprints(False)
+            ls = pcbnew.LSET()
+            for layer in r["layers"]:
+                ls.AddLayer(self.layer(layer))
+            z.SetLayerSet(ls)
+            z.SetZoneName(r.get("name", f"rule area {i + 1}"))
+            if "rect" in r:
+                x0, y0, x1, y1 = r["rect"]
+                pts = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+            else:
+                pts = r["outline"]
+            for x, y in pts:
+                z.AppendCorner(self.pt(x, y), -1)
+            set_uuid(z, "rule_area", i)
+            self.board.Add(z)
+            count += 1
         return count
 
     def silk(self) -> None:
@@ -368,11 +754,11 @@ class Builder:
                 field.SetVisible(False)
         moves = dict(cfg.get("move", {}))
         by_local = {(p["sheet"], p["sheet_path"], p["local_ref"]): p["ref"] for p in self.model["parts"]}
-        for sheet, group in self.cfg.get("group", {}).items():
+        for sheet, group in self.groups():
             for sheet_path, origin in group.get("at", {}).items():
                 grot = origin[2] if len(origin) > 2 else 0
                 for local, off in group.get("silk_move", {}).items():
-                    dx, dy = _rotate(off[0], off[1], grot)
+                    dx, dy = self.rotate(off[0], off[1], grot)
                     moves[by_local[(sheet, sheet_path, local)]] = [dx, dy, *off[2:]]
         for ref, off in moves.items():
             if ref not in self.fps:
@@ -380,7 +766,8 @@ class Builder:
             fp = self.fps[ref]
             pos = fp.GetPosition()
             field = fp.Reference()
-            field.SetPosition(pcbnew.VECTOR2I(pos.x + mm(off[0]), pos.y + mm(off[1])))
+            d = self.offset(off[0], off[1])
+            field.SetPosition(pcbnew.VECTOR2I(pos.x + d.x, pos.y + d.y))
             if len(off) > 2:
                 field.SetTextAngleDegrees(off[2])
 
@@ -391,23 +778,46 @@ class Builder:
             item.SetLayer(self.layer(t.get("layer", "F.SilkS")))
             item.SetPosition(self.pt(t["at"][0], t["at"][1]))
             size = mm(t.get("size", 1.0))
-            item.SetTextSize(pcbnew.VECTOR2I(size, size))
+            # "width" narrows the letters and leaves their height, for a label that has to fit a pitch
+            item.SetTextSize(pcbnew.VECTOR2I(mm(t["width"]) if "width" in t else size, size))
             item.SetTextThickness(mm(t.get("thickness", 0.15)))
             if item.GetLayer() in (pcbnew.B_SilkS, pcbnew.B_Cu, pcbnew.B_Fab):
                 item.SetMirrored(True)
+            if "angle" in t:
+                item.SetTextAngleDegrees(float(t["angle"]))
+            just = {"left": pcbnew.GR_TEXT_H_ALIGN_LEFT, "right": pcbnew.GR_TEXT_H_ALIGN_RIGHT,
+                    "center": pcbnew.GR_TEXT_H_ALIGN_CENTER}[t.get("justify", "center")]
+            item.SetHorizJustify(just)
             set_uuid(item, "text", t["text"], t["at"][0], t["at"][1])
             self.board.Add(item)
+            if t.get("optional", False):
+                self.optional_texts.add(item.m_Uuid.AsString())
+
+    def lines(self) -> None:
+        """[[line]]: straight silkscreen strokes, for a mark that is not text (the ground symbol)."""
+        for i, ln in enumerate(self.cfg.get("line", [])):
+            for j, (a, b) in enumerate(zip(ln["points"], ln["points"][1:])):
+                seg = pcbnew.PCB_SHAPE(self.board, pcbnew.SHAPE_T_SEGMENT)
+                seg.SetStart(self.pt(a[0], a[1]))
+                seg.SetEnd(self.pt(b[0], b[1]))
+                seg.SetLayer(self.layer(ln.get("layer", "F.SilkS")))
+                seg.SetWidth(mm(ln.get("width", 0.15)))
+                set_uuid(seg, "line", i, j)
+                self.board.Add(seg)
+
+    def clean_silk(self) -> dict:
+        """Remove or move what DRC finds wrong on the silkscreen. See hwflow.silk."""
+        from . import silk as silk_mod
+        work = self.project_dir / "build" / "silk"
+        try:
+            return silk_mod.clean(self.board, self.pcb_path, work, self.optional_texts, log=print)
+        except silk_mod.SilkError as e:
+            raise BoardError(str(e)) from e
 
     def save(self) -> None:
         stamp_copper(self.board)
         pcbnew.SaveBoard(str(self.pcb_path), self.board)
         stamp_points(self.pcb_path)
-
-
-def _rotate(dx: float, dy: float, deg: float) -> tuple[float, float]:
-    """Rotate an offset the way KiCad rotates a footprint (positive is counter-clockwise on screen)."""
-    a = math.radians(deg)
-    return (dx * math.cos(a) + dy * math.sin(a), -dx * math.sin(a) + dy * math.cos(a))
 
 
 def _ref_key(ref: str):
@@ -440,16 +850,82 @@ def remove_dangling(board, conn) -> int:
         removed += n
 
 
+def prune_unused(board) -> int:
+    """Take away the hand-placed vias the routing did not use, and the stubs that led to them.
+
+    ``[route] prune = true``. A via placed ahead of the autorouter as a way out
+    of a pin is of no use if the router left the pin on its own layer. Such a
+    via joins nothing on a second layer; DRC calls it dangling. A net that has
+    a zone is left alone: its vias join the zone, which is not filled yet at
+    this point.
+    """
+    zone_nets = {z.GetNetname() for z in board.Zones() if not z.GetIsRuleArea()}
+    pads: dict = {}
+    for fp in board.GetFootprints():
+        for p in fp.Pads():
+            pads.setdefault(p.GetNetname(), []).append(p)
+    removed = 0
+    while True:
+        by_net: dict = {}
+        for t in board.GetTracks():
+            if t.GetNetname() not in zone_nets:
+                by_net.setdefault(t.GetNetname(), []).append(t)
+        gone = []
+        for net, items in by_net.items():
+            segs = [t for t in items if t.Type() != pcbnew.PCB_VIA_T]
+            vias = [t for t in items if t.Type() == pcbnew.PCB_VIA_T]
+            for v in vias:
+                pos = v.GetPosition()
+                through = any(p.HitTest(pos) and p.GetAttribute() == pcbnew.PAD_ATTRIB_PTH for p in pads.get(net, []))
+                if v.IsLocked() and not through and len({x.GetLayer() for x in segs if x.HitTest(pos)}) < 2:
+                    gone.append(v)
+        if not gone:
+            for net, items in by_net.items():
+                segs = [(t, t.m_Uuid.AsString()) for t in items if t.Type() != pcbnew.PCB_VIA_T]
+                vias = [t for t in items if t.Type() == pcbnew.PCB_VIA_T]
+                for seg, uuid in segs:
+                    if not seg.IsLocked():
+                        continue
+                    for end in (seg.GetStart(), seg.GetEnd()):
+                        held = (any(v.HitTest(end) for v in vias)
+                                or any(u != uuid and o.GetLayer() == seg.GetLayer() and o.HitTest(end) for o, u in segs)
+                                or any(p.HitTest(end) and p.IsOnLayer(seg.GetLayer()) for p in pads.get(net, [])))
+                        if not held:
+                            gone.append(seg)
+                            break
+        if not gone:
+            return removed
+        removed += len(gone)
+        for t in gone:
+            board.Delete(t)
+        del gone, by_net
+
+
 def cmd_build(args) -> int:
     b = Builder(Path(args.project_dir), Path(args.design_dir),
                 Path(args.fab_rules) if args.fab_rules else None)
     b.new_board()
     b.outline()
     b.footprints()
+    if b.clearance_overrides:
+        print("footprints: clearance override of the library footprint removed from "
+              + ", ".join(b.clearance_overrides))
     n_pre = b.preroutes()
+    n_guard = b.guards()
+    n_fan, no_via = b.fanout()
+    if no_via:
+        sys.stderr.write("fan-out: no place for a plane via at: " + ", ".join(no_via) + "\n")
     b.silk()
     b.texts()
+    b.lines()
+    silk_stats = b.clean_silk() if b.cfg.get("silk", {}).get("clean", False) else None
     b.save()
+    if silk_stats is not None:
+        (Path(args.project_dir) / "build" / "silk.json").write_text(json.dumps(silk_stats, indent=1) + "\n",
+                                                                    encoding="utf-8")
+        print(f"silkscreen: clean after {silk_stats['rounds']} DRC rounds; {silk_stats['graphics_removed']} outline "
+              f"strokes removed, {len(silk_stats['refs_moved'])} designators moved, "
+              f"{len(silk_stats['refs_hidden'])} hidden, {len(silk_stats['texts_removed'])} optional texts dropped")
     dsn = Path(args.project_dir) / "build" / f"{b.name}.dsn"
     layers = b.board.GetCopperLayerCount()
     outer_only = layers > 2 and b.cfg.get("route", {}).get("outer_layers_only", False)
@@ -463,12 +939,30 @@ def cmd_build(args) -> int:
         b.board.SetCopperLayerCount(layers)
     if not ok:
         raise BoardError("Specctra DSN export failed")
+    route = b.cfg.get("route", {})
+    dsn_mod.widen_clearances(dsn, float(route.get("clearance_margin", 0.0)))
+    n_excluded, fixed_classes = dsn_mod.fix_nets(dsn, route.get("exclude", []))
+    names = ["F.Cu"] + [f"In{i}.Cu" for i in range(1, layers - 1)] + ["B.Cu"]
+
+    def to_dsn(x: float, y: float) -> tuple[float, float]:
+        p = b.pt(x, y)
+        return pcbnew.ToMM(p.x) * 1000.0, -pcbnew.ToMM(p.y) * 1000.0
+
+    dsn_mod.add_keepouts(dsn, route.get("keepout", []), to_dsn)
+    (px0, py0), (px1, py1) = to_dsn(0.5, 0.5), to_dsn(b.w - 0.5, b.h - 0.5)
+    dsn_mod.add_planes(dsn, route.get("plane", []), (min(px0, px1), min(py0, py1), max(px0, px1), max(py0, py1)))
+    # Read by hwflow.route, which hands them to the autorouter in its settings file.
+    (Path(args.project_dir) / "build" / "router.json").write_text(
+        json.dumps(dsn_mod.router_settings(names, route, fixed_classes), indent=1, sort_keys=True) + "\n",
+        encoding="utf-8")
     # Zones are added after the DSN is written: the autorouter then routes
     # GND like any other net, and the pour only adds copper on top.
     b.zones()
+    b.rule_areas()
     b.save()
-    print(f"board: {len(b.fps)} footprints placed, {n_pre} pre-routed track segments, "
-          f"{len(list(b.board.Zones()))} zones; DSN written to {dsn}")
+    print(f"board: {len(b.fps)} footprints placed, {n_pre} pre-routed track segments, {n_fan} plane vias, "
+          f"{n_guard} guard strips, {len(list(b.board.Zones()))} zones and rule areas; DSN written to {dsn}, "
+          f"{n_excluded} nets kept from the autorouter")
     return 0
 
 
@@ -482,12 +976,80 @@ def cmd_finish(args) -> int:
         if not pcbnew.ImportSpecctraSES(board, str(args.session)):
             raise BoardError("Specctra session import failed")
     after = len(list(board.GetTracks()))
+    unrouted, patched, widened = 0, 0, {}
+    if args.design_dir:
+        # [[unroute]] and [[patch]] of board.toml: what the autorouter left open or did badly is
+        # taken out and written by hand. This happens after the import, so the stored session
+        # stays valid; the patches belong to that session and DRC fails if they no longer fit.
+        b = Builder(project_dir, Path(args.design_dir))
+        b.board = board
+        b.fps = {fp.GetReference(): fp for fp in board.GetFootprints()}
+        import fnmatch
+        pats = [p for u in b.cfg.get("unroute", []) for p in u.get("nets", [])]
+        spots = [b.pt(v[0], v[1]) for u in b.cfg.get("unroute", []) for v in u.get("vias", [])]
+        boxes = []
+        for u in b.cfg.get("unroute", []):
+            if "box" in u:
+                c1, c2 = b.pt(u["box"][0], u["box"][1]), b.pt(u["box"][2], u["box"][3])
+                boxes.append((u["net"], min(c1.x, c2.x), min(c1.y, c2.y), max(c1.x, c2.x), max(c1.y, c2.y)))
+
+        def boxed(t) -> bool:
+            # "net" with "box": the autorouted copper of one net inside a rectangle, for a piece it laid
+            # where a layout rule does not want it. The patch router then joins what is left.
+            ends = [t.GetPosition()] if t.Type() == pcbnew.PCB_VIA_T else [t.GetStart(), t.GetEnd()]
+            return any(fnmatch.fnmatchcase(t.GetNetname(), net)
+                       and all(x0 <= e.x <= x1 and y0 <= e.y <= y1 for e in ends)
+                       for net, x0, y0, x1, y1 in boxes)
+
+        if pats or spots or boxes:
+            # "vias": a via by its place, whoever laid it. For one that was right for routing and is
+            # wrong on the board, where moving it would change what the stored session was made from.
+            gone = [t for t in board.GetTracks()
+                    if (not t.IsLocked() and (any(fnmatch.fnmatchcase(t.GetNetname(), p) for p in pats) or boxed(t)))
+                    or (t.Type() == pcbnew.PCB_VIA_T
+                        and any(abs(t.GetPosition().x - s.x) < 1000 and abs(t.GetPosition().y - s.y) < 1000
+                                for s in spots))]
+            unrouted = len(gone)
+            for t in gone:
+                board.Delete(t)
+            del gone
+        if b.cfg.get("route", {}).get("widen", False):
+            # Before the patches: they were routed round the tracks as this leaves them.
+            from . import widen as widen_mod
+            widened = widen_mod.widen(board, pcb_path, project_dir / "build" / "widen", log=print)
+        patches = b.cfg.get("patch", [])
+        if patches and not args.no_patch:
+            stamp = project_dir / "route" / f"{model['name']}.dsn.sha256"
+            made_for = b.cfg.get("patches", {}).get("session", "")
+            if not stamp.exists() or stamp.read_text().strip() != made_for:
+                raise BoardError("the [[patch]] tracks of board.toml were made for another routing than the one "
+                                 "stored in route/: run `make patches` and then make again")
+            patched = b._tracks(patches)
     removed = remove_dangling(board, board.GetConnectivity())
+    pruned = 0
+    if args.design_dir and b.cfg.get("route", {}).get("prune", False):
+        pruned = prune_unused(board)
     tracks = list(board.GetTracks())
+    if args.design_dir:
+        # A layer given to a plane carries no autorouted track. The autorouter has put tracks there
+        # before without any check noticing: the plane's pour simply flows round them. What is written
+        # out in board.toml is locked and may be there: the plane of one net can share its layer with
+        # hand-routed copper of others, as the 3.3 V plane of the rev A board does.
+        plane_layers = {p["layer"] for p in b.cfg.get("route", {}).get("plane", [])}
+        stray = sorted({f"{t.GetNetname()} on {t.GetLayerName()}" for t in tracks
+                        if t.Type() != pcbnew.PCB_VIA_T and str(t.GetLayerName()) in plane_layers
+                        and not t.IsLocked()})
+        if stray:
+            raise BoardError(f"{len(stray)} nets have autorouted tracks on a plane layer: " + ", ".join(stray[:12])
+                             + (" ..." if len(stray) > 12 else ""))
     stats = {
         "pre_routed_items": before,
         "items_after_session_import": after,
         "dangling_stubs_removed": removed,
+        "autorouted_items_taken_out": unrouted,
+        "patch_segments": patched,
+        "width_pass": widened,
+        "unused_escape_items_removed": pruned,
         "track_segments": sum(1 for t in tracks if t.Type() != pcbnew.PCB_VIA_T),
         "vias": sum(1 for t in tracks if t.Type() == pcbnew.PCB_VIA_T),
         "track_length_mm": round(sum(pcbnew.ToMM(t.GetLength()) for t in tracks if t.Type() != pcbnew.PCB_VIA_T), 1),
@@ -500,7 +1062,76 @@ def cmd_finish(args) -> int:
     stamp_points(pcb_path)
     (project_dir / "build" / "route-stats.json").write_text(json.dumps(stats, indent=1) + "\n", encoding="utf-8")
     print(f"board: {stats['track_segments']} track segments, {stats['vias']} vias "
-          f"({before} items were pre-routed, {removed} dangling stubs removed)")
+          f"({before} items were pre-routed, {removed} dangling stubs removed, {unrouted} items taken out, "
+          f"{patched} segments patched, {pruned} unused escape vias and stubs removed)")
+    if widened:
+        print(f"track widths: the autorouter laid {widened['narrow_segments']} segments, {widened['narrow_mm']} mm, "
+              f"narrower than their net class; {widened['kept_narrow_segments']} segments, "
+              f"{widened['kept_narrow_mm']} mm, have no room for more and stay narrow")
+    return 0
+
+
+def _extent(items) -> list[float] | None:
+    """Bounding box [x0, y0, x1, y1] in page millimetres of some board items, or None."""
+    ext = None
+    for g in items:
+        b = g.GetBoundingBox()
+        e = (b.GetLeft(), b.GetTop(), b.GetRight(), b.GetBottom())
+        ext = e if ext is None else (min(ext[0], e[0]), min(ext[1], e[1]), max(ext[2], e[2]), max(ext[3], e[3]))
+    return None if ext is None else [pcbnew.ToMM(v) for v in ext]
+
+
+def cmd_dump(args) -> int:
+    """Write build/placement.json: where every footprint, pad and hole of the saved board is.
+
+    Positions are in board coordinates, the frame of board.toml. The mechanical
+    check reads this file, so that it needs neither pcbnew nor the board file.
+    """
+    project_dir = Path(args.project_dir)
+    b = Builder(project_dir, Path(args.design_dir))
+    board = pcbnew.LoadBoard(str(b.pcb_path))
+
+    def xy(px: float, py: float) -> list[float]:
+        return [round(px - b.ox, 4), round((b.h - (py - b.oy)) if b.y_up else (py - b.oy), 4)]
+
+    def box(e) -> list[float] | None:
+        if e is None:
+            return None
+        (x0, y0), (x1, y1) = xy(e[0], e[1]), xy(e[2], e[3])
+        return [min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)]
+
+    parts = []
+    for fp in sorted(board.GetFootprints(), key=lambda f: _ref_key(f.GetReference())):
+        back = fp.IsFlipped()
+        shapes = [g for g in fp.GraphicalItems() if g.GetClass() == "PCB_SHAPE"]
+        fab = [g for g in shapes if g.GetLayer() == (pcbnew.B_Fab if back else pcbnew.F_Fab)]
+        yard = [g for g in shapes if g.GetLayer() == (pcbnew.B_CrtYd if back else pcbnew.F_CrtYd)]
+        pads = []
+        for p in fp.Pads():
+            pos, size = p.GetPosition(), p.GetBoundingBox()
+            pads.append({
+                "number": p.GetNumber(), "net": p.GetNetname(), "at": xy(pcbnew.ToMM(pos.x), pcbnew.ToMM(pos.y)),
+                "size": [round(pcbnew.ToMM(size.GetWidth()), 4), round(pcbnew.ToMM(size.GetHeight()), 4)],
+                "drill": round(pcbnew.ToMM(p.GetDrillSize().x), 4),
+                "plated": p.GetAttribute() != pcbnew.PAD_ATTRIB_NPTH,
+                "through": p.GetAttribute() in (pcbnew.PAD_ATTRIB_PTH, pcbnew.PAD_ATTRIB_NPTH),
+            })
+        pos = fp.GetPosition()
+        parts.append({
+            "ref": fp.GetReference(), "footprint": str(fp.GetFPID().GetUniStringLibId()),
+            "value": fp.GetValue(), "side": "bottom" if back else "top",
+            "at": xy(pcbnew.ToMM(pos.x), pcbnew.ToMM(pos.y)), "rot": fp.GetOrientationDegrees(),
+            "dnp": fp.IsDNP(), "body": box(_extent(fab)), "courtyard": box(_extent(yard)), "pads": pads,
+        })
+    edge = [d for d in board.GetDrawings() if d.GetLayer() == pcbnew.Edge_Cuts]
+    out = {
+        "name": b.name, "frame": "y up, origin bottom-left" if b.y_up else "y down, origin top-left",
+        "outline": box(_extent(edge)), "layers": board.GetCopperLayerCount(),
+        "thickness": pcbnew.ToMM(board.GetDesignSettings().GetBoardThickness()), "parts": parts,
+    }
+    dest = project_dir / "build" / "placement.json"
+    dest.write_text(json.dumps(out, indent=1) + "\n", encoding="utf-8")
+    print(f"dump: {len(parts)} footprints -> {dest}")
     return 0
 
 
@@ -515,7 +1146,15 @@ def main(argv=None) -> int:
     s = sub.add_parser("finish")
     s.add_argument("project_dir")
     s.add_argument("--session")
+    s.add_argument("--design", dest="design_dir",
+                   help="design directory: apply [[unroute]] and [[patch]] of board.toml")
+    s.add_argument("--no-patch", action="store_true",
+                   help="leave the [[patch]] tracks out: the state they are made from")
     s.set_defaults(fn=cmd_finish)
+    s = sub.add_parser("dump")
+    s.add_argument("design_dir")
+    s.add_argument("project_dir")
+    s.set_defaults(fn=cmd_dump)
     args = ap.parse_args(argv)
     try:
         return args.fn(args)

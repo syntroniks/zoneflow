@@ -36,6 +36,10 @@ Drawing: Kefa "KF2EDGR-3.81", revision A, dated 2021-03-13.
 
 Pad 1 is square and is the origin. The mating face points to +y.
 
+The courtyard is 0.25 mm around the body, not the 0.5 mm that is usual for a
+connector: the mechanical contract puts J2 and J3 end to end with 0.6 mm
+between the bodies.
+
 Why not the stock Phoenix MC 1,5/x-G-3,81 footprint, which is the usual
 substitute: its holes are 1.2 mm, 0.2 mm smaller than the Kefa drawing asks
 for, and its body outline differs.
@@ -122,6 +126,13 @@ reviewer should check them against a better copy of the drawing.**
 The six frame lands have no pad number and no net. Grounding the frame is the
 usual practice; the design netlist does not say, so it is left for the review.
 
+The courtyard is 0.1 mm beyond the side lands, not 0.25 mm. The mechanical
+contract puts the encoder at x = 85.0 and the module at x = 103.0. The
+right-hand side land then ends at x = 93.25 and the module's pad row starts
+at x = 93.5: **0.25 mm of bare board between a frame land and fourteen module
+pads.** It passes DRC. It is close for reflow soldering, and it is a position
+the contract fixes; see the layout document.
+
 3D model: KiCad's EC11E (the through-hole relative with a 20 mm shaft), as a
 stand-in. Body height and shaft are close; the terminals are not.
 
@@ -190,9 +201,32 @@ comparison:
 | Ground pad | nine 0.9 squares in 3.7 x 3.7, centred 7.5 from the left edge and 10.29 from the bottom edge | the same |
 | Antenna area | 6 mm at the end of the module | keep-out 15 mm around the antenna end |
 
-The one change: the stock keep-out covers the outer copper layers. The copy
-puts it on every copper layer, because this is a four-layer board and the
-inner planes must stay out from under the antenna too.
+Two changes. The stock keep-out covers the outer copper layers; the copy puts
+it on every copper layer, because this is a four-layer board and the inner
+planes must stay out from under the antenna too. And the courtyard beside the
+pad rows is 0.1 mm beyond the pads, not 0.25 mm, for the reason given under
+the encoder (1.4).
+
+3D model: KiCad's own.
+
+### 1.9 Opto-triacs U101 to U901: `SMDIP-6_onsemi_646BY`
+
+onsemi MOC3023SR2M (C40701). Drawing: onsemi case 646BY, "PDIP6 8.51x6.35,
+2.54P", issue A, 15 July 2019.
+
+A copy of KiCad's `Package_DIP:SMDIP-6_W9.53mm` with a larger courtyard. The
+lands were compared in section 2 and are unchanged. The stock courtyard is
+8.17 mm along the body. The drawing gives the body length, dimension D, as
+8.13 to 8.89 mm, so two parts placed courtyard to courtyard could touch. The
+courtyard here is 8.89 + 2 x 0.25 = 9.39 mm long. Found when the nine
+opto-triacs were put in a row on the 9.5 mm pitch of the LEDs.
+
+| Dimension | Drawing | Footprint |
+|---|---|---|
+| Body length D | 8.13 to 8.89 | courtyard 9.40 |
+| Body width E1 | 6.10 to 6.60 | (stock outline) |
+| Over the leads E | 8.43 to 9.90 | lands to 11.53, courtyard 12.08 |
+| Height A | 4.80 at most | in `heights.toml` |
 
 3D model: KiCad's own.
 
@@ -205,7 +239,7 @@ Parts that carry mains-side current, heat or a connector position.
 | F1, F4 fuse holder, Littelfuse 0154003.DRT (C206913) | `Fuse:Fuseholder_Littelfuse_Nano2_154x` | Littelfuse 154 series, recommended pad layout | Equal: 10.62 over the lands, lands 4.24 x 3.81, gap 2.13 |
 | F5 fuse, Littelfuse 0451.500MRL (C142836) | `Fuse:Fuse_Littelfuse-NANO2-451_453` | Littelfuse 451/453 series sheet, "Recommended pad layout", read as an image | Equal: lands 1.96 x 3.15, 2.95 between them, 6.86 over them (the footprint's pad centres give 6.87). The part is 6.10 x 2.69 |
 | Q101 to Q901 triac, ST T810-600B (C155588) | `Package_TO_SOT_SMD:TO-252-2` | ST DocID7472 rev 12, figure 14, DPAK footprint | Lead pitch 4.572 against 4.56. ST draws larger lands: tab 6.7 x 6.7 against 6.4 x 5.8, leads 3.0 x 1.6 against 2.2 x 1.2. Kept the stock lands; the layout adds copper around the tab for heat. Pad 1 is A1, pad 2 (tab) is A2, pad 3 is the gate: with the leads pointing down, pad 1 is on the left, as in ST's top view |
-| U101 to U901 opto-triac, onsemi MOC3023SR2M (C40701) | `Package_DIP:SMDIP-6_W9.53mm` | onsemi case 646BY, issue A, land pattern | Pitch 2.54, equal. Inner edges 7.53 apart against 7.49. KiCad's lands are 0.5 longer outwards (2.0 x 1.78 against 1.52 x 1.78) |
+| U101 to U901 opto-triac, onsemi MOC3023SR2M (C40701) | lands of `Package_DIP:SMDIP-6_W9.53mm`, used through the local copy of 1.9 | onsemi case 646BY, issue A, land pattern | Pitch 2.54, equal. Inner edges 7.53 apart against 7.49. KiCad's lands are 0.5 longer outwards (2.0 x 1.78 against 1.52 x 1.78) |
 | K1 relay, Omron G5NB-1A-E DC5 (C48746) | `Relay_THT:Relay_SPST_Omron_G5NB` | Omron G5NB data sheet (`omronfs.omron.com/en_US/ecb/products/pdf/en-g5nb.pdf`), "PCB mounting holes (bottom view)" and "Terminal arrangement" | Equal: four holes 1.1; coil terminals 4.7 apart; contact terminals 11.5 and 18.5 from the coil, in line with one coil terminal. Coil is pads A1 and A2, contact is 13 and 14. No coil polarity |
 | U1 buck converter, TI LM5164DDAR (C477928) | `Package_SO:TI_SO-PowerPAD-8` | TI LM5164 data sheet rev A: package drawing 4202561/F, thermal pad 4206322-6/L, land pattern 4208951-6/D | Thermal pad 2.40 x 3.10 at most; the footprint's pad 9 is 2.41 x 3.10. Lead lands: TI 0.5 x 2.2 on 5.75 row centres, KiCad 0.61 x 1.91 on 5.56. Pitch 1.27, equal. TI's example has six 0.33 vias under the pad on a 1.3 grid; the footprint has none, the layout adds them |
 | L1, Bourns SRN6045TA-470M (C5151734) | `Inductor_SMD:L_Bourns_SRN6045TA` | Bourns SRN6045TA sheet, recommended layout | Equal: 6.5 over the lands, 5.1 high, 1.8 gap |
@@ -215,7 +249,7 @@ Parts that carry mains-side current, heat or a connector position.
 | TVS SMBJ48CA (C151264): D12 to D14, D18, D23, D101 to D901. TVS SMBJ6.0A (C83270), same series and case: D25 | `Diode_SMD:D_SMB` | Littelfuse SMBJ sheet, solder pad table | The table gives I 2.26 min, J 2.16 min, K 2.72 max, L 2.16 min (converted from inches). KiCad's lands are 2.5 x 2.3 with 1.8 between them, which meets all four whichever side each letter names; the figure that assigns the letters was not read |
 | D1 TVS, SMCJ48CA (C151287) | `Diode_SMD:D_SMC` | none | Not compared. JEDEC DO-214AB footprint, lands 3.3 x 2.5 |
 | J5, HRO TYPE-C-31-M-12 (C165948) | `Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12` | HRO drawing TYPE-C-31-M-12, 2020-12-08, recommended layout | Equal: four 0.60 and eight 0.30 lands at 0.50 pitch; locating holes 5.78 apart; shell slots 8.65 apart (footprint 8.64) and 4.18 between the rows. The drawing puts the board edge 2.66 mm in front of the footprint origin, which is where the mechanical contract puts J5 (2.675) |
-| J6, JST SM04B-SRSS-TB (C160404) | `Connector_JST:JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal` | JST SH catalogue sheet, side entry type | Lands 0.6 x 1.55 at 1.0 pitch and mounting lands 1.2 x 1.8, as the sheet gives them. Positions were not compared number by number: the text layer of the sheet does not tie the numbers to features |
+| J6, JST SM04B-SRSS-TB (C160404) | `Connector_JST:JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal` | JST SH catalogue sheet, side entry type | Lands 0.6 x 1.55 at 1.0 pitch and mounting lands 1.2 x 1.8, as the sheet gives them. Positions were not compared number by number: the text layer of the sheet does not tie the numbers to features. In this footprint the mounting lands reach 0.15 mm past the front of the housing, so the housing cannot overhang the board edge: revision 2 of the mechanical contract had it 0.5 mm over, which put the lands 0.7 mm off the board. Revision 3 moves J6 in by 1.0 mm |
 | SW1, SW2, XKB TS-1187A-B-A-B (C318884) | `Button_Switch_SMD:SW_Push_1P1T_XKB_TS-1187A` | XKB drawing TS-1187A-X-X-X, revision A0 | Equal: lands 1.0 x 0.75; 7.0 over and 5.0 between along the terminals; 4.5 over and 3.0 between the rows. The two lands of a row are one contact |
 
 ## 3. Stock footprints for standard packages

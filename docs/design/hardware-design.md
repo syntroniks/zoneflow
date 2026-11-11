@@ -3038,7 +3038,7 @@ Lines with the least stock against a 100-board order of the 8-zone build:
 This section prices parts only. The landed cost of a finished controller,
 with the board, assembly fees, freight, US duty and the enclosure, re-priced
 on 2026-11-11, is on [what a controller costs](../hardware/cost.md): about
-136 USD each for 5 eight-zone controllers and 55 USD for 100.
+125 USD each for 5 eight-zone controllers and 54 USD for 100.
 
 **What the review changes cost.** By this method the BOM as it stood before
 the changes comes to 38.90 and 30.35 USD for the 8-zone board at 10 and 100

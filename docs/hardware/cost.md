@@ -21,10 +21,10 @@ user buys them whichever controller they choose.
 
 | USD per controller | 5 units | 10 units | 25 units | 100 units |
 |---|---|---|---|---|
-| 8-zone, board landed | 126.14 | 90.33 | 68.35 | 49.79 |
-| 8-zone, with enclosure | 136.01 | 97.47 | 74.18 | 54.97 |
-| 4-zone, board landed | 118.89 | 82.58 | 61.72 | 44.04 |
-| 4-zone, with enclosure | 128.76 | 89.72 | 67.56 | 49.22 |
+| 8-zone, board landed | 115.59 | 84.69 | 65.66 | 48.57 |
+| 8-zone, with enclosure | 125.46 | 91.83 | 71.49 | 53.75 |
+| 4-zone, board landed | 108.34 | 76.94 | 59.03 | 42.82 |
+| 4-zone, with enclosure | 118.21 | 84.08 | 64.86 | 48.00 |
 
 <!-- zfcost:end -->
 
@@ -40,8 +40,8 @@ What a whole batch costs, which is what has to be paid up front:
 
 | USD for the whole batch | 5 units | 10 units | 25 units | 100 units |
 |---|---|---|---|---|
-| 8-zone | 680.07 | 974.74 | 1,854.57 | 5,496.79 |
-| 4-zone | 643.82 | 897.23 | 1,688.90 | 4,921.96 |
+| 8-zone | 627.30 | 918.34 | 1,787.25 | 5,374.84 |
+| 4-zone | 591.05 | 840.82 | 1,621.57 | 4,800.02 |
 
 <!-- zfcost:end -->
 
@@ -54,13 +54,13 @@ What a whole batch costs, which is what has to be paid up front:
 | Parts fitted by JLCPCB | 38.11 | 34.49 | 31.90 | 25.62 |
 | Parts bought loose: headers, C1, K1, plugs, display, spare fuse | 6.45 | 5.73 | 5.57 | 4.43 |
 | Coin cell (US distributor) | 2.74 | 1.37 | 0.61 | 0.37 |
-| Bare board | 14.38 | 8.23 | 4.54 | 2.56 |
+| Bare board | 6.56 | 4.05 | 2.55 | 1.65 |
 | Assembly fees | 27.95 | 14.66 | 6.68 | 2.97 |
 | &nbsp;&nbsp;of which for extended parts | 24.56 | 12.28 | 4.91 | 0.66 |
 | Freight to the US | 6.10 | 3.77 | 2.01 | 1.40 |
-| US duty | 30.41 | 22.09 | 17.04 | 12.45 |
+| US duty | 27.67 | 20.63 | 16.34 | 12.13 |
 | Enclosure materials | 9.87 | 7.14 | 5.83 | 5.18 |
-| **Total per controller** | **136.01** | **97.47** | **74.18** | **54.97** |
+| **Total per controller** | **125.46** | **91.83** | **71.49** | **53.75** |
 | Assembly service | economic 5 | economic 10 | economic 25 | standard 100 |
 | Boards ordered | 5 | 10 | 25 | 100 |
 
@@ -73,13 +73,13 @@ What a whole batch costs, which is what has to be paid up front:
 | Parts fitted by JLCPCB | 33.28 | 29.29 | 27.53 | 21.79 |
 | Parts bought loose: headers, C1, K1, plugs, display, spare fuse | 6.08 | 5.37 | 5.20 | 4.14 |
 | Coin cell (US distributor) | 2.74 | 1.37 | 0.61 | 0.37 |
-| Bare board | 14.38 | 8.23 | 4.54 | 2.56 |
+| Bare board | 6.56 | 4.05 | 2.55 | 1.65 |
 | Assembly fees | 27.78 | 14.48 | 6.50 | 2.82 |
 | &nbsp;&nbsp;of which for extended parts | 24.56 | 12.28 | 4.91 | 0.66 |
 | Freight to the US | 6.10 | 3.77 | 2.01 | 1.40 |
-| US duty | 28.53 | 20.08 | 15.32 | 10.96 |
+| US duty | 25.79 | 18.62 | 14.62 | 10.64 |
 | Enclosure materials | 9.87 | 7.14 | 5.83 | 5.18 |
-| **Total per controller** | **128.76** | **89.72** | **67.56** | **49.22** |
+| **Total per controller** | **118.21** | **84.08** | **64.86** | **48.00** |
 | Assembly service | economic 5 | economic 10 | economic 25 | standard 100 |
 | Boards ordered | 5 | 10 | 25 | 100 |
 
@@ -87,13 +87,13 @@ What a whole batch costs, which is what has to be paid up front:
 
 ### Reading the tables
 
-- **At 5 units, fixed charges per order dominate.** The board's engineering
-  fee and the 0.2 mm hole option, the assembly setup, and above all the
-  extended-part fees are charged once per order whatever its size. With the
-  duty on them they are about 53 USD, 39 % of the 136 USD. Parts are about
-  a third.
-- **At 100 units, parts and duty dominate.** Parts are 30 of the 55 USD and
-  duty 12. Board and assembly fees together have fallen to 5.53 USD.
+- **At 5 units, fixed charges per order are the largest share.** The board's
+  engineering fee, the assembly setup and stencil, and above all the
+  extended-part fees are charged once per order whatever its size:
+  157.51 USD. With the duty on them they are about 43 USD per controller,
+  34 % of the 125 USD. Parts are 47 USD, 38 %.
+- **At 100 units, parts and duty dominate.** Parts are 30 of the 54 USD and
+  duty 12. Board and assembly fees together have fallen to 4.62 USD.
 - **Extended-part fees are the largest single fixed charge.** JLCPCB's
   Economic assembly charges 3.07 USD for each extended part type that is not
   "preferred"; this board has 40 such types, so every order pays 122.80 USD
@@ -114,8 +114,8 @@ What a whole batch costs, which is what has to be paid up front:
 
 | Units | Service | Extended-part fees, USD per batch | With duty, USD per controller | Share of the total |
 |---|---|---|---|---|
-| 5 | economic | 122.80 | 33.16 | 24 % |
-| 10 | economic | 122.80 | 16.58 | 17 % |
+| 5 | economic | 122.80 | 33.16 | 26 % |
+| 10 | economic | 122.80 | 16.58 | 18 % |
 | 25 | economic | 122.80 | 6.63 | 9 % |
 | 100 | standard | 65.79 | 0.89 | 2 % |
 
@@ -123,12 +123,12 @@ What a whole batch costs, which is what has to be paid up front:
 
 - **US duty is the second-largest line at every quantity.** At the 35 % that
   JLCPCB says it collects on boards, it adds 35 % to everything made in
-  China, fees included: 30 USD of the 136 at 5 units, 12 of the 55 at 100.
-- **The 4-zone build saves only 5.75 to 7.25 USD.** It drops 45 parts, but every
+  China, fees included: 28 USD of the 125 at 5 units, 12 of the 54 at 100.
+- **The 4-zone build saves only 5.75 to 7.75 USD.** It drops 45 parts, but every
   part type stays (zones 1 to 4 use the same types as 5 to 8), so it pays
   the same per-order fees and the same board.
 - **Batch size is the biggest lever a builder controls.** Five boards cost
-  61 USD more each than 25 boards.
+  54 USD more each than 25 boards.
 
 ## Components
 
@@ -145,13 +145,11 @@ a batch of five (1.69 per controller) and 6.62 USD to a batch of a hundred
 (under 0.07 per controller): the minimums are 20 or fewer, and the parts they
 apply to cost a cent or less.
 
-Which parts JLCPCB fits comes from the layout in
-[pull request #39](https://github.com/syntroniks/zoneflow/pull/39): its
-placement files hold 307 parts for the 8-zone build and 262 for the 4-zone
-build, all SMT on the top side. The netlist has gained five parts since, the
-over-voltage detector of [hardware design section 9.5](../design/hardware-design.md#95-over-voltage-on-3v3-detector-u13),
-which that layout has yet to place. The model counts them: 312 and 267
-parts, and it checks that the BOM gives the same counts. The six through-hole parts (four terminal headers, the bulk
+Which parts JLCPCB fits comes from the [layout](layout.md) as it stands
+after its [review](../design/hardware-layout-review.md): its placement files
+hold 312 parts for the 8-zone build and 267 for the 4-zone build, all SMT on
+the top side. The model checks that the BOM gives the same counts. The six
+through-hole parts (four terminal headers, the bulk
 capacitor C1 and the relay K1) are not in the placement files, so they are
 bought loose with the order, as are the four plugs, the display panel and
 one spare 3 A fuse (0452003.MRL, the replacement named in the BOM). They are
@@ -211,35 +209,36 @@ From JLCPCB's online quote page, which needs no login, on 2026-11-11: FR-4,
 4 layers, 114 x 110 mm, 1.6 mm, 1 oz outer and 0.5 oz inner copper, green,
 single boards, default build time, every other option at its default. That
 is the stack-up the layout asks for; it needs no special option
-(hardware-layout section 2 in pull request #39). The calculator gave the same
+([hardware layout](../design/hardware-layout.md), section 2). The calculator gave the same
 price for HASL with lead, lead-free HASL and ENIG; the model assumes
 lead-free HASL.
 
 <!-- zfcost:begin pcbfab -->
 
-| Boards | USD, smallest hole 0.3 mm | USD, smallest hole 0.2 mm (this layout) | USD per board, 0.2 mm |
+| Boards | USD, smallest hole 0.3 mm (this layout) | USD per board, 0.3 mm | USD, smallest hole 0.2 mm |
 |---|---|---|---|
-| 5 | 32.80 | 71.89 | 14.38 |
-| 10 | 40.50 | 82.28 | 8.23 |
-| 20 | 56.00 | 103.17 | 5.16 |
-| 25 | 63.70 | 113.57 | 4.54 |
-| 30 | 71.40 | 123.98 | 4.13 |
-| 50 | 102.40 | 165.76 | 3.32 |
-| 75 | 131.50 | 208.35 | 2.78 |
-| 100 | 165.40 | 255.73 | 2.56 |
-| 150 | 233.40 | 350.68 | 2.34 |
-| 200 | 301.20 | 445.45 | 2.23 |
+| 5 | 32.80 | 6.56 | 71.89 |
+| 10 | 40.50 | 4.05 | 82.28 |
+| 20 | 56.00 | 2.80 | 103.17 |
+| 25 | 63.70 | 2.55 | 113.57 |
+| 30 | 71.40 | 2.38 | 123.98 |
+| 50 | 102.40 | 2.05 | 165.76 |
+| 75 | 131.50 | 1.75 | 208.35 |
+| 100 | 165.40 | 1.65 | 255.73 |
+| 150 | 233.40 | 1.56 | 350.68 |
+| 200 | 301.20 | 1.51 | 445.45 |
 
 <!-- zfcost:end -->
 
-**The 0.2 mm holes cost more than the layout expected.** The layout uses
-0.2 mm for the twelve thermal vias under the buck regulator U1 and records
-it as the smallest hole without a surcharge. On 2026-11-11, choosing
+**A 0.2 mm hole costs more, so the layout has none.** The layout first
+drilled twelve vias in the ground pad of the module U4 at 0.2 mm and recorded
+that as the smallest hole without a surcharge. On 2026-11-11, choosing
 "0.2mm/(0.3/0.35mm)" in the quote page added 18.10 USD for the hole size and
 switched on TG155 material and the 4-wire Kelvin test, 39 USD on five boards
-and 90 USD on a hundred. Enlarging those vias to 0.3 mm is the third
-[cost cut](#five-cheap-ways-to-cut-cost). It is a layout change, and the
-thermal path under U1 would have to be checked again.
+and 90 USD on a hundred. The
+[layout review](../design/hardware-layout-review.md) drilled those vias
+0.3 mm (its finding L9), and the design rules now fail a board with a smaller
+hole. The model uses the 0.3 mm column.
 
 The board quantity is rounded up to a quantity the quote page offers; the
 extra bare boards are spares.
@@ -250,7 +249,7 @@ From JLCPCB's price page, last updated 2026-10-22, and its capability page.
 Economic assembly takes 2 to 50 boards with parts on one side; Standard
 takes 2 to 80,000 on one or both sides. The model uses Economic up to 50
 and Standard above. For 100 eight-zone boards, one Standard order comes to
-54.97 USD per controller and two Economic orders of 50 to 62.89 USD, because
+53.75 USD per controller and two Economic orders of 50 to 60.83 USD, because
 each Economic order pays the extended-part fees and the board's engineering
 fee again.
 
@@ -264,10 +263,8 @@ fee again.
 | Packing | free | 0.50 + 0.00003 per cm² of board |
 | Manual (through-hole) assembly | 0.0164 per joint up to 10,000, plus 3.58 hand-soldering labour per order | the same, plus fixtures (8.21 each, 2 to 5 for these quantities) |
 
-Joints are counted from the layout: 836 soldered pins on the 8-zone board and
-726 on the 4-zone board, counting each pin once. The five parts of the
-over-voltage detector, which the layout has yet to place, add 14: 850 and
-740.
+Joints are counted from the layout: 850 soldered pins on the 8-zone board and
+740 on the 4-zone board, counting each pin once.
 
 **Through-hole parts.** The layout plans to solder C1 and K1 by hand from
 the top and leaves all six through-hole parts out of the placement files. The
@@ -280,8 +277,8 @@ options, by the published rules:
 
 | 8-zone, USD per controller (builder minutes per controller) | 5 units | 25 units | 100 units |
 |---|---|---|---|
-| Builder solders them | 136.01 (79 min) | 74.18 (60 min) | 54.97 (56 min) |
-| JLCPCB fits them (Standard service) | 152.26 (69 min) | 77.90 (50 min) | 56.15 (46 min) |
+| Builder solders them | 125.46 (79 min) | 71.49 (60 min) | 53.75 (56 min) |
+| JLCPCB fits them (Standard service) | 141.71 (69 min) | 75.20 (50 min) | 54.93 (46 min) |
 
 <!-- zfcost:end -->
 
@@ -413,8 +410,8 @@ transformer and the cable already installed.
 | Economic assembly: setup, stencil, placement confirmation | 10.16 | Every order |
 | Standard assembly: setup, stencil, placement confirmation | 34.22 | Every order |
 | Economic extended-part fees, 8-zone | 122.80 | Every order |
-| Bare boards, 5 pieces, 0.2 mm holes | 71.89 | Every order; 25.00 of it is the engineering fee |
-| Prototype run: 5 eight-zone controllers, landed, with enclosures | 680.07 | Once |
+| Bare boards, 5 pieces, smallest hole 0.3 mm | 32.80 | Every order; 25.00 of it is the engineering fee |
+| Prototype run: 5 eight-zone controllers, landed, with enclosures | 627.30 | Once |
 
 <!-- zfcost:end -->
 
@@ -476,7 +473,7 @@ from 2025-08-01 to internet-connected radio equipment, cybersecurity against
 EN 18031-1. RoHS applies too, which is one reason the model assumes
 lead-free HASL.
 
-## Five cheap ways to cut cost
+## Four cheap ways to cut cost
 
 Ordered from least work to most. Each saving is the model run with the
 change, against the base case, for the 8-zone build.
@@ -487,7 +484,6 @@ change, against the base case, for the 8-zone build.
 |---|---|---|---|---|
 | `selftap` | Self-tapping screws in place of the seven heat-set inserts | 1.67 | 0.67 | 0.58 |
 | `basic_passives` | Seven extended passives of common values replaced by basic parts of the same value | 5.80 | 1.16 | 0.00 |
-| `vias` | The twelve 0.2 mm thermal vias under U1 enlarged to 0.3 mm | 10.55 | 2.69 | 1.22 |
 | `issue31` | Issue #31: no output snubbers; zone LED in series with the opto-triac LED | 0.34 | 0.36 | 0.32 |
 
 <!-- zfcost:end -->
@@ -496,13 +492,13 @@ change, against the base case, for the 8-zone build.
 
 | Build | 5 units | 25 units | Saved 5 to 25 | 100 units | Saved 25 to 100 |
 |---|---|---|---|---|---|
-| 8-zone | 136.01 | 74.18 | 61.83 | 54.97 | 19.21 |
-| 4-zone | 128.76 | 67.56 | 61.21 | 49.22 | 18.34 |
+| 8-zone | 125.46 | 71.49 | 53.97 | 53.75 | 17.74 |
+| 4-zone | 118.21 | 64.86 | 53.35 | 48.00 | 16.86 |
 
 <!-- zfcost:end -->
 
 1. **Order more at once** (no design change). Going from 5 to 25 boards
-   saves 61 USD per controller, more than all the design changes together.
+   saves 54 USD per controller, more than all the design changes together.
    Five friends ordering one batch of 25 pay less each than one person
    ordering five.
 2. **Self-tapping screws** (`fastener = "selftap"` in the enclosure model, no
@@ -516,9 +512,7 @@ change, against the base case, for the 8-zone build.
    replacement parts have not been chosen: each needs a basic part of the
    same value, voltage, dielectric and package, checked against its
    datasheet.
-4. **0.3 mm thermal vias under U1** (small layout change): 10.55 USD at 5,
-   1.22 at 100. The thermal path of U1's ground pad has to be checked again.
-5. **Part-count reduction,
+4. **Part-count reduction,
    [issue #31](https://github.com/syntroniks/zoneflow/issues/31)**: the two
    candidates priced here, dropping the output snubbers and putting each zone
    LED in series with its opto-triac's LED, remove 27 parts and 54 joints and
@@ -530,7 +524,7 @@ change, against the base case, for the 8-zone build.
    price of whatever drives the triacs instead; it also removes a protection
    layer and needs an explicit decision.
 
-The 4-zone build saves 5.75 to 7.25 USD over the 8-zone build, far less than
+The 4-zone build saves 5.75 to 7.75 USD over the 8-zone build, far less than
 ordering ten boards in place of five.
 
 ## Against other controllers
@@ -553,10 +547,10 @@ A builder's cost is not a retail price: a seller adds labour, testing,
 certification, support, returns, a margin and, in the EU, VAT. With that in
 mind:
 
-- **At 5 units**, an 8-zone ZoneFlow costs about 136 USD landed, close to
-  the 150 USD of an OpenSprinkler 3.4 AC, which arrives built and
+- **At 5 units**, an 8-zone ZoneFlow costs about 125 USD landed, 25 USD
+  under the 150 USD of an OpenSprinkler 3.4 AC, which arrives built and
   supported.
-- **At 25 units**, 74 USD; **at 100**, 55 USD. That is materials and fees
+- **At 25 units**, 71 USD; **at 100**, 54 USD. That is materials and fees
   only; it leaves room under the OpenSprinkler prices for the costs a seller
   carries, but nothing here says how much.
 - The cheaper open controllers switch relays or latching DC valves, with
@@ -568,21 +562,21 @@ mind:
 
 | 8-zone, USD per controller | 5 units | 25 units | 100 units |
 |---|---|---|---|
-| Base case | 136.01 | 74.18 | 54.97 |
-| US duty 0 % | 105.60 | 57.14 | 42.52 |
-| US duty 25 % | 127.33 | 69.31 | 51.41 |
-| US duty 60 % | 157.73 | 86.35 | 63.86 |
-| Display panel price x 0.5 | 133.60 | 72.13 | 53.34 |
-| Display panel price x 1.5 | 138.43 | 76.24 | 56.59 |
-| ESP32-S3 module price x 0.75 | 134.34 | 72.73 | 53.84 |
-| ESP32-S3 module price x 1.25 | 137.68 | 75.63 | 56.10 |
+| Base case | 125.46 | 71.49 | 53.75 |
+| US duty 0 % | 97.79 | 55.15 | 41.61 |
+| US duty 25 % | 117.55 | 66.82 | 50.28 |
+| US duty 60 % | 145.23 | 83.16 | 62.42 |
+| Display panel price x 0.5 | 123.05 | 69.44 | 52.12 |
+| Display panel price x 1.5 | 127.87 | 73.54 | 55.37 |
+| ESP32-S3 module price x 0.75 | 123.79 | 70.04 | 52.62 |
+| ESP32-S3 module price x 1.25 | 127.13 | 72.94 | 54.88 |
 
 <!-- zfcost:end -->
 
 Duty moves the answer most: each 10 points of duty is about 3.5 USD per
-controller at 100 units and 8.5 USD at 5. The display panel and the module
+controller at 100 units and 7.9 USD at 5. The display panel and the module
 are the two parts most likely to change price or source, and neither moves
-the total by more than 2 USD within the ranges shown.
+the total by more than 2.5 USD within the ranges shown.
 
 ## Supply risks
 
@@ -599,7 +593,7 @@ the total by more than 2 USD within the ranges shown.
   extended part can go out of stock at JLCPCB between ordering and
   production. Pre-ordering them is possible but ties up money.
 - **Tariffs** changed several times in 2026 (see above). A change of 25 points
-  moves an 8-zone controller by 9 to 21 USD.
+  moves an 8-zone controller by 9 to 20 USD.
 - **Prices are one day's prices.** JLCPCB's price page says prices vary with
   exchange rates; it adjusted board prices in August 2026.
 
@@ -630,7 +624,7 @@ Each is in `tools/cost/data/assumptions.toml` and can be changed there or with
 | `tier_by_order_qty` | `true` | A part's price break is chosen by the quantity ordered for the whole batch, as on the JLCPCB parts search. |
 | `service` | `auto` | JLCPCB assembly service: 'auto' uses Economic up to 50 boards (its limit) and Standard above; 'economic' or 'standard' forces one. Economic above 50 is priced as several orders of at most 50. |
 | `tht_by` | `builder` | Who solders the six through-hole parts (four headers, C1, K1). 'builder': bought loose with the order and soldered by hand, as hardware-layout.md section 12 plans. 'assembler': JLCPCB's manual assembly fee per joint plus its hand-soldering labour per order, and Standard service because C1 and K1 are on the bottom side. Neither has been asked of JLCPCB. |
-| `pcb_hole` | `0p2` | The layout needs 0.2 mm holes (twelve thermal vias under U1), so the 0.2 mm price applies. '0p3' prices the board with those vias enlarged to 0.3 mm, which is a layout change. |
+| `pcb_hole` | `0p3` | The smallest hole of the layout is 0.3 mm since its review (finding L9 of hardware-layout-review.md), so the default price applies. '0p2' prices the board as it was before, with twelve 0.2 mm vias in the ground pad of the module. |
 | `pcb_qty_round_up` | `true` | The board quantity is the smallest quoted quantity at or above the number of controllers. Extra bare boards are spares. |
 | `us_tariff_rate` | `0.35` | Duty rate on the China-made goods (parts, board, assembly). 0.35 is what JLCPCB says it collects on PCBs under DDP (Section 301 25 % plus 10 %). It changes often; the page shows 0, 0.25, 0.35 and 0.60. |
 | `tariff_on_freight` | `false` | US duty is assessed on the goods' value, not on the international freight. |

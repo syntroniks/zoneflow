@@ -1,7 +1,9 @@
 {
   "board": {
     "design_settings": {
-      "rule_severities": {},
+      "rule_severities": {
+        "lib_footprint_mismatch": "ignore"
+      },
       "rules": {
         "min_clearance": 0.1,
         "min_copper_edge_clearance": 0.2,
@@ -10,7 +12,7 @@
         "min_silk_clearance": 0.0,
         "min_text_height": 1.0,
         "min_text_thickness": 0.15,
-        "min_through_hole_diameter": 0.2,
+        "min_through_hole_diameter": 0.3,
         "min_track_width": 0.1,
         "min_via_annular_width": 0.125,
         "min_via_diameter": 0.45
@@ -44,6 +46,158 @@
         "via_diameter": 0.6,
         "via_drill": 0.3,
         "wire_width": 6
+      },
+      {
+        "bus_width": 12,
+        "clearance": 0.5,
+        "diff_pair_gap": 0.25,
+        "diff_pair_via_gap": 0.25,
+        "diff_pair_width": 0.2,
+        "line_style": 0,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "name": "AC24",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 1,
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 1.0,
+        "tuning_profile": "",
+        "via_diameter": 1.0,
+        "via_drill": 0.5,
+        "wire_width": 6
+      },
+      {
+        "bus_width": 12,
+        "clearance": 0.25,
+        "diff_pair_gap": 0.25,
+        "diff_pair_via_gap": 0.25,
+        "diff_pair_width": 0.2,
+        "line_style": 0,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "name": "Shunt",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 2,
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 1.0,
+        "tuning_profile": "",
+        "via_diameter": 1.0,
+        "via_drill": 0.5,
+        "wire_width": 6
+      },
+      {
+        "bus_width": 12,
+        "clearance": 0.5,
+        "diff_pair_gap": 0.25,
+        "diff_pair_via_gap": 0.25,
+        "diff_pair_width": 0.2,
+        "line_style": 0,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "name": "AC24S",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 3,
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 0.3,
+        "tuning_profile": "",
+        "via_diameter": 0.6,
+        "via_drill": 0.3,
+        "wire_width": 6
+      },
+      {
+        "bus_width": 12,
+        "clearance": 0.4,
+        "diff_pair_gap": 0.25,
+        "diff_pair_via_gap": 0.25,
+        "diff_pair_width": 0.2,
+        "line_style": 0,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "name": "HVDC",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 4,
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 0.5,
+        "tuning_profile": "",
+        "via_diameter": 0.8,
+        "via_drill": 0.4,
+        "wire_width": 6
+      },
+      {
+        "bus_width": 12,
+        "clearance": 0.5,
+        "diff_pair_gap": 0.25,
+        "diff_pair_via_gap": 0.25,
+        "diff_pair_width": 0.2,
+        "line_style": 0,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "name": "Field",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 5,
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 0.4,
+        "tuning_profile": "",
+        "via_diameter": 0.8,
+        "via_drill": 0.4,
+        "wire_width": 6
+      },
+      {
+        "bus_width": 12,
+        "clearance": 0.2,
+        "diff_pair_gap": 0.25,
+        "diff_pair_via_gap": 0.25,
+        "diff_pair_width": 0.2,
+        "line_style": 0,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "name": "Power",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 6,
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 0.4,
+        "tuning_profile": "",
+        "via_diameter": 0.8,
+        "via_drill": 0.4,
+        "wire_width": 6
+      },
+      {
+        "bus_width": 12,
+        "clearance": 0.2,
+        "diff_pair_gap": 0.25,
+        "diff_pair_via_gap": 0.25,
+        "diff_pair_width": 0.2,
+        "line_style": 0,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "name": "USB",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 7,
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 0.25,
+        "tuning_profile": "",
+        "via_diameter": 0.6,
+        "via_drill": 0.3,
+        "wire_width": 6
+      },
+      {
+        "bus_width": 12,
+        "clearance": 0.6,
+        "diff_pair_gap": 0.25,
+        "diff_pair_via_gap": 0.25,
+        "diff_pair_width": 0.2,
+        "line_style": 0,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "name": "HiZ",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 8,
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 0.25,
+        "tuning_profile": "",
+        "via_diameter": 0.6,
+        "via_drill": 0.3,
+        "wire_width": 6
       }
     ],
     "meta": {
@@ -51,7 +205,336 @@
     },
     "net_colors": {},
     "netclass_assignments": {},
-    "netclass_patterns": []
+    "netclass_patterns": [
+      {
+        "netclass": "AC24",
+        "pattern": "/AC_L"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/AC_L_IN"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/AC_N"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/COM"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "/Connectors/QW_3V3"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "/Display/TFT_LEDA"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "/Display/TFT_LEDK"
+      },
+      {
+        "netclass": "HiZ",
+        "pattern": "/Expander/KB_N1"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "/Expander/RLY_A"
+      },
+      {
+        "netclass": "HiZ",
+        "pattern": "/Expander/RLY_G2"
+      },
+      {
+        "netclass": "HiZ",
+        "pattern": "/Failsafe/KA_INP"
+      },
+      {
+        "netclass": "HiZ",
+        "pattern": "/Failsafe/KA_N1"
+      },
+      {
+        "netclass": "Shunt",
+        "pattern": "/ISNS"
+      },
+      {
+        "netclass": "HiZ",
+        "pattern": "/KA_N2"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/MV/G"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/MV/OGT"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/MV/SNB"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/MV/T2"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/OUT_MV"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/OUT_Z1"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/OUT_Z2"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/OUT_Z3"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/OUT_Z4"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/OUT_Z5"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/OUT_Z6"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/OUT_Z7"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/OUT_Z8"
+      },
+      {
+        "netclass": "HVDC",
+        "pattern": "/Power/BST"
+      },
+      {
+        "netclass": "HVDC",
+        "pattern": "/Power/SW"
+      },
+      {
+        "netclass": "HVDC",
+        "pattern": "/Power/VIN_U1"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/Power/VRECT"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "/RLY_B"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "/RTC/VDD_RTC"
+      },
+      {
+        "netclass": "Field",
+        "pattern": "/SENS_5V"
+      },
+      {
+        "netclass": "Field",
+        "pattern": "/Sensors/SP_A"
+      },
+      {
+        "netclass": "Field",
+        "pattern": "/Sensors/SP_B"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "/Sensors/SP_OUT"
+      },
+      {
+        "netclass": "Field",
+        "pattern": "/T_AUX"
+      },
+      {
+        "netclass": "Field",
+        "pattern": "/T_FLOW"
+      },
+      {
+        "netclass": "Field",
+        "pattern": "/T_RAIN"
+      },
+      {
+        "netclass": "USB",
+        "pattern": "/USB/USB_DM"
+      },
+      {
+        "netclass": "USB",
+        "pattern": "/USB/USB_DP"
+      },
+      {
+        "netclass": "USB",
+        "pattern": "/USB_DM_MCU"
+      },
+      {
+        "netclass": "USB",
+        "pattern": "/USB_DP_MCU"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z1/G"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z1/OGT"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z1/SNB"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/Z1/T2"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z2/G"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z2/OGT"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z2/SNB"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/Z2/T2"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z3/G"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z3/OGT"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z3/SNB"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/Z3/T2"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z4/G"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z4/OGT"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z4/SNB"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/Z4/T2"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z5/G"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z5/OGT"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z5/SNB"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/Z5/T2"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z6/G"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z6/OGT"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z6/SNB"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/Z6/T2"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z7/G"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z7/OGT"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z7/SNB"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/Z7/T2"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z8/G"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z8/OGT"
+      },
+      {
+        "netclass": "AC24S",
+        "pattern": "/Z8/SNB"
+      },
+      {
+        "netclass": "AC24",
+        "pattern": "/Z8/T2"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "3V3"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "V5"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "VBUS"
+      },
+      {
+        "netclass": "HVDC",
+        "pattern": "VIN_DC"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "V_BUCK"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "V_DRV"
+      }
+    ]
   },
   "sheets": [],
   "text_variables": {}

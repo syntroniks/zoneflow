@@ -222,8 +222,8 @@ def one_off(inp: m.Inputs) -> str:
             "Every order",
         ],
         [
-            "Bare boards, 5 pieces, 0.2 mm holes",
-            usd(fab["via_0p2"][0]),
+            f"Bare boards, 5 pieces, smallest hole {inp.sourced['board']['smallest_hole_mm']:g} mm",
+            usd(fab["via_" + inp.a["pcb_hole"]][0]),
             "Every order; 25.00 of it is the engineering fee",
         ],
     ]
@@ -258,9 +258,9 @@ def retail(inp: m.Inputs) -> str:
 
 def pcb_quotes(inp: m.Inputs) -> str:
     fab = inp.sourced["pcb_fab"]
-    rows = [[str(q), usd(a), usd(b), usd(b / q)] for q, a, b in zip(fab["quantities"], fab["via_0p3"], fab["via_0p2"])]
+    rows = [[str(q), usd(a), usd(a / q), usd(b)] for q, a, b in zip(fab["quantities"], fab["via_0p3"], fab["via_0p2"])]
     return table(
-        ["Boards", "USD, smallest hole 0.3 mm", "USD, smallest hole 0.2 mm (this layout)", "USD per board, 0.2 mm"],
+        ["Boards", "USD, smallest hole 0.3 mm (this layout)", "USD per board, 0.3 mm", "USD, smallest hole 0.2 mm"],
         rows,
     )
 

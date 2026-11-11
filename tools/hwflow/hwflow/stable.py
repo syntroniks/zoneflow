@@ -39,9 +39,27 @@ def normalise(path: Path, date: str) -> bool:
     elif suffix == ".svg":
         new = re.sub(rb"(<title>SVG Image created as [^<]*? date )\S+( </title>)", rb"\g<1>" + stamp + rb"\g<2>", raw)
     elif suffix == ".rpt":
+        # "ERC report (2026-11-10T18:00:00, Encoding UTF8)" and "** Created on 2026-11-10T18:00:00 **" of DRC.
         new = re.sub(rb"(report \()\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(, )", rb"\g<1>" + stamp + rb"\g<2>", raw, count=1)
+        new = re.sub(rb"(\*\* Created on )\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d( \*\*)", rb"\g<1>" + stamp + rb"\g<2>", new,
+                     count=1)
     elif suffix == ".json":
         new = re.sub(rb'("date": ")\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(")', rb"\g<1>" + stamp + rb"\g<2>", raw, count=1)
+    elif suffix in (".gbr", ".drl", ".gbrjob"):
+        # Gerber X2 and Excellon headers, and the Gerber job file: "...CreationDate,2026-11-10T18:00:00-06:00",
+        # "date 2026-11-10T18:00:00-0600".
+        new = re.sub(rb"(CreationDate[,\"]:? ?\"?)\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+-]\d\d:?\d\d",
+                     rb"\g<1>" + stamp + b"+00:00", raw)
+        new = re.sub(rb"(date )\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d[+-]\d\d:?\d\d", rb"\g<1>" + stamp + b"+0000", new)
+        # The comment line of a Gerber, "G04 Created by KiCad (PCBNEW 10.0.8) date 2026-11-10 18:00:00*", and the
+        # first line of a drill file, "; DRILL file KiCad 10.0.8 date 2026-11-10T18:00:00", carry no time zone.
+        new = re.sub(rb"(date )\d{4}-\d\d-\d\d \d\d:\d\d:\d\d", rb"\g<1>" + date.encode() + b" 00:00:00", new)
+        new = re.sub(rb"(date )\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?![+\-\d:])", rb"\g<1>" + stamp, new)
+    elif suffix == ".step":
+        # The header only. The entities of the model are numbered in an order that differs between
+        # runs, so the file still changes with every export.
+        new = re.sub(rb"(FILE_NAME\('[^']*',')\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(')", rb"\g<1>" + stamp + rb"\g<2>", raw,
+                     count=1)
     else:
         return False
     if new != raw:

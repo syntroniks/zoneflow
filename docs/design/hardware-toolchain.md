@@ -1,8 +1,8 @@
 # Hardware toolchain
 
 Status: **proven on a 40-part test board, 2026-11-10**, and used for the
-schematic of the revision A board, 346 parts then and 348 since hardware
-review A2, on the same day (section 12).
+schematic and the layout of the revision A board, 346 parts then and 348
+since hardware review A2, on the same day (sections 12 and 13).
 Nothing here has been built as hardware. Every result below names the command
 that produced it.
 
@@ -67,6 +67,7 @@ Three checks make the generated files trustworthy.
 |---|---|---|
 | `design/circuit.py` | Source | Yes |
 | `design/board.toml` | Source | Yes |
+| `design/heights.toml` | Source, component heights for the mechanical check (section 13.2) | Yes |
 | `design/rules.kicad_dru` | Source, board-specific DRC rules | Yes |
 | `design/parts.toml`, `design/symbols.py`, `design/footprints.py`, `design/footprints.md` | Source, on a board drawn from a design netlist (section 12) | Yes |
 | `lib/` | Generated project-local symbol and footprint libraries | No |
@@ -127,6 +128,7 @@ Run these in a board directory such as `hardware/toolchain-test/`.
 | `make committed` | Compare the committed netlist and BOMs with the design netlist. Needs no KiCad |
 | `make erc` | Up to and including ERC |
 | `make drc` | Up to and including DRC. Use this while iterating on placement |
+| `make mech` | Up to DRC, then the board against the mechanical contract |
 | `make reroute` | Discard the stored routing, route again, then everything |
 | `make check` | Unit tests, KiCad round-trip tests, and deliberate ERC and DRC failures |
 
@@ -337,14 +339,14 @@ one so that one set covers both.
 | Limit | Value used | Page text |
 |---|---|---|
 | Track width and spacing | 0.10 mm | "0.10 / 0.10 mm (4 / 4 mil)" for 1 and 2 layers, 0.09 mm multilayer |
-| Via hole | 0.20 mm | "Preferred Min. Via hole size: 0.2mm". The absolute minimum is 0.15 mm |
-| Via diameter | 0.45 mm | A 0.2 mm hole "with via diameter less than 0.45mm, will cost more" |
+| Any hole | 0.30 mm | The smallest hole with no extra charge. The help article "In what cases will there be charged extra?", last updated 2026-11-10 and read 2026-11-11, says holes below "the standard size (diameter of 0.3mm or more)" cost more. The capabilities page still says "Preferred Min. Via hole size: 0.2mm". The two disagree; `jlcpcb.toml` has both and follows the article |
+| Via diameter | 0.45 mm | "Via diameter should be 0.1mm(0.15mm preferred) larger than Via hole size" |
 | PTH pad annular ring | 0.18 mm | 2-layer "absolute minimum 0.18 mm", multilayer 0.15 mm |
 | PTH hole to track | 0.28 mm | "0.35mm is recommended, minimum 0.28mm" |
 | Via hole to track, NPTH to track | 0.20 mm | "Via hole to Track 0.2mm", "NPTH to Track 0.2mm" |
 | Via hole to via hole | 0.20 mm | "Via Hole-to-Hole Spacing 0.2mm" |
 | Pad hole to pad hole | 0.45 mm | "Pad Hole-to-Hole Spacing 0.45mm" |
-| SMD pad to pad, different nets | 0.15 mm | "SMD pad to pad clearance (different nets) 0.15mm" |
+| SMD pad to pad, different nets | no rule | "SMD pad to pad clearance (different nets) 0.15mm". Every net class asks for 0.2 mm or more, so the classes keep this limit. It was a rule of its own until the layout review of revision A and did harm: see below |
 | Copper to routed board edge | 0.20 mm | "Copper clearance from routed board edges: ≧0.2 mm". V-cut edges need 0.4 mm |
 | Silkscreen text | 1.0 mm high, 0.15 mm line | "Minimum text height 40 mil (1.0mm)", "Minimum Line Width ≥0.15mm" |
 | Pad to silkscreen | 0.15 mm | "Pad To Silkscreen 0.15mm" |
@@ -356,6 +358,23 @@ constraints in `.kicad_pro`. Limits that depend on the item type are rules in
 
 I read the page through a text extraction tool, not in a browser. Read it
 again before an order.
+
+**Two things the layout review of revision A changed here.**
+
+- **A hole under 0.3 mm fails DRC.** The board-wide minimum is 0.30 mm and a
+  rule in `jlcpcb.kicad_dru` names the reason in the report. Before, 0.20 mm
+  was allowed, and the module footprint brought twelve such holes with it.
+  On 2026-11-11 JLCPCB's quote priced them with a surcharge, a material
+  upgrade and a four-wire test (the project's cost analysis found it). The
+  toolchain test board keeps KiCad's stock module footprint and switches the
+  finding off in its own `board.toml`, with the reason.
+- **A clearance in a custom rule is not a floor.** `jlcpcb.kicad_dru` had a
+  rule that gave every pair of surface-mount pads a clearance of 0.15 mm.
+  KiCad takes a custom rule in place of the net-class clearance for every
+  pair it fits, so two pads 0.15 mm apart passed DRC whatever their nets. On
+  revision A it hid one pair, the solder jumper JP1, which now has a rule of
+  its own in the board's `design/rules.kicad_dru`. A rule that lowers a
+  clearance belongs to one named pair, never to a pad type.
 
 ## 9. Known limits
 
@@ -370,13 +389,15 @@ again before an order.
 - **The autorouter narrows tracks at pads** to about 75% of class width. Set
   the floor you accept as a DRC rule per class.
 - **The autorouter does not understand return paths or which areas of the
-  board should stay apart.** Pre-route what matters. Rule areas are
-  not in `board.toml` yet. Only the ones inside library footprints exist.
+  board should stay apart.** Pre-route what matters. `[[rule_area]]`,
+  `[[guard]]` and `[[route.keepout]]` say where it must not go (section 13.1).
 - **On a 4-layer board Freerouting routes signals on the inner layers** unless
-  `[route] outer_layers_only = true`. With that option, plane nets are also
-  routed as outer-layer tracks, and the pours connect only where a via or
-  through-hole pad passes through. Marking the inner layers `(type power)` in
-  the DSN, or exporting the planes, did not keep Freerouting 2.5.0 off them.
+  it is told not to. `[route] layers` names the layers it may use, through its
+  settings file (section 13.3); `[[plane]]` and `[route] exclude` keep the
+  plane nets from it. The older `[route] outer_layers_only = true` shows it a
+  2-layer board instead; plane nets are then routed as outer-layer tracks.
+  Marking the inner layers `(type power)` in the DSN, or exporting the planes,
+  did not keep Freerouting 2.5.0 off them.
 - **Routing changes completely when placement changes.** The cache keeps a
   rebuild stable only while the DSN is byte-identical. A KiCad patch release
   changes the DSN header and forces a new route.
@@ -388,11 +409,16 @@ again before an order.
 - **`silk_edge_clearance` is ignored on the test board** because the antenna,
   USB-C and terminal outlines cross the edge on purpose. That also hides
   reference text that hangs over the edge. Look at the render.
-- **JLCPCB rotation corrections are unverified.** The table has four rows
-  copied from the Fabrication-Toolkit project. None was checked against
-  JLCPCB's placement preview. Bottom-side placement was not exercised.
-- **The CPL lists through-hole parts** such as terminal blocks. Remove them or
-  order them as hand-soldered parts.
+- **JLCPCB placement corrections are checked against JLCPCB's library, not
+  against its preview.** `make cpl-check` (section 13.12) compares every
+  placement with the footprint that the JLCEDA library holds for the part's
+  LCSC number. The table of corrections was rewritten from that comparison in
+  the layout review of revision A: with the seven rows it had before, 26
+  placements of that board were wrong. The check does not prove that the
+  library footprint is how the part lies in its tape. Still compare JLCPCB's
+  preview with `output/<name>-pin1.csv` when ordering.
+- **The CPL lists through-hole parts** such as terminal blocks, unless the
+  board Makefile sets `POS_FLAGS := --smd-only`.
 - **Board exports are not byte-stable.** Gerbers, drill files, reports, the
   PDF and the SVGs carry a timestamp or a generated id. A rebuild of the test
   board from a clean checkout changed 29 files under `output/` and nothing
@@ -689,3 +715,436 @@ Two CI jobs in `.github/workflows/hardware.yml` use this:
   differs.
 - **3D models.** Four project footprints use a stand-in model and four have
   none (`design/footprints.md`, section 5).
+
+## 13. Laying out the revision A board
+
+The layout of `hardware/zoneflow-a/` needed more from `board.toml` than the
+test board did. This section lists what was added and what was learnt. The
+layout itself is described in [hardware layout](hardware-layout.md).
+
+### 13.1 New in `board.toml`
+
+| Table or key | What it does |
+|---|---|
+| `[board] y_up = true` | Board coordinates with the origin at the bottom-left corner and y up, the frame of a mechanical drawing. Rotations stay counter-clockwise as seen from the top |
+| `[group.NAME] sheet = "..."` | Two groups may place parts of one schematic sheet, each with its own origin per instance. The channel has two: the power half on a 7.1 mm pitch and the logic half on 9.5 mm |
+| `[[track]] via = [d, drill]`, `via_to = "In2.Cu"` | A via size for one track, and the layer a track continues on after its via |
+| `[[plane]] net, skip, within` | A short stub and a via beside every surface-mount pad of a net that connects through a plane. `within` lists the rectangles the plane covers |
+| `[[guard]] net, distance` | A rule area along each side of the hand-routed tracks of a net, where no other track or via may be |
+| `[[rule_area]]` | A region of some layers with no pour, no tracks or no vias |
+| `[route] layers` | The copper layers the autorouter may route on. Its vias still pass through the others |
+| `[[via]] net, at, size` | A via on its own, to tie a pour to a plane |
+| `[route] exclude` | Nets the autorouter must leave alone, by pattern (13.9). Their pads and their pre-routed copper stay as fixed copper with the clearance of their class |
+| `[[route.plane]] layer, net` | A layer the autorouter must not route on, because it is a plane of that net (13.9) |
+| `[route] clearance_margin` | Millimetres added to every clearance in the Specctra file. Freerouting works in its own units and came 2 um under a 0.2 mm clearance; 0.01 mm ends that |
+| `[route] prune = true` | After the import, remove a hand-placed escape via or stub that nothing came to use (13.10) |
+| `[route] widen = true` | After the import, give every autorouted track the width of its net class where DRC allows (13.11) |
+| `[[unroute]]`, `[[patch]]`, `[patches]` | Changes to the routed board that do not disturb the stored routing (13.10) |
+| `[[route.keepout]]` | Rectangles of some layers where the autorouter may put neither track nor via. The patch router keeps out of them too, unless the rectangle is marked `stands_for_copper = true`: that mark is for planes and islands that are added as zones after the Specctra file is written, which only the autorouter cannot see |
+| `[route.patch_last_resort] layer, cost, keepout` | A plane layer that the patch router may use for a connection with no path on the routing layers (13.13) |
+| `[route.layer_cost]` | A cost factor for a layer, to make the autorouter use it less |
+| `[[text]] angle, justify, optional` | A turned or left- or right-aligned text, and a text the builder may drop if it collides (13.6) |
+| `[[line]]` | Straight silkscreen strokes, for a mark that is not text |
+| `[silk] clean = true` | Make the silkscreen pass DRC by removing and moving what DRC finds (13.6) |
+| `[[keepaway]]`, `[[apart]]`, `[[perpendicular]]`, `[[no_pad]]` | Layout rules that DRC cannot express, checked on the finished board (13.7) |
+| `[drc_severity]` | The severity of one DRC check, written into the project file |
+
+`board.toml` of this board is itself written by a program, `design/layout.py`,
+which `make` runs first. Most of the file repeats or is computed: nine output
+columns, the fan-out lanes of the valve outputs, eighteen gate lines, a bus
+with eighteen stubs, twenty terminal labels. `layout.py` is the source;
+`board.toml` is committed so that a reviewer can read the numbers without
+running anything. `layout.py` uses the standard library only and asserts what
+it computes: that no two fan-out lanes come closer than their pitch, that
+every gate line found a lane.
+
+A footprint named `Lib:Name` is taken from the project's own `lib/Lib.pretty`
+if that exists, and from KiCad's library otherwise.
+
+### 13.2 The mechanical check
+
+`make` runs it after DRC when the board Makefile sets `MECH_CONTRACT`.
+`hwflow.pcbbuild dump` writes `build/placement.json` from the saved board: every
+footprint with its side, position, body outline, courtyard and pads, in board
+coordinates. `hwflow mech` compares that with the contract
+(`tools/hwflow/hwflow/mech.py`):
+
+- outline, layer count, thickness;
+- every hole: an unplated hole of that diameter at that place;
+- every part the contract places: pin 1, the pads, or the centre of the body,
+  whichever the contract gives, within 0.05 mm, and its side;
+- the keep-out circle of every hole, foot and post;
+- the height zones, for every other part, with heights from
+  `design/heights.toml`. A later zone overrides an earlier one. A footprint
+  with no height in the table fails the build;
+- the bottom side: only what the contract puts there;
+- the edge keep-out;
+- no part over 1.5 mm within 2.5 mm of a top-side pad of a bottom-side part.
+
+It compares numbers in files. Nothing is measured. Seven tests in
+`tests/test_mech.py` move, flip and raise parts on a made-up board and check
+that each is reported.
+
+### 13.3 The autorouter reports usage unless told not to
+
+Freerouting 2.5.0 sends usage data to its maker's server,
+`api.freerouting.app`, by default. The defaults in its settings file are
+`disable_analytics: false` and `allow_telemetry: true`. Reading the class
+files of the jar (`app/freerouting/analytics/`), an event carries:
+
+- the command line, which names the design file: `zoneflow-a.dsn`,
+  `toolchain-test.dsn`, with the path it was given;
+- the host name of the machine;
+- statistics of the board and of the routing run.
+
+I read the names of the event fields in the class files. I did not capture a
+request, so I cannot say more exactly what a run sent, and I saw no field for
+the design file's contents.
+
+**The runs before this was found went out with the defaults**: every
+autorouter run of the test board, and the first probes of the revision A
+board, on 2026-11-10 from the build machine. The project owner has been told.
+
+Since then:
+
+- `hwflow.route` writes a settings file with both switches off into
+  `build/freerouting-home/` and points Freerouting at it through the `XDG_*`
+  variables. It never uses the user's own Freerouting settings.
+- It sets the Java proxy properties for HTTP and HTTPS to a closed port on the
+  local machine, so that no request can leave even if a later version ignores
+  the settings file. This is the only way the jar is run: do not start it by
+  hand.
+- CI does not run the autorouter. It reuses the stored session (13.8).
+
+The same settings file carries what the Specctra file cannot:
+
+- `router.fanout.enabled = false`. The fan-out stage puts a via at every
+  surface-mount pin before routing. On this board that took the room the
+  router needed. It is off for a board whose `board.toml` has a `[route]`
+  table, unless that says `fanout = true`. The test board has no such table
+  and keeps the autorouter's own settings, with which its stored routing was
+  made.
+- `router.layers[n]`: the cost of a layer. An `autoroute_settings` block in
+  the Specctra file makes 2.5.0 load an empty board without an error message.
+  A `.rules` file given with `-dr` was read but its `(fanout off)` was not
+  honoured.
+- `router.autorouter.ignore_net_classes`: the nets it must leave alone (13.9).
+
+**`router.layers[n].routable = false` does not keep 2.5.0 off a layer.** An
+earlier version of this section said it did. It is read without complaint
+and not obeyed: with In1.Cu marked not routable, the router put more track on
+In1.Cu than on any other layer, 2.2 m in one run. No check noticed, because
+In1.Cu is a ground pour and a pour flows round whatever is on its layer.
+Every routing of the revision A board stored before this was found had
+signal tracks on the ground plane. What does keep the router off a layer is
+in 13.9.
+
+### 13.4 More KiCad 10.0.8 Python findings
+
+- `FOOTPRINT.Flip` on a footprint that is not yet on a board crashes the
+  interpreter. Add it to the board first.
+- `LEFT_RIGHT` in `Flip` mirrors y, not x, as seen in board coordinates. A
+  bottom-side part needs its rotation chosen by looking at where its pads
+  land; `build/placement.json` shows that.
+- `BOX2I.Merge` through the Python wrapper corrupts the heap. Take the four
+  edges and compare them in Python.
+- A custom DRC rule can lower a net-class clearance for one layer:
+  `(layer "In2.Cu") (condition "A.NetClass == 'AC24' && B.NetClass == 'AC24'")`.
+- Two builds of one KiCad release plot the same schematic page with its items
+  in a different order (section 12.5).
+
+### 13.5 What a dense board asks for
+
+The test board routed itself. This one did not: with every net given to the
+autorouter on two layers, a third of the connections were still open after
+three passes. What made it tractable:
+
+1. Planes and pours for ground and 3.3 V, with a via per pad, and those nets
+   kept from the autorouter.
+2. Every current-carrying net written out by hand, as a group where it
+   repeats.
+3. A third routing layer for the logic nets, In2.Cu, which they share with
+   the 3.3 V pour.
+4. No fan-out stage.
+5. An escape, a short stub and a via, written out for every pin of the one
+   fine-pitch part whose pins the router boxed in with its own vias.
+6. A way to finish what the autorouter leaves open without routing again: a
+   small maze router and the `[[unroute]]` and `[[patch]]` tables (13.10).
+
+
+### 13.6 A silkscreen that passes DRC
+
+On a dense board the stock silkscreen of the footprints cannot stay: outlines
+cross the pads of the neighbours, designators land on other parts, the outline
+of an edge connector hangs over the board edge. `hwflow/silk.py` does not model
+any of that. It uses KiCad's DRC as the judge: it saves a copy of the board,
+runs `kicad-cli pcb drc`, and for every silkscreen finding
+
+- deletes the footprint stroke that is at fault;
+- moves a reference designator to the next of fourteen places round its part,
+  and hides it when none is free;
+- deletes a `[[text]]` marked `optional`, and fails the build for one that is
+  not.
+
+It repeats until DRC has no silkscreen finding. One round takes about two
+seconds on this board and it needs 23. `build/silk.json` says what was
+removed, moved and hidden.
+
+The price: a footprint with a stroke removed no longer equals its library
+copy, and DRC says so (`lib_footprint_mismatch`). `board.toml` sets that one
+check to "ignore". The check has little to say in this flow in any case: the
+board is built from the libraries on every run and no board file is edited by
+hand.
+
+### 13.7 Layout rules that DRC cannot express
+
+DRC measures copper against copper on one layer. A safety analysis also makes
+statements such as "this net stays away from that one on every layer", "these
+two circuits are 10 mm apart", "this net has no test pad".
+`hwflow/layoutrules.py` reads them from `board.toml` and measures them on the
+finished board file: `make rules`, part of `make`.
+
+| Table | What it checks |
+|---|---|
+| `[[keepaway]] net, from, distance, scope` | The smallest distance from the copper of `net` to the copper of every net matching `from`. `scope = "plan"` measures in plan view whatever the layers, so that not even a crossing on another layer passes. `scope = "layer"` measures copper that shares a layer. `kinds` and `own_kinds` choose among tracks, vias and pads; `except` leaves nets out |
+| `[[apart]] a, b, distance` | The smallest gap between a pad of one group of parts and a pad of the other |
+| `[[perpendicular]] parts` | Two parts at right angles |
+| `[[no_pad]] nets, refs` | No part matching `refs` has a pad on one of the nets |
+
+Tracks are lines with a width, vias circles on every layer, pads their
+bounding rectangles. Pours are not looked at. A rule that names no net of the
+board fails, so that a renamed net cannot silently switch a rule off. The
+result goes to `output/reports/layout-rules.md`. Ten tests in
+`tests/test_layoutrules.py` run each rule on made-up copper, met and broken.
+
+A `[[keepaway]]` with `scope = "layer"` also acts earlier: the builder keeps
+the plane vias of the `from` nets that distance away when it places them.
+
+### 13.8 What CI does with the board
+
+The board build needs KiCad's Python module, which the `kicad/kicad` image has,
+and the autorouter, which CI does not run. The job regenerates the placed and
+pre-routed board from the sources, checks that the Specctra file it writes has
+the hash stored beside the committed session in `route/`, imports that
+session with its patches (13.10), and runs `make board-check`: DRC with
+schematic parity, the mechanical contract, the layout rules. It makes no
+renders and needs no display. `ROUTE_FLAGS=--stored-only` makes the route step
+fail, instead of starting the autorouter, when the stored session does not
+belong to the sources.
+
+I could not run the container on the build machine, which has neither Docker
+nor Podman. The job was run by GitHub for the first time on the pull request
+that added it. On the build machine the same command, with the same KiCad
+release, passes and writes the committed board file again byte for byte.
+
+**What the schematic job needed.** It runs `make schematic` alone and fails
+if a committed file under the board directory then differs. Two things broke
+that once a board was built:
+
+- KiCad rewrites `<name>.kicad_pro` with all its defaults whenever a board is
+  saved. The committed file is the short one the schematic step writes.
+  `hwflow project` writes it again, and the DRC, output and interactive BOM
+  steps call it last.
+- The step that keeps unchanged schematic plots moved every PDF of `output/`
+  aside and brought back only the schematic's. It now leaves the board's PDFs
+  alone.
+
+`hwflow.stable` takes the export time out of the Gerber, drill, DRC and STEP
+headers as well. Three outputs still differ in their bytes from one run to
+the next and show as changed after every `make`: the STEP file, whose
+entities are numbered in a different order, and the two renders. CI does not
+compare them.
+
+### 13.9 Telling the autorouter what is not its business
+
+Two things had to be said to Freerouting 2.5.0 in the Specctra file, because
+its settings file could not say them.
+
+**Nets it must not route.** `[route] exclude` lists them by pattern: the nets
+that connect through a plane or a pour, and the nets routed by hand. The first
+version took the pins of those nets out of the Specctra file. That had two
+faults, found on this board. The pads of such a net lost the clearance of
+their net class, so the router laid tracks 0.2 mm from pads that need 0.5 mm.
+And the router joined the separate pieces of a net that connects through a
+plane it cannot see. Now `hwflow/dsn.py` leaves the pins in and moves each
+such net from its class `X` to a class `X__fixed` with the same rules, and
+the settings file names those classes in
+`router.autorouter.ignore_net_classes`. Freerouting counts their connections
+as unrouted in its log; `route/<name>.freerouting.json` therefore overstates
+what is open, and DRC is the count that matters.
+
+**Layers it must not route on.** `[[route.plane]] layer, net`. The layer gets
+the type `power` and a plane polygon of that net over the board. With the type
+alone Freerouting writes "declared as a power layer but no plane is defined
+for it. It will be treated as a signal layer." With both it routes nothing on
+the layer and still passes vias through it. `pcbbuild finish` fails if the
+imported session has a track on such a layer.
+
+### 13.10 Finishing after the autorouter
+
+The autorouter does not give the same result twice, and a change to the
+placement or to the hand-routed copper changes the Specctra file and so
+discards the stored session. On the revision A board Freerouting also ends
+with connections open: seventeen in the stored run, after 29 passes. To close
+them without routing again, `board.toml` has tables that act after the
+session is imported, in `pcbbuild finish`:
+
+- `[[unroute]] nets = [...]` deletes the autorouted copper of the nets named.
+  `net` with `box = [x0, y0, x1, y1]` deletes the autorouted copper of one net
+  inside a rectangle. `vias = [[x, y], ...]` deletes a via by its place,
+  whoever laid it. Use it for a via that is right in the Specctra file and
+  wrong on the board.
+- `[[patch]]` is a `[[track]]` laid after the import.
+- `[patches] session` is the hash of the routing the patches were made for.
+  `finish` refuses them for any other.
+- `[route] prune = true` then removes what was laid as an offer and not taken:
+  a locked via of a net without a pour that joins fewer than two layers, and a
+  locked stub with a free end.
+
+**The patch router.** `hwflow/patchroute.py` writes the `[[patch]]` tracks. It
+reads from a DRC report which pairs of items are unconnected and searches a
+path for each on a 0.05 mm grid, with A* over eight directions and the
+routing layers and a via costing as much as 3 mm of track. Every other net's copper is an
+obstacle grown by its clearance, half the new track's width and 0.03 mm; a net
+with a `[[guard]]` or a `[[keepaway]]` rule gets the distance of that rule. A
+hole keeps 0.3 mm from every other hole, and no via goes into a surface-mount
+pad. It tries the width of the net class first, then 0.25 and 0.2 mm, in a
+window 9 mm round the two ends and then 22.5 mm. A found path is then
+straightened. From each corner it goes to the farthest cell of the path that
+one 45 degree bend reaches over free cells. Thirteen tests in `tests/test_patchroute.py` run it
+on made-up boards.
+
+`make patches` runs it in passes. The first is on the board without patches.
+A patch of one net can cut the pour of another in two, so the board is then
+built with the patches and DRC is asked again; a pass with `--add` routes what
+that opened and adds it to the file, up to three times. The result is
+`design/patches.toml`, which `design/layout.py` copies into `board.toml`.
+
+It does not rip up, it does not optimise, and it knows nothing of signal
+quality. A long net it closes hops between layers wherever that is
+shortest. `output/reports/routing.md` lists every net it touched, so that a
+person looks at each.
+
+After the board is routed again, run `make patches` and then `make`.
+
+**Patches by hand.** `design/patches-hand.toml`, if it exists, is copied into
+`board.toml` after `patches.toml`. It holds `[[unroute]]` and `[[patch]]`
+entries for what the patch router cannot close by itself, with the reason for
+each. They belong to the stored routing like the others. Before `make
+patches` on a new routing, delete its entries.
+
+### 13.11 The autorouter narrows tracks and does not say so
+
+Freerouting 2.5.0 lays a connection narrower than its net class asks when it
+cannot get through at that width: at three quarters of the class width, at
+60 per cent, at half. The Specctra file gives one width per class and the
+session comes back with others. The help text describes a neck-down "at
+pins"; on this board whole connections came back narrow, the longest piece
+43 mm. Of the stored routing of revision A, 312 segments in 61 nets, 356 mm,
+were narrower than their class, among them pieces of `V_BUCK`, `V5` and
+`VBUS`. DRC does not object, because a net class width is a default and not
+a minimum and every one of those tracks is wider than the fab's limit.
+
+I found it late, by listing the widths of the autorouted tracks, which the
+routing report does on every build. I did not find it by looking at the
+board.
+
+`hwflow/widen.py`, switched on by `[route] widen = true`, undoes it where
+there is room. In `pcbbuild finish`, after the session is imported and before
+the patches are laid, it sets every autorouted track that is narrower than
+its class to the class width, runs `kicad-cli pcb drc` on a copy, and puts
+back every such track that a clearance finding names. It repeats until no
+finding names one, which took three rounds on this board. The centre lines do
+not move,
+so the stored session stays valid. `output/reports/routing.md` lists what
+stays narrow, with its length.
+
+The settings file of 2.5.0 has `router.automatic_neckdown` and
+`router.neck_width_um`. I did not try them. A new routing run does not give
+the same board, and the width pass makes the result independent of them.
+
+### 13.12 The placement file against the assembler's library
+
+`hwflow/cplcheck.py`, `make cpl-check`. Added by the
+[layout review](hardware-layout-review.md), which found the placement file
+wrong for 26 parts.
+
+JLCPCB places the footprint that its own library holds for an LCSC number,
+with that footprint's origin on the coordinate of the placement file, turned
+by the file's rotation. The library is the JLCEDA/EasyEDA Official Library
+(<https://lceda.cn/>, <https://easyeda.com>). The check fetches the library
+footprint of every part number of the BOM into `hardware/.cache/jlc-library/`,
+which is not committed, puts it on the board as the placement file says, and
+fails unless
+
+- every library pad lands within 0.6 mm of a pad of the board. A heat tab or
+  ground pad is left out of this, because two land patterns for one package
+  draw it differently;
+- pad 1 of the library lands on pad 1 of the board, for a part with numbered
+  pins;
+- the cathode of the library lands on pad 1, for a diode or an LED whose
+  library pins are named. A footprint named `-BI` in the library is a
+  bidirectional part and is compared as a set of pads.
+
+`hardware/rules/jlcpcb-cpl-rotations.csv` holds the corrections. A row may
+name one LCSC number, because two parts in one package can lie differently
+in the library: the two SOT-23-6 parts of revision A do. A row may also move
+the placement point, by an offset in the footprint's own frame, because the
+library's origin is not always where KiCad's anchor is: for the module it is
+3.6 mm away.
+
+It needs the network the first time and is not part of `make`. Five tests in
+`tests/test_cplcheck.py` run it on made-up footprints. Its report goes to
+`output/reports/placement-check.md`.
+
+### 13.13 More that the layout review added
+
+- **Clearance overrides of library footprints are removed.** KiCad's
+  `TI_SO-PowerPAD-8` has a clearance of 0.2 mm written into the footprint. A
+  footprint's own clearance outranks the net class of its pads in the zone
+  fill and in DRC. The ground pour stood 0.2 mm from the 45 V input pin and
+  the switch node of the buck converter, where their class asks for 0.4 mm,
+  and DRC had nothing to say. `pcbbuild` now removes such an override from
+  every footprint and pad it places and prints which.
+- **The silkscreen cleaner compares text with text.** DRC measures stroke
+  against stroke, so two designators could stand flush against each other
+  and read as one word. `silk.crowded_texts` finds two texts on one line that
+  are less than 0.5 mm apart, and any two whose boxes overlap;
+  `silk.off_board` finds a text within 0.3 mm of the outline or beyond it.
+  Both feed the same loop as the DRC findings: the designator moves, or is
+  hidden. A `[[text]]` may have `width`, for letters narrower than they are
+  high.
+- **A second plane.** `[[route.plane]]` may be given twice. Revision A has
+  In1.Cu as the ground plane and In2.Cu as the 3.3 V plane, and the
+  autorouter routes on the two outer layers only.
+- **The autorouter's time limit.** `hwflow.route` stops the autorouter after
+  `--timeout` seconds, 1800 by default, and nothing is kept of a run that is
+  stopped. Routing revision A on two layers takes longer than that on the
+  build machine. A board Makefile may set `ROUTE_LIMITS`; revision A has
+  `--timeout 7200 --passes 30`.
+- **The patch router's last resort.** With two planes, revision A is routed
+  on F.Cu and B.Cu, and the hand-routed buses on B.Cu are walls that a
+  signal can cross only on F.Cu. Seven connections had no path on the two
+  layers. `[route.patch_last_resort]` names a plane layer that the patch
+  router may then use. A cell of track there costs `cost` cells elsewhere,
+  six on revision A, so it passes under the obstacle and comes up again.
+  `keepout` lists rectangles of that layer where it may not go: on revision
+  A the Kelvin sense pair and 3 mm either side of the keep-alive net, which
+  run on B.Cu, the layer next to it. Each such track is a slot in the plane.
+  The note of the patch says how much of it is on that layer, and the
+  routing report lists it.
+- **The patch router and keep-outs.** It used to read the rule areas of the
+  board file and nothing else. It now keeps out of every `[[route.keepout]]`
+  rectangle as well, and reads the rule areas that footprints carry. Before,
+  it laid a track under a screw head and two across a closed stretch of the
+  keep-alive net, and DRC had no objection to either.
+- **A limit of the patch router, not changed.** It joins the two items that
+  DRC names as unconnected. Another pin of the same net may be much easier
+  to reach. Where that is so, write the patch by hand.
+- **A limit of the plane-via placer, not changed.** `[[plane]]` gives a pad
+  a via of its own only if no via of the same net is within `reach`, 2.5 mm
+  by default. Otherwise it joins the pad to that via with a 0.3 mm stub. That
+  is right for a decoupling capacitor beside its pin. It is wrong for a pad
+  that carries current or heat: on revision A the tab of the 3.3 V regulator
+  was joined to a capacitor's via 3.8 mm away and had no via of its own.
+  Name such a pad in `skip` and write its vias in the `[[via]]` list.

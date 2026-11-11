@@ -56,8 +56,10 @@ the self-test that failed healthy boards in simulation, and set the limits
 of the stop test from more simulation. Section 26 of the hardware design
 lists the changes.
 
-!!! note "To be completed"
-    Notes on the laid-out board (copper widths for the valve current paths,
-    clearances, the spark gaps the specification asks for at the field
-    terminals) come with the layout,
-    [issue #5](https://github.com/syntroniks/zoneflow/issues/5).
+## The laid-out board
+
+The [layout document](../design/hardware-layout.md) has the notes on the board
+as laid out: copper widths for the valve current paths with the calculation
+(section 6), clearances (section 5), what was routed by hand (section 7), the
+layout rules of the fail-safe analysis and how each is checked (section 9),
+and the flash-over points at the field terminals (section 7.13).

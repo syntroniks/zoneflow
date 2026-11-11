@@ -1,0 +1,123 @@
+{
+ "board": {
+  "copper_layers": 4,
+  "footprints": 356,
+  "smd": 314,
+  "through_hole": 7,
+  "track_segments": 3346,
+  "vias": 641,
+  "zones": 24
+ },
+ "drc": {
+  "schematic_parity": 0,
+  "unconnected_items": 0,
+  "violations": 0
+ },
+ "erc": {
+  "violations": 0
+ },
+ "kicad_version": "10.0.8",
+ "net_classes": {
+  "AC24": {
+   "class_clearance_mm": 0.5,
+   "class_track_width_mm": 1.0,
+   "length_mm": 969.3,
+   "routed_width_max_mm": 5.0,
+   "routed_width_min_mm": 0.3,
+   "segments": 403
+  },
+  "AC24S": {
+   "class_clearance_mm": 0.5,
+   "class_track_width_mm": 0.3,
+   "length_mm": 519.3,
+   "routed_width_max_mm": 0.3,
+   "routed_width_min_mm": 0.3,
+   "segments": 126
+  },
+  "Default": {
+   "class_clearance_mm": 0.2,
+   "class_track_width_mm": 0.2,
+   "length_mm": 5967.4,
+   "routed_width_max_mm": 2.0,
+   "routed_width_min_mm": 0.1,
+   "segments": 2188
+  },
+  "Field": {
+   "class_clearance_mm": 0.5,
+   "class_track_width_mm": 0.4,
+   "length_mm": 366.6,
+   "routed_width_max_mm": 0.4,
+   "routed_width_min_mm": 0.4,
+   "segments": 114
+  },
+  "HVDC": {
+   "class_clearance_mm": 0.4,
+   "class_track_width_mm": 0.5,
+   "length_mm": 48.7,
+   "routed_width_max_mm": 1.5,
+   "routed_width_min_mm": 0.25,
+   "segments": 24
+  },
+  "HiZ": {
+   "class_clearance_mm": 0.6,
+   "class_track_width_mm": 0.25,
+   "length_mm": 38.4,
+   "routed_width_max_mm": 0.3,
+   "routed_width_min_mm": 0.25,
+   "segments": 31
+  },
+  "Power": {
+   "class_clearance_mm": 0.2,
+   "class_track_width_mm": 0.4,
+   "length_mm": 940.2,
+   "routed_width_max_mm": 2.0,
+   "routed_width_min_mm": 0.2,
+   "segments": 340
+  },
+  "Shunt": {
+   "class_clearance_mm": 0.25,
+   "class_track_width_mm": 1.0,
+   "length_mm": 230.7,
+   "routed_width_max_mm": 1.0,
+   "routed_width_min_mm": 0.25,
+   "segments": 57
+  },
+  "USB": {
+   "class_clearance_mm": 0.2,
+   "class_track_width_mm": 0.25,
+   "length_mm": 388.5,
+   "routed_width_max_mm": 0.25,
+   "routed_width_min_mm": 0.187,
+   "segments": 63
+  }
+ },
+ "project": "zoneflow-a",
+ "routing": {
+  "autoroute_passes": 29,
+  "autorouted_items_taken_out": 18,
+  "connections_to_route": 403,
+  "dangling_stubs_removed": 23,
+  "freerouting_unrouted": 168,
+  "freerouting_version": "2.5.0",
+  "freerouting_violations": 1232,
+  "items_after_session_import": 3624,
+  "patch_segments": 328,
+  "pre_routed_items": 1639,
+  "track_length_mm": 9469.1,
+  "track_segments": 3346,
+  "unused_escape_items_removed": 16,
+  "vias": 641,
+  "wall_seconds": 2381.4,
+  "width_pass": {
+   "kept_narrow_mm": 1.0,
+   "kept_narrow_segments": 7,
+   "narrow_mm": 288.2,
+   "narrow_segments": 315,
+   "rounds": 2
+  }
+ },
+ "schematic": {
+  "nets": 200,
+  "parts": 356
+ }
+}

@@ -19,8 +19,8 @@ value = "builder"
 why = "Who solders the six through-hole parts (four headers, C1, K1). 'builder': bought loose with the order and soldered by hand, as hardware-layout.md section 12 plans. 'assembler': JLCPCB's manual assembly fee per joint plus its hand-soldering labour per order, and Standard service because C1 and K1 are on the bottom side. Neither has been asked of JLCPCB."
 
 [assumptions.pcb_hole]
-value = "0p2"
-why = "The layout needs 0.2 mm holes (twelve thermal vias under U1), so the 0.2 mm price applies. '0p3' prices the board with those vias enlarged to 0.3 mm, which is a layout change."
+value = "0p3"
+why = "The smallest hole of the layout is 0.3 mm since its review (finding L9 of hardware-layout-review.md), so the default price applies. '0p2' prices the board as it was before, with twelve 0.2 mm vias in the ground pad of the module."
 
 [assumptions.pcb_qty_round_up]
 value = true

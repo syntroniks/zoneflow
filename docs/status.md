@@ -14,7 +14,7 @@ built, flashed or measured.
 |---|---|---|---|
 | Circuit | Rev A design with part numbers, calculations and SPICE simulations; independent review A1 and the decisions on its findings | Calculation, ngspice simulation, review against data sheets | Bench tests (below) |
 | Schematic | 20-page KiCad 10 schematic, generated from `hardware/netlist.yaml` | ERC with no violations; netlist parity, pin for pin; both builds' BOMs against the netlist; page lint ([what was checked](hardware/schematic.md#what-was-checked)) | A second review before fabrication, [issue #11](https://github.com/syntroniks/zoneflow/issues/11) |
-| PCB | Board outline and fixed part positions in the mechanical contract | Interference check against the enclosure | Layout, DRC, Gerbers, placement files, [issue #5](https://github.com/syntroniks/zoneflow/issues/5) |
+| PCB | Four-layer layout of revision A, generated from text: placement, hand-routed power, valve and fail-safe copper, the rest autorouted; Gerbers, drill, BOM and placement files for both builds | DRC with schematic parity and JLCPCB's limits; the mechanical contract; the layout rules of the fail-safe analysis ([what was checked](design/hardware-layout.md#1-what-was-checked-and-the-result)); the placement files against JLCPCB's library footprints; an [independent review](design/hardware-layout-review.md) of the files, which changed the board | The seven-item checklist the review leaves for a person, [issue #11](https://github.com/syntroniks/zoneflow/issues/11); a board |
 | Enclosure | Parametric model, 8 printed parts, drilling template | Interference check (`enclosure/tools/check.py`) | A print, a fit test, a thermal test, [issue #9](https://github.com/syntroniks/zoneflow/issues/9) |
 | Standalone firmware | Zone driver, scheduler, self-tests, web interface, REST API, MQTT, OTA, display interface | Host unit tests; `idf.py build` in CI; display simulator; web interface against a mock; [browser demo](try-it.md) on simulated hardware | Any run on a board, [issue #6](https://github.com/syntroniks/zoneflow/issues/6) |
 | ESPHome package | Package and two external components on the shared C++ code | Compiles for the board; host tests of the logic | Any run on a board |
@@ -53,11 +53,10 @@ They are in [firmware architecture](design/firmware-architecture.md) and
 
 The order is fixed by what each step needs from the one before it.
 
-1. **PCB layout**, [issue #5](https://github.com/syntroniks/zoneflow/issues/5): place and route the board inside the mechanical contract, pass DRC, produce Gerbers, drill and placement files.
-2. **Review before fabrication**, [issue #11](https://github.com/syntroniks/zoneflow/issues/11): an independent review of the schematic and the layout.
-3. **First prototypes**: a small batch, assembled by JLCPCB, for the bring-up plan and the risk register. There is no issue for this yet; follow the [progress log, issue #1](https://github.com/syntroniks/zoneflow/issues/1).
-4. **Firmware on hardware**, [issue #6](https://github.com/syntroniks/zoneflow/issues/6): set the self-test limits and current thresholds from measurements, tune the display and the encoder.
-5. **First firmware release**, [issue #8](https://github.com/syntroniks/zoneflow/issues/8), and the enclosure printed and fitted, [issue #9](https://github.com/syntroniks/zoneflow/issues/9).
+1. **Review before fabrication**, [issue #11](https://github.com/syntroniks/zoneflow/issues/11): an independent review of the schematic and the layout. The [layout review](design/hardware-layout-review.md) is written; its human pre-order checklist is open.
+2. **First prototypes**: a small batch, assembled by JLCPCB, for the bring-up plan and the risk register. There is no issue for this yet; follow the [progress log, issue #1](https://github.com/syntroniks/zoneflow/issues/1).
+3. **Firmware on hardware**, [issue #6](https://github.com/syntroniks/zoneflow/issues/6): set the self-test limits and current thresholds from measurements, tune the display and the encoder.
+4. **First firmware release**, [issue #8](https://github.com/syntroniks/zoneflow/issues/8), and the enclosure printed and fitted, [issue #9](https://github.com/syntroniks/zoneflow/issues/9).
 6. **This manual corrected from the prototype**: photos, measured values, the notes marked "to be completed" on each page.
 
 Options kept open for later, from the [specification](design/system-spec.md):

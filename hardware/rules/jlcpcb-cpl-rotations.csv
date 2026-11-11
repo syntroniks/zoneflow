@@ -1,16 +1,58 @@
-# Rotation corrections for JLCPCB pick-and-place files.
+# Corrections for JLCPCB pick-and-place files.
 #
-# JLCPCB's part library does not always use KiCad's zero-rotation orientation.
-# Each row adds "rotation" degrees (and an offset in mm) to every placement
-# whose footprint name matches the regular expression. First match wins.
+# JLCPCB places the footprint that its own library holds for an LCSC number,
+# with that footprint's origin on the coordinate of the placement file, turned
+# by the rotation of the file. Its library does not always lie as KiCad's
+# footprint lies, nor have its origin where KiCad's anchor is. Each row adds
+# "rotation" degrees to the placements whose footprint name matches the regular
+# expression, and moves them by dx, dy millimetres. The offset is in the
+# footprint's own frame (x to the right, y up, footprint at rotation 0), so it
+# turns with the part. A row with a number in "lcsc" applies to that part only:
+# two parts in one package can lie differently in the library (the two SOT-23-6
+# parts of revision A do). The first row that fits is used.
 #
-# Rows below are copied from the Fabrication-Toolkit project (Apache-2.0),
-# plugins/transformations.csv, read 2026-11-10:
-# https://github.com/bennymeg/Fabrication-Toolkit
-# They have NOT been checked against JLCPCB's placement preview for the parts
-# in this repository. Check the preview when ordering and correct this file.
-footprint_regex,rotation,dx,dy
-^SOT-223,180,0,0
-^SOT-23,180,0,0
-^SOIC-,270,0,0
-^QFN-,90,0,0
+# Where the rows come from. On 2026-11-11 every placement of the revision A
+# board was compared with the footprint that the JLCEDA/EasyEDA Official
+# Library (https://lceda.cn/, https://easyeda.com) holds for its LCSC number:
+# the library footprint was put at the position and rotation of the placement
+# file, and its pads had to land on the pads of the board, pad 1 on pad 1 and
+# the cathode on the cathode. docs/design/hardware-layout-review.md, section 5,
+# has the method and the table. The rows below are what that comparison asks
+# for. Before it, the table held seven rows copied from the Fabrication-Toolkit
+# project; with them 26 placements of revision A were wrong (the nine triacs,
+# the nine opto-triacs, both USB ESD arrays, the module, the display connector,
+# the USB receptacle and the three resistor arrays).
+#
+# What this does not prove: that the library footprint is how the part lies in
+# its tape. It is what JLCPCB's placement preview draws. Compare the preview
+# with output/<name>-pin1.csv when ordering, as before.
+#
+# Rows marked "not on revision A" are from the Fabrication-Toolkit table
+# (Apache-2.0, plugins/transformations.csv, read 2026-11-10) and are not
+# checked against any part.
+footprint_regex,rotation,dx,dy,lcsc
+# USBLC6-2SC6: library footprint SOT-23-6_..._BL, pin 1 at the bottom left
+^SOT-23-6,270,0,0,C7519
+# TPS3701DDCR (U13, added with the over-voltage detector): the same library footprint, pin 1 at the bottom left
+^TSOT-23-6,270,0,0,C132788
+# TPS2553DBVR, and the three-pin parts BAT54S, AO3400A, AO3401A, TLV803EA30: pin 1 at the bottom right
+^SOT-223,180,0,0,
+^SOT-23,180,0,0,
+^SOIC-,270,0,0,
+^TI_SO-PowerPAD-8,270,0,0,
+^TSSOP-,270,0,0,
+# 4D03WGJ0104T5E: the library counts pad 1 from the other end than the Fabrication-Toolkit row (90) assumed.
+# The four resistors of the array are alike, so the two rotations give the same circuit.
+^R_Array_Convex_,270,0,0,C1996
+# MOC3023SR2M: library pads 1 to 3 along the bottom, KiCad's down the left side
+^SMDIP-6,270,0,0,C40701
+# T810-600B-TR: library leads at the bottom, KiCad's at the left; library origin 1.29 mm towards the leads
+^TO-252-2,270,-1.294,0,C155588
+# ESP32-S3-WROOM-1-N16R8: library origin on the row of pads 8 and 33, 3.63 mm below KiCad's anchor
+^ESP32-S3-WROOM-1,0,0,-3.627,C2913202
+# FPC-05F-12PH20: library mouth downwards, pad 1 at the left; origin between the land row and the mounting lands
+^FPC_XUNPU_FPC-05F-12PH20,90,-1.577,0,C2856799
+# TYPE-C-31-M-12: same rotation, library origin 1.53 mm further into the board
+^USB_C_Receptacle_HRO_TYPE-C-31-M-12,0,0,1.534,C165948
+# not on revision A
+^QFN-,90,0,0,

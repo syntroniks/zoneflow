@@ -22,6 +22,8 @@ so earlier decisions it describes as replaced are kept on purpose.
 - [Hardware review A1](hardware-review-a1.md): the independent review of the rev A circuit before schematic capture. Findings by severity, the verdict on each departure from the specification, the keep-alive contract with the firmware, what was verified from data sheets and what was not.
 - [Hardware review A2](hardware-review-a2.md): the second review, of the fail-safe circuits only. A single-fault table rebuilt from the netlist by fault injection, tolerance corners of both keep-alive detectors, the regulator over-voltage protection, and the output stage after the change of triac.
 - [Hardware answers A2](hardware-answers-a2.md): the hardware answers to the nine questions the firmware raised on the self-test of review A2, the decision on a shorted 3.3 V regulator with the detector it added, and the list of what the firmware must change.
+- [Hardware layout](hardware-layout.md): the rev A board: stack-up, floor plan, what is routed by hand and why, the current calculations, the layout rules of the fail-safe analysis, what the autorouter did, and what its author thinks is weak.
+- [Hardware layout review](hardware-layout-review.md): the independent review of the rev A layout. Findings by severity, what was fixed, the placement files against the assembler's library, what was verified and how, and the checklist a person must go through before an order.
 - [Web UI contract](../firmware/web-ui-contract.md): what the standalone firmware's web interface may rely on from the REST API and event stream.
 
 The independent design review before fabrication is tracked in
