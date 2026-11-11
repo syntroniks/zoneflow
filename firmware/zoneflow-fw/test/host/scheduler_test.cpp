@@ -599,6 +599,46 @@ TEST_F(SchedulerTest, LargeBackwardJumpFromBogusFutureClockRecovers)
     EXPECT_EQ(rec.started.size(), 2u);
 }
 
+// Soak finding (test/soak, seeds 5, 10, 19 and 37 of the first chaos run):
+// someone set a right clock back by three days, SNTP put it right again
+// hours later, and the scheduler, whose keys the backward jump had clamped,
+// reported the morning's starts as missed and ran the newest one again
+// inside the grace period.
+TEST_F(SchedulerTest, ClockSetBackDaysThenCorrectedDoesNotRepeatStarts)
+{
+    cfg.schedule.missedStartGraceMin = 240;
+    addProgram(makeProgram(1, {at(6, 0), at(8, 0)}, {{0, 60}}));
+    apply();
+    begin(utcOf(2026, 6, 4, 5, 59, 59));
+    runUntil(utcOf(2026, 6, 4, 9, 0));
+    ASSERT_EQ(rec.started.size(), 2u);
+    clock.utc = utcOf(2026, 6, 1, 9, 0); // set back three days by hand
+    runFor(600);
+    clock.utc = utcOf(2026, 6, 4, 9, 20); // SNTP
+    runFor(5);
+    EXPECT_EQ(rec.started.size(), 2u);
+    EXPECT_TRUE(rec.missed.empty());
+    runUntil(utcOf(2026, 6, 5, 6, 0, 1));
+    EXPECT_EQ(rec.started.size(), 3u);
+}
+
+// The other direction still recovers: a clock that was eight days fast, put
+// right by SNTP, keeps its schedule, and a later small step forward is not
+// taken for a return to the wrong time.
+TEST_F(SchedulerTest, BogusFutureClockCorrectedThenSmallStepStillRuns)
+{
+    addProgram(makeProgram(1, {at(6, 0)}, {{0, 60}}));
+    apply();
+    begin(utcOf(2026, 6, 9, 5, 59, 59)); // RTC eight days ahead
+    step();
+    ASSERT_EQ(rec.started.size(), 1u);
+    clock.utc = utcOf(2026, 6, 1, 5, 0); // SNTP corrects it
+    runFor(10);
+    clock.utc += 120;
+    runUntil(utcOf(2026, 6, 1, 6, 0, 1));
+    EXPECT_EQ(rec.started.size(), 2u);
+}
+
 TEST_F(SchedulerTest, EditingConfigDoesNotTriggerPastStarts)
 {
     apply();
