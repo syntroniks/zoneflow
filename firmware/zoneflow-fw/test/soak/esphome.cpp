@@ -7,12 +7,16 @@
 #include <algorithm>
 #include <chrono>
 #include <memory>
+#include <set>
+#include <vector>
 
 #include "alloc_count.hpp"
 #include "physical_oracle.hpp"
 #include "scenario.hpp"
 #include "soak.hpp"
+#include "schedule_logic.h"
 #include "supervisor.h"
+#include "zf/time/civil.hpp"
 #include "world.hpp"
 #include "zf/hw/reference_store.hpp"
 
@@ -57,6 +61,7 @@ struct EspDevice {
     hw::BlobReferenceStore reference;
     zfe::Supervisor sup;
     uint32_t windowSeq = 0;
+    uint32_t budgetSeq = 0;
     CurrentWindowStats window{};
     std::array<uint64_t, kMaxZones> stopAt{}; // the sprinkler component's timers (device mono)
 };
@@ -92,6 +97,24 @@ private:
     void tick();
     FirmwareView view() const;
     void sprinkler();
+    void schedule();
+
+    // The zoneflow_schedule component (README: covered since gap 7): its
+    // programs as ProgramSpec, the last consumed key of each kept in flash
+    // over restarts, evaluated once a second against the system clock (UTC
+    // as local time). E8: no start key runs twice; a start whose minute the
+    // device ran through with a valid clock runs then.
+    struct EspProgram {
+        zfe::sched::ProgramSpec spec;
+        uint8_t zone = 0;
+        uint32_t sec = 60;
+        int64_t lastKey = zfe::sched::kNoKey; // the preference
+        std::set<int64_t> ran;                 // oracle
+        int64_t seenMinute = zfe::sched::kNoKey;
+        uint64_t seenAtPhys = 0;
+    };
+    std::vector<EspProgram> programs;
+    uint64_t lastScheduleSec = 0;
 
     World w;
     Options opt;
@@ -124,7 +147,10 @@ void EspRunner::boot()
         phys.budgetLost();
         w.count("boot.retained_lost");
     }
-    dev->sup.begin(restored ? &rec : nullptr);
+    BudgetRecord budget;
+    const RecordLoad budgetLoad = loadBudget(w.nvs, budget, dev->budgetSeq);
+    w.count(std::string("boot.budget_") + toString(budgetLoad));
+    dev->sup.begin(restored ? &rec : nullptr, budgetLoad, &budget);
     halted = false;
     frozen = false;
     lastBeat = w.phys;
@@ -173,6 +199,7 @@ FirmwareView EspRunner::view() const
         v.commanded[kMasterOut] = drv.masterOn();
         v.maxConcurrent = drv.config().maxConcurrent;
         v.minRestMs = static_cast<uint64_t>(drv.config().minRestSec) * 1000u;
+        v.currentUsable = dev->sup.stage().currentLost == zf::CurrentLoss::None;
         last_ = v;
     } else {
         v.maxRunMs = last_.maxRunMs;
@@ -204,6 +231,8 @@ void EspRunner::tick()
     in.sensor_supply_on = true;
     in.flow_lpm = -1.0f;
     in.keepalive_pin_plain = w.kaPinPlain;
+    in.die_temp_known = true;
+    in.die_temp_c = w.dieTempC;
     const auto t0 = std::chrono::steady_clock::now();
     const uint64_t a0 = tickAllocCount();
     gInTick = true;
@@ -219,6 +248,16 @@ void EspRunner::tick()
     RetainedRecord rec;
     d.sup.save_retained(rec);
     w.rtcMem.save(rec);
+    // zoneflow.cpp: the run budget in flash, two copies written alternately
+    // and synced from the main loop (zf/app/budget.hpp).
+    BudgetRecord budget;
+    if (d.sup.budget_due(budget)) {
+        budget.seq = ++d.budgetSeq;
+        seal(budget);
+        const char *key = (budget.seq & 1u) != 0 ? BudgetRecord::kKeyA : BudgetRecord::kKeyB;
+        w.nvs.write(key, std::string_view(reinterpret_cast<const char *>(&budget), sizeof budget));
+        w.count("flash.writes.budget");
+    }
     lastBeat = w.phys;
     ++res.ticks;
     // S5 for the glue: no zone open while locked out, inhibited or without power.
@@ -236,6 +275,57 @@ void EspRunner::tick()
         }
         if (d.sup.maintenance() || !d.sup.ac_present()) {
             violation("S5-open-inhibited", "zone " + std::to_string(z) + " open in maintenance or without 24 VAC");
+        }
+    }
+}
+
+void EspRunner::schedule()
+{
+    const UtcSeconds now = w.sys.now();
+    if (now < 1'600'000'000 || static_cast<uint64_t>(now) == lastScheduleSec) {
+        return; // no valid clock, or this second is done (the component's loop: once a second)
+    }
+    lastScheduleSec = static_cast<uint64_t>(now);
+    const int64_t day = now >= 0 ? now / 86400 : (now - 86399) / 86400;
+    const auto minute = static_cast<int>((now - day * 86400) / 60);
+    const zf::civil::Date date = zf::civil::civilFromDays(day);
+    const zfe::sched::LocalMinute lm =
+        zfe::sched::local_minute(date.year, date.month, date.day, minute / 60, minute % 60);
+    for (EspProgram &p : programs) {
+        const zfe::sched::Decision d = zfe::sched::evaluate(p.spec, lm, 60, p.lastKey);
+        w.count("e8.evaluations");
+        if (d.missed > 0) {
+            w.count("e8.missed", d.missed);
+        }
+        if (d.run) {
+            if (!p.ran.insert(d.start_key).second) {
+                violation("E8-duplicate", "ESPHome schedule ran start " + std::to_string(d.start_key) + " twice");
+            }
+            w.count(d.late ? "e8.started_late" : "e8.started");
+            const zf::StartResult res2 = dev->sup.start_zone(p.zone, p.sec);
+            if (res2.ok()) {
+                dev->stopAt[p.zone] = dev->clock.monoMs() + static_cast<uint64_t>(p.sec) * 1000u;
+            }
+        }
+        // A start minute the device ran through, second by second, with a
+        // valid clock, from its first second, runs in it.
+        const int64_t key = lm.key();
+        if (key != p.seenMinute) {
+            const bool contiguous = p.seenMinute == key - 1 && w.phys - p.seenAtPhys <= 1500;
+            bool isStart = p.spec.enabled && p.spec.days.matches(lm.day);
+            bool startMinute = false;
+            for (int16_t s : p.spec.start_minute) {
+                startMinute = startMinute || s == lm.minute;
+            }
+            isStart = isStart && startMinute;
+            if (isStart && contiguous && p.ran.count(key) == 0 && !d.run) {
+                violation("E8-lost", "ESPHome schedule start " + std::to_string(key) + " came and did not run");
+            }
+            p.seenMinute = key;
+        }
+        p.seenAtPhys = w.phys;
+        if (p.ran.size() > 4096) {
+            p.ran.erase(p.ran.begin()); // bounded: old keys
         }
     }
 }
@@ -295,6 +385,19 @@ Result EspRunner::run()
     });
     constexpr double kHour = 3'600'000.0;
     scenario.every("user.run", 1 * kHour, [this] { sprinkler(); });
+    for (int i = 0; i < 2; ++i) {
+        EspProgram p;
+        p.spec.enabled = true;
+        const int starts = static_cast<int>(r.range(1, 4));
+        for (int s = 0; s < starts; ++s) {
+            p.spec.start_minute[static_cast<std::size_t>(s)] = static_cast<int16_t>(r.range(0, 1439));
+        }
+        p.spec.days = zfe::sched::day_rule(static_cast<zfe::sched::DayChoice>(r.below(zfe::sched::kDayChoiceCount)),
+                                           static_cast<uint8_t>(r.range(1, 127)));
+        p.zone = static_cast<uint8_t>(r.below(std::max<uint8_t>(cfg.zone_count, 1)));
+        p.sec = static_cast<uint32_t>(r.range(30, 1200));
+        programs.push_back(p);
+    }
     scenario.every("power.cut", 72 * kHour, [this] {
         if (dev) {
             w.transformer = false;
@@ -348,6 +451,7 @@ Result EspRunner::run()
         phys.step(w, view());
         if (up() && dev->clock.monoMs() % kTickMs == 0 && w.phys >= w.flashBusyUntil) {
             tick();
+            schedule();
         }
         if (opt.stopAtFirst && res.violationCount > 0) {
             break;

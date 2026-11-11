@@ -1608,7 +1608,7 @@
             "cookieAuth": []
           }
         ],
-        "description": "A fault of a safety layer (hardware design 19.7 steps 1, 2, 2b, 5b and 9: keepalive_detector, keepalive_bridged, relay_gate_bleed) means that layer can no longer be relied on, so it is not cleared with one press. This is the second, deliberate action: the body must say repaired: true. 409 `no_repair_fault` when no such fault is active. The board then learns its detector release times again, and the full self-test runs before any valve opens.",
+        "description": "A fault of a safety layer (hardware design 19.7 steps 1, 2, 2b, 5b and 9: keepalive_detector, keepalive_bridged, relay_gate_bleed; and since the hardware answers to section 19 the rectifier fault of 19.10, rectifier_fault, the over-voltage of rule 18, supply_over_voltage, and a held set input of the latch of 19.8, latch_input_held) means the board needs repair, so it is not cleared with one press. This is the second, deliberate action: the body must say repaired: true. 409 `no_repair_fault` when no such fault is active. The board then learns its detector release times again, and the full self-test runs before any valve opens.",
         "requestBody": {
           "required": true,
           "x-max-body-bytes": 512,
@@ -3622,7 +3622,12 @@
                 "mains_signal",
                 "keepalive_bridged",
                 "relay_gate_bleed",
-                "not_commissioned"
+                "not_commissioned",
+                "supply_low",
+                "supply_high",
+                "rectifier_fault",
+                "supply_over_voltage",
+                "latch_input_held"
               ]
             }
           },
@@ -5843,7 +5848,7 @@
           },
           "detectors": {
             "type": "object",
-            "description": "Last measured detector times, ms (0 = not measured), and this board's stored release times. Pass limits (hardware design 19.7 as review A2 left it): enable within 150 ms; release 150 to 1000 ms (drive) and 50 to 1600 ms (relay), and each within 0.5 to 1.5 times the stored value once the board is commissioned.",
+            "description": "Last measured detector times, ms (0 = not measured), and this board's stored release times. Pass limits (hardware design 19.7 since the hardware answers to section 19): enable within 150 ms; release 150 to 1000 ms (drive) and 50 to 1600 ms (relay), and each within 0.40 to 1.70 times the stored value once the board is commissioned.",
             "properties": {
               "enable_drive_ms": {
                 "type": "integer"
@@ -5874,6 +5879,10 @@
                   "null"
                 ],
                 "description": "Stored release time of the relay detector; null when not commissioned."
+              },
+              "waiting_for_temperature": {
+                "type": "boolean",
+                "description": "Not commissioned, and the ESP32-S3 die temperature is outside 25 to 50 C or unknown: commissioning waits and is tried again every 10 minutes (hardware design 19.7, Commissioning, item 2)."
               }
             },
             "required": [
@@ -5883,7 +5892,8 @@
               "release_relay_ms",
               "commissioned",
               "reference_drive_ms",
-              "reference_relay_ms"
+              "reference_relay_ms",
+              "waiting_for_temperature"
             ]
           },
           "mains_hz": {
@@ -5927,6 +5937,53 @@
               "dc_ma",
               "last_trip_ma"
             ]
+          },
+          "supply": {
+            "type": "object",
+            "description": "Hardware design 19.10: window means, mV, null until read. vin_mon_mv is VIN_MON (the rectified supply divided by 31): step 0 needs 0.60 to 1.50 V; under 0.60 V supply_low, above 1.50 V supply_high, under 0.10 V with mains present for 2 s rectifier_fault. rest_lo_mv and rest_hi_mv are the current channels at rest: limits 700 to 880 mV and 680 to 900 mV; both above 900 mV is supply_over_voltage (rule 18), one outside its limits a lost current measurement (rule 19).",
+            "properties": {
+              "vin_mon_mv": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "rest_lo_mv": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "rest_hi_mv": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "vin_mon_mv",
+              "rest_lo_mv",
+              "rest_hi_mv"
+            ]
+          },
+          "current_lost": {
+            "type": "string",
+            "enum": [
+              "none",
+              "unavailable",
+              "no_window",
+              "rest_level"
+            ],
+            "description": "Hardware design rule 19: why the current measurement counts as lost. Anything but none skips steps 5, 5b and 6 and rule 6, zones still run, and current_sense_unavailable is active for as long as it lasts."
+          },
+          "checks_skipped": {
+            "type": "integer",
+            "description": "Starts since boot that skipped steps 5, 5b and 6 for lack of current readings (rule 19)."
+          },
+          "idle_trips": {
+            "type": "integer",
+            "description": "Over-current trips with no valve bit low since boot (hardware design 19.8): not counted against an output; a second one in a row is latch_input_held."
           }
         },
         "required": [
@@ -5941,7 +5998,11 @@
           "self_tests_passed",
           "detectors",
           "mains_hz",
-          "current"
+          "current",
+          "supply",
+          "current_lost",
+          "checks_skipped",
+          "idle_trips"
         ]
       },
       "AcknowledgeRepairRequest": {

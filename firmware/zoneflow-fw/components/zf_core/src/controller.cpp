@@ -899,6 +899,13 @@ void Controller::publishSnapshot(MonoMs now)
     hw.commissioned = stage_.commissioned;
     hw.referenceDriveMs = stage_.reference.driveMs;
     hw.referenceRelayMs = stage_.reference.relayMs;
+    hw.vinMonMv = stage_.vinMonMv;
+    hw.restLoMv = stage_.restLoMv;
+    hw.restHiMv = stage_.restHiMv;
+    hw.currentLost = stage_.phase == StagePhase::None ? CurrentLoss::None : stage_.currentLost;
+    hw.checksSkipped = stage_.checksSkipped;
+    hw.idleTrips = stage_.idleTrips;
+    hw.commissionWaitingForTemperature = stage_.commissionWaitingForTemperature;
     hw.mainsMilliHz = mainsMilliHz_;
     hw.noiseFloorMa = currentSense_.noiseFloorMa();
     hw.currentChannel = reading_.channel;

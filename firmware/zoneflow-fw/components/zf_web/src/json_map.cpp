@@ -224,6 +224,23 @@ cJSON *hardwareToJson(const HardwareStatus &h)
         cJSON_AddNullToObject(det, "reference_drive_ms");
         cJSON_AddNullToObject(det, "reference_relay_ms");
     }
+    cJSON_AddBoolToObject(det, "waiting_for_temperature", h.commissionWaitingForTemperature);
+    // Hardware design 19.10: the supply monitor and the rest levels.
+    cJSON *sup = cJSON_AddObjectToObject(o, "supply");
+    const auto mvOrNull = [](cJSON *obj, const char *key, int32_t mv) {
+        if (mv < 0) {
+            cJSON_AddNullToObject(obj, key);
+        } else {
+            cJSON_AddNumberToObject(obj, key, mv);
+        }
+    };
+    mvOrNull(sup, "vin_mon_mv", h.vinMonMv);
+    mvOrNull(sup, "rest_lo_mv", h.restLoMv);
+    mvOrNull(sup, "rest_hi_mv", h.restHiMv);
+    // Rule 19 and 19.8.
+    cJSON_AddStringToObject(o, "current_lost", toString(h.currentLost));
+    cJSON_AddNumberToObject(o, "checks_skipped", h.checksSkipped);
+    cJSON_AddNumberToObject(o, "idle_trips", h.idleTrips);
     if (h.mainsMilliHz == 0) {
         cJSON_AddNullToObject(o, "mains_hz");
     } else {

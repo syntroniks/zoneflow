@@ -223,6 +223,9 @@ public:
     int shortedOutput = -1; // the output whose triac failed short
     bool transformer = true;
     double volts = 1.0; // of nominal 24 VAC
+    // The ESP32-S3 die temperature: commissioning only at 25 to 50 C
+    // (hardware design 19.7 item 2). A room, with the module's own heat.
+    float dieTempC = 35.0f;
     uint32_t mainsMilliHz = 50000;
     bool zeroCrossBridged = false; // AC_ZC follows the keep-alive: 100 Hz
     bool rainContact = false;
@@ -283,6 +286,7 @@ public:
     hw::BusStatus read(uint8_t reg, uint8_t &value) override;
     hw::BusStatus probe() override;
     void recover() override;
+    hw::BusStatus writePair(uint8_t reg, uint8_t v0, uint8_t v1) override;
 
     double transientRate = 0.0; // share of transactions that fail once
     // True while the firmware has stopped the keep-alive (a fault or trip

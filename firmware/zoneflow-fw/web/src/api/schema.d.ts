@@ -502,7 +502,7 @@ export interface paths {
         put?: never;
         /**
          * Confirm that the board was repaired after a keep-alive detector fault
-         * @description A fault of a safety layer (hardware design 19.7 steps 1, 2, 2b, 5b and 9: keepalive_detector, keepalive_bridged, relay_gate_bleed) means that layer can no longer be relied on, so it is not cleared with one press. This is the second, deliberate action: the body must say repaired: true. 409 `no_repair_fault` when no such fault is active. The board then learns its detector release times again, and the full self-test runs before any valve opens.
+         * @description A fault of a safety layer (hardware design 19.7 steps 1, 2, 2b, 5b and 9: keepalive_detector, keepalive_bridged, relay_gate_bleed; and since the hardware answers to section 19 the rectifier fault of 19.10, rectifier_fault, the over-voltage of rule 18, supply_over_voltage, and a held set input of the latch of 19.8, latch_input_held) means the board needs repair, so it is not cleared with one press. This is the second, deliberate action: the body must say repaired: true. 409 `no_repair_fault` when no such fault is active. The board then learns its detector release times again, and the full self-test runs before any valve opens.
          */
         post: operations["acknowledgeRepair"];
         delete?: never;
@@ -1117,7 +1117,7 @@ export interface components {
             sensor_supply_fault?: boolean;
         };
         Faults: {
-            active: ("zone_open_circuit" | "zone_over_current" | "short_circuit" | "current_while_idle" | "ac_lost" | "flow_without_zones" | "config_invalid" | "time_invalid" | "storage_error" | "master_locked_out" | "current_sense_unavailable" | "over_current_trip" | "keepalive_detector" | "output_expander" | "relay_welded" | "output_shorted" | "trip_latch_stuck" | "sensor_supply" | "zone_dc_current" | "mains_signal" | "keepalive_bridged" | "relay_gate_bleed" | "not_commissioned")[];
+            active: ("zone_open_circuit" | "zone_over_current" | "short_circuit" | "current_while_idle" | "ac_lost" | "flow_without_zones" | "config_invalid" | "time_invalid" | "storage_error" | "master_locked_out" | "current_sense_unavailable" | "over_current_trip" | "keepalive_detector" | "output_expander" | "relay_welded" | "output_shorted" | "trip_latch_stuck" | "sensor_supply" | "zone_dc_current" | "mains_signal" | "keepalive_bridged" | "relay_gate_bleed" | "not_commissioned" | "supply_low" | "supply_high" | "rectifier_fault" | "supply_over_voltage" | "latch_input_held")[];
             zones: {
                 zone: number;
                 fault: string;
@@ -1842,7 +1842,7 @@ export interface components {
             repair_needed: boolean;
             /** @description Complete self-test sequences since start-up. */
             self_tests_passed: number;
-            /** @description Last measured detector times, ms (0 = not measured), and this board's stored release times. Pass limits (hardware design 19.7 as review A2 left it): enable within 150 ms; release 150 to 1000 ms (drive) and 50 to 1600 ms (relay), and each within 0.5 to 1.5 times the stored value once the board is commissioned. */
+            /** @description Last measured detector times, ms (0 = not measured), and this board's stored release times. Pass limits (hardware design 19.7 since the hardware answers to section 19): enable within 150 ms; release 150 to 1000 ms (drive) and 50 to 1600 ms (relay), and each within 0.40 to 1.70 times the stored value once the board is commissioned. */
             detectors: {
                 enable_drive_ms: number;
                 enable_relay_ms: number;
@@ -1854,6 +1854,8 @@ export interface components {
                 reference_drive_ms: number | null;
                 /** @description Stored release time of the relay detector; null when not commissioned. */
                 reference_relay_ms: number | null;
+                /** @description Not commissioned, and the ESP32-S3 die temperature is outside 25 to 50 C or unknown: commissioning waits and is tried again every 10 minutes (hardware design 19.7, Commissioning, item 2). */
+                waiting_for_temperature: boolean;
             };
             /** @description From the zero-cross signal; null when unknown. */
             mains_hz: number | null;
@@ -1870,6 +1872,21 @@ export interface components {
                 /** @description Current window before the last over-current trip. */
                 last_trip_ma: number | null;
             };
+            /** @description Hardware design 19.10: window means, mV, null until read. vin_mon_mv is VIN_MON (the rectified supply divided by 31): step 0 needs 0.60 to 1.50 V; under 0.60 V supply_low, above 1.50 V supply_high, under 0.10 V with mains present for 2 s rectifier_fault. rest_lo_mv and rest_hi_mv are the current channels at rest: limits 700 to 880 mV and 680 to 900 mV; both above 900 mV is supply_over_voltage (rule 18), one outside its limits a lost current measurement (rule 19). */
+            supply: {
+                vin_mon_mv: number | null;
+                rest_lo_mv: number | null;
+                rest_hi_mv: number | null;
+            };
+            /**
+             * @description Hardware design rule 19: why the current measurement counts as lost. Anything but none skips steps 5, 5b and 6 and rule 6, zones still run, and current_sense_unavailable is active for as long as it lasts.
+             * @enum {string}
+             */
+            current_lost: "none" | "unavailable" | "no_window" | "rest_level";
+            /** @description Starts since boot that skipped steps 5, 5b and 6 for lack of current readings (rule 19). */
+            checks_skipped: number;
+            /** @description Over-current trips with no valve bit low since boot (hardware design 19.8): not counted against an output; a second one in a row is latch_input_held. */
+            idle_trips: number;
         };
         AcknowledgeRepairRequest: {
             /**

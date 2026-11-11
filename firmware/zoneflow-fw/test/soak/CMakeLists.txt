@@ -51,8 +51,10 @@ target_link_libraries(zf_ext PUBLIC zf_core cjson)
 
 # The ESPHome package's supervisor glue, built from its own tree.
 set(ZF_ESPHOME "${CMAKE_CURRENT_LIST_DIR}/../../../esphome/components/zoneflow")
-add_library(zf_esphome_glue STATIC ${ZF_ESPHOME}/supervisor.cpp)
-target_include_directories(zf_esphome_glue PUBLIC ${ZF_ESPHOME})
+# And the on-device scheduler's logic (zoneflow_schedule), framework-free.
+set(ZF_ESPHOME_SCHEDULE "${CMAKE_CURRENT_LIST_DIR}/../../../esphome/components/zoneflow_schedule")
+add_library(zf_esphome_glue STATIC ${ZF_ESPHOME}/supervisor.cpp ${ZF_ESPHOME_SCHEDULE}/schedule_logic.cpp)
+target_include_directories(zf_esphome_glue PUBLIC ${ZF_ESPHOME} ${ZF_ESPHOME_SCHEDULE})
 target_compile_options(zf_esphome_glue PRIVATE -Wall -Wextra -fno-exceptions -fno-rtti)
 target_link_libraries(zf_esphome_glue PUBLIC zf_core)
 

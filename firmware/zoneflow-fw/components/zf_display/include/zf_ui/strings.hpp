@@ -294,7 +294,7 @@
                        "much current the sensors draw (100 mA at most).")                                              \
     X(FaultDcTitle, "%s: valve current lopsided") /* zone label */                                                     \
     X(FaultDcBody, "The valve current flowed in one direction only, so the output that drives it is failing. "         \
-                   "The zone was switched off. The board needs service.")                                              \
+                   "The zone was switched off and locked. The board needs service.")                                   \
     X(FaultMainsTitle, "Mains signal wrong")                                                                           \
     X(FaultMainsBody, "The 24 V AC timing signal is not at mains frequency. Zero-cross switching and current "         \
                       "readings may be off. The board needs service.")                                                 \

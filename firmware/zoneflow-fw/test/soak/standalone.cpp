@@ -140,6 +140,21 @@ private:
     Device &d_;
 };
 
+// AC_ZC as the zone driver's zero-cross switching reads it (zf_platform's
+// ZeroCrossInput): crossings every half mains period while 24 VAC is there.
+class WorldZeroCross final : public IZeroCrossHal {
+public:
+    explicit WorldZeroCross(Device &d) : d_(d) {}
+    ZeroCrossSample sample() const override;
+    // The device busy-waits on the control task; simulated time does not
+    // move inside a tick. Z1: never longer than half a period plus the
+    // detector offset (zero_cross.hpp).
+    void delayUs(uint32_t us) override;
+
+private:
+    Device &d_;
+};
+
 // One boot of the firmware.
 struct Device {
     Device(Runner &r, World &w, uint64_t bootPhys);
@@ -153,6 +168,7 @@ struct Device {
     hw::BlobReferenceStore reference;
     hw::OutputStage stage;
     WorldSensors sensors{*this};
+    WorldZeroCross zeroCross{*this};
     EventBus events;
     StateStore state;
     CommandQueue commands;
@@ -170,6 +186,22 @@ struct Device {
     std::string token;
     mqtt::RateLimiter limiter;
     mqtt::PendingEdits edits;
+    // zf_mqtt's inbox: the broker callback queues, the MQTT task drains it
+    // every kLoopMs (250 ms). Full: the message is dropped.
+    struct Inbound {
+        uint64_t seq = 0;
+        uint64_t atPhys = 0;
+        std::string suffix;
+        std::string payload;
+        bool retained = false;
+    };
+    static constexpr std::size_t kInboxDepth = 8; // zf_mqtt/src/mqtt.cpp
+    std::deque<Inbound> inbox;
+    uint64_t inboxSeq = 0;
+    uint64_t inboxHandled = 0;
+    uint32_t zcWaitTooLongUs = 0;
+    uint64_t servicedPhys = 0;    // resumed after a pause of the service tasks (the harness skips them while hung)
+    uint64_t lastServicePhys = 0; // the last pass
     MonoMs lastConfigWrite = 0;
     uint32_t pulseBase = 0;
     uint32_t windowSeq = 0;
@@ -197,10 +229,33 @@ SensorSample WorldSensors::read()
     s.mainsMilliHz = w.zeroCrossBridged ? 100000 : w.mainsMilliHz;
     s.sensorSupplyOn = true;
     s.keepAlivePinPlain = w.kaPinPlain;
+    s.dieTempKnown = true;
+    s.dieTempC = w.dieTempC;
     return s;
 }
 
 const HistoryLog *SoakPlatform::history() const { return &d_.history; }
+
+ZeroCrossSample WorldZeroCross::sample() const
+{
+    World &w = d_.w;
+    ZeroCrossSample s;
+    s.present = w.transformer && w.volts > 0.4 && !w.zeroCrossBridged && w.mainsMilliHz != 0;
+    s.nowUs = static_cast<uint32_t>(d_.mono() * 1000u);
+    s.intervalUs = w.mainsMilliHz != 0 ? static_cast<uint32_t>(500'000'000ull / w.mainsMilliHz) : 0;
+    s.lastEdgeUs = s.intervalUs != 0 ? s.nowUs - s.nowUs % s.intervalUs : 0;
+    return s;
+}
+
+void WorldZeroCross::delayUs(uint32_t us)
+{
+    World &w = d_.w;
+    w.count("zc.waits");
+    w.count("zc.wait_us", us);
+    if (us > kZeroCrossMaxIntervalUs) {
+        d_.zcWaitTooLongUs = us; // reported after the tick
+    }
+}
 
 // ---- the schedule oracle (S8) ------------------------------------------------------------------
 //
@@ -274,6 +329,9 @@ struct Due {
     // The clock went back more than a day after this start was consumed: the
     // scheduler may consume it again on its replayed day (kLargeBackJumpSec).
     bool replay = false;
+    // The clock was put back by less than a day over this start: the firmware
+    // reports it missed when the clock passes it again (policy 8).
+    bool replaySmall = false;
     // A valve opened for this start: a second run of it waters twice.
     bool watered = false;
     enum class St : uint8_t { Pending, Started, Skipped, Missed, Excluded } st = St::Pending;
@@ -391,6 +449,8 @@ public:
                          bool authed = true);
     void ensureSession();
     void mqttMessage(const std::string &suffix, const std::string &payload, bool retained = false);
+    void mqttHandle(const Device::Inbound &in);
+    void mqttDrain();
     bool up() const { return dev != nullptr && down == Down::No; }
 
     // Oracles.
@@ -460,11 +520,17 @@ void Runner::boot()
     d.time.boot();
     // Runtime record as stored: which programs have a key (S8, policy 5).
     storedKeysAtBoot.clear();
-    runtimeDamagedAtBoot = w.nvs.damaged.count(ConfigStore::kRuntimeKey) != 0;
+    // Either copy damaged beyond NVS's guarantee: the firmware's own check
+    // rejects it (gap 9, closed), and when the newest copy may be the
+    // damaged one the catch-up reports instead of running.
+    runtimeDamagedAtBoot =
+        w.nvs.damaged.count(ConfigStore::kRuntimeKey) != 0 || w.nvs.damaged.count(kRuntimeKeyB) != 0;
     {
-        std::string json;
         SchedulerPersist p;
-        if (w.nvs.read(ConfigStore::kRuntimeKey, json) && persistFromJson(json, p)) {
+        uint32_t seq = 0;
+        const RecordLoad load = loadRuntime(w.nvs, p, seq);
+        w.count(std::string("boot.runtime_") + toString(load));
+        if (load == RecordLoad::Certain || load == RecordLoad::Uncertain) {
             for (std::size_t i = 0; i < p.count && i < p.fired.size(); ++i) {
                 storedKeysAtBoot.insert(p.fired[i].programId);
                 if (opt.trace) {
@@ -479,12 +545,15 @@ void Runner::boot()
     RetainedRecord rr;
     const bool budgetKept = w.rtcMem.load(rr);
     if (!budgetKept) {
+        // The RTC copy is gone; the firmware takes the copy in flash
+        // (zf/app/budget.hpp). S4 holds across it.
         phys.budgetLost();
         w.count("boot.retained_lost");
     }
     d.ctrl = std::make_unique<Controller>(
         ControllerDeps{d.clock, d.stage, d.sensors, d.guard, d.events, d.state, d.config, &w.nvs, &w.rtcMem});
     d.ctrl->configureCurrentSense(CurrentSenseConfig{});
+    d.ctrl->attachZeroCross(&d.zeroCross, 0); // as app_main.cpp
     d.events.subscribe([](const Event &e, void *ctx) { static_cast<EventRing *>(ctx)->push(e); }, &d.oracleQueue);
     d.history.load();
     setHistoryLog(&d.history);
@@ -649,11 +718,48 @@ void Runner::mqttMessage(const std::string &suffix, const std::string &payload, 
     if (!up()) {
         return;
     }
+    // The broker callback: into the inbox, or dropped when it is full.
     Device &d = *dev;
+    w.count("mqtt.messages");
+    if (d.inbox.size() >= Device::kInboxDepth) {
+        w.count("mqtt.inbox_full");
+        return;
+    }
+    d.inbox.push_back({++d.inboxSeq, w.phys, suffix, payload, retained});
+}
+
+void Runner::mqttDrain()
+{
+    // The MQTT task, every kLoopMs: M1, every queued message handled once,
+    // in order, within two loop periods, and the inbox never above its depth.
+    Device &d = *dev;
+    if (d.inbox.size() > Device::kInboxDepth) {
+        violation("M1-mqtt-inbox", "inbox holds " + std::to_string(d.inbox.size()) + " messages");
+    }
+    while (!d.inbox.empty()) {
+        const Device::Inbound in = d.inbox.front();
+        d.inbox.pop_front();
+        const uint64_t waited = w.phys - std::max(in.atPhys, d.servicedPhys);
+        if (in.seq != d.inboxHandled + 1 || waited > 600) {
+            violation("M1-mqtt-inbox", "message " + std::to_string(in.seq) + " handled after " +
+                                           std::to_string(d.inboxHandled) + ", " + std::to_string(waited) +
+                                           " ms after it arrived");
+        }
+        d.inboxHandled = in.seq;
+        mqttHandle(in);
+        w.count("mqtt.handled");
+    }
+}
+
+void Runner::mqttHandle(const Device::Inbound &in)
+{
+    Device &d = *dev;
+    const std::string &suffix = in.suffix;
+    const std::string &payload = in.payload;
+    const bool retained = in.retained;
     // zf_mqtt's handleMessage(), without the broker.
     const Config cfg = d.config.get();
     const mqtt::Topics topics(mqtt::rootTopic(cfg.mqtt, "a1b2c3d4e5f6"));
-    w.count("mqtt.messages");
     if (!d.limiter.allow(d.mono())) {
         w.count("mqtt.rate_limited");
         return;
@@ -707,6 +813,7 @@ FirmwareView Runner::view() const
         v.commanded[kMasterOut] = drv.masterOn();
         v.maxConcurrent = drv.config().maxConcurrent;
         v.minRestMs = static_cast<uint64_t>(drv.config().minRestSec) * 1000u;
+        v.currentUsable = dev->stage.status().currentLost == CurrentLoss::None;
         last.maxRunMs = v.maxRunMs;
         last.minRestMs = v.minRestMs;
         last.maxConcurrent = v.maxConcurrent;
@@ -776,6 +883,9 @@ void Runner::serviceTasks()
 {
     Device &d = *dev;
     const MonoMs m = d.mono();
+    if (w.phys - d.lastServicePhys > 2 * kTickMs) {
+        d.servicedPhys = w.phys; // the tasks resume: queued messages wait from here
+    }
     // zf_isense: a 100 ms window.
     if (m % kWindowMs == 0) {
         d.lastWindow = w.takeWindow(++d.windowSeq, m - kWindowMs, m);
@@ -784,6 +894,11 @@ void Runner::serviceTasks()
     if (m % 250 == 0) {
         persistWriteOnce(d.ctrl->persistMailbox(), w.nvs);
     }
+    // zf_mqtt's loop, every 250 ms.
+    if (m % 250 == 0) {
+        mqttDrain();
+    }
+    d.lastServicePhys = w.phys;
     // zf_history: on event, at least every 500 ms.
     Event e;
     while (d.historyQueue.pop(e)) {
@@ -817,7 +932,8 @@ bool Runner::idleNow() const
     return (st.phase == StagePhase::Idle || st.phase == StagePhase::NoAc || st.phase == StagePhase::Fault) &&
            d.guard.request() == KeepAliveRequest::Off && !w.board.a.on && !w.board.b.on && !w.board.latched &&
            w.energisedCount() == 0 && drv.activeCount() == 0 && !drv.masterOn() && !drv.masterPending() &&
-           d.ctrl->scheduler().queueSize() == 0 && d.edits.empty() && w.phys >= w.flashBusyUntil;
+           d.ctrl->scheduler().queueSize() == 0 && d.edits.empty() && d.inbox.empty() &&
+           w.phys >= w.flashBusyUntil;
 }
 
 void Runner::advance(uint64_t ms, bool events)
@@ -922,6 +1038,11 @@ void Runner::sleep(uint32_t ms)
 void Runner::afterTick()
 {
     Device &d = *dev;
+    if (d.zcWaitTooLongUs != 0) {
+        violation("Z1-zero-cross-wait", "the zone driver waited " + std::to_string(d.zcWaitTooLongUs) +
+                                            " us for a crossing, more than half a mains period");
+        d.zcWaitTooLongUs = 0;
+    }
     // The configuration first (handle() applied it before the tick's
     // evaluation), then the starts due up to now, then what the firmware did.
     std::vector<Event> evs;
@@ -1122,9 +1243,13 @@ void Runner::onEvent(const Event &e)
             d->st = Due::St::Pending; // the replayed day, by the firmware's (wrong) clock
             w.count("s8.replayed_after_back_jump");
         }
+        if (d->replaySmall) {
+            d->replaySmall = false;
+            violation("S8-rerun-after-clock-put-back",
+                      "program " + std::to_string(pid) + " start " + keyText(k) + " ran again after the clock was put back");
+        }
         if (runtimeDamagedAtBoot && (d->st == Due::St::Started || d->st == Due::St::Skipped) &&
             dueBoot[{pid, k}] != boots) {
-            w.count("gap.rerun_from_damaged_runtime_record");
             violation("S8-duplicate-damaged-record", "program " + std::to_string(pid) + " start " + keyText(k) +
                                                          " ran again from a damaged runtime record");
         } else if (d->st == Due::St::Started && !d->watered && dueBoot[{pid, k}] != boots) {
@@ -1226,6 +1351,13 @@ void Runner::onEvent(const Event &e)
             w.count("s8.excluded.config_change");
             break;
         }
+        if (found == nullptr && smallBackJumpPhys != 0 && w.phys - smallBackJumpPhys < 25ull * 3600 * 1000) {
+            // Policy 8 for a start the oracle never had due: consumed by an
+            // edit while the clock was ahead, passed again after it was put
+            // back.
+            w.count("s8.missed_after_clock_put_back");
+            break;
+        }
         if (found == nullptr) {
             violation("S8-unexpected-missed", "program " + std::to_string(pid) + " missed at UTC " +
                                                   std::to_string(e.program.scheduledAt) + ", no start due then");
@@ -1236,11 +1368,21 @@ void Runner::onEvent(const Event &e)
             found->st = Due::St::Pending;
             w.count("s8.replayed_after_back_jump");
         }
+        if (found->replaySmall) {
+            // Missed-start policy 8: the clock passed it again after being
+            // put back by less than a day; reported missed, never run.
+            found->replaySmall = false;
+            if (found->st == Due::St::Pending) {
+                found->st = Due::St::Missed;
+            }
+            w.count("s8.missed_after_clock_put_back");
+            break;
+        }
         if (runtimeDamagedAtBoot && dueBoot[{pid, found->key}] != boots) {
-            // The runtime record was damaged beyond what NVS promises (NVS
-            // would have rejected it by its entry CRC); it has no check of
-            // its own.
-            w.count("gap.missed_report_from_damaged_runtime_record");
+            // The newest copy of the runtime record may be the damaged one:
+            // the catch-up reports a start that may have run rather than run
+            // it again (policy 7).
+            w.count("s8.missed_after_damaged_runtime_record");
         } else if (found->st == Due::St::Started && !found->watered && dueBoot[{pid, found->key}] != boots) {
             w.count("gap.missed_report_for_start_cut_before_watering");
         } else if (found->st == Due::St::Started || found->st == Due::St::Skipped) {
@@ -1391,6 +1533,16 @@ void Runner::scheduleTick()
     if (now < cursorUtc) {
         if (cursorUtc - now > 2) {
             smallBackJumpPhys = w.phys;
+        }
+        if (cursorUtc - now > 2 && cursorUtc - now <= Scheduler::kLargeBackJumpSec) {
+            // Policy 8: the starts the clock will pass again were consumed
+            // while it was ahead; the firmware reports each missed when the
+            // clock reaches it again.
+            for (Due &d : dues) {
+                if (d.at > now && d.at <= cursorUtc && d.st != Due::St::Pending && d.st != Due::St::Excluded) {
+                    d.replaySmall = true;
+                }
+            }
         }
         if (cursorUtc - now > Scheduler::kLargeBackJumpSec) {
             // As the scheduler: clamp, and remember what was consumed.
@@ -1566,16 +1718,7 @@ void Runner::checkDeadlines()
             continue;
         }
         d.st = Due::St::Excluded;
-        if (dev && smallBackJumpPhys != 0 && w.phys - smallBackJumpPhys < 25ull * 3600 * 1000 &&
-            firmwareKey(d.pid) >= d.key) {
-            // Requirement gap: after the clock is put back by less than a
-            // day, a key set while it was ahead (a start, or an edit) covers
-            // starts it never ran. Skipped, not reported missed.
-            w.count("gap.start_skipped_after_clock_put_back");
-            w.note("start " + keyText(d.key) + " of program " + std::to_string(d.pid) +
-                   " skipped: its key was set while the clock was ahead");
-            continue;
-        }
+
         violation(d.catchup ? "S8-lost-catchup" : "S8-lost", "program " + std::to_string(d.pid) + " start " +
                                                                  keyText(d.key) + " (" + tz +
                                                                  ") neither started, skipped nor reported missed");

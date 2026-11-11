@@ -27,8 +27,9 @@ says what to check.
 | Kind | Display | Web interface | ESPHome | API, MQTT |
 |---|---|---|---|---|
 | Most faults | **Faults →** the fault **→ Clear**, or **Clear all faults** | **Clear faults** and confirm | `Clear faults` button, or hold **Home** for 3 s | `POST /api/v1/faults/clear`, `<root>/cmd/clear_faults` |
-| Safety circuit failed its test | **Repaired**, then **Yes, repaired** | Confirm on the controller, or `POST /api/v1/faults/acknowledge-repair` | `Acknowledge repair (press twice)` within 10 s | `POST /api/v1/faults/acknowledge-repair` |
-| No 24 V AC supply, Clock not set, Valve current not measured, Sensor supply overloaded, Mains signal wrong | Clear by themselves when the cause goes | The same | The same | The same |
+| Safety circuit failed its test, Safety signal disturbed, Valve relay driver faulty, Power input circuit failed, Logic supply too high, Protection held on | **Repaired**, then **Yes, repaired** | Confirm on the controller, or `POST /api/v1/faults/acknowledge-repair` | `Acknowledge repair (press twice)` within 10 s | `POST /api/v1/faults/acknowledge-repair` |
+| No 24 V AC supply, 24 V AC supply too low or too high, Clock not set, Valve current not measured, Sensor supply overloaded, Mains signal wrong, Safety timing not learned | Clear by themselves when the cause goes | The same | The same | The same |
+| Zone N: no current | Clears itself when the zone next runs and draws current; or clear it | The same | The same | The same |
 
 Clearing releases every latched fault and lockout at once. A fault whose
 cause is still there comes back at once. Fix the cause first.
@@ -45,7 +46,7 @@ plain form, for example "Valve drew no current".
 
 | Title | Code | Clears itself |
 |---|---|---|
-| [Zone N: no current](#zone-n-no-current) | `zone_open_circuit` | No |
+| [Zone N: no current](#zone-n-no-current) | `zone_open_circuit` | When the zone next runs with its current |
 | [Zone N: current too high](#zone-n-current-too-high) | `zone_over_current` | No |
 | [Zone N: short circuit](#zone-n-short-circuit) | `short_circuit` | No |
 | [Protection tripped](#protection-tripped), or Zone N: protection tripped | `over_current_trip` | No |
@@ -68,6 +69,11 @@ plain form, for example "Valve drew no current".
 | [Valve relay stuck closed](#valve-relay-stuck-closed) | `relay_welded` | No |
 | [Valve output stuck on](#valve-output-stuck-on) | `output_shorted` | No |
 | [Protection did not reset](#protection-did-not-reset) | `trip_latch_stuck` | No |
+| [24 V AC supply too low](#24-v-ac-supply-too-low) | `supply_low` | Yes |
+| [24 V AC supply too high](#24-v-ac-supply-too-high) | `supply_high` | Yes |
+| [Power input circuit failed](#power-input-circuit-failed) | `rectifier_fault` | No, needs a confirmed repair |
+| [Logic supply too high](#logic-supply-too-high) | `supply_over_voltage` | No, needs a confirmed repair |
+| [Protection held on](#protection-held-on) | `latch_input_held` | No, needs a confirmed repair |
 
 ### Valve and wiring faults
 
@@ -76,7 +82,7 @@ plain form, for example "Valve drew no current".
 > The valve drew no current, so it did not open. Check: valve wire may be
 > disconnected or cut, or the solenoid has failed.
 
-- **Detected:** the zone was on, but after the 500 ms inrush allowance the current stayed below the zone's minimum (80 mA by default). The zone stops and is locked out.
+- **Detected:** the zone was on, but after the 500 ms inrush allowance the current stayed below the zone's minimum (80 mA by default). The zone stops. It is not locked out: an open wire is a fault in the garden, not in the controller, so the zone's next start tries again, and a run that draws current inside the zone's window clears the fault. Both firmwares do the same (firmware architecture, section 7).
 - **Likely causes:** a wire loose at the terminal or at the valve; a cut cable; a corroded splice; a burnt-out solenoid; the zone has no valve; the minimum is set above what this valve draws.
 - **Check:**
     1. Unplug the transformer.
@@ -85,14 +91,14 @@ plain form, for example "Valve drew no current".
     4. No continuity: the wire or the solenoid is open. Measure again at the valve box, across the solenoid's two leads, to find which.
     5. A reading: compare it with the valve maker's data for that solenoid. The repository gives no resistance range.
     6. If the reading is right, check the zone's current limits (web interface, **Zones**). A valve with a small solenoid can draw less than 80 mA.
-- **Clear:** fix the cause, then clear the fault.
+- **Clear:** fix the cause. The fault clears itself at the zone's next run, or clear it by hand.
 
 #### Zone N: current too high
 
 > The zone was switched off and locked. Check: damaged solenoid, or two
 > valves on one terminal.
 
-- **Detected:** the current stayed above the zone's maximum (700 mA by default) after the inrush allowance, but below the short-circuit limit (3000 mA).
+- **Detected:** the current stayed above the zone's maximum (700 mA by default) after the inrush allowance, but below the short-circuit limit (3000 mA). Or the current rose by more than a fifth (at least 40 mA) while no output switched, and stayed up with every valve off for less than one current window, so the extra current went through this zone (see [valve output stuck on](#valve-output-stuck-on) for the other case).
 - **Likely causes:** a damaged solenoid with shorted turns; two valves on one zone terminal; water in a splice; the maximum is set too low for this valve.
 - **Check:**
     1. Unplug the transformer and pull the valve plug.
@@ -138,12 +144,13 @@ plain form, for example "Valve drew no current".
 #### Zone N: valve current lopsided
 
 > The valve current flowed in one direction only, so the output that drives
-> it is failing. The zone was switched off. The board needs service.
+> it is failing. The zone was switched off and locked. The board needs
+> service.
 
 - **Detected:** the zone's current had a DC part: the output switch conducts on one half of the AC cycle only.
 - **Likely causes:** the zone's triac or its opto-triac is failing.
 - **Check:** nothing to check in the wiring. The board needs repair of that output.
-- **Clear:** latched. Clearing lets the zone try again; it will come back if the part is failing.
+- **Clear:** latched, and the zone is locked out in both firmwares: a half-dead output is a fault on the board and does not mend itself. After the repair, clear the fault.
 
 ### Supply and board faults
 
@@ -176,7 +183,7 @@ plain form, for example "Valve drew no current".
 > Current flowed with every valve off: a valve output on the board is
 > shorted. The relay was opened and nothing runs. The board needs service.
 
-- **Detected:** at the start of a run, with the relay closed and every output off, current flowed (self-test step 6).
+- **Detected:** at the start of a run, with the relay closed and every output off, current flowed (self-test step 6). Or during a run: the current rose with no output switched, the firmware switched every output off at once, and current kept flowing with the relay closed (rule 6). An output that fails short during another zone's run is found this way within about a second; before the hardware answers it watered until that run ended. A device that fails within half a second of a zone switching on is found when that zone's run ends.
 - **Likely causes:** a shorted triac, surge clamp, opto-triac or snubber capacitor on one output.
 - **What protects you:** the relay in the valve common is open, so no valve has power, whatever the shorted part does.
 - **Clear:** the board needs repair. Nothing runs until then.
@@ -216,7 +223,7 @@ plain form, for example "Valve drew no current".
 > The circuit that turns the valves off if the controller stops failed its
 > self-test. Nothing runs. Repair the board, then confirm it here.
 
-- **Detected:** one of the two keep-alive detectors did not behave as designed in a self-test: it was on when it should be off, did not come on within 150 ms, or did not let go within its time window when the pulses stopped. The window is 0.15 to 1.0 s for the gate drive and 0.05 to 1.6 s for the relay, and, once the board has learned its own times, 0.5 to 1.5 times those.
+- **Detected:** one of the two keep-alive detectors did not behave as designed in a self-test: it was on when it should be off, did not come on within 150 ms, or did not let go within its time window when the pulses stopped. The window is 0.15 to 1.0 s for the gate drive and 0.05 to 1.6 s for the relay, and, once the board has learned its own times, 0.40 to 1.70 times those.
 - **Why it matters:** those detectors are what turn the valves off when the firmware crashes. With one of them unreliable, a crash could leave a valve on.
 - **Clear:** this fault does not clear with one press. After the board has been repaired and checked, confirm the repair: on the display, **Repaired**, then **Yes, repaired** (Cancel is focused first). In ESPHome, press `Acknowledge repair (press twice)` twice within 10 seconds. The full self-test runs before any valve opens.
 
@@ -228,10 +235,13 @@ The "Step N" line names the failed check. For whoever repairs the board:
 |---|---|---|
 | Step 1: `idle_drive_enabled` | The gate-drive read-back (GPIO42, `V_DRV`) was high and the expander answered with the keep-alive stopped: detector A or the over-current latch is stuck on | 19.7 step 1 |
 | Step 1: `idle_drive_supply_on` | `V_DRV` was high with the expander in reset: Q3 conducts when it should not, or GPIO42 is driven | 19.7 step 1, 8.6 |
-| Step 1: `idle_relay_on` | The relay read-back (GPIO7) was low with the keep-alive stopped: the relay transistor Q2 is on, or, on USB power with 24 V AC present, `V_BUCK` is missing (U1, F5 or D25; rule 15) | 19.7 steps 0 and 1, 4.8 |
+| Step 1: `idle_relay_on` | The relay read-back (GPIO7) was low with the keep-alive stopped: the relay transistor Q2 is on, or, on USB power with 24 V AC present, `V_BUCK` is missing (U1, F5 or D25; rule 15). To tell them apart, unplug USB: with a failed regulator the controller is dark on 24 V AC alone; with Q2 or its detector at fault it keeps running | 19.7 steps 0 and 1, 19.1 rule 15, 4.8 |
+| Step 1: `supply_over_voltage` | Both current channels rested above 0.90 V: the 3.3 V rail is above about 3.6 V. Raises [Logic supply too high](#logic-supply-too-high) | 19.1 rule 18, 19.10 |
+| Step 0: `rectifier_fault` | `VIN_MON` under 0.10 V for 2 s with mains on `AC_ZC`. Raises [Power input circuit failed](#power-input-circuit-failed) | 19.10 |
+| Step 3: `latch_input_held` | The over-current latch set twice with no valve bit low. Raises [Protection held on](#protection-held-on) | 19.8, 9.5 |
 | Step 1: `idle_relay_gate_drain` | GPIO7 read between 0.3 and 1.5 V at rest: Q2 shorted gate to drain | 7.4; review A2 4.6 question 7 |
 | Step 1: `idle_expander_answers` | The expander answered with the gate-drive read-back low: `DRV_EN` stuck high | 19.7 step 1 |
-| Step 2: `pin_high_drive_enabled`, `pin_high_relay_on` | A detector came on with the keep-alive pin held high; a shorted pump capacitor or an open bleed resistor | 19.7 step 2 |
+| Step 2: `pin_high_drive_enabled`, `pin_high_relay_on` | A detector came on, or stayed on, with the keep-alive pin held high for 2.0 s: a shorted pump capacitor (C22, C51) or a leak onto a reservoir | 19.7 step 2 |
 | Step 2b: `float_pin_high`, `float_drive_enabled`, `float_relay_on` | With the keep-alive pin an input, something lifted the keep-alive net or a detector came on: see [Safety signal disturbed](#safety-signal-disturbed) | 19.7 step 2b |
 | Step 3: `start_drive_timeout`, `start_relay_timeout`, `start_no_acknowledge` | A detector or the expander did not come on within 150 ms of the first pulse | 19.7 step 3 |
 | Step 4a, 4b, 4c: `expander_inputs`, `expander_outputs`, `expander_config` | The expander's pins or registers did not read as expected | 19.7 steps 4a to 4c |
@@ -242,12 +252,13 @@ The "Step N" line names the failed check. For whoever repairs the board:
 | Step 7: `run_readback`, `run_drive_lost`, `run_relay_lost` | During a run, a register or a detector changed by itself | 19.7 step 7 |
 | Step 8: `end_no_acknowledge` | The expander did not accept the end-of-run writes | 19.7 step 8 |
 | Step 9: `stop_drive_release`, `stop_relay_release` | A detector let go outside its absolute window (0.15 to 1.0 s, 0.05 to 1.6 s), or not within 3 s | 19.7 step 9 |
-| Step 9: `stop_drive_band`, `stop_relay_band` | A detector let go outside 0.5 to 1.5 times this board's learned time: typically an open bleed resistor (R30 or R91 for the gate drive, R14 or R90 for the relay) | 19.7 step 9 |
+| Step 9: `stop_drive_band`, `stop_relay_band` | A detector let go outside 0.40 to 1.70 times this board's learned time: typically an open bleed resistor (R30 or R91 for the gate drive, R14 or R90 for the relay). Found with the board between about 10 and 40 °C; outside that range it can hide until the board is back there | 19.7 step 9 |
 | Step 9: `stop_expander_answers` | The expander still answered after the stop | 19.7 step 9 |
 | (no step): `keepalive_pin_routed` | A peripheral of the processor is routed to the keep-alive pin: a firmware fault | 19.1 rule 16 |
 
 Steps 1, 2, 2b, 5b and 9 mean one of the two layers can no longer be
-relied on, and they need the confirmed repair. Step 2b raises "Safety
+relied on, and they need the confirmed repair, as do `rectifier_fault`,
+`supply_over_voltage` and `latch_input_held`. Step 2b raises "Safety
 signal disturbed", step 5b "Valve relay driver faulty", steps 1, 2 and 9
 "Safety circuit failed its test". Other steps raise the matching fault
 above. Confirming a repair also makes the board learn its detector times
@@ -258,7 +269,7 @@ again (see [Safety timing not learned](#safety-timing-not-learned)).
 > Another signal drives the safety line: a valve could stay on if the
 > controller stops. Nothing runs. Repair the board, then confirm it here.
 
-- **Detected:** the float test (self-test step 2b). Before every run the controller lets go of the keep-alive line for half a second, with the display, its backlight and the memory busy. Nothing may drive the line meanwhile. Something did: the line read high, or one of the safety detectors came on.
+- **Detected:** the float test (self-test step 2b). At start-up and before every run, also when the 2-second pin-high test runs only once a day, the controller lets go of the keep-alive line for half a second, with the display redrawn, its backlight at half power (4.7 kHz), the memory busy and the byte 0x55 sent on the serial port without pause (a terminal on J8 shows a line of the letter U at every test). Nothing may drive the line meanwhile. Something did: the line read high, or one of the safety detectors came on.
 - **Why it matters:** a leak of a kilohm or so from a signal that switches by itself, such as the backlight, onto the keep-alive line does nothing while the controller drives the line, and keeps both safety detectors on if the controller crashes. It is the one board fault that defeats both layers. Hardware review A2, section 3.3.
 - **Likely causes:** flux residue, a solder bridge or a dendrite near the keep-alive line; a damaged component on it; or, as a firmware fault (`keepalive_pin_routed`), a serial port opened on the keep-alive pin.
 - **Clear:** the board needs repair. Clean and inspect around GPIO17, module pin 10, and the keep-alive net. Then confirm the repair as above.
@@ -278,12 +289,12 @@ again (see [Safety timing not learned](#safety-timing-not-learned)).
 #### Safety timing not learned
 
 > The board has not learned how fast its safety circuit switches off. It
-> learns this by itself with 24 V AC on. If this stays, the board needs
-> service.
+> learns this by itself with 24 V AC on, at room temperature. If this
+> stays, the board needs service.
 
 - **Detected:** the board has no stored release times for its two keep-alive detectors. Until it has, the stop test after every run applies only its wide absolute limits, which cannot find an open bleed resistor.
-- **What happens:** with 24 V AC connected and no zone running, the controller runs its start-up test and up to ten short test cycles, about 5 seconds each, and stores the middle value of five that agree. Do this the first time at room temperature: the times change with temperature, and a board commissioned at 70 °C or at freezing learns a value the later tests compare against. The warning clears itself when the times are stored. Watering works meanwhile.
-- **If it stays:** the times did not agree, or were outside what a healthy board gives at room temperature (gate drive 0.34 to 0.9 s, relay 0.16 to 1.1 s). The board may have a fault, or it is far from room temperature. Try again at room temperature: restart the controller. If it still stays, the board needs checking.
+- **What happens:** with 24 V AC connected and no zone running, the controller runs its start-up test and up to ten short test cycles, about 5 seconds each, and stores the middle value of five that agree. It takes a sample only while the processor's own temperature sensor reads 25 to 50 °C, which puts the board at about 10 to 40 °C; outside that, and after ten cycles that did not agree, it tries again every 10 minutes. Do the first start at room temperature. The warning clears itself when the times are stored. Watering works meanwhile.
+- **If it stays:** the room is too cold or too hot for the processor to read 25 to 50 °C, or the times did not agree, or they were outside what a healthy board gives (gate drive 0.33 to 0.85 s, relay 0.12 to 1.25 s). The board may have a fault: every board with an open bleed resistor on the gate-drive detector is refused, and about a quarter of those with one on the relay detector; the rest need an ohmmeter (bring-up step 1). If it stays at room temperature, the board needs checking.
 - **Learning again:** confirming a repair of a safety fault clears the stored times, and the board learns them again. A factory reset keeps them: they belong to the board, not to its settings.
 
 #### Mains signal wrong
@@ -294,12 +305,60 @@ again (see [Safety timing not learned](#safety-timing-not-learned)).
 - **Detected:** the 24 VAC timing signal is present but not at 50 or 60 Hz. A reading of 100 Hz, or edges that follow the keep-alive, means the timing signal is bridged to the keep-alive signal on the board.
 - **Clear:** clears itself if the signal returns to normal. If it stays, the board needs repair.
 
+#### 24 V AC supply too low
+
+> The supply is below what the board needs, so no valve opens. Watering
+> resumes when it is back. Check: transformer rating, supply wires and
+> connections.
+
+- **Detected:** the rectified supply, read on `VIN_MON` as the mean of a 100 ms window, is 0.10 to 0.60 V: under about 18.6 V DC, below the specified 21.6 VAC. The self-test waits in step 0 and no valve opens. Hardware design 19.10.
+- **Why it waits:** in a brown-out the board's 5 V converter switches off while the timing signal still shows mains. With USB attached the processor keeps running, and the relay read-back reads low, which the self-test would otherwise take for a relay fault that needs a repair.
+- **Likely causes:** a transformer that is too small for the valves (the reading falls by a tenth or more when a valve starts), low mains, long thin supply wires, a loose terminal.
+- **Clear:** clears itself when the supply is back.
+
+#### 24 V AC supply too high
+
+> The supply is above what the board allows, so no valve opens. Check: the
+> transformer must be a 24 V AC one.
+
+- **Detected:** `VIN_MON` above 1.50 V: the rectified supply is above about 46.5 V, more than the 32 VAC with no load that the board is designed for. Hardware design 19.10.
+- **Clear:** clears itself when the supply is back in range. Check the transformer's rating plate.
+
+#### Power input circuit failed
+
+> 24 V AC is connected, but the board's power input gives nothing, so
+> nothing runs. Repair the board, then confirm it here.
+
+- **Detected:** `VIN_MON` under 0.10 V for 2 s or more while the timing signal shows mains: the rectifier diode D2, the resistor R1 or the capacitor C1 has failed (hardware design 19.10 and 4.8). The controller runs from USB meanwhile.
+- **Clear:** the board needs repair. Then confirm the repair as for [Safety circuit failed its test](#safety-circuit-failed-its-test).
+
+#### Logic supply too high
+
+> The board's 3.3 V supply is too high. The valves were switched off and
+> nothing runs. Repair the board, then confirm it here.
+
+- **Detected:** both current channels rest above 0.90 V with nothing running. They rest at 0.2385 times the 3.3 V rail, so the rail is above about 3.6 V (hardware design 19.1 rule 18, 19.10). The likely cause is the regulator U3 failed short. Above 4.0 V the detector U13 removes valve drive by hardware whatever the processor does (section 9.5).
+- **Why it matters:** the processor and the display are outside their ratings; nothing can be said about what they do. The valves do not depend on them.
+- **Clear:** the board needs repair. Then confirm the repair.
+
+#### Protection held on
+
+> The short-circuit protection is held on with no valve running, and the red
+> light on the board stays lit. Nothing runs. Repair the board, then confirm
+> it here.
+
+- **Detected:** the over-current latch set as the safety pulses started, twice in a row, with no valve switched on (hardware design 19.8). No load current caused it, so it is not counted against any zone.
+- **Likely causes:** the 3.3 V rail above 4 V with U13 acting, U13 or its divider R13 and R100, the comparators U6B or U6C, or the threshold chain R48 to R51. The red LED D8 lit while nothing runs points to this fault and to no other.
+- **Clear:** the board needs repair. Then confirm the repair.
+
 #### Valve current not measured
 
-> The board gets no current reading. Zones still run, but a broken or
-> shorted valve is not noticed. If it stays, the board needs service.
+> The board gets no usable current reading. Zones still run, but a broken or
+> shorted valve, a stuck relay or a shorted output is not noticed. If it
+> stays, the board needs service.
 
-- **Detected:** the firmware gets no valid readings from the current measurement.
+- **Detected:** the firmware gets no valid readings from the current measurement; or a self-test step waited half a second for a current window and none came; or one of the two current channels rests outside its limits with nothing running (0.70 to 0.88 V and 0.68 to 0.90 V). Hardware design 19.1 rule 19.
+- **What is skipped:** the weld check, the relay driver check and the stuck-output check before a run (self-test steps 5, 5b and 6) and the stuck-output check while the relay is closed. The fault stays for as long as that lasts, so the skipped checks are never silent.
 - **What still works:** zones run, and the hardware over-current cut-off still acts on a short. Open circuits and over-current below the hardware limit are not detected.
 - **Clear:** clears itself. If it stays, the board needs repair.
 

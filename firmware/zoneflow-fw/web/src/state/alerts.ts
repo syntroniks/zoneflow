@@ -18,12 +18,14 @@ export interface Alert {
 }
 
 /** Faults that clear themselves when the cause goes away. */
-const CONDITIONS = new Set(['ac_lost', 'time_invalid', 'current_sense_unavailable', 'sensor_supply', 'mains_signal', 'not_commissioned']);
+const CONDITIONS = new Set(['ac_lost', 'time_invalid', 'current_sense_unavailable', 'sensor_supply', 'mains_signal', 'not_commissioned', 'supply_low', 'supply_high']);
 /** Faults that are warnings, not errors: watering carries on. */
 const WARNINGS = new Set(['current_sense_unavailable', 'flow_without_zones', 'sensor_supply', 'mains_signal', 'not_commissioned']);
 /** Output-stage faults that may need a confirmed repair (hardware design 19.7:
- * steps 1, 2, 2b, 5b and 9); faults.hardware.repair_needed says whether this one does. */
-const REPAIR = new Set(['keepalive_detector', 'keepalive_bridged', 'relay_gate_bleed']);
+ * steps 1, 2, 2b, 5b and 9, the rectifier fault of 19.10, the over-voltage of
+ * rule 18 and a held latch input of 19.8); faults.hardware.repair_needed says
+ * whether this one does. */
+const REPAIR = new Set(['keepalive_detector', 'keepalive_bridged', 'relay_gate_bleed', 'rectifier_fault', 'supply_over_voltage', 'latch_input_held']);
 
 export function faultTitle(code: string): string {
   return tk(`fault_${code}`, undefined, t('fault_unknown', { code }));

@@ -80,11 +80,16 @@ display, its backlight and the memory busy, and watches that nothing else
 moves it ([Safety signal disturbed](../troubleshooting.md#safety-signal-disturbed)).
 The other checks that the relay's first transistor lets go when the chip
 driving it lets go of it ([Valve relay driver faulty](../troubleshooting.md#valve-relay-driver-faulty)).
-The review also widened the time windows of the stop test. In its first
-minute with 24 V AC the board learns how long its own detectors take, and
-from then on each stop test must come within half and one and a half times
+The review also widened the time windows of the stop test. With 24 V AC on
+and the board near room temperature, it learns how long its own detectors
+take, and from then on each stop test must come within 0.4 and 1.7 times
 those times, which is how an open bleed resistor shows
 ([Safety timing not learned](../troubleshooting.md#safety-timing-not-learned)).
+The hardware answers to the firmware's questions set those numbers from
+simulation, made the pin-high test hold for 2 seconds, and made the board
+check its own supply first: a supply that is too low or too high, a failed
+power input and a 3.3 V rail that is too high each have a message of their
+own ([24 V AC supply too low](../troubleshooting.md#24-v-ac-supply-too-low)).
 
 ## What it does not cover
 
