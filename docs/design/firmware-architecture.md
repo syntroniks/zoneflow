@@ -1398,19 +1398,26 @@ expander) or an expander fault.
 
 | Section 19.7 | What the firmware does |
 |---|---|
-| Step 0 | Waits for 24 VAC (an AC_ZC edge within 25 ms), the keep-alive low for 2.0 s and the latch clear. Without 24 VAC nothing is tested or run. |
-| Step 1 | `A_RB` low, `B_RB` high, the expander does not acknowledge. |
+| Step 0 | Waits for 24 VAC (an AC_ZC edge within 25 ms), the keep-alive low for 2.5 s and the latch clear. Without 24 VAC nothing is tested or run. |
+| Step 1 | `A_RB` low, `B_RB` high, the expander does not acknowledge. `A_RB` reads `V_DRV` since review A2: high with an acknowledge is `idle_drive_enabled` (detector A or the latch), high without one `idle_drive_supply_on` (Q3), an acknowledge with `A_RB` low `idle_expander_answers` (`DRV_EN`). The window mean of GPIO7 between 0.3 and 1.5 V, from the ADC, is `idle_relay_gate_drain` (review A2 4.6 question 7), whatever the digital read says. |
 | Step 2 | Pin held high for 1.0 s, both read-backs unchanged, 100 ms low. At start-up, before every run (the "better" option, 1.1 s) and in a polling cycle when the last one is 24 h old. |
+| Step 2b | With step 2. The guard's request `Float`: the interrupt turns the pin's output driver off (no pull) for 0.5 s and reads the pin every 1 ms; any high read fails at once (`float_pin_high`), then `A_RB` must be low (`float_drive_enabled`) and `B_RB` high (`float_relay_on`). Fewer than 400 reads also fails: the test did not run as written. Then 100 ms driven low. `OutputStageStatus::floatTest` is set from the 100 ms before to the 100 ms after, for rule 17. |
 | Step 3 | Toggle; `A_RB` high and `B_RB` low within 150 ms of the first edge (timed by the interrupt), and the expander acknowledges. |
 | Step 4a | Input ports: 0x1F on port 0; port 1 0x2F on an 8-zone board, 0x3F on a 4-zone board. The variant bit is read once (start-up) and must not change later; the sensor-fault bit is reported, not a stop. |
 | Step 4b, 4c | Output ports 0xDF and 0xFF, then configuration 0xC0 and 0xF0 (0xFF on a 4-zone board), all read back; polarity 0x00. The values are computed from the pin map's bits; a host test checks them against the literals of 19.7. |
-| Step 5 | The run's first output (the master if it opens first) on with the relay open for one 100 ms window: current above the idle threshold is `relay_welded`. |
+| Step 5 | The run's first output (the master if it opens first) on with the relay open for one 100 ms window: current above the idle threshold is `relay_welded`. The valve pin must also read low on the input port while driven low (`weld_no_readback`, review A2 appendix A). |
+| Step 5b | `RLY_ON` set and read back, 20 ms, configuration 0 with the relay bit an input (0xE0 on rev A), 10 ms, the step 5 output on for one window, then output off, `RLY_ON` cleared, configuration 0 back to 0xC0, each read back. Current above the idle threshold is `gate_bleed` (R12 open). Skipped, like step 5, without current readings or a known first output. |
 | Step 6 | Relay bit set and read back, 20 ms, one window with every valve off: current above the idle threshold is `output_shorted`. Then outputs may switch. |
 | Step 7 | Every write read back (output and input port). Every tick all six registers are read and compared with the shadow copy and the valve inputs with the valve outputs; `A_RB` high, `B_RB` low, `OC` high. Never more than three valve bits low after any write. |
 | Step 8 | Valve bits set, 40 ms, relay bit cleared, configuration 0xFF. |
-| Step 9 | Keep-alive low; `A_RB` released 0.3 to 1.0 s and `B_RB` 0.08 to 1.0 s after the stop (3 s timeout); the expander does not acknowledge. |
+| Step 9 | Keep-alive low; `A_RB` released 0.15 to 1.0 s and `B_RB` 0.05 to 1.6 s after the stop (3 s timeout; `stop_drive_release`, `stop_relay_release`); the expander does not acknowledge. Once commissioned, each time also within 0.5 to 1.5 times the board's stored value (`stop_drive_band`, `stop_relay_band`). |
 | Fault state | Keep-alive low; while the expander still acknowledges, configuration 0xFF on every tick. Nothing starts until a person acknowledges. |
 | 19.6 polling | Every 10 minutes while the sensor supply is on, and when flow starts with every valve shut or stops with one open (at most once a minute): steps 0, 1, 3, 4a, a read of port 1, step 9. No output or configuration register is written. |
+| Commissioning | A board with no stored release times runs, after the start-up test and while nothing else is asked for, up to ten cycles like the polling cycle (steps 0, 1, 3, 4a, 9) back to back, and stores the medians once five agree. A run request goes first. Details below. |
+| Rule 15 | No separate check: see the decisions below. |
+| Rule 16 | `esp_console` on UART1 with its default pins fails the build; every tick the device reads the keep-alive pin's IO_MUX function and GPIO matrix output selection, and anything but a plain GPIO is `keepalive_pin_routed`. ESPHome refuses `logger: hardware_uart: UART1`. |
+| Rule 17 | While `floatTest` is set: standalone, the display task runs the backlight PWM at 50 % and redraws the whole screen continuously, and a task on core 0 streams through 256 kB of PSRAM; ESPHome, the same PSRAM task, and `display.yaml` runs the backlight at half level and updates the display every 20 ms from the component's `on_float_test` trigger. |
+| Phase rule (19.4) | `keepalive::periodMeetsContract()`: a period of 2.5 to 20 ms. Both firmwares assert it for their timer configuration at compile time. The pin changes level only at a keep-alive period, so the period is the shortest phase. A host test runs every procedure on the simulated board and finds no phase under 5 ms. |
 | 19.8 latch | Read every tick (sampled every 5 ms). On a trip: keep-alive low, 1.5 s, the latch must be clear by 3 s or `trip_latch_stuck`. The next run starts from step 0. |
 
 Decisions where section 19 leaves room:
@@ -1425,7 +1432,49 @@ Decisions where section 19 leaves room:
   would stop the keep-alive about 0.1 s after starting it. The firmware
   keeps toggling, with every pin an input, for at least 1 s before step 9,
   so that the detectors' reservoirs are charged as in the simulations the
-  release limits come from.
+  release limits come from. Review A2 answered question 1 below: 0.3 s is
+  the least it allows, and 1 s is right. Every path into step 9 goes
+  through one function that has waited for it; a static assertion ties the
+  1 s to the 0.3 s, and a host test checks the start-up, polling, run and
+  cancelled-run paths.
+- **The stored release times (19.7, the limits of step 9).** Where:
+  `IDetectorReferenceStore`. Standalone: NVS key `ka_ref` through
+  `hw::BlobReferenceStore`, 14 bytes with magic, version and CRC-32; not a
+  configuration key, so a factory reset keeps it. ESPHome: a flash
+  preference with the same record. How it is learned: after the start-up
+  test, while nothing else is asked for, up to ten commissioning cycles in
+  one boot; the start-up test and each cycle give one sample; the medians of
+  five agreeing samples are stored. What a sample must satisfy, so that a
+  board with a fault cannot store the fault as its normal: tA 0.34 to 0.9 s
+  and tB 0.16 to 1.1 s (review A2 4.5: the grid range at 5 ms edges divided
+  by the temperature factors of one board, plus about 10 %), and the five
+  within a factor of 1.25. An open R30 or R91 (tA 1.56 s) is refused, and
+  so is an open R14 or R90 on a typical board (tB 1.20 s). A value loaded
+  from storage outside the same range is ignored. Stop tests after runs and
+  polling cycles never teach. Re-learning: confirming the repair of a fault
+  of steps 1, 2, 2b, 5b or 9 clears the stored value, and the board learns
+  it again at once. Until a value is stored, step 9 applies the absolute
+  limits only and the condition `not_commissioned` is active (19.7 item 3).
+- **Rule 15.** It cannot be told apart from step 1 with what firmware can
+  read: `V_BUCK` missing and Q2 stuck on both put 0 V on GPIO7 at rest with
+  24 VAC present, and section 19 offers no other reading of `V_BUCK`. Review
+  A2's own table finds "`V_BUCK` falls to 0 V with USB attached" by "1 idle:
+  relay read-back not high". So the firmware reports it as `idle_relay_on`,
+  which needs a confirmed repair and refuses runs, and the troubleshooting
+  guide names U1, F5 and D25 with Q2. `VIN_MON` is still not read. A question
+  for the hardware author below.
+- **GPIO7 as an analogue input.** The relay read-back is a third channel of
+  the ADC1 continuous-mode pattern, at 5 kS/s and 6 dB like the current
+  channels, and its window mean comes with every current window. 6 dB
+  reads to about 1.6 V; a healthy 3.05 V reads as full scale, which is above
+  the 0.3 to 1.5 V of the fault. ESP-IDF turns a pin's digital input off when
+  it configures it for the ADC; the firmware turns it back on, because the
+  keep-alive interrupt reads the same pin as a level. Whether both work
+  together on the chip is a bench item; if the digital read were lost, the
+  pin would read low and the idle test would fail on the safe side.
+- **The keep-alive interrupt runs every 1 ms** on the standalone firmware too
+  (it was every 5 ms), to read the floating pin every 1 ms as step 2b asks.
+  The keep-alive itself still changes once every 5 ms.
 - **Acknowledge polling in step 3.** The detectors are timed to 5 ms by the
   interrupt; the expander is addressed once per control tick, so its
   acknowledge is accepted up to one tick after the 150 ms.
@@ -1439,7 +1488,10 @@ Decisions where section 19 leaves room:
 
 | Fault | Checks | Clear |
 |---|---|---|
-| `keepalive_detector` | Steps 1 and 2, steps 3 and 9 detector timing, `A_RB` or `B_RB` wrong while running | Steps 1, 2 and 9 (a detector can no longer be relied on): only `AcknowledgeRepair`, a second deliberate action. Others: `ClearFaults`. |
+| `keepalive_detector` | Steps 1 and 2, steps 3 and 9 detector timing and band, `A_RB` or `B_RB` wrong while running | Steps 1, 2 and 9 (a detector can no longer be relied on): only `AcknowledgeRepair`, a second deliberate action. Others: `ClearFaults`. |
+| `keepalive_bridged` | Step 2b; rule 16 (`keepalive_pin_routed`) | Step 2b: only `AcknowledgeRepair`. Rule 16: `ClearFaults`, found again at the next tick while it lasts. |
+| `relay_gate_bleed` | Step 5b | Only `AcknowledgeRepair` |
+| `not_commissioned` | No stored detector release times | Clears itself when they are stored |
 | `output_expander` | No acknowledge, read-back or input mismatch, stuck bus, more than three valve bits | `ClearFaults` |
 | `relay_welded` | Step 5 | `ClearFaults`; found again at the next run if still welded |
 | `output_shorted` | Step 6, rule 6 | `ClearFaults` |
@@ -1448,7 +1500,9 @@ Decisions where section 19 leaves room:
 | `zone_dc_current` | DC component in three windows | `ClearFaults` |
 | `mains_signal` | AC_ZC outside 45 to 66 Hz (100 Hz: bridged to the keep-alive) | Clears itself |
 
-`AcknowledgeRepair` is a command with a confirmation flag. The display
+`AcknowledgeRepair` is a command with a confirmation flag. Since review A2
+it acknowledges any fault of steps 1, 2, 2b, 5b and 9, and it clears the
+board's stored release times so that it learns them again. The display
 offers it as **Repaired** on the fault's detail screen, then asks again with
 Cancel first; the REST API as `POST /faults/acknowledge-repair` with
 `{"repaired": true}`; MQTT not at all. `ClearFaults` acknowledges every other
@@ -1527,35 +1581,117 @@ Not checked, because it needs a board: anything about real timing, the I2C
 bus at 400 kHz, the ADC sample rate and calibration, the noise floor, the
 detector times, and the interrupt load.
 
+### Verification after review A2
+
+No board exists. These are the checks run on the firmware that follows
+review A2 (tracking issue #6):
+
+| Check | Result |
+|---|---|
+| `test/host/run.sh` (ASan, UBSan) | 806 tests pass, 199 of them new. `AppendixA/ReviewA2Fault` (166): every row of review A2 appendix A that names a step of the self-test, injected into the simulated board, 149 present from power-up and 17 appearing during a run; each is found by the step the review names, and leaves no valve driven. `SelfTestA2` (25): the limits, the lettered steps, the phase rule through every procedure, the float test and its load flag, `V_DRV` and the analogue read of GPIO7 in step 1, rule 15, the gate bleed register sequence and an open R12, commissioning, a faulty or hot board that does not commission, re-learning after a confirmed repair, the stored record, rule 16. `Corners/HealthyCorner` (4): the typical board and three tolerance corners of the review pass with their own stored times. Four more for the controller, the API schema and MQTT. |
+| Simulated board (`test/host/fake_board.hpp`) | Models the revised circuit at the level firmware sees: `A_RB` reads `V_DRV`, the expander follows `DRV_EN`, Q1's gate keeps its charge with R12 open, the keep-alive net can be bridged to a toggling or a high net, GPIO7 has an analogue level, the detectors release at the corner times of review A2 4.3 and fill as in its `warmup.md`. It is a model of the review's results, not of the circuit. |
+| `idf.py build`, ESP-IDF v5.5.6 | No warnings. `zoneflow-fw.bin` 2,079,808 bytes with the web UI packed (49.6 % of a 4 MB slot). `onKeepAlive` is in IRAM, 151 instructions, no call instruction. |
+| Release dry run (`zfrelease package`, `package-prebuilt`, `assemble`, `verify`, the installer page test, `zfflash fetch`, `stage-site`) | Every check passes. |
+| ESPHome | `esphome config` and `esphome compile` pass for both examples and `factory.yaml`; 41 host tests pass; `on_timer` is in IRAM, 338 instructions, no call. |
+| Display simulator | 75 scenes, two new: a float-test fault and a board that is not commissioned. |
+| Web UI | Type check, 183 unit tests and 54 end-to-end tests (phone, 320 px, desktop) pass; API types regenerated. |
+
+Not checked, because it needs a board: whether the float test sees a real
+bridge, whether the ADC and the digital read of GPIO7 work together, the
+release times and the learning limits, the interrupt load at 1 kHz.
+
 ### Questions for the hardware author
+
+Review A2 section 4.6 answered questions 1, 2, 3, 5 and 7. The answers and
+what the firmware did are in brackets; the questions it raised follow the
+list.
 
 1. **Stop test after a short toggle.** The release limits of step 9 come
    from simulations. Do they hold after 1 s of toggling (the firmware's
    minimum before a stop test), and after the 0.1 s a start-up test or
    polling cycle would otherwise take? If the hold-up is shorter after a
-   short toggle, healthy boards would fail step 9 at start-up.
+   short toggle, healthy boards would fail step 9 at start-up. [Answered:
+   after 0.3 s yes, after 0.1 s no; 1 s is right. Kept, and asserted.]
 2. **Step 3 acknowledge.** The firmware addresses the expander once per
    50 ms tick, not every 5 ms; is an acknowledge up to 200 ms after the
-   first edge acceptable when both read-backs were in time?
+   first edge acceptable when both read-backs were in time? [Answered: yes.
+   Unchanged.]
 3. **Pin-high test before every run** adds 1.1 s to every start. Is that the
-   intended default, or is "start-up and every 24 h" enough?
+   intended default, or is "start-up and every 24 h" enough? [Answered:
+   before every run, with the float test. Kept as the default; the 2b float
+   test runs with it.]
 4. **Relay linger.** Is a relay closed for up to 2 s with every valve off
    (rule 6 checked meanwhile) acceptable under rule 4?
 5. **`SENS_FLT_N` with the supply off.** Step 4a expects bit 5 high. What
    does the TPS2553 fault output do while its enable is low? The firmware
-   masks the bit in the step 4a comparison and reports it only.
+   masks the bit in the step 4a comparison and reports it only. [Answered:
+   high-impedance, read high; masking is the safe choice until a bench
+   confirms it. Unchanged.]
 6. **Bias check.** 19.2 says the window mean should stay near 790 mV. What
    deviation of the idle mean is a front-end fault? The firmware learns the
    idle mean but does not judge it.
 7. **Q2 gate-drain short on GPIO7.** 7.4 suggests reading GPIO7 as ADC1
    channel 6 to see 0.3 to 1.5 V. The firmware reads it as a digital input,
    where that fault reads low and fails step 1 as `idle_relay_on`. Is the
-   analogue reading wanted as well?
+   analogue reading wanted as well? [Answered: yes, 0.3 to 1.5 V in step 1.
+   Done: `idle_relay_gate_drain`.]
 8. **Zero-cross offsets.** The firmware uses the 24 VAC offsets (0.30 ms,
    0.09 ms). They shrink at 32 VAC; should `VIN_MON` (GPIO3) correct them?
    `VIN_MON` is not read yet.
 9. **DC component.** What size of mean shift should count? The firmware
    uses 30 % of the RMS current and at least 20 mA, and stops the zone.
+
+### Questions after review A2
+
+The revised section 19 left these open, or contradicts itself here. The
+firmware's choice for each is above.
+
+1. **Rule 15 cannot be told from step 1.** With 24 VAC present, GPIO7 reads
+   0 V at rest both when `V_BUCK` is missing and when Q2 is on. Step 0 puts
+   rule 15 before step 1, which taken literally would report every Q2 fault
+   of appendix A as a regulator fault; appendix A itself finds "`V_BUCK`
+   falls to 0 V with USB attached" in step 1. Is a reading that separates
+   them wanted (there is no free pin), or is `idle_relay_on` with both causes
+   named enough?
+2. **"`VIN_MON` in its normal range"** is not defined in section 19, and
+   firmware does not read `VIN_MON`. What range? It would separate an open F1
+   (`VIN_DC` gone) from U1, F5 or D25, not from Q2.
+3. **Commissioning "at room temperature".** Firmware cannot measure the
+   board's temperature. It relies on the learning limits and the agreement
+   of five samples instead. Should commissioning be a deliberate action of a
+   person (a button) rather than automatic on the first start?
+4. **The learning limits** (tA 0.34 to 0.9 s, tB 0.16 to 1.1 s) are derived
+   from section 4.5 of the review, not simulated. A board whose tB is under
+   about 0.55 s at 27 °C still learns an open R14 or R90 as its normal:
+   doubled, it stays inside both the absolute limits and the learning
+   limits. Would a check of tB against tA help, and with what ratio?
+5. **"Run steps 3 and 9 five times."** Each stop test needs 2.5 s low before
+   the next start (step 0), so each cycle is about 4.5 s and runs steps 0, 1,
+   3, 4a and 9. Is that what was meant?
+6. **2 s or 2.5 s.** Section 19.6 still asks for 2 s between a polling cycle
+   and a run, which is less than the 2.19 s the relay detector may take with
+   the pin high and less than step 0's 2.5 s. The firmware waits 2.5 s.
+7. **Step 2b: what is "in use".** No duty cycle, refresh rate or PSRAM
+   traffic is given. The firmware runs the backlight at 50 %, redraws the
+   display continuously and streams 256 kB of PSRAM. The ESPHome display
+   updates every 20 ms. Whether that makes the strobe and the SPI lines
+   toggle as the simulation assumed is a bench question.
+8. **Step 2b with the pin-high test made daily.** "With step 2" and step 2
+   may be daily (ESPHome `self_test_before_every_run: false`), but review
+   A2 4.6 says 2b is the only step that finds the bridge and nothing covers it
+   meanwhile. Should 2b run before every run regardless?
+9. **Steps 5 and 5b without current readings** are skipped, so an open R12
+   is then found by nothing. Acceptable?
+10. **Stale text.** Section 7.4 says GPIO42 reads `DRV_EN`; 8.6 and 19.7 say
+    `V_DRV`. Section 8.6 ends with "limits of 0.2 to 1.0 s"; 19.7 has 0.15 s.
+    Section 19.3 item 3 gives `KA` a 10 kohm pull-down; R33 is 2.2 kohm.
+11. **GPIO7 as an ADC input and a digital input at once**, behind R94 of
+    100 kohm. Does the ADC's sampling disturb the digital read, and how far
+    does the source resistance pull the reading? Bench item.
+12. **The relay detector's slow corner** (m10): no firmware timeout assumes
+    one second, and the firmware always stops the pin low. The specification's
+    "about the same time" is still not met at that corner; that is the owner's
+    decision.
 
 ## 21. Shared with the ESPHome package
 

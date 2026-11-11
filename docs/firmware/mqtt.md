@@ -178,7 +178,10 @@ words (`closed`, `opening`, `open`).
 ```
 
 `hardware` is the valve board's self-test (hardware design section 19.7).
-While `fault` is true nothing runs. The `clear_faults` command acknowledges
+`step` is a string, `"1"` to `"9"` with `"2b"`, `"4a"` to `"4c"` and `"5b"`,
+or null for a check that is not a step of the sequence; it was a number
+before hardware review A2 added steps 2b and 5b. While `fault` is true
+nothing runs. The `clear_faults` command acknowledges
 it, except when `repair_needed` is true: a safety circuit failed its test,
 and only a person can confirm the repair, on the controller's display or
 through `POST /api/v1/faults/acknowledge-repair`. MQTT has no command for

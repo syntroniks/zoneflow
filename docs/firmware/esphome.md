@@ -125,10 +125,10 @@ Names below use the default zone names.
 | `Repeat cycles` | number | Sprinkler repeat count |
 | `Stop all` | button | Stops every zone and the cycle |
 | `Fault` | binary sensor | Any latched fault or locked-out zone |
-| `Faults` | text | What is wrong, in the words of the standalone display and web interface, for example `Zone 3: short circuit, No 24 V AC supply`. `No faults` when there is none. |
+| `Faults` | text | What is wrong, in the words of the standalone display and web interface, for example `Zone 3: short circuit, No 24 V AC supply`. A failed self-test names its step: `Safety signal disturbed (step 2b)`. `No faults` when there is none. |
 | `Valve board fault` | binary sensor | The output stage failed a self-test or read-back |
-| `Clear faults` | button | Clears lockouts and latched faults, not a keep-alive detector fault |
-| `Acknowledge repair (press twice)` | button | Clears a keep-alive detector fault: press, then press again within 10 s |
+| `Clear faults` | button | Clears lockouts and latched faults, not a fault of a safety layer (self-test steps 1, 2, 2b, 5b, 9) |
+| `Acknowledge repair (press twice)` | button | Clears a fault of a safety layer: press, then press again within 10 s. The board then learns its detector release times again. |
 | `Run self-test` | button | Runs the polling cycle of hardware design 19.6 now |
 | `Valve current` | sensor | Total valve current, RMS, mA, every second |
 | `Master valve`, `Valve common relay` | binary sensor | Output states |
@@ -198,14 +198,27 @@ to the other. What the package does for each:
   only while the ESPHome main loop has proved it is running within the last 500 ms
   (hardware design 19.4). If the loop stalls for longer, for example on a blocking
   component, the edges stop and the board removes valve drive and opens the
-  valve-common relay in hardware within about 1.5 s. When the loop comes back, the output
+  valve-common relay in hardware: no valve current 1.34 s after the last heartbeat at the
+  latest, 1.76 s if the pin stopped high (hardware design 19.4, with the corner results of
+  review A2). When the loop comes back, the output
   stage finds drive gone and latches a fault, so a person looks at it. The interrupt code
   is in IRAM, keeps running while flash is written, and makes no function calls; this was
   checked in the linked firmware with `objdump`.
 - **Self-test.** At start-up, before every run, after every run and every 10 minutes
   between runs, the output stage tests both keep-alive detectors and the expander, and
   before every run it checks the relay for a welded contact and the outputs for a short
-  (hardware design 19.7).
+  (hardware design 19.7). Before every run it also holds the keep-alive pin high for 1 s
+  and then lets it float for 0.5 s (step 2b): nothing may drive the keep-alive net
+  meanwhile. The display's `on_float_test` hook runs the backlight at half brightness and
+  redraws the display during those 0.5 s, and the component streams through a PSRAM
+  buffer, so that a leak from one of those signals onto the keep-alive net shows. Then it
+  checks that the relay driver lets go when its control is released undriven (step 5b).
+  After every run it times both detectors and compares the times with fixed limits and
+  with the board's own times, which it learns in its first minute with 24 V AC and keeps
+  in flash. Until then the `Faults` text says `Safety timing not learned`.
+- **Keep-alive pin.** GPIO17 is UART1's default transmit pin. The package refuses a
+  `logger:` with `hardware_uart: UART1`, and the output stage checks every 50 ms that no
+  peripheral is routed to the pin (hardware design 19.1 rule 16).
 - **Maximum run time.** Each zone has a hard limit (`max_run_time`, at most 4 h). The
   limit counts on-time across runs: back-to-back programs, repeated manual runs and
   automations all add up until the zone has been closed for `rest_time`. A zone that
@@ -239,8 +252,8 @@ to the other. What the package does for each:
 |---|---|---|
 | Zone open, short, over-current, DC current, trip | Zone (or everything) off, zone locked out, `Zone N fault` on | `Clear faults`, or hold **Home** for 3 s |
 | Output stage (expander, relay, read-back) | Everything off, nothing starts | `Clear faults` |
-| Keep-alive detector (self-test steps 1, 2, 9) | Everything off, nothing starts, the board needs repair | `Acknowledge repair`, pressed twice within 10 s |
-| No 24 V AC supply, valve current not measured, sensor supply overloaded | Reported; no 24 V AC also blocks starts | Clear themselves |
+| Safety layer (self-test steps 1, 2, 2b, 5b, 9): `Safety circuit failed its test`, `Safety signal disturbed`, `Valve relay driver faulty` | Everything off, nothing starts, the board needs repair | `Acknowledge repair`, pressed twice within 10 s; the board then learns its detector times again |
+| No 24 V AC supply, valve current not measured, sensor supply overloaded, safety timing not learned | Reported; no 24 V AC also blocks starts | Clear themselves |
 | Water flows with all valves off | Reported | `Clear faults` |
 
 A new fault that stops everything also stops the sprinkler cycle, so it does not move on
@@ -419,9 +432,10 @@ standalone firmware's generator functions, and CI fails if the file is out of da
 
 | Check | Result |
 |---|---|
-| `esphome config` and `esphome compile`, ESPHome 2026.10.2, ESP-IDF 5.5.6 | Pass for `examples/zoneflow-8zone.yaml`, `examples/zoneflow-4zone.yaml` and `factory.yaml`. The 8-zone application is 1,378,935 bytes (17 % of its 7.75 MB app partition); static RAM 162,311 of 341,760 bytes. |
-| Keep-alive interrupt in the linked ELF | `on_timer` at 0x40376664 (IRAM); no call instruction between its entry and `retw.n` |
-| Host tests, `firmware/esphome/test/host/run.sh` (ASan, UBSan) | 34 tests pass: 16 on the supervisor (start-up self-test, a run with master and relay, the maximum run time and rest across runs and a restart, open and shorted valves, three trips, a detector fault that needs a confirmed repair, a stalled main loop, loss of 24 VAC, OTA maintenance, at most three valve bits low, a 4-zone board, the leak alarm) and 18 on the schedule logic (day rules, missed starts, DST, clock set back, edits, zone lists, next start) |
+| `esphome config` and `esphome compile`, ESPHome 2026.10.2, ESP-IDF 5.5.6 | Pass for `examples/zoneflow-8zone.yaml`, `examples/zoneflow-4zone.yaml` and `factory.yaml`. The 8-zone application is 1,387,659 bytes (17 % of its 7.75 MB app partition); static RAM 166,019 of 341,760 bytes. |
+| Keep-alive interrupt in the linked ELF | `on_timer` at 0x40376664 (IRAM), 338 instructions with the float test; no call instruction between its entry and `retw.n` |
+| Rule 16 | `esphome config` refuses a `logger:` with `hardware_uart: UART1` (checked with a scratch copy of the 8-zone example) |
+| Host tests, `firmware/esphome/test/host/run.sh` (ASan, UBSan) | 41 tests pass: 23 on the supervisor (start-up self-test, a run with master and relay, the maximum run time and rest across runs and a restart, open and shorted valves, three trips, a detector fault that needs a confirmed repair, a stalled main loop, loss of 24 VAC, OTA maintenance, at most three valve bits low, a 4-zone board, the leak alarm, the fault texts, and from review A2 the float test, the gate bleed check, commissioning and rule 16) and 18 on the schedule logic (day rules, missed starts, DST, clock set back, edits, zone lists, next start) |
 | `tools/gen_board_yaml.py --check` | The pin substitutions match `hardware/pinmap.yaml` |
 | `zfrelease` tests, installer page test | Pass with the ESPHome flavour enabled |
 | Release path, run locally | `zfrelease package-prebuilt` on the factory build (project name `zoneflow` checked in the image), `assemble` and `verify`: every check passes. The standalone half of a release was not built locally; CI builds both. |
