@@ -53,7 +53,7 @@ The results are from the build of 2026-11-10 with KiCad 10.0.8.
 
 | Check | What it proves | Result |
 |---|---|---|
-| Netlist parity | The netlist KiCad extracts from the sheets equals [`hardware/netlist.yaml`](https://github.com/syntroniks/zoneflow/blob/main/hardware/netlist.yaml) pin for pin: reference, value, footprint, LCSC number and the net on every pin | 346 components and 198 nets match |
+| Netlist parity | The netlist KiCad extracts from the sheets equals [`hardware/netlist.yaml`](https://github.com/syntroniks/zoneflow/blob/main/hardware/netlist.yaml) pin for pin: reference, value, footprint, LCSC number and the net on every pin | 348 components and 199 nets match |
 | Build parity | KiCad's BOM for the 8-zone and the 4-zone build lists exactly the parts the netlist fits in that build | 2 builds match |
 | Page lint | No text overlaps other text, no line crosses text, no symbol overlaps a symbol, nothing is off the page | 20 pages, no collision |
 | ERC | KiCad's electrical rules check, errors and warnings, with no check switched off | 0 violations |

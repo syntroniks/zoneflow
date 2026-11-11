@@ -419,7 +419,7 @@ board silently.
 **The fault.** The high-side switch inside U1 fails short, or stays on.
 `VIN_DC`, 26 to 45 V, then reaches `V_BUCK` through L1. With nothing to stop
 it, `hardware/sim/buck_overvoltage.cir` puts `V_BUCK` past 7 V after 11 to
-14 us and at 43 to 63 V after the first ring of L1 with C5 and C6. Every
+14 us and at 43 to 65 V after the first ring of L1 with C5 and C6. Every
 5 V and 3.3 V part is then beyond its rating, the processor included, and
 the fail-safe analysis of section 8.5 has nothing to stand on.
 
@@ -454,28 +454,39 @@ smaller than 3 A.
 | Normal load | 1.76 W typical at 29 V; 5.0 W at the 17.3 V valley of low line | 0.06 A typical, 0.29 A at the worst steady corner: 58 % of rating. Littelfuse asks for 75 % at most. |
 | Voltage lost | 0.42 ohm x 0.29 A | 0.12 V on a 17 V input |
 | Voltage rating | `VIN_DC` reaches 44.3 V, 59 V in a surge | 125 V |
-| Fault current it must interrupt | (44.3 V - 6.67 V) over the resistance in the loop: C1 0.082 ohm, F5 0.42 ohm, L1 0.2 ohm, D25 0.03 ohm, and a switch that has become 0.02 ohm | 50 A. The simulation gives 46 to 48 A with L1 saturated. The part interrupts 50 A at 125 V and 300 A at 32 V DC. |
-| Melting | Nominal melting I²t 0.0824 A²s. C1 delivers I² x R x C / 2 into this loop: 0.17 A²s from 30 V, 0.44 A²s from 44.3 V, 0.03 A²s from 17 V | The charge of C1 alone opens it from about 23 V up. Below that the rectifier has to finish the job, see below. |
+| Fault current it must interrupt | (44.3 V - 6.67 V) over the resistance in the loop: C1 0.033 ohm at most (Rubycon ZLJ sheet, 100 kHz, 20 °C), F5 0.42 ohm, L1 0.2 ohm, D25 0.03 ohm, and a switch that has become 0.02 ohm | 53.5 A by this sum. The simulation gives 49 to 52 A with L1 saturated, because the fuse has opened before the current has fully risen. At a `VIN_DC` of 30 V it gives 25 to 30 A. The part interrupts 50 A at 125 V and 300 A at 32 V DC. |
+| Melting | Nominal melting I²t 0.0824 A²s. C1 delivers I² x R x C / 2 into this loop: 0.18 A²s from 30 V, 0.47 A²s from 44.3 V, 0.04 A²s from 17 V | The charge of C1 alone opens it from about 22 V up. Below that the rectifier has to finish the job, see below. |
 
-The fuse's own resistance does two jobs in that table: with 0.42 ohm in the
-loop the fault current cannot exceed what the fuse is rated to interrupt.
-**Do not fit a larger rating.** A 1 A part of the same series has 0.153 ohm
-and seven times the melting I²t; the current would reach 80 A.
+The fuse's own resistance does two jobs in that table. It is most of the
+resistance in the loop, and it is what keeps the fault current near what the
+fuse can interrupt. In the one worst case, the highest input with a welded
+switch and a saturated inductor, the current reaches the 50 A that the data
+sheet gives for 125 V, to within 3 %. The fuse then has to break it at 44 V.
+Its rating at 32 V DC is 300 A, and the sheet has no figure in between. I
+take the part as able to do it and cannot show that from the sheet. It is
+the first thing risk 21 tests. **Do not fit a larger rating.** A 1 A part of
+the same series has 0.153 ohm and seven times the melting I²t, and the
+current would reach 86 A.
+
+C1 matters here. The through-hole Rubycon part that replaced the Lelon part
+has less than half its series resistance, 0.033 against 0.082 ohm, and that
+raised the worst peak from 46 to 49 A. With a C1 three times better than
+its limit, 0.010 ohm, the simulation gives 51 A.
 
 **What the simulation shows.** `hardware/sim/buck_overvoltage.cir`, 36 cases
-with a 20 VA transformer and 12 more up to 75 VA: `VIN_DC` at 17, 30 and
-44.3 V, the failed switch at 0.02, 0.725 and 5 ohm, L1 at 47 uH and
-saturated at 5 uH, F5 opening at its nominal melting I²t and at three times
-that.
+with a 20 VA transformer, 12 more up to 75 VA and 6 with other values for
+C1: `VIN_DC` at 17, 30 and 44.3 V, the failed switch at 0.02, 0.725 and
+5 ohm, L1 at 47 uH and saturated at 5 uH, F5 opening at its nominal melting
+I²t and at three times that.
 
 | | Range over the cases |
 |---|---|
-| Highest `V_BUCK`, D25 at its highest clamp | 7.5 to 9.7 V |
-| Highest `V_BUCK`, D25 at its lowest clamp | 7.1 to 8.1 V |
-| Peak current in F5 and D25 | 2.2 to 48.5 A |
-| F5 open after, welded switch, `VIN_DC` 30 V or more | 0.04 to 0.2 ms at nominal I²t; up to 19 ms at three times that on 30 V |
+| Highest `V_BUCK`, D25 at its highest clamp | 7.5 to 9.8 V, 9.9 V with C1 at 0.010 ohm |
+| Highest `V_BUCK`, D25 at its lowest clamp | 7.1 to 8.2 V |
+| Peak current in F5 and D25 | 2.2 to 51.5 A. D25 is rated for 58.3 A. |
+| F5 open after, welded switch, `VIN_DC` 30 V or more | 0.04 to 0.2 ms at nominal I²t; up to 18 ms at three times that on 30 V |
 | F5 open after, every other case | 0.15 to 200 ms |
-| Energy in D25 until F5 opens | 0.015 to 0.70 J. In the cases that end within 10 ms, where the pulse curve of the SMBJ data sheet applies (Fig. 2, 600 W at 1 ms), the curve allows 4.5 to 11 times what D25 takes. |
+| Energy in D25 until F5 opens | 0.016 to 0.69 J. In the cases that end within 10 ms, where the pulse curve of the SMBJ data sheet applies (Fig. 2, 600 W at 1 ms), the curve allows 4.4 to 11 times what D25 takes. |
 | Energy in R1 | 0.02 to 1.4 J |
 
 The slow cases are a switch that has become several ohms, and a low
@@ -492,13 +503,13 @@ all of them.
 
 | Part | Sees | Rating | Result |
 |---|---|---|---|
-| U3, and so `3V3` and everything on it | `V5` up to 9.4 V | 20 V absolute, 18 V operating | `3V3` stays regulated. The processor, the expander, U7, Q3 and `V_DRV` work as normal. |
-| U6 | 9.4 V | 36 V | Normal |
-| Coil of K1 | 9.7 V | 8.5 V continuous at 23 °C (170 %) | 0.75 W in the coil for at most seconds. No damage expected. |
-| Read-back divider to GPIO7 | 9.7 V on R93 | 53 uA into the pin's clamp | Harmless |
-| Sensor pull-ups | 9.4 V on R74, R77, R80 | 0.3 mA each into the BAT54S clamps | Harmless |
-| Backlight | (9.4 - 3.0) V / 33 ohm = 194 mA | 80 mA rated | For milliseconds in the fast cases. May age the LEDs in a slow one. |
-| **U11** | 9.7 V on its input | **7 V absolute maximum** | The one part beyond its rating: 7.5 to 9.7 V for 0.04 ms to 0.2 s, seconds in the slow cases. It may be damaged. It switches the sensor terminal and nothing else. |
+| U3, and so `3V3` and everything on it | `V5` up to 9.5 V | 20 V absolute, 18 V operating | `3V3` stays regulated. The processor, the expander, U7, Q3 and `V_DRV` work as normal. |
+| U6 | 9.5 V | 36 V | Normal |
+| Coil of K1 | 9.8 V | 8.5 V continuous at 23 °C (170 %) | 0.77 W in the coil for at most seconds. No damage expected. |
+| Read-back divider to GPIO7 | 9.8 V on R93 | (9.8 - 3.6) V / 110 kohm = 56 uA at most towards the pin's clamp | Harmless |
+| Sensor pull-ups | 9.5 V on R74, R77, R80 | 0.3 mA each into the BAT54S clamps | Harmless |
+| Backlight | (9.5 - 3.0) V / 33 ohm = 197 mA | 80 mA rated | For milliseconds in the fast cases. May age the LEDs in a slow one. |
+| **U11** | 9.8 V on its input | **7 V absolute maximum** | The one part beyond its rating: 7.5 to 9.8 V for 0.04 ms to 0.2 s, seconds in the slow cases. It may be damaged. It switches the sensor terminal and nothing else. |
 
 So the fail-safe circuits stay inside their ratings throughout, and section
 8.5 applies unchanged: the fault is one fault, and both detectors are
@@ -526,7 +537,7 @@ regulator fault. Repair is U1, F5 and, after a slow case, D25 and R1.
   rating can lose a bond wire. Here the fuse limits the energy to a
   fraction of the pulse rating, so I do not expect it. Bench item, risk 21.
 - **U11 pushing its input voltage onto GPIO45.** If U11 is damaged in a way
-  that joins its input to its enable pin, up to 9.7 V reaches a processor
+  that joins its input to its enable pin, up to 9.8 V reaches a processor
   pin through no resistance. A 10 kohm resistor in `SENS_PWR_EN` would
   bound that current to 0.6 mA. Review A2 recommends it and did not apply
   it; it is one more part and one more net.
@@ -3174,7 +3185,7 @@ get its numbers.
 | 18 | Sensor miswire heating | 0.11 W in a 1206 | 32 VAC on each sensor terminal for an hour. Part temperatures. |
 | 19 | Bulk capacitor ripple and life | The ZLJ sheet gives no ripple rating below 120 Hz; 0.8 of the 120 Hz figure is borrowed from the PX sheet. Life by the 10 K rule, section 4.5. The leads are bent through 90 degrees and the can lies on the board. | Capacitor case temperature at peak load and low line. Inspect the lead seal after forming, and after a vibration or drop test of the assembled unit. |
 | 20 | Output LED brightness | 1.6 mA is visible through a light pipe | Look at it in the enclosure. |
-| 21 | Regulator over-voltage | D25 clamps `V_BUCK` under 10 V and F5 opens, section 4.8. The fuse model has no arc and no heat loss; the resistance of a failed switch is a guess; D25 is assumed to fail short and not open. | On sacrificial boards, short SW to VIN of U1 with a valve running, at `VIN_DC` of 17, 30 and 44 V, on 20 and 75 VA transformers. Scope `V_BUCK`: under 10.3 V throughout. F5 open, no arcing, no charring. `3V3` in regulation until `V_BUCK` has gone. The valve off. Then check which parts survived: U11 above all. |
+| 21 | Regulator over-voltage | D25 clamps `V_BUCK` under 10 V and F5 opens, section 4.8. In the worst case the current reaches the 50 A that F5 is rated to interrupt at 125 V, and it has to break it at 44 V. The fuse model has no arc and no heat loss; the resistance of a failed switch is a guess; D25 is assumed to fail short and not open. | On sacrificial boards, short SW to VIN of U1 with a valve running, at `VIN_DC` of 17, 30 and 44 V, on 20 and 75 VA transformers. Scope `V_BUCK`: under 10.3 V throughout. F5 open, no arcing, no charring. `3V3` in regulation until `V_BUCK` has gone. The valve off. Then check which parts survived: U11 above all. |
 | 22 | Gate drive of Q2 | 2.09 V at the worst corner against a 1.59 V threshold. No on-resistance is guaranteed below 2.5 V. | Drain voltage of Q2 with K1 energised at -20 °C, with the keep-alive slowed to one edge per 20 ms. Under 50 mV. |
 | 23 | Single-fault behaviour of the two detectors | Section 8.5, on paper and in simulation | Fit each fault marked "stuck on" in section 8.5 by hand, one at a time: lift R31 with drive enabled, lift R34, bridge C22, bridge C51, tie the gate of Q2 to its drain, bridge K1. For each, halt the CPU with a valve running and with the pin low and high. The valve must close within the time the table gives, and the self-test must report the fault at the next start. |
 | 24 | Supervisor resets on supply dips | Dips of tens of millivolts on `3V3` | Scope `3V3` and `EN` during WiFi transmit bursts at 21.6 VAC and on USB at 4.4 V. No reset. |

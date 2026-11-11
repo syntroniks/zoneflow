@@ -100,7 +100,7 @@ rain delay from any source.
 
 ## What does it cost?
 
-The design estimates the parts of an 8-zone board at about 31.50 USD each
+The design estimates the parts of an 8-zone board at about 31.84 USD each
 for 100 boards, without the PCB, assembly, shipping, the coin cell and the
 enclosure, at prices checked on 2026-11-10. That is an estimate, not a
 price. See [hardware design section 18](design/hardware-design.md#18-bill-of-materials-and-cost-estimate).

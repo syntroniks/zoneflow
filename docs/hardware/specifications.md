@@ -18,6 +18,7 @@
 | Board's own load from the rectified supply | About 1.8 W typical, 4.8 W peak, by calculation | Design 4.2 |
 | Fuses | Two, one in each transformer wire: 3 A time-lag, 125 V, Littelfuse 154 holder with 454-series fuse; replacement 452 series, 0452003.MRL | Design 4.3 |
 | Input surge clamp | 48 V bidirectional TVS, 1500 W | Design 4.4 |
+| Converter fault protection | 6 V TVS on the converter output and a soldered 0.5 A very fast fuse in its input, for a converter whose switch fails short. Not a user-replaceable fuse | Design 4.8 |
 | USB | USB-C, USB 2.0, device. Powers the logic, display and radio; not the valves or the sensor supply | Design 5 |
 
 ## Valve outputs
@@ -35,7 +36,7 @@
 | Hardware over-current trip | 4.6 A peak nominal, 4.0 to 5.4 A with all tolerances; acts about 70 us after the current passes it | Design 9, 19.3 |
 | Firmware current window per output | 80 to 700 mA by default, after 500 ms of inrush; short above 3000 mA RMS | Firmware defaults |
 | Maximum run time per zone | 60 min by default, at most 4 h; rest time 30 min by default | Firmware defaults, spec 2 rule 4 |
-| Keep-alive release | Gate drive gone 0.45 to 0.9 s after the last pulse; relay open within 0.95 s (simulation) | Design 8.4, 19.4 |
+| Keep-alive release | Gate drive gone 0.21 to 0.83 s after the last pulse, and valve current with it; the relay detector alone lets go within 1.45 s (simulation, tolerance corners) | Design 8.4, 19.4 |
 
 ## Current measurement
 

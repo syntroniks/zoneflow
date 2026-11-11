@@ -660,6 +660,14 @@ hardware author".
      last edge, 1.4 s if the pin is high. From a dead control loop to no
      gate drive is therefore at most 500 ms + 5 ms + 0.9 s = 1.4 s, and to
      an open relay 1.5 s.
+   - **Hardware review A2 widened these figures** after this list was
+     written: gate drive on after 13 to 22 ms and the relay transistor
+     after 1 to 53 ms; gate drive gone 0.21 to 0.83 s after the last edge
+     and within 1.25 s if the pin is high; the relay transistor 0.10 to
+     1.45 s and 2.19 s. From a dead control loop to no gate drive is at
+     most 1.34 s. The review also asks for no keep-alive phase shorter
+     than 2.5 ms, which the 5 ms toggle meets. Section 19.4 of the
+     hardware design has the current contract.
    - **Flash.** Espressif does not fix the module's flash part. A
      representative 16 MB part, the Winbond W25Q128JV, erases a 4 kB sector
      in 45 ms typically and 400 ms at most. 400 ms plus one 50 ms control

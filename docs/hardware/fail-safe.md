@@ -34,11 +34,15 @@ by parts on the board.
 
 From the last pulse, by simulation:
 
-- Drive is gone after **0.45 to 0.9 seconds**.
-- The relay is open between **0.12 and 0.95 seconds**.
-- Counting from a stuck control loop, which first has to miss its half-second deadline: at most **1.4 seconds** to no drive and **1.5 seconds** to an open relay.
+- Drive is gone after **0.21 to 0.83 seconds**, and the valves are off with it.
+- Detector B lets the relay go between **0.10 and 1.45 seconds**. That matters only if detector A has failed.
+- Counting from a stuck control loop, which first has to miss its half-second deadline: at most **1.34 seconds** to no drive.
 
-The specification asked for "about one second" from the last pulse.
+The specification asked for "about one second" from the last pulse. The
+figures are the tolerance corners of
+[hardware review A2](../design/hardware-review-a2.md), which are wider than
+the first analysis. The long end of detector B's range belongs to one corner
+of its transistor's tolerance and has to be measured.
 
 ## What happens when
 
@@ -49,6 +53,7 @@ The specification asked for "about one second" from the last pulse.
 | Power cut | Nothing has power |
 | An output's triac fails short after a surge | The firmware sees current with no valve on, opens the relay and stops; if the firmware is also dead, the relay opens when the pulses stop |
 | A shorted valve wire | The over-current latch, within microseconds; the resettable fuse on that output if the latch does not act |
+| The 5 V converter fails with its switch shorted | A clamp holds the 5 V rail under 10 V and a soldered fuse in the converter's input opens. The board goes dark and the relay has no supply |
 | A single failed part in either detector | The other detector, by design. The [single-fault analysis](../design/hardware-design.md#85-single-fault-analysis) goes through each part |
 
 ## How the controller checks it
@@ -68,10 +73,16 @@ shorted output). If a detector fails, the controller refuses to water and
 shows [Safety circuit failed its test](../troubleshooting.md#safety-circuit-failed-its-test).
 That fault needs a person to confirm a repair before any valve opens again.
 
+Hardware review A2 added two checks to the procedure that the firmware does
+not run yet. One lets the heartbeat pin float for half a second and watches
+that nothing else moves it. The other checks that the relay's first
+transistor lets go when the chip driving it is reset.
+
 ## What it does not cover
 
 - **A valve that sticks open mechanically.** The controller can only remove power. A valve with dirt in it may stay open without power.
-- **A failed regulator.** If the 5 V regulator's switch fails short, the analysis cannot prove what the valves do ([risk 21](../design/hardware-design.md#20-design-risk-register)).
+- **A failed 3.3 V regulator.** If it fails short, the processor gets 4.95 V, which is outside its ratings, and the analysis cannot prove what it then does ([review A2](../design/hardware-review-a2.md), finding M5). Both detectors still let go if the pulses stop.
+- **A solder bridge onto the heartbeat net.** A bridge of a few kilohms or less from that net to a signal that toggles by itself defeats both detectors while the processor is in reset. The pin was chosen so that no such signal is beside it, and the float check looks for it.
 - **Firmware that keeps pulsing while doing the wrong thing.** The hardware checks that the firmware's control loop is running, not that its decisions are right. The maximum run time in the firmware, which no schedule or request can exceed, covers that case as far as software can.
 
 All of the above is on paper. The bench tests that will check it are risks

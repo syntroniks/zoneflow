@@ -46,7 +46,7 @@ needs no change to the design.
 |---|---|---|---|---|---|
 | B1 | Blocking | Keep-alive pin | `KA` was on GPIO38, module pin 31. Pin 30 is GPIO37, which the design document calls "not connected". On the N16R8 it is the data strobe of the octal PSRAM and toggles whenever the processor reads the PSRAM, which every boot does. A bridge of 0 to about 5 kohm from it to `KA` holds both detectors on while the pin is high-impedance. The 1 and 4.7 kohm bridges pass every step of the self-test. | ESP32-S3 datasheet v2.2 table 2-14; module datasheet v1.8, pin table note b. `results/asfound.md`, rows "KA bridged to module pin 30". Section 3.3. | **Fixed.** `KA` is on GPIO17, module pin 10, between `ENC_B` and `BTN_BACK`. `ENC_SW` took GPIO38. |
 | M1 | Major | Keep-alive net | A bridge from `KA` to `AC_ZC` holds both detectors on once drive is enabled, for a Q2 from the lower third of its threshold range at 27 °C and above. The design document says it holds B only, because it compared A's reservoir with the turn-on threshold of 1.55 V. A is already on when it matters and turns off at 0.94 V. The author's own file puts the reservoir at 1.0 V. | `hardware/sim/ka_bridge.cir`, re-run. `results/asfound-bridges.md`. Section 3.3. | **Fixed.** R33 from 10 kohm to 2.2 kohm: a net behind a 10 kohm pull-up cannot lift `KA` past 0.6 V. Design section 8.5 corrected. |
-| M2 | Major | Logic supply | Regulator over-voltage, risk 21: the switch of U1 failing short put `VIN_DC` on every 5 V and 3.3 V part, with nothing known about the keep-alive after that. A crowbar onto the input fuses cannot work, because R1 limits the fault current to 1.6 to 3.7 A rms. | `hardware/sim/buck_overvoltage.cir`. Section 6. | **Fixed.** D25, SMBJ6.0A, on `V_BUCK`. F5, 0.5 A very fast, in the input of U1. `V_BUCK` stays under 9.7 V and `3V3` in regulation until F5 opens. |
+| M2 | Major | Logic supply | Regulator over-voltage, risk 21: the switch of U1 failing short put `VIN_DC` on every 5 V and 3.3 V part, with nothing known about the keep-alive after that. A crowbar onto the input fuses cannot work, because R1 limits the fault current to 1.6 to 3.7 A rms. | `hardware/sim/buck_overvoltage.cir`. Section 6. | **Fixed.** D25, SMBJ6.0A, on `V_BUCK`. F5, 0.5 A very fast, in the input of U1. `V_BUCK` stays under 10 V and `3V3` in regulation until F5 opens. In the one worst case the current reaches the interrupting rating of F5: section 6.3. |
 | M3 | Major | Self-test | No step looks at the keep-alive net while the processor does not drive it. A bridge of a kilohm or more to a net that toggles is invisible while firmware drives the pin and takes over when the pin floats. | `results/asfound.md`: the 1 kohm bridges are found by no step of the sequence as merged. | **Fixed in the procedure.** Step 2b, the float test, design section 19.7. Firmware has to implement it. |
 | M4 | Major | LED supply switch | Q3 shorted is found by no test. The author left it for lack of a pin. | Design section 8.5 as merged. `results/asfound.md`, rows Q3. | **Fixed.** R92 reads `V_DRV` behind Q3 in place of `DRV_EN`. The idle test now fails. Section 7. |
 | M5 | Major | 3.3 V supply | U3 shorted input to output puts 4.95 V on `3V3`. The design document lists it as safe: "either the ESP32 keeps running, and then nothing is wrong with the keep-alive, or it stops". A processor at 4.95 V against an absolute maximum of 3.6 V can do a third thing, and that is the same argument the author did not accept for the buck regulator. Both detectors themselves still release at 4.95 V. | ESP32-S3 datasheet v2.2 table 5-1. `results/faults.md`, row "U3 shorted". | **Open.** Recommended: a detector that holds `EN` low when `3V3` is above about 3.6 V. Section 10. |
@@ -57,7 +57,7 @@ needs no change to the design.
 | m3 | Minor | Relay drive | R12 open is listed as found by the weld check. It is not. Q1 then stays on through an expander reset, and nothing reports it. | `results/asfound.md`, row R12 open. | **Fixed in the procedure.** Step 5b, design section 19.7. |
 | m4 | Minor | Detector B | "Q2 gate open: K1 never closes." A gate that opens while charged, or leaks high, holds Q2 on. | `results/asfound.md`, rows Q2 pin G open. | **Corrected.** A covers it; the idle or stop test finds it. |
 | m5 | Minor | Fault table | Floating IC inputs are not in the author's table. U6 pin 7 open sticks A on. U7 pin 9 and U5 pin 3 can stick a layer on, depending on which way they float. Bridges between pins 9 and 10 and between pins 11 and 12 of U7 stick A on. | Appendix A. | **Corrected**: design section 8.5 has them. All are covered and found. |
-| m6 | Minor | Sensor supply | While D25 clamps, U11 sees up to 9.7 V on a 7 V absolute maximum. If it failed with its input joined to its enable pin it would drive GPIO45. | TI TPS2553, absolute maximum ratings. Section 6.5. | Recommended, not applied: 10 kohm in `SENS_PWR_EN`. |
+| m6 | Minor | Sensor supply | While D25 clamps, U11 sees up to 9.8 V on a 7 V absolute maximum. If it failed with its input joined to its enable pin it would drive GPIO45. | TI TPS2553, absolute maximum ratings. Section 6.5. | Recommended, not applied: 10 kohm in `SENS_PWR_EN`. |
 | m7 | Minor | Input protection | The design document's fuse table has F1 and F4 "in the loop" for a shorted C1. They are, and they do not open: R1 limits the current to 54 to 122 % of their rating. R1 burns. | `hardware/sim/buck_overvoltage.cir`, follow-current lines. | **Corrected** in design section 5.3. No circuit change. |
 | m8 | Minor | Models | "The BAT54S data sheet does not limit leakage above 25 °C" is true of limits. The sheet has typical curves at 85 and 125 °C, and the model matches them: 19 and 196 uA against about 20 and 200 uA. The header of `relay_detector.cir` says 4 uA at 70 °C; the model gives 7 uA. | Nexperia BAT54S, 1 July 2022, figure 2. | **Corrected** in design section 22 and in the file header. |
 | m9 | Minor | Detector A | The statements on slow toggling are too firm both ways. The document has "1 Hz never enables" and "3 Hz and faster always did". Over my corners 1 Hz enables A in 2 of 24 and 5 Hz fails to in 11 of 24. | `results/corners.md`, no-toggling table. Section 4.4. | **Corrected** in design section 8.4. The contract is unchanged: an edge every 20 ms is on, a steady level is off, nothing in between is promised. |
@@ -552,7 +552,7 @@ board must fail safe and must not be destroyed silently.
 
 `hardware/sim/buck_overvoltage.cir` closes the high-side switch of U1 with
 `VIN_DC` at 30 V and at 44.3 V. `V_BUCK` passes 7 V, the absolute maximum of
-U11, after 14 and 11 us. It peaks at 42.7 and 63.4 V, above `VIN_DC`,
+U11, after 14 and 11 us. It peaks at 43.1 and 64.8 V, above `VIN_DC`,
 because L1 rings with C5 and C6. From there the 5 V and 3.3 V parts are
 destroyed. The author's argument that K1 still opens rested on a dead
 processor staying quiet, and he said he could not show that. I agree. With
@@ -609,31 +609,48 @@ it is overloaded, which is the safe direction here.
 design. With the switch welded and L1 saturated the current is limited by
 what is left in the loop:
 
-(44.3 V - 6.67 V) / (0.082 ohm of C1 + 0.42 ohm of F5 + 0.2 ohm of L1 + 0.03 ohm of D25 + 0.02 ohm of switch) = 50 A
+(44.3 V - 6.67 V) / (0.033 ohm of C1 + 0.42 ohm of F5 + 0.2 ohm of L1 + 0.03 ohm of D25 + 0.02 ohm of switch) = 53.5 A
 
-That is the interrupting rating of F5 at 125 V, met at 44 V. The simulation
-gives 46 to 48 A. A 1 A fuse of the same series has 0.153 ohm and would
-pass 80 A. A 1206 thin-film fuse of 0.075 ohm, rated to break 50 A at 63 V,
-would pass 90 A. Both would be asked to break more than they are rated for.
+The simulation gives 49 to 52 A, because F5 has opened before the current
+has fully risen. A 1 A fuse of the same series has 0.153 ohm and would pass
+86 A. A 1206 thin-film fuse of 0.075 ohm, rated to break 50 A at 63 V, would
+pass 105 A. Both would be asked to break far more than they are rated for.
+
+**The margin that C1 took away.** When I sized F5, C1 was a Lelon part with
+0.082 ohm, the sum above came to 50 A and the simulation to 46 A. While this
+review ran, `main` changed C1 to a through-hole Rubycon ZLJ part, whose
+sheet gives 0.033 ohm at most. I read that sheet and ran the file again.
+The worst case is now at the 50 A that F5 is rated to interrupt at 125 V:
+49 A with D25 at its highest clamp, 51.5 A at its lowest, 51 A with a C1
+three times better than its limit. That case needs the highest input the
+specification allows, 32 VAC unloaded, a switch welded to 0.02 ohm and a
+saturated inductor, all together. At a `VIN_DC` of 30 V the peak is 25 to
+30 A. The fuse has to break the current at 44 V, where its capability lies
+between its two ratings, 50 A at 125 V and 300 A at 32 V DC. I take it as
+able to and cannot show it from the data sheet. I kept the part. A 0.1 ohm
+resistor in series would restore the margin for 8 mW, and the bench test of
+risk 21 says whether it is needed.
 
 ### 6.4 Simulation with the protection
 
-48 cases. `VIN_DC` at 17, 30 and 44.3 V. The failed switch at 0.02 ohm
+54 cases. `VIN_DC` at 17, 30 and 44.3 V. The failed switch at 0.02 ohm
 (welded), 0.725 ohm (the data sheet's on-resistance: stuck on) and 5 ohm
 (damaged). L1 at 47 uH and at 5 uH for a saturated core. F5 opening at its
 nominal melting I²t and at three times that, for tolerance and arc. A 20 VA
-transformer for those, then 40 and 75 VA and both clamp limits.
+transformer for those, then 40 and 75 VA and both clamp limits, then the
+worst case with three values for the series resistance of C1.
 
 | | Result |
 |---|---|
-| Highest `V_BUCK`, D25 at its highest clamp | 7.5 to 9.7 V |
-| Highest `V_BUCK`, D25 at its lowest clamp | 7.1 to 8.1 V |
-| Peak current | 2.2 to 48.5 A, against 58.3 A rated for D25 and 50 A for F5 |
-| F5 opens after, welded switch, 30 V and above | 0.04 to 0.2 ms, 19 ms at three times the I²t on 30 V |
+| Highest `V_BUCK`, D25 at its highest clamp | 7.5 to 9.8 V |
+| Highest `V_BUCK`, D25 at its lowest clamp | 7.1 to 8.2 V |
+| Peak current | 2.2 to 51.5 A, against 58.3 A rated for D25 and 50 A at 125 V for F5 |
+| F5 opens after, welded switch, 30 V and above | 0.04 to 0.2 ms, 18 ms at three times the I²t on 30 V |
 | F5 opens after, every other case | 0.15 to 200 ms |
-| Energy in D25 | 0.015 to 0.70 J |
-| D25 against its pulse curve, cases under 10 ms | The curve allows 4.5 to 11 times what D25 takes |
+| Energy in D25 | 0.016 to 0.69 J |
+| D25 against its pulse curve, cases under 10 ms | The curve allows 4.4 to 11 times what D25 takes |
 | Energy in R1 | 0.02 to 1.4 J |
+| The worst case with C1 at 0.099, 0.033 and 0.010 ohm | 45, 49 and 51 A, and 9.6, 9.8 and 9.9 V |
 
 The cases that take tens of milliseconds are the ones with little current: a
 switch of several ohms, or `VIN_DC` at 17 V. The fuse model integrates I²t
@@ -647,12 +664,12 @@ never exceeds the clamp voltage.
 
 ### 6.5 What the valves do
 
-**While D25 clamps**, `V_BUCK` is at most 9.7 V and `V5` 9.4 V.
+**While D25 clamps**, `V_BUCK` is at most 9.8 V and `V5` 9.5 V.
 
 - **`3V3` stays regulated.** U3 is rated 20 V. The processor, the expander, U7, Q3 and `V_DRV` are inside their ratings and work. The fault-injection run with `V_BUCK` at 10.3 V shows both detectors releasing at their normal times.
 - **U6**, on `V5`, is rated 36 V.
-- **The relay coil** sees 9.7 V against a continuous limit of 8.5 V at 23 °C, for seconds at most. If firmware has K1 closed it stays closed. Firmware is alive and in control, so that is not a valve that stays on after the keep-alive stops.
-- **The read-back divider** puts 53 uA into the clamp diode of GPIO7.
+- **The relay coil** sees 9.8 V against a continuous limit of 8.5 V at 23 °C, for seconds at most. If firmware has K1 closed it stays closed. Firmware is alive and in control, so that is not a valve that stays on after the keep-alive stops.
+- **The read-back divider** puts at most 56 uA towards the clamp diode of GPIO7.
 
 So the single-fault analysis of section 3 applies unchanged while the rail is
 high. The regulator is the one fault, and both detectors are healthy.
@@ -663,9 +680,9 @@ On 24 VAC alone the logic is off as well. With USB attached the logic runs
 and K1 still cannot close.
 
 **The one part over its rating is U11**, the sensor supply switch: 7.5 to
-9.7 V on a 7 V absolute maximum, for 0.04 ms to 0.2 s and up to seconds in
+9.8 V on a 7 V absolute maximum, for 0.04 ms to 0.2 s and up to seconds in
 the slow cases. It may be damaged. It cannot switch a valve. If it failed
-with its input joined to its enable pin it would put up to 9.7 V on GPIO45
+with its input joined to its enable pin it would put up to 9.8 V on GPIO45
 through no resistance. A 10 kohm resistor in `SENS_PWR_EN` would limit that
 to 0.6 mA. I recommend it and did not fit it. It is finding m6.
 
@@ -825,10 +842,10 @@ about 8 s from 70 °C. It is risk 9.
 
 ## 9. What this pull request changes
 
-A schematic-capture engineer is working from `hardware/netlist.yaml`. This is
-every reference designator and net that changed. No existing part was
-renumbered. I checked the table against a comparison of the two netlists,
-net by net.
+The schematic was captured from `hardware/netlist.yaml` and merged while
+this review ran, so this pull request also redraws it. This is every
+reference designator and net that changed. No existing part was renumbered.
+I checked the table against a comparison of the two netlists, net by net.
 
 | Item | Before | After | Finding |
 |---|---|---|---|
@@ -857,10 +874,15 @@ Files:
 - **`docs/design/hardware-design.md`**: new section 4.8. Sections 7.3, 8.4, 8.5, 8.6, 12.2, 12.3, 19, 20, 21 and 22 corrected. New section 25 lists the changes.
 - **`docs/design/system-spec.md`**: v0.6. The logic supply row now asks for the clamp and the fuse, on the owner's decision.
 - **`hardware/sim/`**: `failsafe/`, `buck_overvoltage.cir`, `outstage_smallload.cir`, and their sections in the README.
+- **`hardware/zoneflow-a/`**, the captured schematic. `design/parts.toml` has the two new part numbers. `design/circuit.py` draws F5 and D25 on the power sheet, with C2 and C3 behind the fuse, and R92 on `V_DRV` on the fail-safe sheet, and its page notes carry the new pin and times. `design/footprints.md` records the comparison of the fuse footprint with Littelfuse's land pattern. Every generated file is rebuilt with `make`.
+- **`firmware/esphome/zoneflow/board-rev-a.yaml`**: regenerated from the pin map by `gen_board_yaml.py`. Keep-alive on GPIO17, encoder switch on GPIO38.
+- **The user manual**: the fail-safe page, its diagram, the specifications, the cost figures and the part and net counts, where they quoted what changed.
 
-Firmware is not in this pull request. The firmware on `main` generates its
-board header from the pin map at every build and uses signal names, so the
-two moved pins need no firmware change. I ran the generator of `main`,
+No firmware source is changed. Both firmwares take their pins from the pin
+map, the standalone firmware through a header generated at every build and
+the ESPHome package through the file above, and both write the keep-alive
+pin with a call that works for any GPIO number. So the two moved pins need
+no firmware change. I ran the generator of `main`,
 `firmware/zoneflow-fw/tools/gen_board_header.py`, on the changed pin map: it
 accepts it and gives keep-alive 17, encoder switch 38, read-back 42. What
 firmware does have to change is in section 19 of the design document:
@@ -873,6 +895,7 @@ steps 2b and 5b of the self-test, the limits of step 9, and rules 15 to
 |---|---|---|
 | M5 | An over-voltage detector on `3V3` that pulls `EN` low above about 3.6 V. A candidate from the JLCPCB listing is the TI TPS3700DDCR, a window comparator with open-drain outputs, C33002, 5461 in stock on 2026-11-10. I have read its listing and not its data sheet. | A new IC, a divider and a decision. It needs its own review. |
 | m6 | 10 kohm in series with `SENS_PWR_EN`, between GPIO45 with R86 and the enable pin of U11 | One more part and net for a failure that needs two faults in a row. The owner may want it anyway. |
+| M2 | 0.1 ohm in series with F5 | By the sum of section 6.3 it would take the worst-case fault current from 53.5 A to 47 A, under the 50 A interrupting rating at 125 V, for 8 mW at full load. Not simulated. One more part and net. The bench test of risk 21 says whether it is needed. |
 | M6 | R89 from 1 kohm to 220 ohm, so that detector B holds through a 1 ms phase | It moves the single-edge and slow-toggling results and wants its own pass through the fault table. The contract change covers the firmware's waveform. |
 | m7 | Nothing. R1 will burn if C1 fails short. | The alternative is a fusible resistor that also meets the pulse rating of section 4.4. I did not find one and did not look long. |
 | m12 | A line in the user documentation about pump-start relay coils | It belongs with the wiring page, which this review did not touch. |
@@ -905,8 +928,13 @@ Littelfuse, 2410, 11,512), C23162 (4.7 kohm), C4190 (2.2 kohm).
 current and firing voltage of section 6.4, the read-back levels, the fuse
 sizing of section 6.
 
-**Checks run on the repository**: `make -C hardware design-check` and
-`uv run mkdocs build --strict`.
+**Checks run on the repository**, all on the tree of this pull request:
+
+- **`make -C hardware design-check`**: netlist, design document, BOM and pin map agree, and the committed schematic netlist equals `netlist.yaml` pin for pin.
+- **`make` in `hardware/zoneflow-a/`**: "348 components and 199 nets of the design netlist match KiCad's netlist pin for pin", the page lint finds no collision on 20 pages, ERC reports no violation. A second build left every file byte-identical. I read the five redrawn pages as images: power, fail-safe, MCU, expander and the block diagram.
+- **`uv run mkdocs build --strict`** and `tools/docs/check_links.py site`.
+- **`gen_board_yaml.py --check`** for the ESPHome package.
+- **The host tests** of both firmwares, `test/host/run.sh`, with the changed pin map.
 
 **Not verified. A bench has to show these.**
 
@@ -915,7 +943,7 @@ sizing of section 6.
 - **Capacitance of C22, C23, C50 and C51 in circuit.** The ranges are an allowance. Samsung publishes bias curves that I did not obtain.
 - **BAT54S leakage above the typical curve.** The data sheet gives typical curves at 85 and 125 °C and a limit only at 25 °C. Three times typical is my allowance.
 - **The eFuses of a real N16R8 module**, section 5.
-- **F5 and D25 in a real fault.** The fuse model has no arc and no heat loss. Short SW to VIN on a sacrificial board at 17, 30 and 44 V and record `V_BUCK`. Risk 21.
+- **F5 and D25 in a real fault.** The fuse model has no arc and no heat loss. In the worst case the current is at the 50 A that F5 is rated to interrupt at 125 V, and the data sheet has no figure for 44 V. Short SW to VIN on a sacrificial board at 17, 30 and 44 V and record `V_BUCK`. Risk 21.
 - **What an over-driven processor does**, findings M5 and m6.
 - **The float test on real firmware.** Whether the display, the backlight and the PSRAM can be kept busy for 0.5 s with the keep-alive pin as an input is a firmware question.
 - **Relay hold current.** The G5NB data sheet gives must-operate and must-release voltages. Where a relay actually lets go between 10 and 40 % of its rated voltage decides when K1 opens inside the window of section 4.
@@ -937,6 +965,7 @@ How to read it:
 - **Found while the valve runs.** The step of the self-test sequence that fails when the fault appears during a run: the checks of every control tick, the end of the run, or the stop test.
 - **Found at the next start.** The first step that fails when the fault is there from power-up. Steps 2b and 5b are the ones this review adds.
 - **A level in brackets** means a reading between the logic thresholds: the test may or may not fail.
+- **Text in italics** after a fault is a remark on what the model cannot say about it.
 
 The two columns on the right are for the self-test sequence of design section 19.7 as review A2 leaves it.
 

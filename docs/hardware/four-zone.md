@@ -27,8 +27,8 @@ cell and the enclosure, at prices checked on 2026-11-10:
 
 | Build | 10 boards | 100 boards |
 |---|---|---|
-| 8-zone | 40.35 USD | 31.50 USD |
-| 4-zone | 34.06 USD | 26.70 USD |
+| 8-zone | 40.77 USD | 31.84 USD |
+| 4-zone | 34.48 USD | 27.04 USD |
 
 ## Firmware
 
