@@ -64,7 +64,7 @@ RN2,R_Array_Convex_4x0603,top,0,42.600,74.500,1,41.700,75.700,upper left
 RN3,R_Array_Convex_4x0603,top,90,36.500,83.300,1,35.300,82.400,lower left
 SW3,RotaryEncoder_Alps_EC11J15,top,0,85.000,88.000,A,82.500,80.700,lower left
 U1,TI_SO-PowerPAD-8,top,180,21.500,33.000,1,24.280,31.095,lower right
-U2,SOT-23-6,top,0,3.600,17.700,1,2.462,18.650,upper left
+U2,SOT-23-6,top,0,3.300,17.700,1,2.163,18.650,upper left
 U3,SOT-223-3_TabPin2,top,0,14.500,50.100,1,11.350,52.400,upper left
 U4,ESP32-S3-WROOM-1,top,0,103.000,103.250,1,94.250,108.510,upper left
 U5,TSSOP-24_4.4x7.8mm_P0.65mm,top,0,35.000,72.500,1,32.138,76.075,upper left

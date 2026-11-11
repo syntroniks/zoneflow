@@ -493,6 +493,18 @@ exclude = ["GND", "3V3", "V_BUCK", "VBUS", "/VIN_MON", "/RLY_B_RB", "/ISNS", "/O
            "/Display/TFT_LEDK", "/USB_DP_MCU", "/USB_DM_MCU", "/ADC_LO", "/ADC_HI", "/SENS_FLOW", "/ENC_B",
            "/Power/FB", "/Power/RIP", "/Power/FB_MID", "/Power/RON", "/*/G", "/*/OGT", "/*/OLA", "/*/LEDA"]
 
+# The patch router closes what the autorouter leaves open on F.Cu and B.Cu. Where a connection has
+# no path on those two, it may tunnel under the obstacle on In2.Cu. Such a track is a slot in the
+# 3.3 V plane, so a millimetre there costs six elsewhere, and it stays out of these rectangles: the
+# Kelvin sense pair of the shunt, which runs on B.Cu right under that layer. The [[route.keepout]]
+# rectangles that name In2.Cu, round the keep-alive net and over the valve block, close it too.
+# This table is not part of what the stored routing was made from.
+[route.patch_last_resort]
+layer = "In2.Cu"
+cost = 6
+keepout = [[17.8, 23.2, 19.6, 59.5], [17.8, 23.2, 34.7, 25.0], [32.7, 16.7, 34.7, 25.0],
+           [17.8, 57.7, 33.3, 59.5], [31.3, 57.7, 33.3, 63.4]]
+
 # In1.Cu is the ground plane. Freerouting is told so in the Specctra file, as a power layer with a
 # plane: the "routable" flag of its settings is not obeyed. The build fails if a track is on it.
 [[route.plane]]
@@ -519,13 +531,17 @@ rect = [106.5, 9.0, 112.5, 15.0]
 
 # Where the autorouter may put neither track nor via: the valve block on B.Cu (heat islands) and
 # on In2.Cu (shunt plane and fan-out lanes), which it cannot see because they are added afterwards.
+# "stands_for_copper": the patch router reads the finished board, sees that copper itself and
+# needs no fence here. Every other rectangle of this list closes the area to it as well.
 [[route.keepout]]
 layers = ["B.Cu", "In2.Cu"]
 rect = [39.4, 7.3, 103.3, 38.9]
+stands_for_copper = true
 
 [[route.keepout]]
 layers = ["In2.Cu"]
 rect = [34.6, 18.6, 39.4, 40.1]
+stands_for_copper = true
 
 # The keep-alive net runs on B.Cu. Nothing is routed there within 1.1 mm of it, nor on In2.Cu, the
 # layer next to it with no plane between. The pours stay. The [[guard]] strips say the same to DRC
@@ -3052,4 +3068,938 @@ optional = true
 [drc_severity]
 lib_footprint_mismatch = "ignore"
 
+# Tracks that close what the autorouter left open. WRITTEN BY hwflow.patchroute: do not edit.
+# They belong to one stored routing, named by its hash. pcbbuild finish lays them after it
+# has imported that routing, and refuses them for any other: run `make patches` again then.
 
+[patches]
+session = "13cc4d6f28d450546554030a8be7499c717eaa86fe6b7b5a9e6f5a26241c4130"
+
+# /SENS_PWR_EN: (55.66, 64.55) to (55.38, 59.10), 21.9 mm, 2 vias, 0.2 mm wide
+# /SENS_PWR_EN: (109.99, 90.75) to (59.37, 57.57), 104.1 mm, 10 vias, 0.2 mm wide
+# /T_RAIN: (104.86, 25.01) to (89.76, 5.90), 29.2 mm, 1 vias, 0.4 mm wide
+# /PGOOD: (18.72, 33.64) to (23.90, 28.00), 12.3 mm, 2 vias, 0.2 mm wide
+# /ISENSE_LO: (30.97, 65.95) to (33.09, 60.12), 25.9 mm, 1 vias, 0.2 mm wide
+# /Connectors/U0TXD: (74.20, 88.42) to (78.43, 100.40), 15.8 mm, 3 vias, 0.2 mm wide, 3.8 mm of it on In2.Cu
+# /ZD_Z8_N: (102.00, 44.20) to (41.70, 73.30), 86.0 mm, 9 vias, 0.2 mm wide, 9.3 mm of it on In2.Cu
+# /ZD_Z2_N: (45.00, 44.20) to (32.14, 73.47), 59.1 mm, 6 vias, 0.2 mm wide, 1.6 mm of it on In2.Cu
+# /MCU/STATUS_LED: (15.92, 42.00) to (97.28, 90.75), 161.1 mm, 7 vias, 0.2 mm wide, 8.5 mm of it on In2.Cu
+# /Expander/RLY_A: (49.54, 72.00) to (7.15, 35.60), 70.8 mm, 10 vias, 0.4 mm wide, 12.4 mm of it on In2.Cu
+# /SENS_5V: (78.34, 5.90) to (107.56, 35.50), 61.8 mm, 4 vias, 0.4 mm wide, 18.5 mm of it on In2.Cu
+# /Sensors/N_RAIN: (60.92, 101.05) to (104.86, 27.66), 144.3 mm, 15 vias, 0.2 mm wide, 18.1 mm of it on In2.Cu
+
+[[patch]]
+layer = "F.Cu"
+net = "/SENS_PWR_EN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[55.675, 64.55], [55.225, 64.1], {via = [55.225, 63.95]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/SENS_PWR_EN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[55.225, 63.95], [52.625, 63.95], [52.075, 64.5], {via = [47.075, 64.5]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/SENS_PWR_EN"
+width = 0.2
+stay = true
+points = [[47.075, 64.5], [51.025, 60.55], [51.025, 58.15], [54.425, 58.15], [55.375, 59.1]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/SENS_PWR_EN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[109.973, 90.773], [109.523, 91.223], [109.523, 91.873], [107.423, 93.973], [100.423, 93.973], [99.023, 92.573], {via = [99.023, 92.073]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/SENS_PWR_EN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[99.023, 92.073], [101.323, 89.773], [101.323, 87.023], [103.223, 85.123], [103.223, 79.973], [101.673, 78.423], {via = [101.673, 75.273]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/SENS_PWR_EN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[101.673, 75.273], [102.473, 74.473], {via = [103.023, 74.473]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/SENS_PWR_EN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[103.023, 74.473], [103.023, 73.123], [104.573, 71.573], [104.573, 68.873], {via = [105.023, 68.423]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/SENS_PWR_EN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[105.023, 68.423], {via = [105.023, 65.023]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/SENS_PWR_EN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[105.023, 65.023], [104.473, 64.473], {via = [104.473, 60.823]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/SENS_PWR_EN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[104.473, 60.823], [101.473, 57.823], {via = [101.473, 57.123]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/SENS_PWR_EN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[101.473, 57.123], {via = [101.473, 53.973]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/SENS_PWR_EN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[101.473, 53.973], [99.923, 52.423], [87.923, 52.423], {via = [87.373, 52.973]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/SENS_PWR_EN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[87.373, 52.973], [85.973, 54.373], [70.523, 54.373], {via = [69.823, 53.673]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/SENS_PWR_EN"
+width = 0.2
+stay = true
+points = [[69.823, 53.673], [69.573, 53.673], [68.123, 55.123], [68.123, 57.223], [67.773, 57.573], [59.373, 57.573]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/T_RAIN"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[104.865, 25], [104.765, 25.1], {via = [104.765, 25.6]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/T_RAIN"
+width = 0.4
+stay = true
+points = [[104.765, 25.6], [104.765, 20.05], [103.715, 19], [103.715, 15.45], [96.115, 7.85], [91.665, 7.85], [89.765, 5.95], [89.765, 5.9]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/PGOOD"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[18.72, 33.65], [18.62, 33.75], {via = [17.47, 33.75]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/PGOOD"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[17.47, 33.75], [17.72, 33.5], {via = [17.72, 29.7]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/PGOOD"
+width = 0.2
+stay = true
+points = [[17.72, 29.7], [22.22, 29.7], [23.92, 28]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ISENSE_LO"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[30.975, 65.975], [30.175, 66.775], [30.175, 66.875], [28.575, 66.875], [28.375, 66.675], [28.375, 62.675], [26.825, 62.675], [24.625, 60.475], [24.625, 57.975], {via = [25.025, 57.575]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/ISENSE_LO"
+width = 0.2
+stay = true
+points = [[25.025, 57.575], [32.775, 57.575], [33.825, 58.625], [33.825, 58.725]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ISENSE_LO"
+width = 0.2
+stay = true
+points = [[33.825, 58.725], [33.725, 58.825], [33.675, 58.825], [33.075, 59.425], [33.075, 60.125]]
+
+[[patch]]
+layer = "B.Cu"
+net = "/Connectors/U0TXD"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[74.2, 88.42], [76.55, 90.77], {via = [76.55, 92.32]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/Connectors/U0TXD"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[76.55, 92.32], [76.55, 96.72], {via = [77.75, 97.92]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/Connectors/U0TXD"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[77.75, 97.92], [78.85, 99.02], {via = [78.85, 101.27]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/Connectors/U0TXD"
+width = 0.2
+stay = true
+points = [[78.85, 101.27], [78.45, 100.87], [78.45, 100.42]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_Z8_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[102, 44.2], [102.9, 45.1], {via = [102.9, 47.65]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/ZD_Z8_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[102.9, 47.65], [102.2, 48.35], {via = [102.2, 57.65]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/ZD_Z8_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[102.2, 57.65], [101.95, 57.9], {via = [99.7, 57.9]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_Z8_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[99.7, 57.9], [98.9, 58.7], {via = [96.3, 58.7]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/ZD_Z8_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[96.3, 58.7], {via = [89.35, 65.65]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_Z8_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[89.35, 65.65], [85.95, 69.05], {via = [84.55, 69.05]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/ZD_Z8_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[84.55, 69.05], [81.55, 72.05], {via = [79.05, 72.05]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_Z8_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[79.05, 72.05], [78.55, 72.55], [72.75, 72.55], {via = [72.55, 72.35]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/ZD_Z8_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[72.55, 72.35], [69.8, 69.6], [58.7, 69.6], [58.5, 69.4], [54.8, 69.4], [52, 72.2], [46.9, 72.2], {via = [46.75, 72.05]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/ZD_Z8_N"
+width = 0.2
+stay = true
+points = [[46.75, 72.05], [45.75, 73.05], [42.3, 73.05], [42.05, 73.3], [40.6, 73.3]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_Z8_N"
+width = 0.2
+stay = true
+points = [[40.6, 73.3], [41.7, 73.3]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_Z2_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[44.988, 44.2], {via = [44.938, 44.25]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/ZD_Z2_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[44.938, 44.25], [39.838, 49.35], {via = [39.038, 49.35]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_Z2_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[39.038, 49.35], {via = [22.238, 49.35]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/ZD_Z2_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[22.238, 49.35], {via = [22.238, 57.55]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_Z2_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[22.238, 57.55], [22.788, 58.1], {via = [22.788, 62.9]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/ZD_Z2_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[22.788, 62.9], {via = [22.788, 64.5]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/ZD_Z2_N"
+width = 0.2
+stay = true
+points = [[22.788, 64.5], [22.788, 72.6], [24.838, 74.65], [29.638, 74.65], [30.838, 73.45]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_Z2_N"
+width = 0.2
+stay = true
+points = [[30.838, 73.45], [32.138, 73.45]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/MCU/STATUS_LED"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[15.9, 42], {via = [15.25, 42.65]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/MCU/STATUS_LED"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[15.25, 42.65], [12.1, 45.8], {via = [12.1, 57.7]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/MCU/STATUS_LED"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[12.1, 57.7], [8.3, 61.5], [8.3, 65.9], {via = [8.85, 66.45]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/MCU/STATUS_LED"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[8.85, 66.45], [8.85, 78.85], [18, 88], {via = [18, 93.35]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/MCU/STATUS_LED"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[18, 93.35], [18.15, 93.2], [43.65, 93.2], {via = [46.6, 96.15]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/MCU/STATUS_LED"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[46.6, 96.15], [55.55, 105.1], [59.95, 105.1], [64.25, 109.4], [82.55, 109.4], [85.85, 106.1], {via = [89.4, 106.1]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/MCU/STATUS_LED"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[89.4, 106.1], [89.4, 105.5], [92.45, 102.45], [94.65, 102.45], {via = [95.6, 101.5]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/MCU/STATUS_LED"
+width = 0.2
+stay = true
+points = [[95.6, 101.5], [101.05, 96.05], [101.05, 95.2], [100.25, 94.4], [100.15, 94.4], [97.3, 91.55], [97.3, 90.75]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/Expander/RLY_A"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[49.55, 72], [50.1, 72], {via = [50.55, 71.55]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/Expander/RLY_A"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[50.55, 71.55], [49.6, 70.6], {via = [49.6, 70.25]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/Expander/RLY_A"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[49.6, 70.25], {via = [49.6, 62.9]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/Expander/RLY_A"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[49.6, 62.9], [44.55, 57.85], {via = [38, 57.85]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/Expander/RLY_A"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[38, 57.85], [39.8, 56.05], {via = [39.8, 55.95]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/Expander/RLY_A"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[39.8, 55.95], [37.05, 55.95], [31.75, 50.65], {via = [29.55, 50.65]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/Expander/RLY_A"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[29.55, 50.65], {via = [24.45, 50.65]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/Expander/RLY_A"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[24.45, 50.65], [24.45, 50.55], [22.95, 49.05], [22.95, 44.45], {via = [19.75, 41.25]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/Expander/RLY_A"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[19.75, 41.25], [19.2, 40.7], [12.05, 40.7], {via = [10.5, 39.15]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/Expander/RLY_A"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[10.5, 39.15], [9.15, 37.8], {via = [8.7, 37.8]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/Expander/RLY_A"
+width = 0.4
+stay = true
+points = [[8.7, 37.8], [7.15, 36.25], [7.15, 35.6]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/SENS_5V"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[78.335, 5.9], [80.235, 4], [80.235, 3.95], [81.185, 3], {via = [102.285, 3]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/SENS_5V"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[102.285, 3], [103.535, 4.25], [103.535, 13.4], {via = [103.585, 13.45]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/SENS_5V"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[103.585, 13.45], [104.635, 14.5], [104.635, 23.95], [105.835, 25.15], [105.835, 27.7], [105.435, 28.1], {via = [105.435, 30.85]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/SENS_5V"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[105.435, 30.85], [104.635, 31.65], [104.635, 34.15], {via = [105.435, 34.95]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/SENS_5V"
+width = 0.4
+stay = true
+points = [[105.435, 34.95], [105.985, 35.5], [107.535, 35.5]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/Sensors/N_RAIN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[60.922, 101.062], {via = [60.922, 100.162]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/Sensors/N_RAIN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[60.922, 100.162], [59.122, 98.362], {via = [59.122, 98.213]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/Sensors/N_RAIN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[59.122, 98.213], [59.572, 98.213], [60.072, 97.713], [60.072, 95.812], [57.872, 93.612], [57.872, 93.362], {via = [57.272, 92.763]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/Sensors/N_RAIN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[57.272, 92.763], [54.172, 89.662], [50.822, 89.662], {via = [42.322, 81.162]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/Sensors/N_RAIN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[42.322, 81.162], [42.322, 77.912], [43.122, 77.112], {via = [56.872, 77.112]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/Sensors/N_RAIN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[56.872, 77.112], {via = [58.572, 75.412]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/Sensors/N_RAIN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[58.572, 75.412], [71.722, 75.412], [75.222, 71.912], {via = [76.922, 71.912]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/Sensors/N_RAIN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[76.922, 71.912], {via = [78.222, 71.912]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/Sensors/N_RAIN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[78.222, 71.912], [81.722, 68.412], {via = [85.172, 68.412]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/Sensors/N_RAIN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[85.172, 68.412], [85.622, 68.412], {via = [88.422, 65.612]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/Sensors/N_RAIN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[88.422, 65.612], {via = [88.422, 57.612]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/Sensors/N_RAIN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[88.422, 57.612], [87.622, 56.812], {via = [87.622, 55.962]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/Sensors/N_RAIN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[87.622, 55.962], [89.822, 55.962], {via = [94.022, 51.762]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/Sensors/N_RAIN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[94.022, 51.762], [101.522, 51.762], {via = [103.422, 53.662]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/Sensors/N_RAIN"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[103.422, 53.662], [104.122, 54.362], [104.972, 54.362], [107.072, 52.262], [107.072, 29.862], [106.622, 29.412], {via = [106.622, 28.462]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/Sensors/N_RAIN"
+width = 0.2
+stay = true
+points = [[106.622, 28.462], [106.422, 28.262], [106.422, 28.162], [105.372, 28.162], [104.872, 27.662]]
+
+# Connections of the stored routing that hwflow.patchroute could not close by itself, closed by
+# hand with the same search (layout review, section 9). They belong to the stored routing like the
+# tracks of patches.toml: after a new autorouter run, delete everything below the header and run
+# `make patches`; write new ones only for what it then leaves open.
+#
+# The autorouter boxed four pads in on F.Cu with no place for a via beside them: the test pad
+# TP15, pin 2 of the amplifier U8, the pull-up R96 and pin 8 of the expander U5. Each [[unroute]]
+# takes out one piece of autorouted copper that stood in the way; the tracks that follow lay it
+# again beside the connection it made room for.
+
+# ZD_Z1_N ran on B.Cu under the middle of TP15. 0.4 mm further up there is room under the pad for
+# a via of VB between it and ZD_Z2_N. A test pad is not soldered, so a via may stand in it.
+[[unroute]]
+net = "/ZD_Z1_N"
+box = [24.7, 75.3, 26.65, 75.8]
+
+# SA_P left pin 3 of U8 on a diagonal that passed under pin 2 and shut it in. It goes straight down
+# first now. SA_N cannot cross the Kelvin ground sense on F.Cu and the V_BUCK branch on B.Cu, both
+# laid by hand between the pin rows of U8, so 7.1 mm of it are on In2.Cu.
+[[unroute]]
+net = "/CurrentSense/SA_P"
+box = [32.7, 57.9, 35.8, 60.2]
+
+# RLY_ON went west from pin 9 of U5 through the one gap between R96 and R27, to a via, and came
+# back east on B.Cu. ZD_MV_N needs that gap to reach R96. RLY_ON now drops to B.Cu beside the pin.
+[[unroute]]
+net = "/Expander/RLY_ON"
+box = [25.0, 68.3, 31.2, 71.2]
+
+[[patch]]
+layer = "B.Cu"
+net = "/ZD_Z1_N"
+width = 0.2
+stay = true
+points = [[24.8053, 75.5102], [25.195, 75.9], [26.45, 75.9], [26.75, 75.7]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/VB"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[25.1, 75.0], {via = [25.6, 75.275]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_MV_N"
+width = 0.2
+stay = true
+points = [[32.1375, 71.525], [30.55, 71.525], [30.15, 71.125], [30.15, 70.8], [29.95, 70.6], [27.775, 70.6], [27.575, 70.8], [27.575, 71.4]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/Expander/RLY_ON"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[30.85, 70.86], [30.8, 70.81], {via = [30.8, 69.56]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/Expander/RLY_ON"
+width = 0.2
+stay = true
+points = [[30.8, 69.56], [31.45, 68.91], [31.45, 68.16]]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/VB"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[25.6, 75.3], [25.95, 74.95], [25.95, 72.2], [25.55, 71.8], {via = [25.55, 70.85]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/VB"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[25.55, 70.85], [25.3, 70.6], {via = [25.3, 67.6]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/VB"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[25.3, 67.6], [24.65, 66.95], {via = [24.65, 64.5]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/VB"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[24.65, 64.5], {via = [24.65, 62.9]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/VB"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[24.65, 62.9], [25.55, 62], {via = [27.4, 62]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/CurrentSense/SA_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[34.375, 60.125], [34.675, 59.825], {via = [34.675, 58.875]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/CurrentSense/SA_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[34.675, 58.875], [34.675, 62.525], {via = [32.225, 64.975]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/CurrentSense/SA_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[32.225, 64.975], [32.025, 65.175], {via = [29.925, 65.175]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/CurrentSense/SA_N"
+width = 0.2
+stay = true
+points = [[29.925, 65.175], [29.425, 64.675], [29.425, 64.425]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/CurrentSense/SA_P"
+width = 0.2
+stay = true
+points = [[35.645, 60.108], [35.645, 58.858], [34.795, 58.008], [32.795, 58.008]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_MV_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[27.55, 71.385], [27, 70.835], {via = [26.9, 70.835]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/ZD_MV_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[26.9, 70.835], [26.7, 70.835], [24.6, 68.735], {via = [24.6, 68.085]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_MV_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[24.6, 68.085], [21.95, 65.435], {via = [21.95, 64.485]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/ZD_MV_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[21.95, 64.485], {via = [21.95, 62.885]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_MV_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[21.95, 62.885], [21.6, 62.535], [21.6, 55.935], [21.9, 55.635], [21.9, 53.585], [23.5, 51.985], {via = [25.1, 51.985]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/ZD_MV_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[25.1, 51.985], {via = [25.1, 44.735]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_MV_N"
+width = 0.2
+stay = true
+points = [[25.1, 44.735], [26, 45.635], [26, 46.035]]
+
+# The autorouter joined the four V_DRV pads of RN2 with a bar beside them, 0.86 mm from the gate
+# node of Q2. Layout rule 3 wants every rail 1 mm from that node, and the build failed on it, as it
+# did on the first routing. The bar is taken out and the pads are joined through their own centres:
+# the rail is then 1.48 mm from the node.
+[[unroute]]
+net = "V_DRV"
+box = [43.4, 73.2, 44.9, 75.9]
+
+[[patch]]
+layer = "F.Cu"
+net = "V_DRV"
+width = 0.4
+stay = true
+points = [[43.5, 73.3], [43.5, 75.7]]
+
+# I2C0_SDA to the clock chip U10. DRC names the nearest two pieces of the net, and the patch router
+# joins exactly those: here they lie on opposite sides of the keep-alive net, where the top side is
+# closed to crossings and In2.Cu and B.Cu are closed 1.1 mm either side. The pull-up R21 is on the
+# same side of the keep-alive as U10, behind the resistor array RN2 and its vias, which shut the
+# two outer layers. So the track goes from U10 to R21 and passes under RN2 on In2.Cu: 16.8 mm
+# there, 1.7 mm from the keep-alive in plan view and outside its keep-out.
+[[patch]]
+layer = "F.Cu"
+net = "/I2C0_SDA"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[68.45, 70.09], [67.5, 70.09], {via = [65.1, 72.49]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/I2C0_SDA"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[65.1, 72.49], [64.5, 73.09], {via = [55.1, 73.09]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/I2C0_SDA"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[55.1, 73.09], [51.55, 76.64], [42.6, 76.64], {via = [40.6, 78.64]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/I2C0_SDA"
+width = 0.2
+stay = true
+points = [[40.6, 78.64], [40, 78.64], [39, 77.64], [39, 77.59]]

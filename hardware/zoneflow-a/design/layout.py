@@ -1093,6 +1093,18 @@ exclude = ["GND", "3V3", "V_BUCK", "VBUS", "/VIN_MON", "/RLY_B_RB", "/ISNS", "/O
            "/Display/TFT_LEDK", "/USB_DP_MCU", "/USB_DM_MCU", "/ADC_LO", "/ADC_HI", "/SENS_FLOW", "/ENC_B",
            "/Power/FB", "/Power/RIP", "/Power/FB_MID", "/Power/RON", "/*/G", "/*/OGT", "/*/OLA", "/*/LEDA"]
 
+# The patch router closes what the autorouter leaves open on F.Cu and B.Cu. Where a connection has
+# no path on those two, it may tunnel under the obstacle on In2.Cu. Such a track is a slot in the
+# 3.3 V plane, so a millimetre there costs six elsewhere, and it stays out of these rectangles: the
+# Kelvin sense pair of the shunt, which runs on B.Cu right under that layer. The [[route.keepout]]
+# rectangles that name In2.Cu, round the keep-alive net and over the valve block, close it too.
+# This table is not part of what the stored routing was made from.
+[route.patch_last_resort]
+layer = "In2.Cu"
+cost = 6
+keepout = [[17.8, 23.2, 19.6, 59.5], [17.8, 23.2, 34.7, 25.0], [32.7, 16.7, 34.7, 25.0],
+           [17.8, 57.7, 33.3, 59.5], [31.3, 57.7, 33.3, 63.4]]
+
 # In1.Cu is the ground plane. Freerouting is told so in the Specctra file, as a power layer with a
 # plane: the "routable" flag of its settings is not obeyed. The build fails if a track is on it.
 [[route.plane]]
@@ -1119,13 +1131,17 @@ rect = [106.5, 9.0, 112.5, 15.0]
 
 # Where the autorouter may put neither track nor via: the valve block on B.Cu (heat islands) and
 # on In2.Cu (shunt plane and fan-out lanes), which it cannot see because they are added afterwards.
+# "stands_for_copper": the patch router reads the finished board, sees that copper itself and
+# needs no fence here. Every other rectangle of this list closes the area to it as well.
 [[route.keepout]]
 layers = ["B.Cu", "In2.Cu"]
 rect = [39.4, 7.3, 103.3, 38.9]
+stands_for_copper = true
 
 [[route.keepout]]
 layers = ["In2.Cu"]
 rect = [34.6, 18.6, 39.4, 40.1]
+stands_for_copper = true
 
 # The keep-alive net runs on B.Cu. Nothing is routed there within 1.1 mm of it, nor on In2.Cu, the
 # layer next to it with no plane between. The pours stay. The [[guard]] strips say the same to DRC
@@ -1431,6 +1447,10 @@ def main(board_dir: Path) -> int:
     patches = board_dir / "design" / "patches.toml"
     if patches.exists():
         out += ["", patches.read_text(encoding="utf-8").strip()]
+        # What the patch router could not close, closed by hand for the same stored routing.
+        by_hand = board_dir / "design" / "patches-hand.toml"
+        if by_hand.exists():
+            out += ["", by_hand.read_text(encoding="utf-8").strip()]
     dest = board_dir / "design" / "board.toml"
     text = "\n".join(out) + "\n"
     if not dest.exists() or dest.read_text(encoding="utf-8") != text:

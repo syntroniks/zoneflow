@@ -1,8 +1,8 @@
 {
- "autoroute_passes": 28,
- "connections_to_route": 455,
- "freerouting_unrouted": 176,
+ "autoroute_passes": 29,
+ "connections_to_route": 403,
+ "freerouting_unrouted": 168,
  "freerouting_version": "2.5.0",
- "freerouting_violations": 1080,
- "wall_seconds": 646.7
+ "freerouting_violations": 1232,
+ "wall_seconds": 2381.4
 }

@@ -1,0 +1,251 @@
+# Connections of the stored routing that hwflow.patchroute could not close by itself, closed by
+# hand with the same search (layout review, section 9). They belong to the stored routing like the
+# tracks of patches.toml: after a new autorouter run, delete everything below the header and run
+# `make patches`; write new ones only for what it then leaves open.
+#
+# The autorouter boxed four pads in on F.Cu with no place for a via beside them: the test pad
+# TP15, pin 2 of the amplifier U8, the pull-up R96 and pin 8 of the expander U5. Each [[unroute]]
+# takes out one piece of autorouted copper that stood in the way; the tracks that follow lay it
+# again beside the connection it made room for.
+
+# ZD_Z1_N ran on B.Cu under the middle of TP15. 0.4 mm further up there is room under the pad for
+# a via of VB between it and ZD_Z2_N. A test pad is not soldered, so a via may stand in it.
+[[unroute]]
+net = "/ZD_Z1_N"
+box = [24.7, 75.3, 26.65, 75.8]
+
+# SA_P left pin 3 of U8 on a diagonal that passed under pin 2 and shut it in. It goes straight down
+# first now. SA_N cannot cross the Kelvin ground sense on F.Cu and the V_BUCK branch on B.Cu, both
+# laid by hand between the pin rows of U8, so 7.1 mm of it are on In2.Cu.
+[[unroute]]
+net = "/CurrentSense/SA_P"
+box = [32.7, 57.9, 35.8, 60.2]
+
+# RLY_ON went west from pin 9 of U5 through the one gap between R96 and R27, to a via, and came
+# back east on B.Cu. ZD_MV_N needs that gap to reach R96. RLY_ON now drops to B.Cu beside the pin.
+[[unroute]]
+net = "/Expander/RLY_ON"
+box = [25.0, 68.3, 31.2, 71.2]
+
+[[patch]]
+layer = "B.Cu"
+net = "/ZD_Z1_N"
+width = 0.2
+stay = true
+points = [[24.8053, 75.5102], [25.195, 75.9], [26.45, 75.9], [26.75, 75.7]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/VB"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[25.1, 75.0], {via = [25.6, 75.275]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_MV_N"
+width = 0.2
+stay = true
+points = [[32.1375, 71.525], [30.55, 71.525], [30.15, 71.125], [30.15, 70.8], [29.95, 70.6], [27.775, 70.6], [27.575, 70.8], [27.575, 71.4]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/Expander/RLY_ON"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[30.85, 70.86], [30.8, 70.81], {via = [30.8, 69.56]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/Expander/RLY_ON"
+width = 0.2
+stay = true
+points = [[30.8, 69.56], [31.45, 68.91], [31.45, 68.16]]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/VB"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[25.6, 75.3], [25.95, 74.95], [25.95, 72.2], [25.55, 71.8], {via = [25.55, 70.85]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/VB"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[25.55, 70.85], [25.3, 70.6], {via = [25.3, 67.6]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/VB"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[25.3, 67.6], [24.65, 66.95], {via = [24.65, 64.5]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/VB"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[24.65, 64.5], {via = [24.65, 62.9]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/VB"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[24.65, 62.9], [25.55, 62], {via = [27.4, 62]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/CurrentSense/SA_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[34.375, 60.125], [34.675, 59.825], {via = [34.675, 58.875]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/CurrentSense/SA_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[34.675, 58.875], [34.675, 62.525], {via = [32.225, 64.975]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/CurrentSense/SA_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[32.225, 64.975], [32.025, 65.175], {via = [29.925, 65.175]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/CurrentSense/SA_N"
+width = 0.2
+stay = true
+points = [[29.925, 65.175], [29.425, 64.675], [29.425, 64.425]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/CurrentSense/SA_P"
+width = 0.2
+stay = true
+points = [[35.645, 60.108], [35.645, 58.858], [34.795, 58.008], [32.795, 58.008]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_MV_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[27.55, 71.385], [27, 70.835], {via = [26.9, 70.835]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/ZD_MV_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[26.9, 70.835], [26.7, 70.835], [24.6, 68.735], {via = [24.6, 68.085]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_MV_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[24.6, 68.085], [21.95, 65.435], {via = [21.95, 64.485]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/ZD_MV_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[21.95, 64.485], {via = [21.95, 62.885]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_MV_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[21.95, 62.885], [21.6, 62.535], [21.6, 55.935], [21.9, 55.635], [21.9, 53.585], [23.5, 51.985], {via = [25.1, 51.985]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/ZD_MV_N"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[25.1, 51.985], {via = [25.1, 44.735]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ZD_MV_N"
+width = 0.2
+stay = true
+points = [[25.1, 44.735], [26, 45.635], [26, 46.035]]
+
+# The autorouter joined the four V_DRV pads of RN2 with a bar beside them, 0.86 mm from the gate
+# node of Q2. Layout rule 3 wants every rail 1 mm from that node, and the build failed on it, as it
+# did on the first routing. The bar is taken out and the pads are joined through their own centres:
+# the rail is then 1.48 mm from the node.
+[[unroute]]
+net = "V_DRV"
+box = [43.4, 73.2, 44.9, 75.9]
+
+[[patch]]
+layer = "F.Cu"
+net = "V_DRV"
+width = 0.4
+stay = true
+points = [[43.5, 73.3], [43.5, 75.7]]
+
+# I2C0_SDA to the clock chip U10. DRC names the nearest two pieces of the net, and the patch router
+# joins exactly those: here they lie on opposite sides of the keep-alive net, where the top side is
+# closed to crossings and In2.Cu and B.Cu are closed 1.1 mm either side. The pull-up R21 is on the
+# same side of the keep-alive as U10, behind the resistor array RN2 and its vias, which shut the
+# two outer layers. So the track goes from U10 to R21 and passes under RN2 on In2.Cu: 16.8 mm
+# there, 1.7 mm from the keep-alive in plan view and outside its keep-out.
+[[patch]]
+layer = "F.Cu"
+net = "/I2C0_SDA"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[68.45, 70.09], [67.5, 70.09], {via = [65.1, 72.49]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/I2C0_SDA"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[65.1, 72.49], [64.5, 73.09], {via = [55.1, 73.09]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/I2C0_SDA"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[55.1, 73.09], [51.55, 76.64], [42.6, 76.64], {via = [40.6, 78.64]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/I2C0_SDA"
+width = 0.2
+stay = true
+points = [[40.6, 78.64], [40, 78.64], [39, 77.64], [39, 77.59]]
+
