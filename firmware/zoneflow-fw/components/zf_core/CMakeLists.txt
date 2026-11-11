@@ -11,6 +11,7 @@ set(ZF_CORE_SOURCES
     src/history.cpp
     src/output_stage.cpp
     src/persist.cpp
+    src/reference_store.cpp
     src/retained.cpp
     src/scheduler.cpp
     src/sensors.cpp

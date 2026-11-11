@@ -47,7 +47,10 @@
     X(TripLatchStuck, "trip_latch_stuck", "Protection did not reset", "")                                              \
     X(SensorSupply, "sensor_supply", "Sensor supply overloaded", "")                                                   \
     X(ZoneDcCurrent, "zone_dc_current", "Valve current lopsided", "%s: valve current lopsided")                        \
-    X(MainsSignal, "mains_signal", "Mains signal wrong", "")
+    X(MainsSignal, "mains_signal", "Mains signal wrong", "")                                                           \
+    X(KeepAliveBridged, "keepalive_bridged", "Safety signal disturbed", "")                                            \
+    X(RelayGateBleed, "relay_gate_bleed", "Valve relay driver faulty", "")                                             \
+    X(NotCommissioned, "not_commissioned", "Safety timing not learned", "")
 
 namespace zf {
 

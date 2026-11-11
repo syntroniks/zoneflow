@@ -38,6 +38,7 @@ CurrentReading CurrentSense::process(const CurrentWindowStats &w, bool relayOpen
         return r;
     }
     r.meanHiMv = static_cast<int32_t>(std::lround(w.hi.meanMv()));
+    r.relayReadbackMv = w.relayRb.n > 0 ? static_cast<int32_t>(std::lround(w.relayRb.meanMv())) : -1;
     r.hiClipped = w.hi.minMv < cfg_.hiMinMv || w.hi.maxMv > cfg_.hiMaxMv;
     const bool useLo = r.hiClipped;
     if (useLo && w.lo.n < cfg_.minSamples) {

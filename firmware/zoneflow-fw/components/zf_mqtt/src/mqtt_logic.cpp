@@ -501,7 +501,11 @@ std::string faultsPayload(const SystemState &s)
         cJSON_AddNullToObject(hw, "step");
     } else {
         cJSON_AddStringToObject(hw, "check", toString(s.hardware.check));
-        cJSON_AddNumberToObject(hw, "step", s.hardware.step);
+        if (s.hardware.step[0] == '\0') {
+            cJSON_AddNullToObject(hw, "step");
+        } else {
+            cJSON_AddStringToObject(hw, "step", s.hardware.step); // "2b": a string since review A2
+        }
     }
     cJSON_AddBoolToObject(hw, "repair_needed", s.hardware.repairNeeded);
     cJSON_AddBoolToObject(o, "any", any);

@@ -46,7 +46,10 @@ private:
 // A world to show: controller, fake hardware, display logic. Starts on
 // Tuesday 2026-11-10 at 14:32 Berlin time with the demo garden.
 struct World {
-    explicit World(bool wizardDone = true, bool clockValid = true, bool wifi = true, bool revA = false);
+    // commissioned: the rev A board has stored its detector release times
+    // (hardware design 19.7, step 9); false for a new board.
+    explicit World(bool wizardDone = true, bool clockValid = true, bool wifi = true, bool revA = false,
+                   bool commissioned = true);
     test::UiHarness h;
 };
 

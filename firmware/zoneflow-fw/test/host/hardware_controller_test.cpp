@@ -49,7 +49,8 @@ struct HwRig {
     FakeClock clock;
     OutputEnableGuard guard{OutputEnableMode::Toggle, 500};
     FakeBoard board{guard, clock};
-    hw::OutputStage stage{board, guard, clock, revALayout()};
+    FakeReferenceStore reference = StageRig::storeWith(true);
+    hw::OutputStage stage{board, guard, clock, revALayout(), hw::OutputStageConfig{}, &reference};
     BoardSensors sensors{board};
     EventBus bus;
     StateStore state;
@@ -102,7 +103,7 @@ TEST(HardwareController, ManualRunWaitsForTheSelfTestThenOpens)
 {
     RetainedMemory mem;
     HwRig r(mem);
-    ASSERT_TRUE(r.runUntil([&] { return r.snap().hardware.phase == StagePhase::Idle; }, 6000));
+    ASSERT_TRUE(r.runUntil([&] { return r.snap().hardware.phase == StagePhase::Idle; }, 9000));
     EXPECT_EQ(r.snap().hardware.zonesFitted, 8);
     ASSERT_TRUE(r.ctrl->handle(Command::runZone(1, 30)));
     r.run(100);
@@ -110,7 +111,7 @@ TEST(HardwareController, ManualRunWaitsForTheSelfTestThenOpens)
     EXPECT_FALSE(r.board.valveDriven(1));
     // The weld check drives zone 2's output for one window with the relay
     // open; the run itself opens it with the relay closed.
-    ASSERT_TRUE(r.runUntil([&] { return r.snap().zones[1].state == ValveState::Open; }, 6000));
+    ASSERT_TRUE(r.runUntil([&] { return r.snap().zones[1].state == ValveState::Open; }, 9000));
     EXPECT_TRUE(r.board.valveDriven(1));
     EXPECT_TRUE(r.board.relayClosed());
     EXPECT_EQ(r.snap().hardware.phase, StagePhase::Ready);
@@ -127,7 +128,7 @@ TEST(HardwareController, FourZoneBoardLimitsTheZoneCount)
     RetainedMemory mem;
     HwRig r(mem);
     r.board.eightZone = false;
-    ASSERT_TRUE(r.runUntil([&] { return r.snap().hardware.zonesFitted == 4; }, 6000));
+    ASSERT_TRUE(r.runUntil([&] { return r.snap().hardware.zonesFitted == 4; }, 9000));
     r.run(100);
     EXPECT_EQ(r.snap().zoneCount, 4);
     EXPECT_FALSE(r.ctrl->handle(Command::runZone(5, 30)));
@@ -139,11 +140,11 @@ TEST(HardwareController, DetectorFaultStopsEverythingAndNeedsTheRepairConfirmed)
     RetainedMemory mem;
     HwRig r(mem);
     r.board.a.holdMs = 1700; // open bleed resistor: detector A releases late
-    ASSERT_TRUE(r.runUntil([&] { return r.hasFault(FaultCode::KeepAliveDetector); }, 8000));
+    ASSERT_TRUE(r.runUntil([&] { return r.hasFault(FaultCode::KeepAliveDetector); }, 10000));
     const SystemState s = r.snap();
     EXPECT_EQ(s.hardware.phase, StagePhase::Fault);
     EXPECT_EQ(s.hardware.check, HwCheck::StopDriveRelease);
-    EXPECT_EQ(s.hardware.step, 9);
+    EXPECT_STREQ(s.hardware.step, "9");
     EXPECT_TRUE(s.hardware.repairNeeded);
     EXPECT_NE(s.inhibitFlags & kInhibitHardware, 0);
     const auto raised = std::find_if(r.events.begin(), r.events.end(), [](const Event &e) {
@@ -170,34 +171,34 @@ TEST(HardwareController, DetectorFaultStopsEverythingAndNeedsTheRepairConfirmed)
     r.run(50);
     EXPECT_EQ(r.snap().inhibitFlags & kInhibitHardware, 0);
     ASSERT_TRUE(r.ctrl->handle(Command::runZone(0, 30)));
-    EXPECT_TRUE(r.runUntil([&] { return r.board.valveDriven(0); }, 8000));
+    EXPECT_TRUE(r.runUntil([&] { return r.board.valveDriven(0); }, 10000));
 }
 
 TEST(HardwareController, WeldedRelayFaultClearsWithOnePressButIsFoundAgain)
 {
     RetainedMemory mem;
     HwRig r(mem);
-    ASSERT_TRUE(r.runUntil([&] { return r.snap().hardware.phase == StagePhase::Idle; }, 6000));
+    ASSERT_TRUE(r.runUntil([&] { return r.snap().hardware.phase == StagePhase::Idle; }, 9000));
     r.board.relayWelded = true;
     ASSERT_TRUE(r.ctrl->handle(Command::runZone(2, 30)));
-    ASSERT_TRUE(r.runUntil([&] { return r.hasFault(FaultCode::RelayWelded); }, 8000));
+    ASSERT_TRUE(r.runUntil([&] { return r.hasFault(FaultCode::RelayWelded); }, 10000));
     EXPECT_EQ(r.snap().zones[2].state, ValveState::Off);
     EXPECT_EQ(r.snap().queue.length, 0);
     EXPECT_FALSE(r.snap().hardware.repairNeeded);
     r.ctrl->handle(Command::simple(CommandType::ClearFaults));
     EXPECT_FALSE(r.hasFault(FaultCode::RelayWelded));
     ASSERT_TRUE(r.ctrl->handle(Command::runZone(2, 30)));
-    EXPECT_TRUE(r.runUntil([&] { return r.hasFault(FaultCode::RelayWelded); }, 8000));
+    EXPECT_TRUE(r.runUntil([&] { return r.hasFault(FaultCode::RelayWelded); }, 10000));
 }
 
 TEST(HardwareController, TripOnTheBoardIsBlamedAndTheQueueCarriesOn)
 {
     RetainedMemory mem;
     HwRig r(mem);
-    ASSERT_TRUE(r.runUntil([&] { return r.snap().hardware.phase == StagePhase::Idle; }, 6000));
+    ASSERT_TRUE(r.runUntil([&] { return r.snap().hardware.phase == StagePhase::Idle; }, 9000));
     ASSERT_TRUE(r.ctrl->handle(Command::runZone(0, 60)));
     ASSERT_TRUE(r.ctrl->handle(Command::runZone(1, 60)));
-    ASSERT_TRUE(r.runUntil([&] { return r.snap().zones[0].state == ValveState::Open; }, 8000));
+    ASSERT_TRUE(r.runUntil([&] { return r.snap().zones[0].state == ValveState::Open; }, 10000));
     r.run(50);
     r.board.trip(); // within 500 ms of switching zone 1 on: it is the faulted output
     r.run(100);
@@ -215,7 +216,7 @@ TEST(HardwareController, SensorSupplyAndMainsSignalAreConditions)
     HwRig r(mem);
     r.board.sensorFault = true;
     r.sensors.mainsMilliHz = 100'000; // AC_ZC following the keep-alive
-    ASSERT_TRUE(r.runUntil([&] { return r.snap().hardware.phase == StagePhase::Idle; }, 6000));
+    ASSERT_TRUE(r.runUntil([&] { return r.snap().hardware.phase == StagePhase::Idle; }, 9000));
     EXPECT_TRUE(r.hasFault(FaultCode::SensorSupply));
     EXPECT_TRUE(r.hasFault(FaultCode::MainsSignal));
     EXPECT_TRUE(r.snap().hardware.sensorSupplyFault);
@@ -229,11 +230,11 @@ TEST(HardwareController, RestartKeepsTheRunBudgetAndTheLatchedFault)
     RetainedMemory mem;
     {
         HwRig r(mem, 60);
-        ASSERT_TRUE(r.runUntil([&] { return r.snap().hardware.phase == StagePhase::Idle; }, 6000));
+        ASSERT_TRUE(r.runUntil([&] { return r.snap().hardware.phase == StagePhase::Idle; }, 9000));
         ASSERT_TRUE(r.ctrl->handle(Command::runZone(3, 60)));
         ASSERT_TRUE(r.runUntil([&] { return r.snap().zones[3].restRemainingSec > 0; }, 80'000));
-        r.board.b.holdMs = 1450; // the stop test after this run fails
-        ASSERT_TRUE(r.runUntil([&] { return r.hasFault(FaultCode::KeepAliveDetector); }, 8000));
+        r.board.b.holdMs = 1700; // the stop test after this run fails: beyond 1.6 s
+        ASSERT_TRUE(r.runUntil([&] { return r.hasFault(FaultCode::KeepAliveDetector); }, 10000));
         r.run(100);
         ASSERT_TRUE(intact(mem.rec));
     }
@@ -244,6 +245,42 @@ TEST(HardwareController, RestartKeepsTheRunBudgetAndTheLatchedFault)
     EXPECT_EQ(r.snap().hardware.phase, StagePhase::Fault);
     EXPECT_EQ(r.snap().hardware.check, HwCheck::StopRelayRelease);
     EXPECT_TRUE(r.hasFault(FaultCode::KeepAliveDetector));
+}
+
+TEST(HardwareController, NewBoardReportsNotCommissionedUntilItHasLearned)
+{
+    RetainedMemory mem;
+    HwRig r(mem);
+    r.reference.have = false; // a new board: nothing stored
+    r.run(100);
+    EXPECT_TRUE(r.hasFault(FaultCode::NotCommissioned));
+    EXPECT_FALSE(r.snap().hardware.commissioned);
+    // A condition: it does not stop a run and it does not latch.
+    ASSERT_TRUE(r.runUntil([&] { return !r.hasFault(FaultCode::NotCommissioned); }, 40'000));
+    const SystemState s = r.snap();
+    EXPECT_TRUE(s.hardware.commissioned);
+    EXPECT_NEAR(s.hardware.referenceDriveMs, 670, 10);
+    EXPECT_NEAR(s.hardware.referenceRelayMs, 570, 10);
+    const auto cleared = std::find_if(r.events.begin(), r.events.end(), [](const Event &e) {
+        return e.type == EventType::FaultCleared && e.fault.code == FaultCode::NotCommissioned;
+    });
+    EXPECT_NE(cleared, r.events.end());
+    EXPECT_EQ(r.ctrl->activeFaults(), 0u);
+}
+
+TEST(HardwareController, FloatTestFaultIsKeepAliveBridgedAndNeedsTheRepair)
+{
+    RetainedMemory mem;
+    HwRig r(mem);
+    r.board.kaNet = KaNet::ToggleWeak; // a 1 kohm bridge to the backlight PWM
+    ASSERT_TRUE(r.runUntil([&] { return r.hasFault(FaultCode::KeepAliveBridged); }, 10000));
+    const SystemState s = r.snap();
+    EXPECT_STREQ(s.hardware.step, "2b");
+    EXPECT_EQ(s.hardware.check, HwCheck::FloatDriveEnabled);
+    EXPECT_TRUE(s.hardware.repairNeeded);
+    r.ctrl->handle(Command::simple(CommandType::ClearFaults));
+    r.run(100);
+    EXPECT_TRUE(r.hasFault(FaultCode::KeepAliveBridged)); // one press does not clear it
 }
 
 TEST(HardwareController, CorruptRetainedMemoryStartsClean)

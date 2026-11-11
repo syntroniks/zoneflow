@@ -21,7 +21,8 @@ bool zoneCarried(FaultCode c) { return zoneType(c) || c == FaultCode::OverCurren
 bool stageFault(FaultCode c)
 {
     return c == FaultCode::KeepAliveDetector || c == FaultCode::OutputExpander || c == FaultCode::RelayWelded ||
-           c == FaultCode::OutputShorted || c == FaultCode::TripLatchStuck;
+           c == FaultCode::OutputShorted || c == FaultCode::TripLatchStuck || c == FaultCode::KeepAliveBridged ||
+           c == FaultCode::RelayGateBleed;
 }
 
 } // namespace
@@ -100,6 +101,12 @@ std::string faultTitle(const FaultItem &item)
         return fmt(Str::FaultDcTitle, who.c_str());
     case FaultCode::MainsSignal:
         return tr(Str::FaultMainsTitle);
+    case FaultCode::KeepAliveBridged:
+        return tr(Str::FaultBridgedTitle);
+    case FaultCode::RelayGateBleed:
+        return tr(Str::FaultGateBleedTitle);
+    case FaultCode::NotCommissioned:
+        return tr(Str::FaultLearnTitle);
     case FaultCode::None:
     case FaultCode::Count:
         break;
@@ -150,6 +157,12 @@ Str faultBody(FaultCode code)
         return Str::FaultDcBody;
     case FaultCode::MainsSignal:
         return Str::FaultMainsBody;
+    case FaultCode::KeepAliveBridged:
+        return Str::FaultBridgedBody;
+    case FaultCode::RelayGateBleed:
+        return Str::FaultGateBleedBody;
+    case FaultCode::NotCommissioned:
+        return Str::FaultLearnBody;
     case FaultCode::None:
     case FaultCode::Count:
         break;
@@ -160,24 +173,25 @@ Str faultBody(FaultCode code)
 bool faultClearsItself(FaultCode code)
 {
     return code == FaultCode::AcLost || code == FaultCode::TimeInvalid || code == FaultCode::CurrentSenseUnavailable ||
-           code == FaultCode::SensorSupply || code == FaultCode::MainsSignal;
+           code == FaultCode::SensorSupply || code == FaultCode::MainsSignal || code == FaultCode::NotCommissioned;
 }
 
 Tone faultTone(FaultCode code)
 {
     return code == FaultCode::TimeInvalid || code == FaultCode::CurrentSenseUnavailable ||
-                   code == FaultCode::SensorSupply || code == FaultCode::MainsSignal
+                   code == FaultCode::SensorSupply || code == FaultCode::MainsSignal ||
+                   code == FaultCode::NotCommissioned
                ? Tone::Warn
                : Tone::Fault;
 }
 
 std::string faultStepText(const FaultItem &item)
 {
-    const uint8_t step = hwCheckStep(item.check);
-    if (item.check == HwCheck::None || step == 0 || step > 9) {
+    const char *step = hwCheckStep(item.check);
+    if (item.check == HwCheck::None || step[0] == '\0') {
         return {};
     }
-    return fmt(Str::FaultStep, static_cast<int>(step), toString(item.check));
+    return fmt(Str::FaultStep, step, toString(item.check));
 }
 
 } // namespace zf::ui

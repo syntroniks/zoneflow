@@ -1212,9 +1212,10 @@ ApiResponse Api::rainDelayPut(const ApiRequest &req)
 
 ApiResponse Api::rainDelayDelete() { return post(Command::rainDelay(0)); }
 
-// A keep-alive detector fault (hardware design 19.7 steps 1, 2 and 9) is not
-// cleared by POST /faults/clear: the caller must state that the board was
-// repaired. A second, deliberate request, never one press.
+// A fault of a safety layer (hardware design 19.7 steps 1, 2, 2b, 5b and 9) is
+// not cleared by POST /faults/clear: the caller must state that the board was
+// repaired. A second, deliberate request, never one press. The board then
+// learns its detector release times again (step 9).
 ApiResponse Api::faultsAcknowledgeRepair(const ApiRequest &req)
 {
     ApiResponse err;

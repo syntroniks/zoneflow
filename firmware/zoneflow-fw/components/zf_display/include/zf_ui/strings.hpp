@@ -297,7 +297,16 @@
     X(FaultMainsTitle, "Mains signal wrong")                                                                           \
     X(FaultMainsBody, "The 24 V AC timing signal is not at mains frequency. Zero-cross switching and current "         \
                       "readings may be off. The board needs service.")                                                 \
-    X(FaultStep, "Step %d: %s") /* self-test step, check name */                                                       \
+    X(FaultBridgedTitle, "Safety signal disturbed")                                                                    \
+    X(FaultBridgedBody, "Another signal drives the safety line: a valve could stay on if the controller "              \
+                        "stops. Nothing runs. Repair the board, then confirm it here.")                                \
+    X(FaultGateBleedTitle, "Valve relay driver faulty")                                                                \
+    X(FaultGateBleedBody, "The valve relay stayed on when its control was let go. Nothing runs. Repair the "           \
+                          "board, then confirm it here.")                                                              \
+    X(FaultLearnTitle, "Safety timing not learned")                                                                    \
+    X(FaultLearnBody, "The board has not learned how fast its safety circuit switches off. It learns this "            \
+                      "by itself with 24 V AC on. If this stays, the board needs service.")                            \
+    X(FaultStep, "Step %s: %s") /* self-test step ("2b"), check name */                                                \
     X(FaultRepaired, "Repaired")                                                                                       \
     X(FaultRepairedAsk, "Was the board repaired?")                                                                     \
     X(FaultRepairedAskBody, "Confirm only after the safety circuit was repaired and checked. The full "                \
