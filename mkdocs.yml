@@ -128,6 +128,7 @@ nav:
       - Prior-art survey: design/prior-art.md
       - Hardware design: design/hardware-design.md
       - Hardware review A1: design/hardware-review-a1.md
+      - Hardware review A2: design/hardware-review-a2.md
       - Hardware toolchain: design/hardware-toolchain.md
       - Mechanical design: design/mechanical.md
       - Firmware architecture: design/firmware-architecture.md

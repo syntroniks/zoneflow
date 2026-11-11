@@ -85,6 +85,16 @@ components:
     pins:
       "+": "VIN_DC"
       "-": "GND"
+  - ref: F5
+    value: "Fuse 0.5 A very fast-acting, 125 V"
+    package: "2410"
+    lcsc: C142836
+    block: "A power"
+    variant: "all"
+    note: "Opens when D25 clamps a failed U1. Section 4.8"
+    pins:
+      "1": "VIN_DC"
+      "2": "VIN_U1"
   - ref: C2
     value: "2.2 uF 100 V X7R"
     package: "1210"
@@ -93,7 +103,7 @@ components:
     variant: "all"
     note: "At U1 pins"
     pins:
-      "1": "VIN_DC"
+      "1": "VIN_U1"
       "2": "GND"
   - ref: C3
     value: "2.2 uF 100 V X7R"
@@ -103,7 +113,7 @@ components:
     variant: "all"
     note: "At U1 pins"
     pins:
-      "1": "VIN_DC"
+      "1": "VIN_U1"
       "2": "GND"
   - ref: U1
     value: "LM5164DDAR 100 V 1 A synchronous buck"
@@ -113,7 +123,7 @@ components:
     variant: "all"
     pins:
       "1 GND": "GND"
-      "2 VIN": "VIN_DC"
+      "2 VIN": "VIN_U1"
       "3 EN/UVLO": "UVLO"
       "4 RON": "RON"
       "5 FB": "FB"
@@ -284,6 +294,16 @@ components:
     pins:
       "A": "V_BUCK"
       "K": "V5"
+  - ref: D25
+    value: "TVS 6 V unidirectional 600 W"
+    package: "SMB"
+    lcsc: C83270
+    block: "A power"
+    variant: "all"
+    note: "Over-voltage clamp on the buck output. Section 4.8"
+    pins:
+      "A": "GND"
+      "K": "V_BUCK"
   - ref: K1
     value: "G5NB-1A-E DC5 relay SPST-NO 5 A, 5 V 125R coil"
     package: "THT 20.4x7 mm"
@@ -652,7 +672,7 @@ components:
       "7 IO7": "RLY_B_RB"
       "8 IO15": "ENC_A"
       "9 IO16": "ENC_B"
-      "10 IO17": "ENC_SW"
+      "10 IO17": "KA"
       "11 IO18": "BTN_BACK"
       "12 IO8": "I2C0_SDA"
       "13 IO19": "USB_DM_MCU"
@@ -673,11 +693,11 @@ components:
       "28 IO35": "NC"
       "29 IO36": "NC"
       "30 IO37": "NC"
-      "31 IO38": "KA"
+      "31 IO38": "ENC_SW"
       "32 IO39": "BTN_HOME"
       "33 IO40": "OC_FAULT_N"
       "34 IO41": "AC_ZC"
-      "35 IO42": "DRV_EN_RB"
+      "35 IO42": "V_DRV_RB"
       "36 RXD0": "U0RXD"
       "37 TXD0": "U0TXD_MCU"
       "38 IO2": "ADC_HI"
@@ -1117,22 +1137,22 @@ components:
       "1": "V_DRV"
       "2": "GND"
   - ref: R92
-    value: "10k 1%"
+    value: "4.7k 1%"
     package: "0603"
-    lcsc: C25804
+    lcsc: C23162
     block: "E expander and drive enable"
     variant: "all"
-    note: "Read-back of DRV_EN to GPIO42"
+    note: "Read-back of the LED supply to GPIO42. Taken behind Q3, so that a shorted Q3 shows"
     pins:
-      "1": "DRV_EN"
-      "2": "DRV_EN_RB"
+      "1": "V_DRV"
+      "2": "V_DRV_RB"
   - ref: R33
-    value: "10k 1%"
+    value: "2.2k 1%"
     package: "0603"
-    lcsc: C25804
+    lcsc: C4190
     block: "F keep-alive detector"
     variant: "all"
-    note: "Pull-down"
+    note: "Pull-down. Low enough that a net behind a 10 kohm pull-up cannot run the detectors through a bridge"
     pins:
       "1": "KA"
       "2": "GND"

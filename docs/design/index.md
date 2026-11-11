@@ -20,6 +20,7 @@ so earlier decisions it describes as replaced are kept on purpose.
 - [Hardware design](hardware-design.md): the rev A circuit, block by block, with part numbers, calculations, the net list, the risk register and the bring-up plan. A paper design. Nothing in it is measured.
 - [Mechanical design](mechanical.md): the board outline, every mechanically fixed part position, the component height limits and the antenna rule, for the PCB layout engineer. Explains `hardware/mechanical.yaml`. A paper design. Nothing has been printed.
 - [Hardware review A1](hardware-review-a1.md): the independent review of the rev A circuit before schematic capture. Findings by severity, the verdict on each departure from the specification, the keep-alive contract with the firmware, what was verified from data sheets and what was not.
+- [Hardware review A2](hardware-review-a2.md): the second review, of the fail-safe circuits only. A single-fault table rebuilt from the netlist by fault injection, tolerance corners of both keep-alive detectors, the regulator over-voltage protection, and the output stage after the change of triac.
 - [Web UI contract](../firmware/web-ui-contract.md): what the standalone firmware's web interface may rely on from the REST API and event stream.
 
 The independent design review before fabrication is tracked in

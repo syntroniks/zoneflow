@@ -108,7 +108,7 @@ flowchart TB
 
 | Task | Priority | Core | Period | Does |
 |---|---|---|---|---|
-| keep-alive (GPTimer alarm ISR, IRAM) | interrupt | allocating core | 5 ms (`CONFIG_ZF_OE_TOGGLE_PERIOD_MS`) | Calls `OutputEnableGuard::step()`, writes the keep-alive pin register (GPIO38), then reads GPIO42, GPIO7 and GPIO40 into `OutputEnableGuard::sample()` for the self-test timing. Runs while the flash cache is off. No heap, no locks, no calls (checked in the linked ELF). |
+| keep-alive (GPTimer alarm ISR, IRAM) | interrupt | allocating core | 5 ms (`CONFIG_ZF_OE_TOGGLE_PERIOD_MS`) | Calls `OutputEnableGuard::step()`, writes the keep-alive pin register (GPIO17), then reads GPIO42, GPIO7 and GPIO40 into `OutputEnableGuard::sample()` for the self-test timing. Runs while the flash cache is off. No heap, no locks, no calls (checked in the linked ELF). |
 | zero-cross (GPIO ISR, IRAM) | interrupt | core of `app_main` | each AC_ZC edge, 100 per second | Timestamps the edge into `ZeroCrossTracker`. IRAM-safe, so a flash erase does not look like a loss of 24 VAC; its only call is `esp_timer_get_time()`, which is in IRAM. |
 | `zf_isense` | 6 | 0 | 10 ms frames | Reads ADC1 continuous conversions (5 kS/s per channel, 6 dB), calibrates them to mV and accumulates 100 ms windows (`ChannelStats`). Publishes the latest window under a spinlock. Static stack (12 KB). |
 | `zf_control` | 10 | 1 | 50 ms (`CONFIG_ZF_CONTROL_PERIOD_MS`) | Drains the command queue, then `Controller::tick()`. Subscribed to the task watchdog (5 s, panics). |
@@ -641,8 +641,9 @@ hardware author".
      peripheral that toggles the pin with no code deciding each edge: LEDC,
      RMT, MCPWM, a timer with a pin output. The interrupt of section 3
      decides every edge from the heartbeat, so it is consistent with the
-     rule. GPIO38 stays a plain GPIO output with no peripheral signal routed
-     to it.
+     rule. The keep-alive pin stays a plain GPIO output with no peripheral
+     signal routed to it. It is GPIO17 since hardware review A2, which
+     moved it from GPIO38; `hardware/pinmap.yaml` has the reason.
    - **Edge interval.** 5 ms is right. The circuit needs an edge at least
      every 20 ms.
    - **The circuit does not check the rate.** It has no upper frequency
