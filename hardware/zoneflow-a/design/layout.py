@@ -160,9 +160,14 @@ at("R16", 1.81, 5.6, 90)
 at("C13", 14.15, 2.6, 90)
 at("R17", 14.15, 5.7, 90)
 at("U2", 3.6, 17.7, 0)
+block("USB series resistors and the pads of the unfitted filter capacitors, above the ESD array.\nFrom their upper ends the pair runs on the bottom side to the module.")
+at("R97", 1.9, 20.95, 90)      # D+
+at("C52", 1.9, 23.92, 90)
+at("R98", 4.0, 20.95, 90)      # D-
+at("C53", 4.0, 23.92, 90)
 block("Around the relay pins (K1 is on the bottom side): solder jumper across the contacts,\ncoil diode, and the zero-cross clamp fed from AC_L. Nothing here is taller than 1.5 mm.")
 at("JP1", 7.15, 22.0, 270)
-at("TP22", 3.2, 21.7, 0)
+at("TP22", 9.2, 19.3, 0)
 at("R55", 3.2, 27.7, 90)
 at("R56", 6.2, 28.7, 90)
 at("C34", 7.9, 28.7, 90)
@@ -260,42 +265,51 @@ at("TP25", 60.2, 58.4, 0)
 at("TP30", 72.0, 58.2, 0)
 
 # ---- under the module ----------------------------------------------------------------------------
-block("Keep-alive detector A and the comparators, under the module. KA comes down from module pin 31\nto the via between R29 and R33.")
-at("R33", 111.4, 88.5, 0)
-at("R29", 107.6, 88.5, 180)
-at("C22", 104.3, 88.4, 180)
-at("D7", 100.6, 87.9, 0)
-at("C23", 96.8, 87.0, 180)
-at("U6", 108.0, 82.3, 0)
-row("R30 R91 R31", 95.3, 85.0, 3.2)
-row("R36 R32 C24", 95.3, 83.4, 3.2)
-row("TP9 R35 R34", 95.0, 81.4, 3.35)
-row("R50 R49 R48", 95.3, 79.4, 3.2)
-row("R52 C32 R51", 95.3, 77.8, 3.2)
-row("R53 C33", 95.3, 76.2, 3.2)
-row("C19 R57 R58", 105.2, 76.3, 3.1)
-at("TP8", 101.6, 75.8, 0)
+block("Keep-alive detector A, under the module (hardware design, section 8.5). KA comes down on the\nbottom side from module pin 10 to the via between R33 and R29, at the corner of the module.\nPump: R29, C22, D7. Reservoir KA_N2: C23, R30, R91, TP8, in one column with ground around it.\nComparator input KA_INP: R31, C24, R32, at pin 7 of U6.")
+at("R33", 94.9, 87.6, 180)
+at("R29", 98.0, 87.6, 0)
+at("D7", 101.5, 86.1, 0)
+at("C22", 104.9, 87.35, 270)
+at("C23", 97.8, 85.15, 180)
+at("R30", 97.7, 83.4, 180)
+at("R91", 97.7, 81.85, 180)
+at("TP8", 100.45, 80.6, 0)
+at("R31", 101.9, 83.3, 0)
+at("C24", 102.5, 80.75, 270)
+at("R32", 104.2, 84.15, 90)
+block("Comparators. U6 is turned so that the keep-alive input is at the pump and the zero-cross output,\nAC_ZC, is at the far corner, 12 mm from any keep-alive copper.")
+at("U6", 108.0, 78.9, 270)
+at("R35", 105.7, 84.15, 90)
+at("R34", 107.2, 84.15, 270)
+at("C19", 109.2, 84.15, 90)
+at("R53", 110.7, 84.15, 270)
+at("R36", 112.2, 84.15, 270)
+row("R50 R49 R48", 95.0, 78.4, 3.3)
+row("R51 C32", 95.0, 76.35, 3.3)
+row("R52 C33", 95.0, 74.3, 3.3)
+at("R57", 108.9, 74.3, 0)
+at("R58", 111.9, 74.3, 180)
+at("TP9", 101.6, 76.1, 0)
+at("TP16", 112.0, 87.5, 0)     # AC_ZC: at the far side from the keep-alive
+block("Qwiic pull-ups, at module pins 24 and 25.")
+at("R23", 107.2, 88.2, 90)
+at("R24", 108.9, 88.2, 90)
 
 # ---- left of the module, top edge ---------------------------------------------------------------
-block("Left of the module, at the top edge: USB series resistors, ADC filters, encoder switch filter,\nreset network, supervisor, bulk capacitor. Everything here is under 3.5 mm.")
-at("R98", 89.2, 100.0, 90)
-at("R97", 90.9, 100.0, 90)
-at("C53", 89.2, 103.2, 90)
-at("C52", 90.9, 103.2, 90)
-at("R46", 87.5, 100.0, 90)
-at("C30", 87.5, 103.2, 90)
-at("R47", 85.8, 100.0, 90)
-at("C31", 85.8, 103.2, 90)
-at("R66", 84.1, 100.0, 90)
-at("R71", 82.4, 100.0, 90)
-at("C41", 82.4, 103.2, 90)
-at("TP16", 80.3, 100.3, 0)
-at("R18", 84.1, 103.2, 90)
-at("C16", 84.1, 106.4, 90)
-at("C14", 90.9, 106.3, 180)
-at("C15", 87.5, 106.4, 90)
-at("U12", 81.3, 106.95, 90)
-at("C54", 80.6, 103.4, 90)
+block("Left of the module, at the top edge: 3.3 V bulk and decoupling at pin 2, reset network and\nsupervisor at pin 3, ADC filters, encoder switch filter. Everything here is under 3.5 mm. The\ndisplay bus passes under the lower edge of this block on the bottom side.")
+at("C15", 92.2, 106.8, 270)
+at("C14", 89.1, 107.0, 180)
+at("R18", 92.2, 103.6, 90)
+at("C16", 90.6, 103.6, 270)
+at("U12", 87.6, 103.9, 180)
+at("C54", 84.8, 103.6, 90)
+at("R66", 83.2, 103.6, 90)
+at("R71", 81.7, 103.6, 90)
+at("C41", 80.2, 103.6, 90)
+at("R46", 85.0, 106.8, 90)
+at("C30", 83.5, 106.8, 90)
+at("R47", 82.0, 106.8, 90)
+at("C31", 80.5, 106.8, 90)
 
 # ---- encoder ------------------------------------------------------------------------------------
 block("Encoder pull-ups and filters, below the encoder.")
@@ -352,10 +366,10 @@ at("Q1", 48.6, 72.0, 0)
 row("R11 R12", 44.6, 69.2, 3.2)
 row("R93 R94 R95", 51.0, 69.2, 3.2)
 at("TP24", 44.5, 72.4, 0)
-block("Display connector: decoupling, reset pull-up and the backlight switch.")
-at("R63", 54.9, 86.3, 0)
-at("C38", 54.9, 87.9, 0)
-at("C37", 54.9, 89.5, 0)
+block("Display connector: decoupling, reset pull-up and the backlight switch. The bus reaches the\npins from under the connector; these parts are on the open side.")
+at("C37", 54.9, 86.0, 0)
+at("R63", 54.9, 87.5, 0)
+at("C38", 54.6, 89.0, 180)
 at("R60", 54.0, 92.6, 0)
 at("Q4", 54.5, 96.0, 0)
 row("R61 R62", 50.0, 93.6, 0, dy=1.6)
@@ -365,7 +379,6 @@ at("SW2", 48.0, 99.4, 0)
 at("R19", 42.4, 99.4, 90)
 at("R99", 42.4, 105.5, 90)
 row("R21 R22", 38.2, 77.6, 3.2)
-row("R23 R24", 108.3, 74.7, 3.1)
 block("Status LED resistor, in the light-pipe strip beside the LED.")
 at("R20", 15.1, 42.0, 180)
 block("Button pull-ups and filters.")
@@ -612,13 +625,13 @@ hand = [
     track(["F4.2", [11.815, 19.0], [23.2, 19.0], "D2.2"], width=1.0),
     track(["D1.1", [10.6, 21.8], [7.9, 24.5], "K1.13"], width=2.0),
     track(["K1.13", "JP1.1"], width=0.5),
-    track(["K1.13", [3.2, 25.5], "R55.1"], width=0.5),
+    track(["K1.13", [5.9, 26.6], "R55.1"], width=0.5),
     track(["K1.14", [7.15, 16.3], [9.6, 13.8], [9.6, 10.6], [11.2, 9.0], [27.0, 9.0], [29.0, 7.2], "J2.1"], layer="B.Cu",
           width=2.0, comment="COM: relay contact to the two COM terminals, on B.Cu under the fuse well."),
     track(["J2.1", "J2.2"], layer="B.Cu", width=2.0),
     track(["J2.2", [34.035, 8.4], [35.6, 9.45], "D23.1"], width=1.5),
     track(["K1.14", "JP1.2"], width=0.5),
-    track(["JP1.2", [5.5, 21.35], "TP22.1"], width=0.5),
+    track(["K1.14", "TP22.1"], width=0.5),
     track(["F1.2", [30.185, 13.6], [36.0, 13.6], "D23.2"], width=2.0,
           comment="Return: shunt and valve-common TVS to the fuse in the AC_N leg."),
     track(["D23.2", "R37.2"], width=2.0),
@@ -680,21 +693,82 @@ kelvin = [
 
 # Keep-alive, USB and the opto LED supply.
 more = [
-    "# Keep-alive (hardware design, section 8.5): from module pin 31 under the module to detector A,\n"
-    "# then on B.Cu to detector B. The [[guard]] below keeps every other track 1 mm away.",
-    track(["U4.31", {"via": [108.9, 97.08]}, [108.9, 91.0], [109.5, 90.4], [109.5, 88.5]], width=0.25, via=(0.6, 0.3)),
-    track(["R29.1", {"via": [109.5, 88.5]}, [109.5, 80.0], [108.1, 78.6], [44.2, 78.6]], width=0.25, via=(0.6, 0.3)),
-    track(["R33.1", [109.5, 88.5]], width=0.25),
-    track(["R89.1", {"via": [44.2, 78.6]}], width=0.25, via=(0.6, 0.3)),
-    "# USB D+ and D-, side by side on B.Cu from the ESD array up the left edge and across under the\n"
-    "# display to the series resistors at the module. 0.25 mm tracks, 0.2 mm apart. Full speed only:\n"
-    "# not impedance controlled.",
-    track(["U2.1", {"via": [1.3, 18.65]}, [1.3, 19.9], [4.3, 22.9], [4.3, 97.7], [4.75, 98.15], [89.2, 98.15]],
+    "# Keep-alive (hardware design, section 8.5, rule 1). From module pin 10 a 2.3 mm stub under the module\n"
+    "# to a via, then on B.Cu down to the via between R33 and R29, on under the right edge of the\n"
+    "# encoder and left along y = 78.6 to R89 at detector B. The [[guard]] below keeps every other\n"
+    "# track and via 1 mm away; [[keepaway]] checks the nets that toggle by themselves on every layer.",
+    track(["U4.10", {"via": [96.2, 97.08]}, [96.2, 89.4], [96.5, 89.1], [96.5, 87.6]], width=0.25, via=(0.6, 0.3)),
+    track(["R33.1", {"via": [96.5, 87.6]}, [93.9, 87.6], [92.5, 86.2], [92.5, 79.6], [91.5, 78.6], [44.2, 78.6]],
           width=0.25, via=(0.6, 0.3)),
-    track(["R98.1", {"via": [89.2, 98.15]}], width=0.25, via=(0.6, 0.3)),
-    track(["U2.3", {"via": [1.3, 16.75]}, [1.9, 16.15], [4.15, 16.15], [4.75, 16.75], [4.75, 97.0], [5.45, 97.7],
-           [88.0, 97.7], [88.2, 97.5], [90.45, 97.5], [90.9, 97.95], [90.9, 98.15]], width=0.25, via=(0.6, 0.3)),
-    track(["R97.1", {"via": [90.9, 98.15]}], width=0.25, via=(0.6, 0.3)),
+    track(["R29.1", [96.5, 87.6]], width=0.25),
+    track(["R89.1", {"via": [44.2, 78.6]}], width=0.25, via=(0.6, 0.3)),
+    "# Detector A: pump, reservoir and comparator input, by hand so that each node stays short.",
+    track(["R29.2", [99.6, 88.4], [103.9, 88.4], "C22.1"], width=0.3),
+    track(["C22.2", "D7.3"], width=0.3),
+    track(["D7.2", "C23.1"], width=0.3),
+    track(["C23.1", "R30.1"], width=0.25),
+    track(["R30.1", "R91.1"], width=0.25),
+    track(["R91.1", "TP8.1"], width=0.25),
+    track(["R30.1", "R31.1"], width=0.25),
+    track(["R31.2", [103.5, 83.3], "R32.1"], width=0.25),
+    track(["R32.1", "U6.7"], width=0.25),
+    track(["R31.2", [102.725, 82.2], "C24.1"], width=0.25),
+    "# USB D+ and D-: from the series resistors at the ESD array, side by side on B.Cu up the left edge\n"
+    "# between the pins of K1, across under the display at y = 95, one step down past the debug header,\n"
+    "# to a via at each module pin. 0.25 mm tracks, 0.2 mm apart. Full speed only: not impedance controlled.",
+    track(["U2.3", [1.25, 17.3], [1.25, 19.5], "R97.1"], width=0.25),
+    track(["U2.6", "R98.1"], width=0.25),
+    track(["R97.2", "C52.1"], width=0.25),
+    track(["R98.2", "C53.1"], width=0.25),
+    track(["R97.2", [1.9, 22.45], {"via": [2.95, 22.45]}, [2.95, 23.6], [4.3, 24.95], [4.3, 95.0], [4.75, 95.45],
+           [77.2, 95.45], [78.2, 94.45], [92.3, 94.45], [92.75, 94.0], [92.75, 92.0]], width=0.25, via=(0.6, 0.3)),
+    track(["U4.14", {"via": [92.75, 92.0]}], width=0.25, via=(0.6, 0.3)),
+    track(["R98.2", [4.0, 22.45], {"via": [5.05, 22.45]}, [5.05, 24.2], [4.75, 24.5], [4.75, 94.55], [5.2, 95.0],
+           [77.01, 95.0], [78.01, 94.0], [91.45, 94.0], [91.9, 93.55], [91.9, 93.27]], width=0.25, via=(0.6, 0.3)),
+    track(["U4.13", {"via": [91.9, 93.27]}], width=0.25, via=(0.6, 0.3)),
+]
+
+# Display bus (hardware design, section 15.3). It may not come near the keep-alive net on any layer,
+# and the keep-alive now lies between the module pins and the connector. So the bus goes round the
+# top of module pin 10: a via above each pin, B.Cu under the module and under the parts left of it,
+# then F.Cu down the strip the display cable lies over, and under the connector to its pins.
+BUS = ["TFT_CS", "TFT_MOSI", "TFT_SCLK", "TFT_DC", "TFT_RST", "TFT_BL"]       # module pins 18 to 23
+BUS_PIN = {n: 18 + i for i, n in enumerate(BUS)}
+BUS_VIA_X = {n: 99.825 + 1.27 * i for i, n in enumerate(BUS)}
+SPREAD = {"TFT_CS": 97.0, "TFT_MOSI": 98.0, "TFT_SCLK": 99.0, "TFT_DC": 100.0, "TFT_RST": 101.0}   # lane y at the vias
+DROP = {"TFT_CS": (72.6, 2, 86.18), "TFT_DC": (71.7, 3, 86.68), "TFT_SCLK": (70.8, 4, 87.18),
+        "TFT_MOSI": (69.9, 5, 87.68), "TFT_RST": (69.0, 6, 88.18)}             # F.Cu x, connector pin, pin y
+bus = ["# Display bus: module pins 18 to 22 to J7, and the backlight line to R61. See the comment in layout.py."]
+for i, n in enumerate(BUS):
+    # under the module the six lanes are 0.4 mm apart: between the keep-alive guard and the thermal
+    # vias of the module's ground pad there is room for no more
+    vx, y1, x1, y2 = BUS_VIA_X[n], 93.2 + 0.4 * i, 97.45 + 0.4 * i, 98.6 + 0.4 * i
+    pts = [f"U4.{BUS_PIN[n]}", {"via": [vx, 92.4]}, [vx, y1], [x1, y1], [x1, y2]]
+    if n == "TFT_BL":
+        # the backlight line: on along y = 101.5, down west of the bus vias, then under the buttons to R61
+        pts += [[77.4, y2], [77.4 - (102.0 - y2), 102.0], [68.0, 102.0], [67.5, 101.5], [67.5, 97.3], [67.0, 96.8],
+                [48.2, 96.8]]
+        bus.append(track(pts, width=0.2, via=(0.6, 0.3)))
+        bus.append(track(["R61.1", [48.2, 94.2], {"via": [48.2, 96.8]}], width=0.2, via=(0.6, 0.3)))
+        continue
+    ys = SPREAD[n]
+    fx, pin, py = DROP[n]
+    # where this lane leaves the 0.4 mm pitch for the 1.0 mm pitch of the vias: the outer lanes first
+    x0 = 77.4 - 0.3 * (i if ys < y2 else 5 - i)
+    pts += [[x0, y2], [x0 - abs(y2 - ys), ys]]
+    pts.append([fx, ys])
+    bus.append(track(pts, width=0.2, via=(0.6, 0.3)))
+    bus.append(track([f"J7.{pin}", [fx - 0.5, py], [fx, py + 0.5], {"via": [fx, ys]}], width=0.2, via=(0.6, 0.3)))
+more += bus
+more += [
+    "# Display connector, open side: ground, 3.3 V, the backlight anode and cathode.",
+    track(["J7.1", [56.6, 85.68], "C37.2"], width=0.25),
+    track(["J7.12", {"via": [58.95, 91.25]}], width=0.25, via=(0.6, 0.3)),
+    track(["J7.9", "J7.8"], width=0.25),
+    track(["J7.8", [56.5, 89.18], "C38.1"], width=0.25),
+    track(["J7.6", [56.5, 88.18], "R63.2"], width=0.2),
+    track(["J7.10", [56.0, 90.18], [55.5, 90.68], [55.5, 91.6], "R60.2"], width=0.3),
+    track(["J7.11", [56.55, 90.68], [56.55, 95.3], "Q4.3"], width=0.3),
     "# V_DRV, the opto LED supply: one bus under the LED row, a stub to each resistor.",
     track(["R901.1", [22.075, 40.6], [105.925, 40.6], "R802.1"], width=0.4),
 ]
@@ -705,11 +779,8 @@ for n in order:
     if n != "Z8":
         more.append(track([f"R{k}02.1", [x0 + 3.925, 40.6]], width=0.3))
 more += [
-    "# Ground vias for pads where the fan-out finds no place by itself.",
-    track(["J7.1", {"via": [56.4, 84.9]}], width=0.25, via=(0.6, 0.3)),
+    "# Ground for a pad where the fan-out finds no place by itself.",
     track(["J5.A12", [11.25, 7.65], [14.15, 7.65], "R17.2"], width=0.3),
-    "# 3.3 V at the display connector: pin 9 to pin 8, which has the via.",
-    track(["J7.9", "J7.8"], width=0.25),
 ]
 
 GL = "group.channel_logic.track"
@@ -762,7 +833,10 @@ TAIL = '''
 layers = ["F.Cu", "In2.Cu", "B.Cu"]   # In1.Cu is the ground plane: the autorouter only passes vias through it
 # Nets the autorouter must leave alone: they connect through planes, pours or hand-routed copper.
 exclude = ["GND", "3V3", "/ISNS", "/OUT_*", "/*/T2", "/*/SNB", "/AC_L_IN", "/AC_N", "/AC_L", "/COM",
-           "/Power/VRECT", "VIN_DC", "/Power/VIN_U1", "/Power/UVLO", "/Power/SW", "/Power/BST", "/KA", "/*/G", "/*/OGT", "/*/OLA", "/*/LEDA"]
+           "/Power/VRECT", "VIN_DC", "/Power/VIN_U1", "/Power/UVLO", "/Power/SW", "/Power/BST", "/KA",
+           "/Failsafe/KA_N0", "/Failsafe/KA_N1", "/Failsafe/KA_N2", "/Failsafe/KA_INP",
+           "/TFT_CS", "/TFT_MOSI", "/TFT_SCLK", "/TFT_DC", "/TFT_RST", "/TFT_BL", "/Display/TFT_LEDA",
+           "/Display/TFT_LEDK", "/USB_DP_MCU", "/USB_DM_MCU", "/*/G", "/*/OGT", "/*/OLA", "/*/LEDA"]
 
 [route.layer_cost]
 "In2.Cu" = 2.5              # In2.Cu is also the 3.3 V pour: use it only where it saves a long way round
@@ -780,10 +854,11 @@ rect = [34.6, 17.6, 39.4, 39.1]
 # A via beside every surface-mount pad of a plane net.
 [[plane]]
 net = "GND"
-skip = ["U4.41", "U1.9", "R40.1", "R44.1", "J7.1", "J5.A12", "J5.B1"]   # exposed pads: vias by hand. R40, R44: Kelvin, see below
+skip = ["U4.41", "U1.9", "R40.1", "R44.1", "J7.1", "J7.12", "J5.A12", "J5.B1"]   # exposed pads: vias by hand. R40, R44: Kelvin, see below
 
 [[plane]]
 net = "3V3"
+skip = ["J7.8", "J7.9"]     # joined to C38 by a track
 # where the 3.3 V pour on In2.Cu is
 within = [[0.9, 45.7, 113.1, 109.1], [104.4, 5.4, 113.1, 45.7], [0.9, 16.4, 9.1, 45.7]]
 
