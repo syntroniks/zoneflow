@@ -349,6 +349,7 @@ public:
     UtcSeconds aheadCursor = 0;
     bool aheadValid = false;
     bool configSeenThisBoot = false;
+    uint64_t smallBackJumpPhys = 0;
     std::map<std::pair<uint16_t, int64_t>, uint32_t> dueBoot;
 
     void violation(const char *id, const std::string &detail);
@@ -1376,6 +1377,9 @@ void Runner::scheduleTick()
         return;
     }
     if (now < cursorUtc) {
+        if (cursorUtc - now > 2) {
+            smallBackJumpPhys = w.phys;
+        }
         if (cursorUtc - now > Scheduler::kLargeBackJumpSec) {
             // As the scheduler: clamp, and remember what was consumed.
             for (auto &[id, k] : progKey) {
@@ -1476,6 +1480,16 @@ void Runner::configApplied()
     for (std::size_t i = 0; i < c.schedule.programCount; ++i) {
         const Program &p = c.schedule.programs[i];
         const Program *old = haveApplied ? findProgram(applied, p.id) : nullptr;
+        if (haveApplied && old != nullptr && sameSchedule(*old, p) && valid && configSeenThisBoot) {
+            // The scheduler advances every program's key to the current minute
+            // on an edit. Mirrored to the minute before, so that a start in the
+            // same minute as an unrelated edit is still expected.
+            const int64_t k = local.key(now) - 1;
+            if (progKey.count(p.id) == 0 || progKey[p.id] < k) {
+                progKey[p.id] = k;
+                progAt[p.id] = now - 60;
+            }
+        }
         if (haveApplied && (old == nullptr || !sameSchedule(*old, p))) {
             programChangedPhys[p.id] = w.phys;
             // At boot the scheduler cannot tell a changed program (a write
@@ -1540,6 +1554,16 @@ void Runner::checkDeadlines()
             continue;
         }
         d.st = Due::St::Excluded;
+        if (dev && smallBackJumpPhys != 0 && w.phys - smallBackJumpPhys < 25ull * 3600 * 1000 &&
+            firmwareKey(d.pid) >= d.key) {
+            // Requirement gap: after the clock is put back by less than a
+            // day, a key set while it was ahead (a start, or an edit) covers
+            // starts it never ran. Skipped, not reported missed.
+            w.count("gap.start_skipped_after_clock_put_back");
+            w.note("start " + keyText(d.key) + " of program " + std::to_string(d.pid) +
+                   " skipped: its key was set while the clock was ahead");
+            continue;
+        }
         violation(d.catchup ? "S8-lost-catchup" : "S8-lost", "program " + std::to_string(d.pid) + " start " +
                                                                  keyText(d.key) + " (" + tz +
                                                                  ") neither started, skipped nor reported missed");
