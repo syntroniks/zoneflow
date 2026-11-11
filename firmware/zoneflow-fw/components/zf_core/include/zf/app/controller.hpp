@@ -67,7 +67,9 @@ public:
     // Outputs off, runtime state restored, configuration applied.
     void begin();
 
-    // Applies the ConfigStore's current configuration.
+    // Applies the ConfigStore's current configuration if its revision moved.
+    // tick() calls it too, so a stored configuration takes effect even when
+    // its ReloadConfig command could not be queued.
     void reloadConfig();
 
     void setTimeStatus(TimeStatus status);

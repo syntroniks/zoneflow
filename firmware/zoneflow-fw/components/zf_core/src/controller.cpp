@@ -224,6 +224,11 @@ bool Controller::apply(const Command &cmd)
 
 void Controller::tick()
 {
+    // A stored configuration is applied even if its ReloadConfig command was
+    // lost: a writer that found the command queue full answered "stored,
+    // reload not queued", and the controller ran the old configuration
+    // (maximum run times, disabled zones) until the next restart.
+    reloadConfig();
     const MonoMs now = deps_.clock.monoMs();
     const SensorSample s = deps_.sensors.read();
     sensorSupplyOn_ = s.sensorSupplyOn;
