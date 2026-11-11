@@ -1593,8 +1593,24 @@ void Runner::checkDeadlines()
     }
     for (Expected &x : expected) {
         if (x.deadlinePhys <= w.phys) {
+            std::string why;
+            if (dev) {
+                const SystemState st = dev->state.snapshot();
+                const OutputStageStatus ss = dev->stage.status();
+                why = std::string("; stage ") + toString(ss.phase) + ", check " + toString(ss.fault) + ", queue " +
+                      std::to_string(st.queue.length) + " " + toString(st.queue.state) + ", inhibit " +
+                      std::to_string(st.inhibitFlags) + ", faults 0x" + std::to_string(st.activeFaults) +
+                      ", keep-alive request " + std::to_string(static_cast<int>(dev->guard.request())) +
+                      ", flash busy " + std::to_string(w.flashBusyUntil > w.phys ? w.flashBusyUntil - w.phys : 0);
+                if (st.queue.shownCount > 0) {
+                    const ZoneIndex z = st.queue.items[0].zone;
+                    why += ", head zone " + std::to_string(z) + " " + toString(st.zones[z].state) + " rest " +
+                           std::to_string(st.zones[z].restRemainingSec);
+                }
+            }
             violation("L-program", "program " + std::to_string(x.pid) + " did not complete its zones in time (" +
-                                       std::to_string(x.done.size()) + " of " + std::to_string(x.zones.size()) + ")");
+                                       std::to_string(x.done.size()) + " of " + std::to_string(x.zones.size()) + ")" +
+                                       why);
             x.done.clear();
             for (const auto &[z, s] : x.zones) {
                 x.done.insert(z);
