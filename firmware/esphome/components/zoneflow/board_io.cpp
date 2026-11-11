@@ -11,9 +11,10 @@
 //  - No panic-handler wrap: ESPHome's crash handler already wraps
 //    esp_panic_handler and the linker allows one. A panic stops the timer
 //    interrupt with the CPU, so the keep-alive gets no more edges and the
-//    detectors remove drive within their hold-up (hardware design 19.4:
-//    1.2 s at most if the pin stopped high); the reset then releases the pin
-//    to R33, low.
+//    detectors remove drive within their hold-up (hardware design 19.4, as
+//    review A2 left it: valve current ends within 1.25 s if the pin stopped
+//    high; the relay transistor alone may take 2.19 s); the reset then
+//    releases the pin to R33, low.
 #include "board_io.h"
 
 #ifdef USE_ESP32
@@ -32,7 +33,11 @@
 #include "freertos/task.h"
 #include "hal/gpio_ll.h"
 #include "sdkconfig.h"
+#include "esp_heap_caps.h"
+#include "soc/gpio_reg.h"
+#include "soc/gpio_sig_map.h"
 #include "soc/gpio_struct.h"
+#include "soc/io_mux_reg.h"
 
 #if !CONFIG_GPTIMER_ISR_CACHE_SAFE
 #error "The keep-alive must run while the flash cache is off: CONFIG_GPTIMER_ISR_CACHE_SAFE (set by the zoneflow component)"
@@ -50,6 +55,12 @@ constexpr uint32_t kTimerPeriodUs = 1000;
 constexpr uint32_t kKeepAlivePeriods = 5;
 constexpr uint32_t kKeepAlivePeriodMs = 5;
 constexpr uint32_t kHeartbeatTimeoutMs = 500;
+// Contract 19.4 as review A2 left it (finding M6): an edge at least every
+// 20 ms and no phase shorter than 2.5 ms. The pin changes level only on a
+// keep-alive period, so the period is the shortest phase.
+static_assert(kKeepAlivePeriods * kTimerPeriodUs == kKeepAlivePeriodMs * 1000, "keep-alive period");
+static_assert(zf::keepalive::periodMeetsContract(kKeepAlivePeriods * kTimerPeriodUs),
+              "hardware design 19.4: keep-alive period between 2.5 and 20 ms");
 // Hardware design 19.9, at 24 VAC (zf_board/zoneflow_rev_a.hpp).
 constexpr int32_t kZeroCrossRisingLagUs = 300;
 constexpr int32_t kZeroCrossFallingLeadUs = 90;
@@ -70,6 +81,10 @@ gptimer_handle_t s_timer = nullptr;
 IRAM_ATTR bool on_timer(gptimer_handle_t, const gptimer_alarm_event_data_t *, void *) {
   const uint32_t now = s_isr_us.load(std::memory_order_relaxed) + kTimerPeriodUs;
   s_isr_us.store(now, std::memory_order_relaxed);
+  const auto ka = static_cast<uint32_t>(s_pin_ka);
+  // Step 2b: while the keep-alive pin floats, read it every 1 ms.
+  if (s_guard.pinIsInput())
+    s_guard.sampleFloat(gpio_ll_get_level(&GPIO, ka) != 0);
   const bool zc = gpio_ll_get_level(&GPIO, static_cast<uint32_t>(s_pin_zc)) != 0;
   if (zc != s_zc_level) {
     s_zc_level = zc;
@@ -81,7 +96,12 @@ IRAM_ATTR bool on_timer(gptimer_handle_t, const gptimer_alarm_event_data_t *, vo
     // is younger than 500 ms, the output stage asks for it, and the guard is
     // not tripped (hardware design 19.4).
     const bool on = s_guard.step(kKeepAlivePeriodMs);
-    gpio_ll_set_level(&GPIO, static_cast<uint32_t>(s_pin_ka), on ? 1u : 0u);
+    if (s_guard.pinIsInput()) {
+      gpio_ll_output_disable(&GPIO, ka);  // step 2b: driver off, no pull; R33 holds the net low
+    } else {
+      gpio_ll_set_level(&GPIO, ka, on ? 1u : 0u);  // level first, then the driver
+      gpio_ll_output_enable(&GPIO, ka);
+    }
     const bool drive = gpio_ll_get_level(&GPIO, static_cast<uint32_t>(s_pin_arb)) != 0;
     const bool relay_off = gpio_ll_get_level(&GPIO, static_cast<uint32_t>(s_pin_brb)) != 0;
     const bool latched = gpio_ll_get_level(&GPIO, static_cast<uint32_t>(s_pin_oc)) == 0;
@@ -94,7 +114,9 @@ IRAM_ATTR bool on_timer(gptimer_handle_t, const gptimer_alarm_event_data_t *, vo
 constexpr uint32_t kSampleHzPerChannel = 5000;
 constexpr uint32_t kWindowMs = 100;
 constexpr uint32_t kSamplesPerWindow = kSampleHzPerChannel * kWindowMs / 1000;  // 500
-constexpr uint32_t kConvPerFrame = 2 * kSamplesPerWindow / 10;                 // 10 ms frames
+// ISENSE_HI, ISENSE_LO and GPIO7, the relay read-back (review A2 4.6 question 7).
+constexpr uint32_t kChannels = 3;
+constexpr uint32_t kConvPerFrame = kChannels * kSamplesPerWindow / 10;  // 10 ms frames
 constexpr uint32_t kFrameBytes = kConvPerFrame * SOC_ADC_DIGI_RESULT_BYTES;
 constexpr uint32_t kMaxWindowMs = kWindowMs + 20;  // longer: samples were lost, drop it
 constexpr uint32_t kStaleMs = 500;
@@ -125,9 +147,60 @@ uint32_t isr_micros() { return s_isr_us.load(std::memory_order_relaxed); }
 
 IRAM_ATTR void force_outputs_off() {
   s_guard.trip();
-  if (s_pin_ka >= 0)
+  if (s_pin_ka >= 0) {
     gpio_ll_set_level(&GPIO, static_cast<uint32_t>(s_pin_ka), 0);
+    gpio_ll_output_enable(&GPIO, static_cast<uint32_t>(s_pin_ka));
+  }
 }
+
+bool keepalive_pin_plain() {
+  // Rule 16 and contract 19.4: the IO_MUX selects the GPIO function and the
+  // GPIO matrix routes no peripheral signal to the pin.
+  if (s_pin_ka < 0)
+    return true;
+  const auto ka = static_cast<uint32_t>(s_pin_ka);
+  const uint32_t mux = REG_GET_FIELD(IO_MUX_GPIO0_REG + ka * 4u, MCU_SEL);
+  const uint32_t out = REG_GET_FIELD(GPIO_FUNC0_OUT_SEL_CFG_REG + ka * 4u, GPIO_FUNC0_OUT_SEL);
+  return mux == PIN_FUNC_GPIO && out == SIG_GPIO_OUT_IDX;
+}
+
+// ---- rule 17: PSRAM traffic during the float test ----------------------------------------
+
+namespace {
+// Larger than the 64 kB data cache: a pass reads and writes back the PSRAM.
+constexpr std::size_t kLoadBytes = 256u * 1024u;
+std::atomic<bool> s_load{false};
+volatile uint32_t *s_load_buf = nullptr;
+StaticTask_t s_load_tcb;
+StackType_t s_load_stack[2048];
+
+void load_task(void *) {
+  uint32_t sum = 0;
+  for (;;) {
+    if (!s_load.load(std::memory_order_relaxed)) {
+      vTaskDelay(pdMS_TO_TICKS(10));
+      continue;
+    }
+    for (std::size_t i = 0; i < kLoadBytes / sizeof(uint32_t); i += 8) {
+      sum += s_load_buf[i];
+      s_load_buf[i] = sum;
+    }
+    vTaskDelay(1);
+  }
+}
+}  // namespace
+
+bool start_float_test_load() {
+  s_load_buf = static_cast<volatile uint32_t *>(heap_caps_calloc(1, kLoadBytes, MALLOC_CAP_SPIRAM));
+  if (s_load_buf == nullptr) {
+    ESP_LOGW(TAG, "no PSRAM buffer: the float test runs without PSRAM traffic");
+    return false;
+  }
+  return xTaskCreateStaticPinnedToCore(&load_task, "zf_float", sizeof s_load_stack, nullptr, 2, s_load_stack,
+                                       &s_load_tcb, 0) != nullptr;
+}
+
+void set_float_test_load(bool on) { s_load.store(on, std::memory_order_relaxed); }
 
 bool init_output_stage_pins(const BoardPins &p) {
   s_pin_ka = p.keepalive;
@@ -139,7 +212,7 @@ bool init_output_stage_pins(const BoardPins &p) {
   gpio_set_level(static_cast<gpio_num_t>(p.keepalive), 0);
   gpio_config_t ka = {};
   ka.pin_bit_mask = 1ULL << p.keepalive;
-  ka.mode = GPIO_MODE_OUTPUT;
+  ka.mode = GPIO_MODE_INPUT_OUTPUT;  // input buffer on: step 2b reads the pin with its driver off
   esp_err_t err = gpio_config(&ka);
   // Rule 12: GPIO42 input with the internal pull-down (an open R92 reads
   // low, the safe side); GPIO7 input with no pull. Never outputs.
@@ -207,15 +280,19 @@ bool CurrentSampler::start(const BoardPins &p) {
   adc_unit_t unit = ADC_UNIT_1;
   adc_channel_t hi = ADC_CHANNEL_0;
   adc_channel_t lo = ADC_CHANNEL_0;
+  adc_channel_t rb = ADC_CHANNEL_0;
   esp_err_t err = adc_continuous_io_to_channel(p.current_high, &unit, &hi);
   if (err == ESP_OK && unit == ADC_UNIT_1)
     err = adc_continuous_io_to_channel(p.current_low, &unit, &lo);
+  if (err == ESP_OK && unit == ADC_UNIT_1)
+    err = adc_continuous_io_to_channel(p.relay_readback, &unit, &rb);
   if (err != ESP_OK || unit != ADC_UNIT_1) {
-    ESP_LOGE(TAG, "current sense pins are not on ADC1");
+    ESP_LOGE(TAG, "current sense and relay read-back pins are not on ADC1");
     return false;
   }
   ch_hi_ = static_cast<int>(hi);
   ch_lo_ = static_cast<int>(lo);
+  ch_rb_ = static_cast<int>(rb);
 
   adc_continuous_handle_cfg_t handle_cfg = {};
   handle_cfg.max_store_buf_size = kFrameBytes * 8;
@@ -227,29 +304,37 @@ bool CurrentSampler::start(const BoardPins &p) {
     ESP_LOGE(TAG, "ADC continuous mode: %s", esp_err_to_name(err));
     return false;
   }
-  adc_digi_pattern_config_t pattern[2] = {};
-  for (int i = 0; i < 2; ++i) {
+  const adc_channel_t chans[kChannels] = {hi, lo, rb};
+  adc_digi_pattern_config_t pattern[kChannels] = {};
+  for (uint32_t i = 0; i < kChannels; ++i) {
     pattern[i].atten = ADC_ATTEN_DB_6;  // pin map: 6 dB, 0 to 1600 mV
-    pattern[i].channel = static_cast<uint8_t>(i == 0 ? hi : lo);
+    pattern[i].channel = static_cast<uint8_t>(chans[i]);
     pattern[i].unit = ADC_UNIT_1;
     pattern[i].bit_width = SOC_ADC_DIGI_MAX_BITWIDTH;
   }
   adc_continuous_config_t cfg = {};
-  cfg.pattern_num = 2;
+  cfg.pattern_num = kChannels;
   cfg.adc_pattern = pattern;
-  cfg.sample_freq_hz = kSampleHzPerChannel * 2;
+  cfg.sample_freq_hz = kSampleHzPerChannel * kChannels;
   cfg.conv_mode = ADC_CONV_SINGLE_UNIT_1;
   cfg.format = ADC_DIGI_OUTPUT_FORMAT_TYPE2;
   err = adc_continuous_config(handle, &cfg);
-  for (int i = 0; err == ESP_OK && i < 2; ++i) {
-    adc_cali_curve_fitting_config_t cali = {};
-    cali.unit_id = ADC_UNIT_1;
-    cali.chan = i == 0 ? hi : lo;
-    cali.atten = ADC_ATTEN_DB_6;
-    cali.bitwidth = ADC_BITWIDTH_12;
+  // adc_continuous_config() turns the pins' digital input buffers off. GPIO7
+  // is still read as a level in the keep-alive interrupt: buffer back on, no
+  // pull (rule 12). Had it failed, the pin would read low: the idle test
+  // fails on the safe side. A bench item.
+  if (err == ESP_OK)
+    err = gpio_input_enable(static_cast<gpio_num_t>(p.relay_readback));
+  void **cali[kChannels] = {&cali_hi_, &cali_lo_, &cali_rb_};
+  for (uint32_t i = 0; err == ESP_OK && i < kChannels; ++i) {
+    adc_cali_curve_fitting_config_t c = {};
+    c.unit_id = ADC_UNIT_1;
+    c.chan = chans[i];
+    c.atten = ADC_ATTEN_DB_6;
+    c.bitwidth = ADC_BITWIDTH_12;
     adc_cali_handle_t h = nullptr;
-    err = adc_cali_create_scheme_curve_fitting(&cali, &h);
-    (i == 0 ? cali_hi_ : cali_lo_) = h;
+    err = adc_cali_create_scheme_curve_fitting(&c, &h);
+    *cali[i] = h;
   }
   if (err == ESP_OK)
     err = adc_continuous_start(handle);
@@ -279,15 +364,16 @@ void CurrentSampler::run() {
     for (uint32_t i = 0; i < n; ++i) {
       if (!parsed[i].valid || parsed[i].unit != ADC_UNIT_1)
         continue;
-      const bool is_hi = static_cast<int>(parsed[i].channel) == ch_hi_;
-      const bool is_lo = static_cast<int>(parsed[i].channel) == ch_lo_;
-      if (!is_hi && !is_lo)
+      const int ch = static_cast<int>(parsed[i].channel);
+      zf::ChannelStats *stats = ch == ch_hi_ ? &w.hi : ch == ch_lo_ ? &w.lo : ch == ch_rb_ ? &w.relayRb : nullptr;
+      void *calib = ch == ch_hi_ ? cali_hi_ : ch == ch_lo_ ? cali_lo_ : cali_rb_;
+      if (stats == nullptr)
         continue;
       int mv = 0;
-      if (adc_cali_raw_to_voltage(static_cast<adc_cali_handle_t>(is_hi ? cali_hi_ : cali_lo_),
-                                  static_cast<int>(parsed[i].raw_data), &mv) != ESP_OK)
+      if (adc_cali_raw_to_voltage(static_cast<adc_cali_handle_t>(calib), static_cast<int>(parsed[i].raw_data), &mv) !=
+          ESP_OK)
         continue;
-      (is_hi ? w.hi : w.lo).add(mv);
+      stats->add(mv);
       if (w.hi.n < kSamplesPerWindow)
         continue;
       const auto now = static_cast<zf::MonoMs>(esp_timer_get_time() / 1000);
@@ -303,6 +389,7 @@ void CurrentSampler::run() {
       }
       w.hi.reset();
       w.lo.reset();
+      w.relayRb.reset();
       window_start = now;
     }
   }

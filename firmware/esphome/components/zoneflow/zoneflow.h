@@ -11,7 +11,9 @@
 // hardware (spec section 2 rule 3, hardware design 19.4).
 #pragma once
 
+#include <algorithm>
 #include <array>
+#include <cstring>
 #include <memory>
 #include <string>
 #include <vector>
@@ -21,6 +23,7 @@
 #include "esphome/core/component.h"
 #include "esphome/core/defines.h"
 #include "esphome/core/helpers.h"
+#include "esphome/core/preferences.h"
 
 #ifdef USE_OTA_STATE_LISTENER
 #include "esphome/components/ota/ota_backend.h"
@@ -49,10 +52,41 @@
 
 #include "board_io.h"
 #include "supervisor.h"
+#include "zf/hw/reference_store.hpp"
 
 namespace esphome::zoneflow {
 
 class ZoneFlowComponent;
+
+// This board's detector release times (hardware design 19.7, the limits of
+// step 9) in ESPHome's preferences, in flash. The record is the standalone
+// firmware's: magic, version, the two times, CRC-32. Writes are synced at
+// once; they happen at commissioning and after a confirmed repair, with no
+// valve on.
+class PreferenceReferenceStore final : public zf::IDetectorReferenceStore {
+ public:
+  void init() { this->pref_ = global_preferences->make_preference<Blob>(fnv1_hash("zoneflow_ka_ref"), true); }
+  bool load(zf::DetectorReference &out) override {
+    Blob b{};
+    return this->pref_.load(&b) && zf::hw::BlobReferenceStore::decode(std::string_view(b.data, sizeof b.data), out);
+  }
+  bool save(const zf::DetectorReference &r) override {
+    Blob b{};
+    const std::string s = zf::hw::BlobReferenceStore::encode(r);
+    std::memcpy(b.data, s.data(), std::min(s.size(), sizeof b.data));
+    return this->pref_.save(&b) && global_preferences->sync();
+  }
+  bool clear() override {
+    Blob b{};  // all zero: fails the magic, reads as not stored
+    return this->pref_.save(&b) && global_preferences->sync();
+  }
+
+ private:
+  struct Blob {
+    char data[14];
+  };
+  ESPPreferenceObject pref_;
+};
 
 enum class BinaryKind : uint8_t {
   AC_PRESENT,
@@ -118,7 +152,7 @@ class ZoneFlowComponent : public Component,
   // Stops every output and the sprinkler controller.
   void stop_all();
   void clear_faults();
-  // A detector fault (self-test steps 1, 2, 9) needs this, pressed twice
+  // A fault of a safety layer (self-test steps 1, 2, 2b, 5b, 9) needs this, pressed twice
   // within 10 s: the second press confirms the board was repaired.
   void acknowledge_repair_press();
   void request_self_test() {
@@ -149,6 +183,13 @@ class ZoneFlowComponent : public Component,
 
   // ---- entities ----
   template<typename F> void add_on_fault_callback(F &&cb) { this->fault_callbacks_.add(std::forward<F>(cb)); }
+  // Rule 17: true from just before step 2b to just after it. on_float_test
+  // fires with true and false; display.yaml uses it to run the backlight PWM
+  // at a mid duty and redraw the display meanwhile.
+  bool float_test_active() const { return this->sup_ && this->sup_->float_test(); }
+  template<typename F> void add_on_float_test_callback(F &&cb) {
+    this->float_test_callbacks_.add(std::forward<F>(cb));
+  }
   template<typename F> void add_on_state_callback(F &&cb) { this->state_callbacks_.add(std::forward<F>(cb)); }
 #ifdef USE_BINARY_SENSOR
   void register_binary_sensor(binary_sensor::BinarySensor *s, BinaryKind kind, uint8_t zone) {
@@ -201,6 +242,9 @@ class ZoneFlowComponent : public Component,
   sprinkler::Sprinkler *sprinkler_{nullptr};
 #endif
   CallbackManager<void(std::string)> fault_callbacks_;
+  CallbackManager<void(bool)> float_test_callbacks_;
+  bool last_float_test_ = false;
+  PreferenceReferenceStore reference_;
   CallbackManager<void()> state_callbacks_;
 
 #ifdef USE_BINARY_SENSOR
@@ -285,6 +329,13 @@ class FaultTrigger : public Trigger<std::string> {
  public:
   explicit FaultTrigger(ZoneFlowComponent *parent) {
     parent->add_on_fault_callback([this](const std::string &what) { this->trigger(what); });
+  }
+};
+
+class FloatTestTrigger : public Trigger<bool> {
+ public:
+  explicit FloatTestTrigger(ZoneFlowComponent *parent) {
+    parent->add_on_float_test_callback([this](bool running) { this->trigger(running); });
   }
 };
 

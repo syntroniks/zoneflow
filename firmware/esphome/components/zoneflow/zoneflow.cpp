@@ -36,7 +36,9 @@ void ZoneFlowComponent::setup() {
   }
   this->bus_ = std::make_unique<ExpanderBus>(this);
   this->cfg_.stage.tickMs = kTickMs;
-  this->sup_ = std::make_unique<zfe::Supervisor>(*this->bus_, keepalive_guard(), this->clock_, this->layout_, this->cfg_);
+  this->reference_.init();
+  this->sup_ = std::make_unique<zfe::Supervisor>(*this->bus_, keepalive_guard(), this->clock_, this->layout_, this->cfg_,
+                                                 &this->reference_);
 
   zf::RetainedRecord rec;
   std::memcpy(&rec, s_retained, sizeof rec);
@@ -50,6 +52,8 @@ void ZoneFlowComponent::setup() {
     this->status_set_error(LOG_STR("keep-alive timer failed"));
   }
   this->sampler_ok_ = this->sampler_.start(this->pins_);
+  // Rule 17: PSRAM traffic during the float test. Not fatal without it.
+  start_float_test_load();
   // Rule 13: the sensor supply once the application runs.
   this->sensor_supply_on_ = enable_sensor_supply(this->pins_);
 #ifdef USE_OTA_STATE_LISTENER
@@ -93,11 +97,20 @@ void ZoneFlowComponent::loop() {
   if (this->sampler_ok_)
     in.window = this->sampler_.latest();
   in.sensor_supply_on = this->sensor_supply_on_;
+  in.keepalive_pin_plain = keepalive_pin_plain();
 #ifdef USE_SENSOR
   if (this->flow_rate_ != nullptr && this->flow_rate_->has_state() && !std::isnan(this->flow_rate_->state))
     in.flow_lpm = this->flow_rate_->state;
 #endif
   this->sup_->tick(in);
+  // Rule 17: the PSRAM, the backlight PWM and the display busy while the
+  // keep-alive pin floats (hardware design 19.7 step 2b).
+  const bool float_test = this->sup_->float_test();
+  set_float_test_load(float_test);
+  if (float_test != this->last_float_test_) {
+    this->last_float_test_ = float_test;
+    this->float_test_callbacks_.call(float_test);
+  }
 
   zf::RetainedRecord rec;
   this->sup_->save_retained(rec);
