@@ -56,7 +56,7 @@ comma := ,
 empty :=
 space := $(empty) $(empty)
 
-.PHONY: all schematic footprints layout sch lint erc sch-outputs board route reroute finish drc mech rules board-check ibom outputs check committed
+.PHONY: all schematic footprints layout sch lint erc sch-outputs board route reroute finish patches drc mech rules board-check ibom outputs check committed
 .NOTPARALLEL:
 
 all: outputs ibom
@@ -112,6 +112,17 @@ reroute:
 # Import the routed session and remove dangling stubs.
 finish: route
 	$(KICAD_PY) -m hwflow.pcbbuild finish . --session route/$(NAME).ses --design $(DESIGN)
+
+# Close what the autorouter left open (hwflow.patchroute): import the stored session without
+# patches, let DRC say what is unconnected, route each such pair, and write $(DESIGN)/patches.toml.
+# Run it once after the board has been routed again; then run make.
+patches: route
+	$(KICAD_PY) -m hwflow.pcbbuild finish . --session route/$(NAME).ses --design $(DESIGN) --no-patch
+	mkdir -p build/patch && cp $(PCB) $(NAME).kicad_pro build/patch/ && cp $(NAME).kicad_dru build/patch/ 2>/dev/null; true
+	$(KICAD_CLI) pcb drc --refill-zones --save-board --severity-error --severity-warning --format json \
+		-o build/patch/drc.json build/patch/$(PCB) $(LOG); true
+	$(KICAD_PY) -m hwflow.patchroute . $(DESIGN) --drc build/patch/drc.json
+	$(if $(wildcard $(DESIGN)/layout.py),$(KICAD_PY) $(DESIGN)/layout.py .,@true)
 
 # The first call fills the copper zones and saves the board. Errors and
 # warnings both fail the build; --schematic-parity checks that the board still

@@ -356,8 +356,8 @@ at("R79", 110.6, 52.6, 0)
 block("I/O expander with its pull-up and pull-down networks.")
 at("U5", 35.0, 72.5, 0)
 at("RN1", 28.6, 74.5, 0)
-at("RN2", 41.4, 74.5, 0)
-at("RN3", 41.4, 70.3, 0)
+at("RN2", 42.6, 74.5, 0)
+at("RN3", 36.5, 83.3, 90)      # the spare pins: beside their test pads, out of the way of the others
 at("R96", 28.4, 71.4, 0)
 at("R27", 28.4, 69.8, 0)
 at("R28", 28.4, 68.2, 0)
@@ -381,7 +381,7 @@ at("Q2", 53.6, 72.2, 0)
 at("Q1", 48.6, 72.0, 0)
 row("R11 R12", 44.6, 69.2, 3.2)
 row("R93 R94 R95", 51.0, 69.2, 3.2)
-at("TP24", 44.5, 72.4, 0)
+at("TP24", 45.4, 71.3, 0)
 block("Display connector: decoupling, reset pull-up and the backlight switch. The bus reaches the\npins from under the connector; these parts are on the open side.")
 at("C37", 54.9, 86.0, 0)
 at("R63", 54.9, 87.5, 0)
@@ -757,6 +757,7 @@ more = [
     track(["C40.1", [90.93, 77.4], [90.2, 78.13], [88.45, 78.13], [88.45, 97.9], [88.9, 98.35], "U4.9"], width=0.2),
     track(["U4.11", [95.2, 95.5], {"via": [100.4, 95.5]}], width=0.2, via=(0.6, 0.3)),
     "# Detector A: pump, reservoir and comparator input, by hand so that each node stays short.",
+    "@U5@",
     track(["R29.2", [99.6, 88.4], [103.9, 88.4], "C22.1"], width=0.3),
     track(["C22.2", "D7.3"], width=0.3),
     track(["D7.2", "C23.1"], width=0.3),
@@ -817,6 +818,21 @@ for i, n in enumerate(BUS):
     pts.append([fx, ys])
     bus.append(track(pts, width=0.2, via=(0.6, 0.3)))
     bus.append(track([f"J7.{pin}", [fx - 0.5, py], [fx, py + 0.5], {"via": [fx, ys]}], width=0.2, via=(0.6, 0.3)))
+# The I/O expander has 24 pins 0.65 mm apart. Left to itself the autorouter puts its vias at the
+# ends of some pins and so shuts in their neighbours. Every pin gets its via here: alternately
+# outside the pin row and under the package, 1.3 mm apart in each column. The two pull-up arrays
+# get a via at each line pad as well.
+U5 = ["# I/O expander: a stub and a via for every pin, alternately outside the row and under the package."]
+for pin in range(1, 25):
+    left = pin <= 12
+    y = round(72.5 + 3.575 - 0.65 * (pin - 1), 3) if left else round(72.5 - 3.575 + 0.65 * (pin - 13), 3)
+    outward = (pin % 2 == 1) if left else (pin % 2 == 0)
+    x = (30.85 if outward else 33.45) if left else (39.15 if outward else 36.55)
+    U5.append(track([f"U5.{pin}", {"via": [x, y]}], width=0.2, via=(0.6, 0.3)))
+for k in range(4):
+    U5.append(track([f"RN1.{k + 1}", {"via": [26.75, 75.7 - 0.8 * k]}], width=0.2, via=(0.6, 0.3)))
+    U5.append(track([f"RN2.{k + 1}", {"via": [40.6, 75.7 - 0.8 * k]}], width=0.2, via=(0.6, 0.3)))
+more = [m if m != "@U5@" else "\n".join(U5) for m in more]
 more += bus
 # Flash-over points at the field terminals (system specification, section 4; hardware design, 13.4).
 # A ground rail on B.Cu below the terminal row, and from it a tooth towards the pad of every
@@ -1038,11 +1054,11 @@ rect = [56.6, 78.05, 80.4, 79.15]
 # A via beside every surface-mount pad of a plane net.
 [[plane]]
 net = "GND"
-skip = ["U4.41", "U1.9", "R40.1", "R44.1", "J7.1", "J7.12", "J5.A12", "J5.B1"]   # exposed pads: vias by hand. R40, R44: Kelvin, see below
+skip = ["U4.41", "U1.9", "R40.1", "R44.1", "J7.1", "J7.12", "J5.A12", "J5.B1", "U5.2", "U5.12", "U5.21"]   # exposed pads: vias by hand. R40, R44: Kelvin, see below
 
 [[plane]]
 net = "3V3"
-skip = ["J7.8", "J7.9"]     # joined to C38 by a track
+skip = ["J7.8", "J7.9", "U5.24"]     # J7: joined to C38 by a track. U5: its own via
 # where the 3.3 V pour on In2.Cu is
 within = [[0.9, 45.7, 113.1, 109.1], [104.4, 5.4, 113.1, 45.7], [0.9, 16.4, 9.1, 45.7]]
 
@@ -1234,6 +1250,11 @@ def main(board_dir: Path) -> int:
     out.append(GROUPS.strip())
     out.append("")
     out.append(TAIL.replace("@COPPER@", COPPER).replace("@LABELS@", LABELS).strip())
+    # What closes the connections the autorouter left open: written by hwflow.patchroute for one
+    # stored routing (`make patches`), kept beside this file and passed on as it is.
+    patches = board_dir / "design" / "patches.toml"
+    if patches.exists():
+        out += ["", patches.read_text(encoding="utf-8").strip()]
     dest = board_dir / "design" / "board.toml"
     text = "\n".join(out) + "\n"
     if not dest.exists() or dest.read_text(encoding="utf-8") != text:

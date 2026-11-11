@@ -68,9 +68,9 @@ from.
 | Layer | Use |
 |---|---|
 | F.Cu | Every part except C1 and K1. Signals. The 24 VAC entry. Ground pour in what is left |
-| In1.Cu | Ground, one plane. No track is routed on it |
-| In2.Cu | 3.3 V pour over the logic area. Under the triacs: the shunt return plane. A copy of the valve fan-out. The opto-output lines |
-| B.Cu | The valve fan-out. Nine heat islands under the triacs. The valve-common run. The pairs and buses of section 7. Ground pour in what is left. C1 and K1 |
+| In1.Cu | Ground, one plane. No track is on it, and the build fails if one is |
+| In2.Cu | 3.3 V pour over the logic area, shared with the logic signals the autorouter put there. Under the triacs: the shunt return plane. A copy of the valve fan-out. The opto-output lines |
+| B.Cu | The valve fan-out. Nine heat islands under the triacs. The valve-common run. The pairs and buses of section 7. A second 3.3 V pour over the logic area. Ground pour along the keep-alive net and in what is left. C1 and K1 |
 
 An earlier state of this layout had the valve fan-out on In2.Cu only and
 needed 1 oz inner copper to survive a shorted output with the over-current
@@ -431,24 +431,44 @@ every terminal of J2, J3 and J4.
 
 - **One ground.** In1.Cu is ground and nothing else. The only openings are the
   clearances of vias and through-hole pins and one 1.4 mm square at the Kelvin
-  sense via (7.5). The autorouter is not given this layer.
+  sense via (7.5). The AC return and the logic ground are the same net: the
+  shunt R37 and the fuse F1 join them at one place, beside the terminal
+  blocks, and the valve current does not use the plane at all. It returns
+  through the `ISNS` plane on In2.Cu to the shunt.
+- **How the plane is kept free.** The autorouter is told that In1.Cu is a
+  power layer with a ground plane (toolchain document, 13.9), and
+  `pcbbuild finish` fails if the routed board has a track on it. **This was
+  not so until late in this work.** The setting I had used to keep the router
+  off the layer was not obeyed, and every routing before the last had signal
+  tracks on the ground plane, 2.2 m of them in one run. No check noticed: a
+  pour flows round what is on its layer and DRC is content. I found it by
+  listing the layers of the autorouted tracks, which the routing report now
+  does on every build.
 - **Plane vias.** Every surface-mount pad on ground or 3.3 V gets a 0.3 mm
   stub and a via, 0.6 mm with a 0.3 mm drill, placed by the builder at the
   nearest free point beside the pad: @@PLANE_VIAS@@ of them. The exposed pad of
   U1, the pads the Kelvin sense uses and a few pads at connectors are left
   out and done by hand. The module's ground pad has the twelve thermal vias
   of its footprint.
-- **Pours.** Ground on F.Cu and B.Cu in whatever is left, clearance 0.3 mm,
-  thermal relief on pads (0.3 mm gap, 0.4 mm spokes). Solid connection on the
-  inner planes and on the heat islands.
-- **Stitching.** There is no separate stitching pattern. The plane vias are the
-  stitching: one per ground pad. An outer-layer ground fragment that touches
-  no ground pad or via is removed by the zone fill.
+- **3.3 V has no plane of its own.** It is a pour on In2.Cu and a second pour
+  on B.Cu, over the logic area and down both edges. With the ground plane
+  kept free, the logic signals that need an inner layer take In2.Cu and cut
+  its pour into pieces; the pour on B.Cu is cut by the buses of section 7.
+  Every 3.3 V via reaches both, and what one pour does not join the other
+  mostly does. @@V33@@
+- **Ground on B.Cu.** Along the keep-alive net a corridor 4 mm wide is left
+  out of the 3.3 V pour: there the ground pour stays, on both sides of the
+  track, and eleven vias 1.5 mm from the track tie it to the plane. Ground
+  also fills B.Cu below the logic area where nothing else is.
+- **Pours on F.Cu.** Ground in whatever is left, clearance 0.3 mm, thermal
+  relief on pads (0.3 mm gap, 0.4 mm spokes). Solid connection on the inner
+  planes and on the heat islands.
+- **Stitching.** Apart from the eleven vias at the keep-alive there is no
+  stitching pattern. The plane vias are the stitching: one per ground pad. An
+  outer-layer pour fragment that touches no pad or via of its net is removed
+  by the zone fill.
 - **The valve block has no ground pour on B.Cu.** The fan-out and the islands
   take it. Ground there is the In1.Cu plane, above the shunt plane.
-- **3.3 V.** A pour on In2.Cu over the logic area and down both edges. Signals
-  the autorouter put on In2.Cu cut into it; the fill and the connectivity check
-  show whether every 3.3 V via is still joined (section 10).
 
 ## 9. The layout rules of fail-safe review A2
 

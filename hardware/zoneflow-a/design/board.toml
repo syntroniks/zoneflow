@@ -335,8 +335,8 @@ R79 = [110.6, 52.6, 0]
 # I/O expander with its pull-up and pull-down networks.
 U5 = [35, 72.5, 0]
 RN1 = [28.6, 74.5, 0]
-RN2 = [41.4, 74.5, 0]
-RN3 = [41.4, 70.3, 0]
+RN2 = [42.6, 74.5, 0]
+RN3 = [36.5, 83.3, 90]
 R96 = [28.4, 71.4, 0]
 R27 = [28.4, 69.8, 0]
 R28 = [28.4, 68.2, 0]
@@ -377,7 +377,7 @@ R12 = [47.8, 69.2, 0]
 R93 = [51, 69.2, 0]
 R94 = [54.2, 69.2, 0]
 R95 = [57.4, 69.2, 0]
-TP24 = [44.5, 72.4, 0]
+TP24 = [45.4, 71.3, 0]
 
 # Display connector: decoupling, reset pull-up and the backlight switch. The bus reaches the
 # pins from under the connector; these parts are on the open side.
@@ -539,11 +539,11 @@ rect = [56.6, 78.05, 80.4, 79.15]
 # A via beside every surface-mount pad of a plane net.
 [[plane]]
 net = "GND"
-skip = ["U4.41", "U1.9", "R40.1", "R44.1", "J7.1", "J7.12", "J5.A12", "J5.B1"]   # exposed pads: vias by hand. R40, R44: Kelvin, see below
+skip = ["U4.41", "U1.9", "R40.1", "R44.1", "J7.1", "J7.12", "J5.A12", "J5.B1", "U5.2", "U5.12", "U5.21"]   # exposed pads: vias by hand. R40, R44: Kelvin, see below
 
 [[plane]]
 net = "3V3"
-skip = ["J7.8", "J7.9"]     # joined to C38 by a track
+skip = ["J7.8", "J7.9", "U5.24"]     # J7: joined to C38 by a track. U5: its own via
 # where the 3.3 V pour on In2.Cu is
 within = [[0.9, 45.7, 113.1, 109.1], [104.4, 5.4, 113.1, 45.7], [0.9, 16.4, 9.1, 45.7]]
 
@@ -1252,6 +1252,199 @@ via = [0.6, 0.3]
 points = ["U4.11", [95.2, 95.5], {via = [100.4, 95.5]}]
 
 # Detector A: pump, reservoir and comparator input, by hand so that each node stays short.
+# I/O expander: a stub and a via for every pin, alternately outside the row and under the package.
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.1", {via = [30.85, 76.075]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.2", {via = [33.45, 75.425]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.3", {via = [30.85, 74.775]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.4", {via = [33.45, 74.125]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.5", {via = [30.85, 73.475]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.6", {via = [33.45, 72.825]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.7", {via = [30.85, 72.175]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.8", {via = [33.45, 71.525]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.9", {via = [30.85, 70.875]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.10", {via = [33.45, 70.225]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.11", {via = [30.85, 69.575]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.12", {via = [33.45, 68.925]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.13", {via = [36.55, 68.925]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.14", {via = [39.15, 69.575]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.15", {via = [36.55, 70.225]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.16", {via = [39.15, 70.875]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.17", {via = [36.55, 71.525]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.18", {via = [39.15, 72.175]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.19", {via = [36.55, 72.825]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.20", {via = [39.15, 73.475]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.21", {via = [36.55, 74.125]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.22", {via = [39.15, 74.775]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.23", {via = [36.55, 75.425]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["U5.24", {via = [39.15, 76.075]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["RN1.1", {via = [26.75, 75.7]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["RN2.1", {via = [40.6, 75.7]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["RN1.2", {via = [26.75, 74.9]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["RN2.2", {via = [40.6, 74.9]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["RN1.3", {via = [26.75, 74.1]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["RN2.3", {via = [40.6, 74.1]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["RN1.4", {via = [26.75, 73.3]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+via = [0.6, 0.3]
+points = ["RN2.4", {via = [40.6, 73.3]}]
+
 [[track]]
 layer = "F.Cu"
 width = 0.3

@@ -393,15 +393,16 @@ class Builder:
             via_dia, via_drill = (mm(t["via"][0]), mm(t["via"][1])) if "via" in t else \
                 (nc.GetViaDiameter(), nc.GetViaDrill())
             for (a, _), (b, b_via) in zip(pts, pts[1:]):
-                seg = pcbnew.PCB_TRACK(self.board)
-                seg.SetStart(a)
-                seg.SetEnd(b)
-                seg.SetWidth(width)
-                seg.SetLayer(layer)
-                seg.SetNet(net)
-                seg.SetLocked(True)
-                self.board.Add(seg)
-                count += 1
+                if a.x != b.x or a.y != b.y:          # a via placed where the track already is: no segment
+                    seg = pcbnew.PCB_TRACK(self.board)
+                    seg.SetStart(a)
+                    seg.SetEnd(b)
+                    seg.SetWidth(width)
+                    seg.SetLayer(layer)
+                    seg.SetNet(net)
+                    seg.SetLocked(True)
+                    self.board.Add(seg)
+                    count += 1
                 if b_via:
                     v = pcbnew.PCB_VIA(self.board)
                     v.SetPosition(b)
@@ -923,7 +924,14 @@ def cmd_finish(args) -> int:
             for t in gone:
                 board.Delete(t)
             del gone
-        patched = b._tracks(b.cfg.get("patch", []))
+        patches = b.cfg.get("patch", [])
+        if patches and not args.no_patch:
+            stamp = project_dir / "route" / f"{model['name']}.dsn.sha256"
+            made_for = b.cfg.get("patches", {}).get("session", "")
+            if not stamp.exists() or stamp.read_text().strip() != made_for:
+                raise BoardError("the [[patch]] tracks of board.toml were made for another routing than the one "
+                                 "stored in route/: run `make patches` and then make again")
+            patched = b._tracks(patches)
     removed = remove_dangling(board, board.GetConnectivity())
     tracks = list(board.GetTracks())
     if args.design_dir:
@@ -1035,6 +1043,8 @@ def main(argv=None) -> int:
     s.add_argument("--session")
     s.add_argument("--design", dest="design_dir",
                    help="design directory: apply [[unroute]] and [[patch]] of board.toml")
+    s.add_argument("--no-patch", action="store_true",
+                   help="leave the [[patch]] tracks out: the state they are made from")
     s.set_defaults(fn=cmd_finish)
     s = sub.add_parser("dump")
     s.add_argument("design_dir")
