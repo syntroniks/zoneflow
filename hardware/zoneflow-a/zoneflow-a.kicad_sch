@@ -1897,7 +1897,7 @@
 		)
 		(uuid "05c17d56-9b98-5d31-adcc-409365666e01")
 	)
-	(label "ENC_B"
+	(label "ENC_A"
 		(at 222.25 71.12 180)
 		(effects
 			(font
@@ -1937,7 +1937,7 @@
 		)
 		(uuid "08f250d4-ea7e-5ac3-ace2-3539a34bf74a")
 	)
-	(label "TFT_SCLK"
+	(label "TFT_DC"
 		(at 280.67 60.96 0)
 		(effects
 			(font
@@ -2107,7 +2107,7 @@
 		)
 		(uuid "213dc95a-f893-53da-9efa-ef7b283faa17")
 	)
-	(label "I2C0_SDA"
+	(label "I2C0_SCL"
 		(at 280.67 45.72 0)
 		(effects
 			(font
@@ -2187,7 +2187,7 @@
 		)
 		(uuid "29a3c144-6379-5210-bd29-ca638435d815")
 	)
-	(label "TFT_MOSI"
+	(label "TFT_SCLK"
 		(at 280.67 58.42 0)
 		(effects
 			(font
@@ -2197,7 +2197,7 @@
 		)
 		(uuid "29f86d7e-5d83-5606-8880-e1987a549c59")
 	)
-	(label "DRV_EN_RB"
+	(label "AC_ZC"
 		(at 222.25 66.04 180)
 		(effects
 			(font
@@ -2397,7 +2397,7 @@
 		)
 		(uuid "43412bb6-3fe0-540a-b282-7d211638fabb")
 	)
-	(label "TFT_CS"
+	(label "TFT_MOSI"
 		(at 280.67 55.88 0)
 		(effects
 			(font
@@ -2427,7 +2427,7 @@
 		)
 		(uuid "48dd1077-6ce8-55a9-85f0-1f4627dee0f0")
 	)
-	(label "ENC_SW"
+	(label "ENC_B"
 		(at 222.25 73.66 180)
 		(effects
 			(font
@@ -2507,7 +2507,7 @@
 		)
 		(uuid "51eaa990-15b1-5578-9fcf-d7b58463ac93")
 	)
-	(label "TFT_BL"
+	(label "KA"
 		(at 280.67 68.58 0)
 		(effects
 			(font
@@ -2697,7 +2697,7 @@
 		)
 		(uuid "68fc9f5f-85f3-53a0-8e77-88ba7dd766f2")
 	)
-	(label "I2C0_SCL"
+	(label "QW_SDA"
 		(at 280.67 48.26 0)
 		(effects
 			(font
@@ -2747,7 +2747,7 @@
 		)
 		(uuid "6ef08631-41bb-5fe5-961a-072a7906bbfd")
 	)
-	(label "TFT_RST"
+	(label "TFT_BL"
 		(at 280.67 66.04 0)
 		(effects
 			(font
@@ -2797,7 +2797,7 @@
 		)
 		(uuid "765bf0d9-f98d-5fe4-92a9-dbf29e8dd271")
 	)
-	(label "OC_FAULT_N"
+	(label "ENC_SW"
 		(at 222.25 60.96 180)
 		(effects
 			(font
@@ -2817,7 +2817,7 @@
 		)
 		(uuid "77a2715b-165e-5264-9005-8de857b66e04")
 	)
-	(label "KA"
+	(label "I2C0_SDA"
 		(at 280.67 43.18 0)
 		(effects
 			(font
@@ -2887,7 +2887,7 @@
 		)
 		(uuid "89760445-dcd5-5f4b-8c87-42d246fce1c1")
 	)
-	(label "TFT_DC"
+	(label "TFT_RST"
 		(at 280.67 63.5 0)
 		(effects
 			(font
@@ -3057,7 +3057,7 @@
 		)
 		(uuid "b17430bd-0267-58b0-87fa-c4b1ad661642")
 	)
-	(label "QW_SDA"
+	(label "QW_SCL"
 		(at 280.67 50.8 0)
 		(effects
 			(font
@@ -3167,7 +3167,7 @@
 		)
 		(uuid "c27603d8-d6ca-5cee-95b2-a74f1b91459e")
 	)
-	(label "DRV_EN_RB"
+	(label "V_DRV_RB"
 		(at 280.67 119.38 0)
 		(effects
 			(font
@@ -3247,7 +3247,7 @@
 		)
 		(uuid "d1b6418a-ed65-5fe2-9c6d-4fec88b67012")
 	)
-	(label "ENC_A"
+	(label "V_DRV_RB"
 		(at 222.25 68.58 180)
 		(effects
 			(font
@@ -3307,7 +3307,7 @@
 		)
 		(uuid "db37d9fa-f580-5a0c-97c4-2cb2a7751dd5")
 	)
-	(label "AC_ZC"
+	(label "OC_FAULT_N"
 		(at 222.25 63.5 180)
 		(effects
 			(font
@@ -3377,7 +3377,7 @@
 		)
 		(uuid "e84bcca2-cce3-5463-875a-014eedf53a8f")
 	)
-	(label "QW_SCL"
+	(label "TFT_CS"
 		(at 280.67 53.34 0)
 		(effects
 			(font
@@ -4784,8 +4784,18 @@
 				(justify left)
 			)
 		)
-		(pin "OC_FAULT_N" input
+		(pin "ENC_SW" input
 			(at 226.06 60.96 180)
+			(uuid "651eb75b-5481-57b6-b3ba-b5ec071e1553")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "OC_FAULT_N" input
+			(at 226.06 63.5 180)
 			(uuid "9f398ac1-d2ea-5051-9bb4-972d9a3f199d")
 			(effects
 				(font
@@ -4795,7 +4805,7 @@
 			)
 		)
 		(pin "AC_ZC" input
-			(at 226.06 63.5 180)
+			(at 226.06 66.04 180)
 			(uuid "077e6e79-b53b-5738-b9c1-ab28132b83eb")
 			(effects
 				(font
@@ -4804,9 +4814,9 @@
 				(justify left)
 			)
 		)
-		(pin "DRV_EN_RB" input
-			(at 226.06 66.04 180)
-			(uuid "64ff9cea-af97-5a5c-b470-6c0531e764de")
+		(pin "V_DRV_RB" input
+			(at 226.06 68.58 180)
+			(uuid "1128c742-1396-5515-9844-7c2a815a8302")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4815,7 +4825,7 @@
 			)
 		)
 		(pin "ENC_A" input
-			(at 226.06 68.58 180)
+			(at 226.06 71.12 180)
 			(uuid "d7fa398f-ddae-5af9-8685-fccb0d9bd446")
 			(effects
 				(font
@@ -4825,18 +4835,8 @@
 			)
 		)
 		(pin "ENC_B" input
-			(at 226.06 71.12 180)
-			(uuid "0a899fb1-637a-5cf2-bae2-e5c8395259d1")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(pin "ENC_SW" input
 			(at 226.06 73.66 180)
-			(uuid "651eb75b-5481-57b6-b3ba-b5ec071e1553")
+			(uuid "0a899fb1-637a-5cf2-bae2-e5c8395259d1")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -4914,18 +4914,8 @@
 				(justify right)
 			)
 		)
-		(pin "KA" output
-			(at 276.86 43.18 0)
-			(uuid "c8a69f81-31a7-5e37-8b59-c6341681c36e")
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
 		(pin "I2C0_SDA" passive
-			(at 276.86 45.72 0)
+			(at 276.86 43.18 0)
 			(uuid "ccb9d542-2091-5825-8fb3-dbb1366f2e51")
 			(effects
 				(font
@@ -4935,7 +4925,7 @@
 			)
 		)
 		(pin "I2C0_SCL" passive
-			(at 276.86 48.26 0)
+			(at 276.86 45.72 0)
 			(uuid "eb3a3372-8b1a-54a4-afd5-6a810f894930")
 			(effects
 				(font
@@ -4945,7 +4935,7 @@
 			)
 		)
 		(pin "QW_SDA" passive
-			(at 276.86 50.8 0)
+			(at 276.86 48.26 0)
 			(uuid "cc9539fa-2f94-536e-aa18-2ee55eedc198")
 			(effects
 				(font
@@ -4955,7 +4945,7 @@
 			)
 		)
 		(pin "QW_SCL" passive
-			(at 276.86 53.34 0)
+			(at 276.86 50.8 0)
 			(uuid "ec58511a-059b-53f4-96ea-b536e7f3750e")
 			(effects
 				(font
@@ -4965,7 +4955,7 @@
 			)
 		)
 		(pin "TFT_CS" output
-			(at 276.86 55.88 0)
+			(at 276.86 53.34 0)
 			(uuid "64cc6dfa-aa85-5607-8e0c-96becdff1852")
 			(effects
 				(font
@@ -4975,7 +4965,7 @@
 			)
 		)
 		(pin "TFT_MOSI" output
-			(at 276.86 58.42 0)
+			(at 276.86 55.88 0)
 			(uuid "a6d42446-bafe-5d48-9339-651b46fce060")
 			(effects
 				(font
@@ -4985,7 +4975,7 @@
 			)
 		)
 		(pin "TFT_SCLK" output
-			(at 276.86 60.96 0)
+			(at 276.86 58.42 0)
 			(uuid "1b018abb-5964-5276-b68e-98a0cf9b1b80")
 			(effects
 				(font
@@ -4995,7 +4985,7 @@
 			)
 		)
 		(pin "TFT_DC" output
-			(at 276.86 63.5 0)
+			(at 276.86 60.96 0)
 			(uuid "bc418055-e480-59af-9520-cb8e48a96e7e")
 			(effects
 				(font
@@ -5005,7 +4995,7 @@
 			)
 		)
 		(pin "TFT_RST" output
-			(at 276.86 66.04 0)
+			(at 276.86 63.5 0)
 			(uuid "822ec195-a1a4-5953-8c60-eca3c6821af2")
 			(effects
 				(font
@@ -5015,8 +5005,18 @@
 			)
 		)
 		(pin "TFT_BL" output
-			(at 276.86 68.58 0)
+			(at 276.86 66.04 0)
 			(uuid "902401d3-b865-5b22-a745-229da97d61bb")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(pin "KA" output
+			(at 276.86 68.58 0)
+			(uuid "c8a69f81-31a7-5e37-8b59-c6341681c36e")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5719,9 +5719,9 @@
 				(justify right)
 			)
 		)
-		(pin "DRV_EN_RB" output
+		(pin "V_DRV_RB" output
 			(at 276.86 119.38 0)
-			(uuid "62138112-d2e0-5506-98ea-a50e561a3574")
+			(uuid "4f990821-9650-5b67-97a0-d528f84b95cf")
 			(effects
 				(font
 					(size 1.27 1.27)

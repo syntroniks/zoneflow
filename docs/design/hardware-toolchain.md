@@ -1,7 +1,8 @@
 # Hardware toolchain
 
 Status: **proven on a 40-part test board, 2026-11-10**, and used for the
-schematic of the revision A board, 346 parts, on the same day (section 12).
+schematic of the revision A board, 346 parts then and 348 since hardware
+review A2, on the same day (section 12).
 Nothing here has been built as hardware. Every result below names the command
 that produced it.
 
@@ -508,7 +509,7 @@ routing will take more effort than every other step combined.
 ## 12. Capture from a design netlist
 
 The revision A board, `hardware/zoneflow-a/`, was designed on paper first.
-`hardware/netlist.yaml` lists its 346 components, the part number of each and
+`hardware/netlist.yaml` lists its 348 components, the part number of each and
 the net on every pin, and it was reviewed before any schematic existed. The
 schematic must therefore be that netlist, drawn. `hwflow.capture` makes it so.
 This section describes what was added to the flow for it and what was checked.
@@ -570,7 +571,8 @@ a changed value, a changed part number, a part added, a part removed, a pin
 map the wrong way round, a renamed net) and checks that each one is
 reported: `tools/hwflow/tests/test_capture_parity.py`.
 
-Result on revision A, `make schematic`, 2026-11-10: "346 components and 198
+Result on revision A, `make schematic`, 2026-11-10, after the two parts and
+one net that hardware review A2 added: "348 components and 199
 nets of the design netlist match KiCad's netlist pin for pin; fitted parts
 match in 2 build(s)".
 

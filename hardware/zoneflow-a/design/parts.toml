@@ -86,6 +86,12 @@ footprint = "ZoneFlow:CP_Radial_D12.5mm_L20mm_P5.00mm_LyingDown"
 package = "THT 12.5x20 mm"
 pins = { "+" = "1", "-" = "2" }
 
+[part.C142836]  # F5: Fuse 0.5 A very fast-acting, 125 V
+value = "0.5A FF 0451.500"
+symbol = "Device:Fuse"
+footprint = "Fuse:Fuse_Littelfuse-NANO2-451_453"
+package = "2410"
+
 [part.C55151]  # C2: 2.2 uF 100 V X7R
 value = "2.2u 100V"
 symbol = "Device:C"
@@ -182,6 +188,13 @@ value = "SS34"
 symbol = "Device:D_Schottky"
 footprint = "Diode_SMD:D_SMA"
 package = "SMA"
+pins = { "A" = "2", "K" = "1" }
+
+[part.C83270]  # D25: TVS 6 V unidirectional 600 W
+value = "SMBJ6.0A"
+symbol = "Device:D_Zener"
+footprint = "Diode_SMD:D_SMB"
+package = "SMB"
 pins = { "A" = "2", "K" = "1" }
 
 [part.C48746]  # K1: G5NB-1A-E DC5 relay SPST-NO 5 A, 5 V 125R coil

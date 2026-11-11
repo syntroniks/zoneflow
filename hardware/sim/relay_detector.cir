@@ -21,9 +21,11 @@
 * few milliamps, so it can release anywhere between t_hold and t_off.
 *
 * The Schottky model is the one used in keepalive_faults.cir: generic, with
-* a leakage of about 0.2 uA at 27 C that rises to about 4 uA at 70 C. The
-* Nexperia sheet gives 2 uA maximum at 25 V and 25 C and no hot limit, so
-* the hot figures here are an estimate.
+* a leakage of 0.22 uA at 27 C, 3.3 uA at 60 C, 6.9 uA at 70 C and 19 uA at
+* 85 C. (An earlier version of this header said 4 uA at 70 C. Review A2
+* measured the model.) The Nexperia sheet gives 2 uA maximum at 25 V and
+* 25 C and no hot limit. It does give typical curves at 85 and 125 C,
+* Fig. 2: about 20 and 200 uA at a few volts, which this model matches.
 *
 * The last block adds a level-1 FET with a 1.05 V threshold and the coil of
 * K1 (125 ohm, 0.2 H assumed, the sheet gives no inductance) as a check on

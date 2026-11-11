@@ -1,0 +1,231 @@
+* Regulator over-voltage: the switch of U1 fails short (design section 4.8,
+* risk 21, review A2)
+*
+* Fault: the high-side MOSFET inside U1 becomes a resistor. VIN_DC is then
+* connected through L1 to V_BUCK, which feeds the relay coil, the sensor
+* switch U11 and, through D3, every 5 V and 3.3 V part.
+*
+* Protection added by review A2:
+*   D25  SMBJ6.0A, 600 W TVS, V_BUCK to GND
+*   F5   0451.500MRL, 0.5 A very fast fuse, between VIN_DC and the input of
+*        U1 (new net VIN_U1 with C2 and C3; node vinbk in this file)
+* D25 holds V_BUCK. The charge of C1, and then the rectifier, drive current
+* through F5 until F5 opens.
+*
+* Run:  ngspice -b buck_overvoltage.cir
+*
+* What the run reports, per case:
+*   vmax    highest V_BUCK
+*   ipk     highest current in F5 and D25
+*   t_open  when F5 opens, or "not within 0.3 s"
+*   e_tvs   energy D25 has absorbed by then, and the limit of the Littelfuse
+*           pulse curve for a pulse of that length (Fig. 2: 600 W at 1 ms,
+*           falling with the square root of the time, so 19 x sqrt(t) joule)
+*   e_r1    energy R1 has taken
+*
+* Data sheet figures used, all Littelfuse or the part's maker:
+*   SMBJ6.0A   VBR 6.67 to 7.37 V at 10 mA, VC 10.3 V at 58.3 A. Modelled as
+*              a threshold and a resistance: 7.37 V + 0.050 ohm is the part
+*              that clamps highest, 6.67 V + 0.030 ohm the lowest.
+*   0451.500   0.42 ohm cold, nominal melting I2t 0.0824 A2s, 125 V,
+*              interrupting 50 A at 125 V and 300 A at 32 V DC. The model
+*              opens it when the integral of i2 reaches i2t_open. 0.0824 is
+*              the nominal melting value; 0.25 (three times) allows for
+*              tolerance and for the arc. A fuse heats without loss only in
+*              short events, so "not within 0.3 s" rows are finished by hand
+*              in the review from the 200 % row of the data sheet.
+*   C1         Rubycon 63ZLJ470M12.5X20, 470 uF. Its sheet gives the
+*              impedance at 100 kHz as at most 0.033 ohm at 20 C and
+*              0.099 ohm at -10 C. The runs use 0.033 ohm. Part 5 repeats
+*              the worst case with 0.099 ohm and with 0.010 ohm, which is my
+*              allowance for a warm part that is better than its limit.
+*              Until main changed C1 to this part the file had 0.082 ohm,
+*              for the Lelon VZH part.
+*   L1         47 uH, 0.2 ohm, saturates at 2 A: the run uses 47 uH and, as
+*              the worst case, 5 uH.
+*   U1         RDS(on) of the high-side switch 0.725 ohm typical. rsw is
+*              what the failed switch has become: 0.02 ohm (welded), 0.725
+*              (stuck on), 5 ohm (damaged, partly conducting).
+*   Transformer 69 / VA ohm, as design section 6.6, plus the fuses F1, F4.
+* Models are generic. No board exists.
+
+.param vrms=27.5 va=40 vin0=30 rsw=0.02 l1v=47u
+.param rf5=0.42 i2t_open=0.25 vbr=7.37 rdt=0.05 tvs=1 iload=0.3 rc1=0.033
+.param rt={69/va + 0.068}
+
+VAC   ac 0 SIN(0 {vrms*1.4142} 50 0 0 90)
+RT    ac acl {rt}
+D2    acl vrect DM7
+R1    vrect vin 3
+C1    vin c1e 470u IC={vin0}
+RC1   c1e 0 {rc1}
+* F5 with its heating integral
+* The resistance of F5 rises by a factor of 100 000 as the integral nears
+* i2t_open, spread over a few per cent so that the solver can follow it.
+* The current has stopped by 0.97 x i2t_open; fok marks 0.93 x as "open".
+VF5   vin f5a 0
+BF5   f5a vinbk I = V(f5a,vinbk) / ({rf5}*(1 + 1e5*0.5*(1 + tanh((V(i2t)-{i2t_open})/({i2t_open}*0.01)))))
+BI2T  0 i2t I = I(VF5)*I(VF5)
+CI2T  i2t 0 1 IC=0
+BFOK  fok 0 V = (V(i2t) < 0.93*{i2t_open}) ? 1 : 0
+* input capacitors C2, C3 (2 x 2.2 uF, less at this bias) and the failed switch
+CIN   vinbk 0 2.4u IC={vin0}
+RSW   vinbk sw {rsw}
+* low-side switch of U1: its body diode carries the inductor current after F5 opens
+DLS   0 sw DLSB
+L1    sw l1b {l1v} IC={iload}
+RL1   l1b vbuck 0.2
+* C5, C6: 2 x 22 uF X5R, about 30 uF at 5 to 9 V
+COUT  vbuck co 30u IC=5.28
+RCO   co 0 0.005
+* loads on V_BUCK: relay coil 125 ohm and the rest as a resistor
+RLOAD vbuck 0 {5.28/iload}
+* D25
+VTV   vbuck tva 0
+BTVS  tva 0 I = {tvs} * ((V(tva) > {vbr}) ? (V(tva)-{vbr})/{rdt} : 0)
+DTVF  0 vbuck DLSB
+BETV  0 etv I = V(vbuck)*I(VTV)
+CETV  etv 0 1 IC=0
+BER1  0 er1 I = (V(vrect)-V(vin))*(V(vrect)-V(vin))/3
+CER1  er1 0 1 IC=0
+.model DM7 D(IS=5n N=1.7 RS=0.04 BV=1000 CJO=15p)
+.model DLSB D(IS=1e-9 N=1.2 RS=0.05)
+.options method=gear reltol=1e-3 abstol=1e-9 vntol=1e-5
+.tran 2u 0.3 0 20u uic
+
+.control
+set noaskquit
+
+* --- 1. with no protection: what the fault does to the rev A design as found
+alterparam tvs = 0
+alterparam i2t_open = 1e9
+alterparam rf5 = 1m
+foreach v 30 44.3
+  alterparam vin0 = $v
+  alterparam rsw = 0.02
+  reset
+  run
+  meas tran vmax max v(vbuck)
+  meas tran t7 when v(vbuck)=7 rise=1
+  let t7u = t7*1e6
+  echo "RESULT no protection, VIN_DC $v V, welded switch: V_BUCK passes 7 V after {$&t7u} us, peaks at {$&vmax} V"
+end
+
+* --- 2. with D25 and F5: clamp level, fuse opening, stress on D25 and R1
+alterparam tvs = 1
+alterparam rf5 = 0.42
+foreach v 17 30 44.3
+  foreach r 0.02 0.725 5
+    foreach l 47u 5u
+      foreach q 0.0824 0.25
+        alterparam vin0 = $v
+        alterparam rsw = $r
+        alterparam l1v = $l
+        alterparam i2t_open = $q
+        alterparam va = 20
+        reset
+        run
+        meas tran vmax max v(vbuck)
+        meas tran ipk max i(VF5)
+        meas tran fend find v(fok) at=0.299
+        meas tran itot find v(i2t) at=0.299
+        meas tran etot find v(etv) at=0.299
+        meas tran er1 find v(er1) at=0.299
+        if fend < 0.5
+          meas tran t_open when v(fok)=0.5 fall=1
+          meas tran e_open find v(etv) when v(fok)=0.5 fall=1
+          let tms = t_open*1e3
+          let elim = 19*sqrt(t_open)
+          echo "RESULT 20 VA, VIN_DC $v V, switch $r ohm, L1 $l, F5 opens at $q A2s: V_BUCK max {$&vmax} V, peak {$&ipk} A, F5 open after {$&tms} ms, D25 {$&e_open} J (curve allows {$&elim} J), R1 {$&er1} J"
+        else
+          let pavg = etot/0.299
+          echo "RESULT 20 VA, VIN_DC $v V, switch $r ohm, L1 $l, F5 opens at $q A2s: V_BUCK max {$&vmax} V, peak {$&ipk} A, F5 NOT open within 0.3 s: i2t {$&itot} A2s, D25 {$&etot} J = {$&pavg} W average, R1 {$&er1} J"
+        end
+      end
+    end
+  end
+end
+
+* --- 3. larger transformer, worst clamp part, both TVS limits
+alterparam i2t_open = 0.25
+alterparam l1v = 5u
+alterparam rsw = 0.02
+foreach a 20 40 75
+  foreach v 17 44.3
+    alterparam va = $a
+    alterparam vin0 = $v
+    alterparam vbr = 7.37
+    alterparam rdt = 0.05
+    reset
+    run
+    meas tran vmax max v(vbuck)
+    meas tran ipk max i(VF5)
+    meas tran fend find v(fok) at=0.299
+    meas tran etot find v(etv) at=0.299
+    echo "RESULT $a VA, VIN_DC $v V, welded switch, saturated L1, D25 at its highest clamp: V_BUCK max {$&vmax} V, peak {$&ipk} A, F5 state at 0.3 s {$&fend} (0 = open), D25 {$&etot} J"
+    alterparam vbr = 6.67
+    alterparam rdt = 0.03
+    reset
+    run
+    meas tran vmax max v(vbuck)
+    meas tran ipk max i(VF5)
+    meas tran etot find v(etv) at=0.299
+    echo "RESULT $a VA, VIN_DC $v V, welded switch, saturated L1, D25 at its lowest clamp: V_BUCK max {$&vmax} V, peak {$&ipk} A, D25 {$&etot} J"
+  end
+end
+
+* --- 4. what the follow current is if F5 did not open in the dump:
+* the rectifier feeds the clamp through R1. Rms current in F5 and power in
+* D25 and R1, 20 to 75 VA, low and high line, with F5 held closed.
+alterparam i2t_open = 1e9
+alterparam vbr = 7.37
+alterparam rdt = 0.05
+alterparam rsw = 0.02
+alterparam l1v = 47u
+foreach a 20 40 75
+  foreach vr 24.2 27.5 32
+    alterparam va = $a
+    alterparam vrms = $vr
+    alterparam vin0 = 8
+    reset
+    run
+    meas tran irms rms i(VF5) from=0.2 to=0.3
+    meas tran ipk max i(VF5) from=0.2 to=0.3
+    meas tran e1 find v(etv) at=0.2
+    meas tran e2 find v(etv) at=0.3
+    meas tran r1a find v(er1) at=0.2
+    meas tran r1b find v(er1) at=0.3
+    let ptvs = (e2-e1)/0.1
+    let pr1 = (r1b-r1a)/0.1
+    let pct = irms/0.5*100
+    echo "RESULT follow current, $a VA, $vr V rms open circuit, F5 held closed: {$&irms} A rms = {$&pct} % of F5, {$&ipk} A peak, D25 {$&ptvs} W, R1 {$&pr1} W"
+  end
+end
+
+* --- 5. how much the series resistance of C1 matters, at the worst case:
+* highest VIN_DC, welded switch, saturated L1, D25 at its highest clamp
+alterparam vrms = 27.5
+alterparam va = 20
+alterparam vin0 = 44.3
+alterparam rsw = 0.02
+alterparam l1v = 5u
+alterparam vbr = 7.37
+alterparam rdt = 0.05
+foreach q 0.0824 0.25
+  foreach rc 0.099 0.033 0.010
+    alterparam i2t_open = $q
+    alterparam rc1 = $rc
+    reset
+    run
+    meas tran vmax max v(vbuck)
+    meas tran ipk max i(VF5)
+    meas tran t_open when v(fok)=0.5 fall=1
+    let tus = t_open*1e6
+    echo "RESULT worst case, C1 at $rc ohm, F5 opens at $q A2s: V_BUCK max {$&vmax} V, peak {$&ipk} A, F5 open after {$&tus} us"
+  end
+end
+alterparam rc1 = 0.033
+
+quit
+.endc
+.end

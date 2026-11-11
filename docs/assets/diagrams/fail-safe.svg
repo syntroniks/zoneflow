@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 470" width="980" height="470" font-family="Helvetica, Arial, sans-serif" font-size="12" role="img" aria-labelledby="t d">
 <title id="t">How ZoneFlow turns valves off without firmware</title>
-<desc id="d">Firmware sends keep-alive pulses only while its control loop is healthy. Detector A turns the opto LED supply on and lets the expander out of reset. Detector B holds the valve-common relay. When the pulses stop, gate drive is gone after 0.45 to 0.9 s and the relay opens within 0.95 s. An over-current latch removes drive within about 70 microseconds of a short.</desc>
+<desc id="d">Firmware sends keep-alive pulses only while its control loop is healthy. Detector A turns the opto LED supply on and lets the expander out of reset. Detector B holds the valve-common relay. When the pulses stop, gate drive is gone after 0.21 to 0.83 s and the valves are off. Detector B alone lets the relay go within 1.45 s. An over-current latch removes drive within about 70 microseconds of a short.</desc>
 <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f2933"/></marker><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b91c1c"/></marker></defs>
 <rect x="0" y="0" width="980" height="470" fill="#ffffff"/>
 <rect x="20" y="40" width="190" height="80" rx="5" fill="#eef6ff" stroke="#1f2933" stroke-width="1.3"/>
@@ -59,10 +59,10 @@
 <text x="900.0" y="380" font-size="10.5" fill="#52606d" text-anchor="middle">1.6 s</text>
 <text x="60" y="316" font-size="11" fill="#1f2933" text-anchor="middle">last pulse</text>
 <line x1="60" y1="322" x2="60" y2="360" stroke="#1f2933" stroke-dasharray="3 3"/>
-<rect x="296.25" y="326" width="236.25" height="14" rx="3" fill="#b91c1c" opacity="0.35"/>
-<text x="540.5" y="337" font-size="11" fill="#1f2933" text-anchor="start">gate drive removed: 0.45 to 0.9 s</text>
-<rect x="123.0" y="344" width="435.75" height="14" rx="3" fill="#c2410c" opacity="0.35"/>
-<text x="566.75" y="355" font-size="11" fill="#1f2933" text-anchor="start">relay open: 0.12 to 0.95 s</text>
-<text x="20" y="410" font-size="11.5" fill="#1f2933" text-anchor="start">From a stuck control loop to no drive: at most 1.4 s (500 ms heartbeat timeout plus the times above); relay open by 1.5 s.</text>
-<text x="20" y="430" font-size="11.5" fill="#52606d" text-anchor="start">Times are simulation results from hardware design sections 8.4 and 19.4. No board has been measured.</text>
+<rect x="170.25" y="326" width="325.5" height="14" rx="3" fill="#b91c1c" opacity="0.35"/>
+<text x="503.75" y="337" font-size="11" fill="#1f2933" text-anchor="start">gate drive removed, valves off: 0.21 to 0.83 s</text>
+<rect x="112.5" y="344" width="708.75" height="14" rx="3" fill="#c2410c" opacity="0.35"/>
+<text x="120.5" y="355" font-size="11" fill="#1f2933" text-anchor="start">relay released by detector B alone: 0.10 to 1.45 s</text>
+<text x="20" y="410" font-size="11.5" fill="#1f2933" text-anchor="start">From a stuck control loop to no drive: at most 1.34 s (500 ms heartbeat timeout plus the times above). Detector B alone: 1.96 s.</text>
+<text x="20" y="430" font-size="11.5" fill="#52606d" text-anchor="start">Times are simulated tolerance corners from hardware design sections 8.4 and 19.4. No board has been measured.</text>
 </svg>

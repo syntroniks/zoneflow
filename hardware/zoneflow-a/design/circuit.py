@@ -31,7 +31,7 @@ POWER = {"GND": "power:GND", "3V3": "ZoneFlow:3V3", "V5": "ZoneFlow:V5", "V_BUCK
          "VIN_DC": "ZoneFlow:VIN_DC", "VBUS": "ZoneFlow:VBUS", "V_DRV": "ZoneFlow:V_DRV"}
 
 SHEETS = {
-    "power": "F1 F4 D1 D2 R1 C1 C2 C3 U1 C4 L1 C5 C6 R2 R3 R4 R5 R6 C7 C8 R7 R8 R9 R10 C9",
+    "power": "F1 F4 D1 D2 R1 C1 F5 C2 C3 U1 C4 L1 D25 C5 C6 R2 R3 R4 R5 R6 C7 C8 R7 R8 R9 R10 C9",
     "usb": "J5 R15 R16 U2 R97 R98 C52 C53 C13 D4 D3 C10 U3 C11 C12 R17",
     "mcu": "U4 C14 C15 R18 C16 U12 C54 SW1 R19 SW2 R20 D6 R21 R22",
     "failsafe": "R33 R29 C22 D7 C23 R30 R91 R31 R32 C24 R34 R35 R36 U6.1 U6.2 U6.3 U6.5 C19 U7 C20 Q3 R25 R26 C21 R92 "
@@ -252,8 +252,8 @@ def usb(s):
 # --------------------------------------------------------------------------- 24 VAC input and logic supply
 def power(s):
     s.frame(*P(20, 28), *P(92, 96), "24 VAC input: a fuse in each leg, surge clamp")
-    s.frame(*P(96, 28), *P(184, 96), "Half-wave rectifier, bulk capacitor, supply monitor")
-    s.frame(*P(186, 28), *P(319, 96), "LM5164 buck converter, 5.28 V")
+    s.frame(*P(96, 28), *P(159, 96), "Half-wave rectifier, bulk capacitor, supply monitor")
+    s.frame(*P(161, 28), *P(319, 96), "Input fuse, LM5164 buck converter, 5.28 V, over-voltage clamp")
     # Both transformer legs are fused. AC_N becomes circuit ground behind F1.
     f4 = s.attach("F4", 1, P(40, 50), RIGHT)
     s.wire(P(28, 50), f4[1])
@@ -275,30 +275,41 @@ def power(s):
     r1 = s.attach("R1", 1, P(100, 50), RIGHT)
     s.wire(d2["K"], r1[1], label=P(84, 50))
     u1 = s.place("U1", P(216, 56), ref_at=P(208, 46), value_at=P(221, 65))
-    s.wire(r1[2], u1["VIN"])
+    # F5 parts the input of U1 from the bulk capacitor: VIN_DC before it,
+    # VIN_U1 behind it. The supply monitor and the under-voltage divider stay
+    # on VIN_DC. C2 and C3 are the input capacitors of U1 and sit behind F5.
+    f5 = s.attach("F5", 1, P(166, 50), RIGHT)
+    s.wire(r1[2], f5[1])
+    s.wire(f5[2], u1["VIN"], label=P(198, 50))
+    s.flag(P(185, 50))  # VIN_U1 is fed through F5, a passive part
     s.label(P(110, 50), UP)
     s.flag(P(116, 50))
-    for ref, x in (("C1", 122), ("C2", 136), ("C3", 150)):
+    c1 = s.attach("C1", 1, P(120, 54), DOWN)
+    s.wire(P(120, 50), c1[1])
+    for ref, x in (("C2", 178), ("C3", 192)):
         c = s.attach(ref, 1, P(x, 54), DOWN)
         s.wire(P(x, 50), c[1])
-    r9 = s.attach("R9", 1, P(164, 54), DOWN)
-    s.wire(P(164, 50), r9[1])
-    r10 = s.attach("R10", 1, P(164, 70), DOWN)
+    r9 = s.attach("R9", 1, P(132, 54), DOWN)
+    s.wire(P(132, 50), r9[1])
+    r10 = s.attach("R10", 1, P(132, 70), DOWN)
     s.wire(r9[2], r10[1])
-    c9 = s.attach("C9", 1, P(172, 70), DOWN)
-    s.wire(P(164, 64), P(172, 64), net="VIN_MON")
-    s.wire(P(172, 64), c9[1])
-    s.wire(P(172, 64), P(172, 60))
-    s.label(P(172, 60), RIGHT)
-    # Buck converter: under-voltage lockout, on-time, bootstrap, ripple injection, feedback.
-    r7 = s.attach("R7", 1, P(190, 52), DOWN)
-    s.wire(P(190, 50), r7[1])
-    r8 = s.attach("R8", 1, P(190, 66), DOWN)
+    c9 = s.attach("C9", 1, P(140, 70), DOWN)
+    s.wire(P(132, 64), P(140, 64), net="VIN_MON")
+    s.wire(P(140, 64), c9[1])
+    s.wire(P(140, 64), P(140, 60))
+    s.label(P(140, 60), RIGHT)
+    # Under-voltage lockout divider of U1, on VIN_DC. UVLO reaches U1 by its label.
+    r7 = s.attach("R7", 1, P(150, 52), DOWN)
+    s.wire(P(150, 50), r7[1])
+    r8 = s.attach("R8", 1, P(150, 66), DOWN)
     s.wire(r7[2], r8[1])
-    s.wire(P(190, 60), P(196, 60), net="UVLO")
-    s.wire(P(196, 60), u1["EN/UVLO"], route="vh", label=P(197, 54))
+    s.wire(P(150, 60), P(154, 60), net="UVLO")
+    s.label(P(154, 60), RIGHT)
+    # Buck converter: on-time, bootstrap, ripple injection, feedback.
+    s.wire(u1["EN/UVLO"], P(202, 54))
+    s.label(P(202, 54), LEFT)
     r2 = s.attach("R2", 1, P(200, 66), DOWN)
-    s.wire(u1["RON"], P(200, 60), label=P(201, 60))
+    s.wire(u1["RON"], P(200, 60), label=P(203, 60))
     s.wire(P(200, 60), r2[1])
     c4 = s.attach("C4", 1, P(234, 42), RIGHT)
     s.wire(u1["BST"], P(230, 50), label=P(227, 50))
@@ -319,24 +330,27 @@ def power(s):
     s.wire(c8[2], P(262, 82))
     s.wire(u1["FB"], P(242, 58), label=P(227, 58))
     s.wire(P(242, 58), P(242, 82))
-    s.wire(P(242, 82), P(290, 82))
+    s.wire(P(242, 82), P(296, 82))
     s.wire(u1["PGOOD"], P(236, 60))
     s.wire(P(236, 60), P(236, 90))
     s.wire(P(236, 90), P(244, 90))
     s.label(P(244, 90), RIGHT)
-    r3 = s.attach("R3", 1, P(290, 58), DOWN)
-    s.wire(P(290, 54), r3[1])
-    r4 = s.attach("R4", 1, P(290, 70), DOWN)
-    s.wire(r3[2], r4[1], label=P(290, 67))
-    s.wire(r4[2], P(290, 82))
-    r5 = s.attach("R5", 1, P(290, 84), DOWN)
-    s.wire(P(290, 82), r5[1])
-    s.wire(l1[2], P(310, 54))
-    s.flag(P(282, 54))
-    for ref, x in (("C5", 300), ("C6", 310)):
+    r3 = s.attach("R3", 1, P(296, 58), DOWN)
+    s.wire(P(296, 54), r3[1])
+    r4 = s.attach("R4", 1, P(296, 70), DOWN)
+    s.wire(r3[2], r4[1], label=P(296, 67))
+    s.wire(r4[2], P(296, 82))
+    r5 = s.attach("R5", 1, P(296, 84), DOWN)
+    s.wire(P(296, 82), r5[1])
+    s.wire(l1[2], P(312, 54))
+    s.flag(P(280, 54))
+    # D25 clamps V_BUCK if the switch of U1 fails short, until F5 opens.
+    d25 = s.attach("D25", "K", P(284, 58), DOWN)
+    s.wire(P(284, 54), d25["K"])
+    for ref, x in (("C5", 304), ("C6", 312)):
         c = s.attach(ref, 1, P(x, 58), DOWN)
         s.wire(P(x, 54), c[1])
-    s.label(P(296, 54), UP)
+    s.label(P(300, 54), UP)
     s.note("24 VAC INPUT AND LOGIC SUPPLY (hardware design section 4).\n"
            "\n"
            "F4, F1   3 A time-lag fuses in holders, one in each transformer leg (section 5.3 says why two).\n"
@@ -346,18 +360,22 @@ def power(s):
            "         it takes 237 to 385 W for about 1 ms when the board is plugged in at the mains peak.\n"
            "C1       470 uF 63 V, through-hole, on the bottom side lying down. VIN_DC is 26 to 31 V at 24 VAC\n"
            "         and 44 V at 32 VAC with no load. Ripple 0.16 A typical, 0.48 A at the peak corner.\n"
-           "R9, R10  VIN_MON = VIN_DC / 31 to GPIO3: about 0.97 V at 24 VAC, 1.43 V at 32 VAC.",
+           "R9, R10  VIN_MON = VIN_DC / 31 to GPIO3: about 0.97 V at 24 VAC, 1.43 V at 32 VAC.\n"
+           "R7, R8   Under-voltage lockout of U1: on at 9.0 V, off at 8.4 V. On VIN_DC, before F5.",
            P(22, 104))
     s.note("U1       LM5164, 100 V synchronous buck (TI SNVSAU4D). It survives the 77.4 V clamp level.\n"
            "         V_BUCK = 1.2 V x (1 + (R3 + R4) / R5) = 5.28 V, 5.16 to 5.40 V over tolerance.\n"
-           "R2       47k sets the on-time: 281 kHz.   R7, R8: on at 9.0 V, off at 8.4 V.\n"
+           "R2       47k sets the on-time: 281 kHz.\n"
+           "F5, D25  For a switch of U1 that fails short (section 4.8). D25, SMBJ6.0A, holds V_BUCK under\n"
+           "         10 V and F5, 0.5 A very fast, opens. F5 is soldered: it opens only when U1 has failed.\n"
+           "         Do not fit a larger rating. Its 0.42 ohm also limits the fault current.\n"
            "C4       2.2 nF bootstrap. The datasheet fixes this value; a larger one damages the part.\n"
            "R6, C7, C8   Type 3 ripple injection: 24 mV at FB at 34 V in, 13 mV at 10 V.\n"
            "L1       47 uH, Isat 2.0 A. Ripple 0.34 A, peak 0.99 A against a 1.25 A current limit.\n"
            "Load on V_BUCK: 0.28 A typical, 0.78 A peak (section 4.2). It also feeds the relay coil and\n"
            "the sensor supply directly, and V5 through D3 on the USB sheet.\n"
            "\n"
-           "LAYOUT: C2 and C3 at U1 pins 2 and 1 with the shortest loop. Keep the SW node small and away\n"
+           "LAYOUT: C2 and C3 at U1 pins 2 and 1 with the shortest loop, behind F5. Keep the SW node small and away\n"
            "from the current-sense parts. PWR_FLAG marks nets that are fed through a passive part.",
            P(178, 104))
 
@@ -620,7 +638,9 @@ def mcu(s):
            "Rated to 65 C, or 85 C with PSRAM ECC on: firmware must enable it. C14 and C15 at pin 2.\n"
            "\n"
            "No valve, relay or enable function is on a GPIO. The valve outputs are on the I2C expander,\n"
-           "which the fail-safe circuit holds in reset. Only KA (GPIO38) and I2C0 can influence a valve.\n"
+           "which the fail-safe circuit holds in reset. Only KA (GPIO17) and I2C0 can influence a valve.\n"
+           "KA is on module pin 10, between ENC_B and BTN_BACK, on purpose: no net beside it toggles by\n"
+           "itself. Do not move it without redoing section 8.5 of the hardware design for its neighbours.\n"
            "\n"
            "Strapping pins:\n"
            "  GPIO0   BOOT: R19 pull-up and button SW2. Low at reset selects download mode.\n"
@@ -637,8 +657,9 @@ def mcu(s):
            "130 to 270 ms after. R18 10k and C16 1 uF delay EN by about 10 ms. SW1 is reset.\n"
            "\n"
            "LAYOUT: the 18 x 6 mm antenna end of the module is beyond the top board edge. No copper on any\n"
-           "layer under or beside it. Route KA from pin 31 with ground on both sides, at least 1 mm from\n"
-           "any other signal and never next to TFT_BL, AC_ZC or the buck converter (section 8.5).",
+           "layer under or beside it. Route KA from pin 10 with ground on both sides, at least 1 mm from\n"
+           "any other signal and never next to TFT_BL, AC_ZC, U0TXD or the buck converter. Put R33 at the\n"
+           "module pin (section 8.5).",
            P(200, 74))
 
 
@@ -740,7 +761,8 @@ def expander(s):
            "Q1: on while expander bit RLY_ON is high. DRV_EN low resets the expander and R12 turns Q1 off in 0.1 ms.\n"
            "Q2: on while the relay detector sees edges on KA. R89, C51, D22 pump the reservoir C50; R14 and R90\n"
            "    (two, so that one open resistor only doubles the time) drain it. Gate about 2.7 V while toggling.\n"
-           "    Q2 lets go 0.12 to 0.95 s after the last edge, within 1.4 s if the pin stops high.\n"
+           "    Q2 lets go 0.10 to 1.45 s after the last edge, within 2.19 s if the pin stops high\n"
+           "    (simulated corners of review A2; the long end is a low-threshold Q2 when hot).\n"
            "R93, R94, R95: read-back of the node between Q1 and Q2 on GPIO7. 3.05 V = Q2 off, 0 V = Q2 on.\n"
            "D23 SMBJ48CA clamps COM while K1 is open and takes the inductive kick when it opens under load.\n"
            "JP1: open. Bridge only if the relay is not fitted (then the fault analysis of section 8.5 is void).\n"
@@ -768,7 +790,7 @@ def hang(s, ref, x, y, gap=2):
 def failsafe(s):
     s.frame(*P(20, 46), *P(204, 102), "Detector A: keep-alive edges on KA charge C23; U6A compares it with 1.32 V")
     s.frame(*P(20, 110), *P(164, 160), "Over-current window comparator on ISENSE_LO")
-    s.frame(*P(208, 98), *P(319, 180), "Latch and drive enable")
+    s.frame(*P(208, 98), *P(319, 192), "Latch and drive enable")
     # Diode pump. No DC path from KA: C22 passes edges only.
     r29 = s.attach("R29", 1, P(46, 68), RIGHT)
     s.wire(P(30, 68), r29[1])
@@ -867,11 +889,6 @@ def failsafe(s):
     s.wire(P(284, 110), u7d[13])
     s.wire(u7d[11], P(308, 108))
     s.label(P(308, 108), RIGHT)
-    r92 = s.attach("R92", 1, P(304, 112), DOWN)
-    s.wire(P(304, 108), r92[1])
-    s.wire(r92[2], P(304, 124))
-    s.wire(P(304, 124), P(298, 124))
-    s.label(P(298, 124), LEFT)
     # Q3 switches the opto LED supply. R25 keeps it off while 3V3 ramps.
     q3 = s.place("Q3", P(292, 154), mirror="x", ref_at=P(297, 152.5), value_at=P(297, 155))
     s.wire(P(280, 108), P(280, 154))
@@ -880,11 +897,15 @@ def failsafe(s):
     s.attach("R25", 2, P(272, 154), UP)
     s.wire(P(272, 154), P(280, 154), net="DRV_EN_N")
     s.wire(q3["D"], P(294, 164))
-    s.wire(P(294, 164), P(314, 164))
-    s.label(P(314, 164), UP)
-    hang(s, "R26", 300, 164)
-    hang(s, "C21", 308, 164)
-    s.flag(P(304, 164))  # V_DRV is fed through the channel of Q3, a passive pin
+    s.wire(P(294, 164), P(311, 164))
+    s.label(P(307, 164), UP)
+    hang(s, "R26", 296, 164)
+    hang(s, "C21", 303, 164)
+    s.flag(P(300, 164))  # V_DRV is fed through the channel of Q3, a passive pin
+    # R92 reads V_DRV, behind Q3, for GPIO42: a shorted Q3 then shows at idle.
+    r92 = hang(s, "R92", 311, 164)
+    s.wire(r92[2], P(311, 178))
+    s.label(P(311, 178), DOWN)
     # Supply pins of the two logic packages.
     s.place("U6", P(42, 190), unit=5, ref_at=P(44, 189), value_at=P(44, 191.5))
     s.place("C19", P(62, 190))
@@ -892,16 +913,20 @@ def failsafe(s):
     s.place("C20", P(108, 190))
     s.note("FAIL-SAFE GATE (hardware design section 8) and OVER-CURRENT LATCH (section 9).\n"
            "\n"
-           "Detector A. Firmware toggles KA (GPIO38) every 5 ms; an edge at least every 20 ms is needed.\n"
+           "Detector A. Firmware toggles KA (GPIO17) every 5 ms. It needs an edge at least every 20 ms\n"
+           "and no phase shorter than 2.5 ms (the second is for detector B on the expander sheet).\n"
            "Each rising edge pushes charge through C22 and D7 into C23. R30 and R91 (two, so that one open\n"
            "resistor only doubles the hold-up) drain it. U6A switches on at 1.55 V on KA_N2 and off at 0.94 V\n"
-           "(R31, R32 hysteresis; reference 1.32 V from R34, R35). KA_OK is high 14 to 41 ms after the first\n"
-           "edge and low 0.45 to 0.9 s after the last, 1.2 s if the pin stops high. A steady level, high or\n"
-           "low, never enables it. R33 holds KA low while the ESP32 is in reset.\n"
+           "(R31, R32 hysteresis; reference 1.32 V from R34, R35). With 5 ms edges V_DRV is on 13 to 22 ms\n"
+           "after the first edge and off 0.21 to 0.83 s after the last, 1.25 s if the pin stops high\n"
+           "(simulated corners of review A2). A steady level, high or low, never enables it.\n"
+           "R33 holds KA low while the ESP32 is in reset. It is 2.2k so that a net behind a 10k pull-up\n"
+           "cannot run the detectors through a solder bridge.\n"
            "\n"
            "DRV_EN = KA_OK AND NOT FAULT. Low does three things: Q3 removes V_DRV from every opto LED, the\n"
            "expander is held in reset, and the expander bit that drives relay transistor Q1 is released.\n"
-           "DRV_EN_RB (through R92) lets firmware time detector A on GPIO42.\n"
+           "V_DRV_RB (through R92) is V_DRV, behind Q3, read on GPIO42: firmware times detector A with it\n"
+           "and sees a shorted Q3 as drive that is on with no keep-alive.\n"
            "\n"
            "Over-current. U6B pulls OC_TRIP_N low above VH (1.425 V), U6C below VL (0.188 V): 4.6 A peak in\n"
            "either polarity, 4.0 to 5.4 A over tolerance, about 70 us after a short begins (R52, C33: 47 us).\n"
@@ -1132,7 +1157,7 @@ def connectors(s):
 DRIVERS = {
     "power": "AC_L VIN_MON PGOOD",
     "mcu": "KA TFT_CS TFT_MOSI TFT_SCLK TFT_DC TFT_RST TFT_BL SENS_PWR_EN U0TXD_MCU",
-    "failsafe": "KA_OK KA_N2 OC_TRIP_N FAULT DRV_EN DRV_EN_RB OC_FAULT_N",
+    "failsafe": "KA_OK KA_N2 OC_TRIP_N FAULT DRV_EN V_DRV_RB OC_FAULT_N",
     "isense": "ADC_LO ADC_HI ISENSE_LO ISENSE_HI VH VL VB AC_ZC",
     "expander": "ZD_Z1_N ZD_Z2_N ZD_Z3_N ZD_Z4_N ZD_Z5_N ZD_Z6_N ZD_Z7_N ZD_Z8_N ZD_MV_N COM RLY_B_RB RLY_B "
                 "EXP_INT_N",

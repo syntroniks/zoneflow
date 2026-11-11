@@ -30,6 +30,12 @@
 #     GPIO46 carry functions that cannot disturb the strap (see notes).
 #   - GPIO7 and GPIO42 read back the two keep-alive detectors. They are
 #     inputs and stay inputs: neither can enable anything.
+#   - The keep-alive is on GPIO17, module pin 10, since review A2. Its
+#     neighbours on the module edge are contacts behind resistors. Do not
+#     move it next to GPIO35 to GPIO37 (PSRAM), GPIO41 (zero-cross), GPIO21
+#     (backlight PWM), GPIO43 (boot log), GPIO5 (flow pulses), GPIO19 and
+#     GPIO20 (USB) or GPIO1 and GPIO2 (current waveform): those nets toggle
+#     with no control loop behind them.
 
 schema_version: 1
 board: zoneflow
@@ -221,13 +227,35 @@ gpio:
     notes: Rotary encoder phase B.
 
   - gpio: 17
-    signal: ENC_SW
-    direction: in
-    active: low
-    pull: 3.3k up to 3V3 (R66), 10k + 100 nF filter
+    signal: KEEPALIVE
+    net: KA
+    direction: out
+    active: n/a
+    pull: 2.2k to GND (R33)
     reset_state: high impedance
     powerup_glitch: low level, 60 us
-    notes: Encoder push switch (select).
+    notes: >-
+      Moved here from GPIO38 by review A2: module pin 31 sits next to pin
+      30, GPIO37, which is the data strobe of the octal PSRAM and toggles
+      with no control loop behind it. The neighbours here are ENC_B and
+      BTN_BACK, contacts behind 13 kohm. Every edge must be decided by code
+      that has proof the control loop is running (the firmware's timer
+      interrupt checks a heartbeat). Never an output that LEDC, RMT, MCPWM
+      or a timer generates by itself. GPIO17 is also the default TXD pin of
+      UART1 in ESP-IDF: never open UART1 on its default pins. Required: an
+      edge at least every 20 ms and no phase shorter than 2.5 ms; firmware
+      uses 5 ms high and 5 ms low. There is no upper frequency limit and
+      slow toggling down to 1 Hz can still enable drive, so only a steady
+      level is guaranteed off. The power-up glitch drives the pin low, which
+      is its idle level. The pin feeds two independent detectors. The
+      figures are the simulated corners of review A2, section 4, for 5 ms
+      edges; nothing is measured. Gate drive: on 13 to 22 ms after the first
+      edge, removed 0.21 to 0.83 s after the pin stops low, at most 1.25 s
+      if it stops high. Relay transistor Q2: on after 1 to 53 ms, off
+      between 0.10 and 1.45 s after the pin stops low, at most 2.19 s if it
+      stops high. Stopping for 1.5 s also clears the over-current latch and
+      resets the I/O expander. The default drive strength of this pin is
+      10 mA, which is enough.
 
   - gpio: 18
     signal: BTN_BACK
@@ -268,26 +296,15 @@ gpio:
     notes: Backlight PWM (LEDC), 1 kHz to 20 kHz. High = on. About 58 mA through the LEDs at 100 % duty.
 
   - gpio: 38
-    signal: KEEPALIVE
-    net: KA
-    direction: out
-    active: n/a
-    pull: 10k to GND (R33)
+    signal: ENC_SW
+    direction: in
+    active: low
+    pull: 3.3k up to 3V3 (R66), 10k + 100 nF filter
     reset_state: high impedance
     powerup_glitch: none
     notes: >-
-      Every edge must be decided by code that has proof the control loop is
-      running (the firmware's timer interrupt checks a heartbeat). Never an
-      output that LEDC, RMT, MCPWM or a timer generates by itself. Required:
-      an edge at least every 20 ms; firmware uses 5 ms. There is no upper
-      frequency limit and slow toggling down to 2 to 3 Hz can still enable
-      drive, so only a steady level is guaranteed off. The pin feeds two
-      independent detectors. Gate drive: enabled 14 to 41 ms after 100 Hz
-      toggling starts, removed 0.45 to 0.9 s after it stops low, at most
-      1.2 s if it stops high. Relay transistor Q2: on 22 to 82 ms after
-      toggling starts, off between 0.12 and 0.95 s after it stops low, at
-      most 1.4 s if it stops high. Stopping for 1.5 s also clears the
-      over-current latch and resets the I/O expander.
+      Encoder push switch (select). Moved here from GPIO17 by review A2, in
+      exchange for the keep-alive.
 
   - gpio: 39
     signal: BTN_HOME
@@ -326,17 +343,23 @@ gpio:
 
   - gpio: 42
     signal: DRV_EN_RB
+    net: V_DRV_RB
     direction: in
     active: high
-    pull: none on the board (driven by U7 through 10k, R92); enable the internal pull-down
+    pull: none on the board (V_DRV through 4.7k, R92); enable the internal pull-down
     reset_state: high impedance
     powerup_glitch: none
     notes: >-
-      Read-back of DRV_EN, the output of the gate-drive keep-alive detector
-      and the over-current latch. Must be low before every run, high within
-      100 ms of starting KEEPALIVE and low again within 1.0 s of stopping
-      it. Input only. With the internal pull-down an open R92 reads low and
-      fails the test on the safe side. Design section 8.6.
+      Read-back of V_DRV, the opto LED supply behind Q3. The signal keeps
+      the name DRV_EN_RB, which the firmware uses; the net is V_DRV_RB. High
+      means gate drive is enabled: the gate-drive keep-alive detector is on,
+      the over-current latch is clear and Q3 conducts. Must be low before every
+      run, high within 150 ms of starting KEEPALIVE and low again within
+      1.0 s of stopping it. Until review A2 this pin read DRV_EN, the
+      expander reset line, and a shorted Q3 was found by no test. The state
+      of DRV_EN itself shows in whether the expander answers on I2C. Input
+      only. With the internal pull-down an open R92 reads low and fails the
+      test on the safe side. Design section 8.6.
 
   - gpio: 43
     signal: UART0_TXD

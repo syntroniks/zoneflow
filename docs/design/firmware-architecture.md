@@ -108,7 +108,7 @@ flowchart TB
 
 | Task | Priority | Core | Period | Does |
 |---|---|---|---|---|
-| keep-alive (GPTimer alarm ISR, IRAM) | interrupt | allocating core | 5 ms (`CONFIG_ZF_OE_TOGGLE_PERIOD_MS`) | Calls `OutputEnableGuard::step()`, writes the keep-alive pin register (GPIO38), then reads GPIO42, GPIO7 and GPIO40 into `OutputEnableGuard::sample()` for the self-test timing. Runs while the flash cache is off. No heap, no locks, no calls (checked in the linked ELF). |
+| keep-alive (GPTimer alarm ISR, IRAM) | interrupt | allocating core | 5 ms (`CONFIG_ZF_OE_TOGGLE_PERIOD_MS`) | Calls `OutputEnableGuard::step()`, writes the keep-alive pin register (GPIO17), then reads GPIO42, GPIO7 and GPIO40 into `OutputEnableGuard::sample()` for the self-test timing. Runs while the flash cache is off. No heap, no locks, no calls (checked in the linked ELF). |
 | zero-cross (GPIO ISR, IRAM) | interrupt | core of `app_main` | each AC_ZC edge, 100 per second | Timestamps the edge into `ZeroCrossTracker`. IRAM-safe, so a flash erase does not look like a loss of 24 VAC; its only call is `esp_timer_get_time()`, which is in IRAM. |
 | `zf_isense` | 6 | 0 | 10 ms frames | Reads ADC1 continuous conversions (5 kS/s per channel, 6 dB), calibrates them to mV and accumulates 100 ms windows (`ChannelStats`). Publishes the latest window under a spinlock. Static stack (12 KB). |
 | `zf_control` | 10 | 1 | 50 ms (`CONFIG_ZF_CONTROL_PERIOD_MS`) | Drains the command queue, then `Controller::tick()`. Subscribed to the task watchdog (5 s, panics). |
@@ -641,8 +641,9 @@ hardware author".
      peripheral that toggles the pin with no code deciding each edge: LEDC,
      RMT, MCPWM, a timer with a pin output. The interrupt of section 3
      decides every edge from the heartbeat, so it is consistent with the
-     rule. GPIO38 stays a plain GPIO output with no peripheral signal routed
-     to it.
+     rule. The keep-alive pin stays a plain GPIO output with no peripheral
+     signal routed to it. It is GPIO17 since hardware review A2, which
+     moved it from GPIO38; `hardware/pinmap.yaml` has the reason.
    - **Edge interval.** 5 ms is right. The circuit needs an edge at least
      every 20 ms.
    - **The circuit does not check the rate.** It has no upper frequency
@@ -659,6 +660,14 @@ hardware author".
      last edge, 1.4 s if the pin is high. From a dead control loop to no
      gate drive is therefore at most 500 ms + 5 ms + 0.9 s = 1.4 s, and to
      an open relay 1.5 s.
+   - **Hardware review A2 widened these figures** after this list was
+     written: gate drive on after 13 to 22 ms and the relay transistor
+     after 1 to 53 ms; gate drive gone 0.21 to 0.83 s after the last edge
+     and within 1.25 s if the pin is high; the relay transistor 0.10 to
+     1.45 s and 2.19 s. From a dead control loop to no gate drive is at
+     most 1.34 s. The review also asks for no keep-alive phase shorter
+     than 2.5 ms, which the 5 ms toggle meets. Section 19.4 of the
+     hardware design has the current contract.
    - **Flash.** Espressif does not fix the module's flash part. A
      representative 16 MB part, the Winbond W25Q128JV, erases a 4 kB sector
      in 45 ms typically and 400 ms at most. 400 ms plus one 50 ms control

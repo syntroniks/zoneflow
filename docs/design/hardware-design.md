@@ -1,8 +1,9 @@
 # ZoneFlow hardware design, revision A
 
 Status: **paper design, 2026-11-10, after
-[hardware review A1](hardware-review-a1.md) and the decisions taken on its
-findings**. No board exists. Nothing in
+[hardware review A1](hardware-review-a1.md), the decisions taken on its
+findings, and [hardware review A2](hardware-review-a2.md) of the fail-safe
+circuits**. No board exists. Nothing in
 this document has been measured. Every number is a datasheet figure, a calculation from
 datasheet figures, or a simulation result, and the text says which. Section 20
 lists what only a bench can confirm. Section 22 lists what I could not confirm
@@ -26,17 +27,18 @@ lines. Do not edit a table by hand.
 Simulation netlists are in `hardware/sim/`, with a README that states what each
 run showed.
 
-Section 24 lists what changed after the review and where I did something
-other than what the reviewer proposed.
+Section 24 lists what changed after review A1 and where I did something
+other than what the reviewer proposed. Section 25 lists what review A2
+changed.
 
 ## 1. The design in brief
 
 | Block | Choice | Main reason |
 |---|---|---|
-| Logic supply | A fuse in each transformer leg, 1500 W TVS, half-wave rectifier, 470 uF, LM5164 100 V buck to 5.3 V, Schottky OR with USB, LDL1117 to 3.3 V | The TVS clamps at 77.4 V. A 100 V regulator survives that with no further argument. A 5 V bus makes USB and 24 VAC equal sources and gives the LDO room to reject ripple. |
+| Logic supply | A fuse in each transformer leg, 1500 W TVS, half-wave rectifier, 470 uF, LM5164 100 V buck to 5.3 V with its own 0.5 A fuse and a clamp on its output, Schottky OR with USB, LDL1117 to 3.3 V | The TVS clamps at 77.4 V. A 100 V regulator survives that with no further argument. A 5 V bus makes USB and 24 VAC equal sources and gives the LDO room to reject ripple. The fuse and the clamp keep a failed regulator from putting 45 V on the logic. |
 | Output switch | T810-600B-TR 8 A three-quadrant triac in DPAK, fired by a MOC3023 opto-triac from its own T2 | The triacs JLCPCB stocks with real surge ratings are three-quadrant parts. Positive-only gate drive from logic cannot fire them on the negative half-cycle. The 8 A part carries the short-circuit current of a 75 VA transformer until the PTC trips. Section 6 has the analysis. |
 | Output control | TCA9539 I2C expander sinks the opto LEDs | The TFT took six GPIOs. Nine valve pins no longer fit. The expander is held in reset by the fail-safe circuit, so no valve bit survives a crash. |
-| Fail-safe | Two independent detectors on the keep-alive pin. One, a diode pump with a comparator, switches the LED supply and the expander reset. The other, a diode pump straight into a transistor gate, holds the relay. | Gate drive needs an edge at least every 20 ms. It is gone 0.45 to 0.9 s after the edges stop, and the relay has opened within 0.95 s. No single component fault leaves a valve on after the edges stop. Sections 7 and 8. |
+| Fail-safe | Two independent detectors on the keep-alive pin. One, a diode pump with a comparator, switches the LED supply and the expander reset. The other, a diode pump straight into a transistor gate, holds the relay. | Gate drive needs an edge at least every 20 ms. It is gone 0.21 to 0.83 s after the edges stop, and with it the valve current. The relay transistor alone lets go within 1.45 s. No single component fault leaves a valve on after the edges stop. Sections 7 and 8, with the corners of review A2. |
 | Over-current | Window comparator on the shunt amplifier, NAND latch, same switch as the fail-safe | Removes drive about 70 us after a short begins and releases K1 at once. The triac and the PTC are rated to carry the short until one of them or the relay interrupts it. |
 | Valve common | Relay in the COM feed. Its coil current passes through two transistors: one follows an expander bit, the other its own keep-alive detector. | A shorted triac or TVS otherwise leaves a valve on with no way to stop it. This is an addition to the specification. |
 | Current measurement | 0.1 ohm shunt, two difference amplifiers biased at 0.8 V, sampled by ADC1 | True RMS in firmware. No precision rectifier, which would add millivolts of error to a 5 mV signal. |
@@ -68,6 +70,7 @@ each item below, and the reasons are in the sections named.
 | `GND` | Circuit ground. One transformer leg, the USB ground and the sensor ground are all this net. |
 | `COM` | Valve common terminals. `AC_L` after relay K1. |
 | `VIN_DC` | Rectified, unregulated supply. 26 to 31 V at 24 VAC, 44 V at 32 VAC with no load. |
+| `VIN_U1` | `VIN_DC` behind fuse F5: the input pin of U1 with C2 and C3. |
 | `V_BUCK` | Buck output, 5.28 V nominal. Present only with 24 VAC. Also feeds the coil of K1 and the sensor supply. |
 | `V5` | 5 V bus after the OR diodes. About 4.95 V from 24 VAC, 4.1 to 4.9 V from USB. |
 | `3V3` | Logic rail, 3.3 V, 3 % over temperature. |
@@ -106,8 +109,10 @@ So R301 is the opto LED resistor of zone 3 and Q901 is the master valve triac.
 Each transformer leg has a fuse. Terminal 2, `AC_N`, goes through F1 to `GND`.
 Terminal 1, `AC_L_IN`, goes through F4 to `AC_L`. `AC_L` feeds three things: the TVS D1 to
 `GND`, the half-wave rectifier D2, and the valve common through relay K1.
-D2 charges the bulk capacitor C1 through R1. The LM5164 buck U1 turns `VIN_DC`
-into `V_BUCK`, 5.28 V. Schottky D3 passes it to the 5 V bus.
+D2 charges the bulk capacitor C1 through R1. Fuse F5 takes `VIN_DC` to the
+input of the LM5164 buck U1, which makes `V_BUCK`, 5.28 V. D25 clamps
+`V_BUCK` if U1 fails; section 4.8 has F5 and D25. Schottky D3 passes
+`V_BUCK` to the 5 V bus.
 
 <!-- designsync:begin table block="A power" -->
 
@@ -120,9 +125,10 @@ into `V_BUCK`, 5.28 V. Schottky D3 passes it to the 5 V bus.
 | D2 | Rectifier 1 A 1000 V | SMA | C95872 | A `AC_L`, K `VRECT` | Half-wave rectifier |
 | R1 | 3R 5% 1 W, surge series | 2512 | C2936639 | `VRECT` to `VIN_DC` | Limits charging and surge current. Pulse rating in section 4.4 |
 | C1 | 470 uF 63 V aluminium electrolytic | THT 12.5x20 mm | C2940725 | + `VIN_DC`, - `GND` | Bulk capacitor. Through-hole, on the bottom side, lying down |
-| C2 | 2.2 uF 100 V X7R | 1210 | C55151 | `VIN_DC` to `GND` | At U1 pins |
-| C3 | 2.2 uF 100 V X7R | 1210 | C55151 | `VIN_DC` to `GND` | At U1 pins |
-| U1 | LM5164DDAR 100 V 1 A synchronous buck | SO-8 PowerPAD | C477928 | 1 GND `GND`, 2 VIN `VIN_DC`, 3 EN/UVLO `UVLO`, 4 RON `RON`, 5 FB `FB`, 6 PGOOD `PGOOD`, 7 BST `BST`, 8 SW `SW`, EP `GND` |  |
+| F5 | Fuse 0.5 A very fast-acting, 125 V | 2410 | C142836 | `VIN_DC` to `VIN_U1` | Opens when D25 clamps a failed U1. Section 4.8 |
+| C2 | 2.2 uF 100 V X7R | 1210 | C55151 | `VIN_U1` to `GND` | At U1 pins |
+| C3 | 2.2 uF 100 V X7R | 1210 | C55151 | `VIN_U1` to `GND` | At U1 pins |
+| U1 | LM5164DDAR 100 V 1 A synchronous buck | SO-8 PowerPAD | C477928 | 1 GND `GND`, 2 VIN `VIN_U1`, 3 EN/UVLO `UVLO`, 4 RON `RON`, 5 FB `FB`, 6 PGOOD `PGOOD`, 7 BST `BST`, 8 SW `SW`, EP `GND` |  |
 | C4 | 2.2 nF 50 V X7R | 0603 | C16033 | `BST` to `SW` | Bootstrap, value fixed by the datasheet |
 | L1 | 47 uH, Isat 2.0 A, 0.2R | 6x6x4.5 mm | C5151734 | `SW` to `V_BUCK` |  |
 | C5 | 22 uF 25 V X5R | 1206 | C12891 | `V_BUCK` to `GND` |  |
@@ -140,6 +146,7 @@ into `V_BUCK`, 5.28 V. Schottky D3 passes it to the 5 V bus.
 | R10 | 10k 1% | 0603 | C25804 | `VIN_MON` to `GND` |  |
 | C9 | 100 nF 50 V X7R | 0603 | C14663 | `VIN_MON` to `GND` |  |
 | D3 | SS34 Schottky 3 A 40 V | SMA | C8678 | A `V_BUCK`, K `V5` | OR-ing, buck side |
+| D25 | TVS 6 V unidirectional 600 W | SMB | C83270 | A `GND`, K `V_BUCK` | Over-voltage clamp on the buck output. Section 4.8 |
 
 <!-- designsync:end -->
 
@@ -403,6 +410,141 @@ accuracy is 3 % over temperature, so `3V3` is 3.20 to 3.40 V. The module needs
 is 4.6 V, so the top 0.1 V of the LDO range is above the panel recommendation.
 I accept that and list it in section 22.
 
+### 4.8 Over-voltage on `V_BUCK`: clamp D25 and fuse F5
+
+Added by [review A2](hardware-review-a2.md), section 6, on the owner's
+decision that a failed regulator must fail safe and must not destroy the
+board silently.
+
+**The fault.** The high-side switch inside U1 fails short, or stays on.
+`VIN_DC`, 26 to 45 V, then reaches `V_BUCK` through L1. With nothing to stop
+it, `hardware/sim/buck_overvoltage.cir` puts `V_BUCK` past 7 V after 11 to
+14 us and at 43 to 65 V after the first ring of L1 with C5 and C6. Every
+5 V and 3.3 V part is then beyond its rating, the processor included, and
+the fail-safe analysis of section 8.5 has nothing to stand on.
+
+**The protection.** Two parts.
+
+- **D25**, a Littelfuse SMBJ6.0A, from `V_BUCK` to `GND`, cathode to
+  `V_BUCK`. It stands off 6.0 V, breaks down between 6.67 and 7.37 V and
+  clamps at 10.3 V at its rated 58.3 A.
+- **F5**, a Littelfuse 0451.500MRL, 0.5 A very fast-acting, in series with
+  the input of U1. It sits between `VIN_DC` and a new net, `VIN_U1`, which
+  holds U1 pin 2 and the input capacitors C2 and C3.
+
+When the switch shorts, D25 holds `V_BUCK` and the charge of C1 flows
+through F5, the failed switch, L1 and D25. F5 opens. `V_BUCK` then falls to
+zero and stays there.
+
+**Why not a crowbar that opens the input fuses.** Every path from the
+transformer to `V_BUCK` runs through D2 and R1, 3 ohm. With `V_BUCK` held
+near zero the rectifier delivers half-wave pulses of 3.6 to 7.8 A peak,
+1.6 to 3.7 A rms, for a 20 to 75 VA transformer (the "follow current" lines
+of the simulation). F1 and F4 are 3 A time-lag fuses: at 1.6 to 3.7 A they
+open after minutes or not at all. What would open is R1, at 9 to 42 W in a
+1 W part, and D2. That is the board destroying itself in an uncontrolled
+way. So the element that opens has to sit behind C1, where the capacitor
+can deliver the current that the transformer cannot, and it has to be much
+smaller than 3 A.
+
+**Sizing F5.**
+
+| Check | Calculation | Result |
+|---|---|---|
+| Normal load | 1.76 W typical at 29 V; 5.0 W at the 17.3 V valley of low line | 0.06 A typical, 0.29 A at the worst steady corner: 58 % of rating. Littelfuse asks for 75 % at most. |
+| Voltage lost | 0.42 ohm x 0.29 A | 0.12 V on a 17 V input |
+| Voltage rating | `VIN_DC` reaches 44.3 V, 59 V in a surge | 125 V |
+| Fault current it must interrupt | (44.3 V - 6.67 V) over the resistance in the loop: C1 0.033 ohm at most (Rubycon ZLJ sheet, 100 kHz, 20 °C), F5 0.42 ohm, L1 0.2 ohm, D25 0.03 ohm, and a switch that has become 0.02 ohm | 53.5 A by this sum. The simulation gives 49 to 52 A with L1 saturated, because the fuse has opened before the current has fully risen. At a `VIN_DC` of 30 V it gives 25 to 30 A. The part interrupts 50 A at 125 V and 300 A at 32 V DC. |
+| Melting | Nominal melting I²t 0.0824 A²s. C1 delivers I² x R x C / 2 into this loop: 0.18 A²s from 30 V, 0.47 A²s from 44.3 V, 0.04 A²s from 17 V | The charge of C1 alone opens it from about 22 V up. Below that the rectifier has to finish the job, see below. |
+
+The fuse's own resistance does two jobs in that table. It is most of the
+resistance in the loop, and it is what keeps the fault current near what the
+fuse can interrupt. In the one worst case, the highest input with a welded
+switch and a saturated inductor, the current reaches the 50 A that the data
+sheet gives for 125 V, to within 3 %. The fuse then has to break it at 44 V.
+Its rating at 32 V DC is 300 A, and the sheet has no figure in between. I
+take the part as able to do it and cannot show that from the sheet. It is
+the first thing risk 21 tests. **Do not fit a larger rating.** A 1 A part of
+the same series has 0.153 ohm and seven times the melting I²t, and the
+current would reach 86 A.
+
+C1 matters here. The through-hole Rubycon part that replaced the Lelon part
+has less than half its series resistance, 0.033 against 0.082 ohm, and that
+raised the worst peak from 46 to 49 A. With a C1 three times better than
+its limit, 0.010 ohm, the simulation gives 51 A.
+
+**What the simulation shows.** `hardware/sim/buck_overvoltage.cir`, 36 cases
+with a 20 VA transformer, 12 more up to 75 VA and 6 with other values for
+C1: `VIN_DC` at 17, 30 and 44.3 V, the failed switch at 0.02, 0.725 and
+5 ohm, L1 at 47 uH and saturated at 5 uH, F5 opening at its nominal melting
+I²t and at three times that.
+
+| | Range over the cases |
+|---|---|
+| Highest `V_BUCK`, D25 at its highest clamp | 7.5 to 9.8 V, 9.9 V with C1 at 0.010 ohm |
+| Highest `V_BUCK`, D25 at its lowest clamp | 7.1 to 8.2 V |
+| Peak current in F5 and D25 | 2.2 to 51.5 A. D25 is rated for 58.3 A. |
+| F5 open after, welded switch, `VIN_DC` 30 V or more | 0.04 to 0.2 ms at nominal I²t; up to 18 ms at three times that on 30 V |
+| F5 open after, every other case | 0.15 to 200 ms |
+| Energy in D25 until F5 opens | 0.016 to 0.69 J. In the cases that end within 10 ms, where the pulse curve of the SMBJ data sheet applies (Fig. 2, 600 W at 1 ms), the curve allows 4.4 to 11 times what D25 takes. |
+| Energy in R1 | 0.02 to 1.4 J |
+
+The slow cases are a switch that has become several ohms, and a low
+`VIN_DC`. The model opens the fuse on I²t alone, which is right for
+milliseconds and optimistic for longer. The bound that does not rest on the
+model: the follow current is 320 to 730 % of F5's rating, and the data
+sheet gives 5 s at most at 200 %. For those seconds D25 takes 5.5 to 15 W
+and R1 9 to 42 W. D25 is rated 5 W steady; if it overheats it fails short,
+which is the normal failure of a TVS, the current rises and F5 opens. R1
+may not survive the slow cases. `V_BUCK` stays under the clamp voltage in
+all of them.
+
+**What every other part sees while D25 clamps.**
+
+| Part | Sees | Rating | Result |
+|---|---|---|---|
+| U3, and so `3V3` and everything on it | `V5` up to 9.5 V | 20 V absolute, 18 V operating | `3V3` stays regulated. The processor, the expander, U7, Q3 and `V_DRV` work as normal. |
+| U6 | 9.5 V | 36 V | Normal |
+| Coil of K1 | 9.8 V | 8.5 V continuous at 23 °C (170 %) | 0.77 W in the coil for at most seconds. No damage expected. |
+| Read-back divider to GPIO7 | 9.8 V on R93 | (9.8 - 3.6) V / 110 kohm = 56 uA at most towards the pin's clamp | Harmless |
+| Sensor pull-ups | 9.5 V on R74, R77, R80 | 0.3 mA each into the BAT54S clamps | Harmless |
+| Backlight | (9.5 - 3.0) V / 33 ohm = 197 mA | 80 mA rated | For milliseconds in the fast cases. May age the LEDs in a slow one. |
+| **U11** | 9.8 V on its input | **7 V absolute maximum** | The one part beyond its rating: 7.5 to 9.8 V for 0.04 ms to 0.2 s, seconds in the slow cases. It may be damaged. It switches the sensor terminal and nothing else. |
+
+So the fail-safe circuits stay inside their ratings throughout, and section
+8.5 applies unchanged: the fault is one fault, and both detectors are
+healthy. While D25 clamps, the processor runs and the keep-alive is under
+its control. When F5 has opened, `V_BUCK` is zero. The coil of K1 has no
+supply and no valve can be on, whatever the keep-alive does, with or
+without USB power.
+
+**A feedback fault.** R3 or R4 open leaves U1 with no feedback and it runs
+at full duty, but its current limit still works: 1.75 A at most. D25 then
+takes 7.4 V x 1.75 A = 13 W and fails short within seconds. F5 does not
+open, because the input current is under 0.5 A. U1 limits into the short.
+The board is dead with `V_BUCK` at zero. That is fail-safe and it is
+visible, and it costs D25.
+
+**How the fault shows.** On 24 VAC alone the board is dark. With USB
+attached, firmware sees mains on `AC_ZC` and a normal `VIN_MON`, and the
+relay read-back on GPIO7 reads low at rest, which it does only when
+`V_BUCK` is missing. Firmware rule 15 reports that combination as a
+regulator fault. Repair is U1, F5 and, after a slow case, D25 and R1.
+
+**What is not covered.**
+
+- **D25 failing open before F5 has opened.** A TVS driven far past its
+  rating can lose a bond wire. Here the fuse limits the energy to a
+  fraction of the pulse rating, so I do not expect it. Bench item, risk 21.
+- **U11 pushing its input voltage onto GPIO45.** If U11 is damaged in a way
+  that joins its input to its enable pin, up to 9.8 V reaches a processor
+  pin through no resistance. A 10 kohm resistor in `SENS_PWR_EN` would
+  bound that current to 0.6 mA. Review A2 recommends it and did not apply
+  it; it is one more part and one more net.
+- **The same fault in U3.** If the LDO shorts input to output, `3V3` goes
+  to 4.95 V. That is a different fault, and section 8.5 says what is known
+  about it.
+
 ## 5. USB-C and power OR-ing
 
 ### 5.1 Circuit
@@ -497,14 +639,25 @@ table follows review A1, section 6, with the second fuse now fitted.
 | Fault | Loop | F1, ground leg | F4, other leg |
 |---|---|---|---|
 | Valve wire shorted to COM | Leg 1, F4, K1, COM, short, PTC, triac, shunt, `GND`, F1, leg 2 | In the loop | In the loop |
-| D1 or C1 shorted | Leg 1, F4, the part, `GND`, F1, leg 2 | In the loop | In the loop |
+| D1 shorted | Leg 1, F4, D1, `GND`, F1, leg 2 | In the loop | In the loop |
+| C1 shorted | Leg 1, F4, D2, R1, C1, `GND`, F1, leg 2 | In the loop, but see below | In the loop, but see below |
 | Leg 1 earthed, earthed computer on USB | Leg 1, earth, computer, USB ground, `GND`, F1, leg 2 | In the loop | Not in the loop |
 | Two devices on one transformer with legs swapped, grounds joined | Leg 1, other device's ground, joined ground, `GND`, F1, leg 2 | In the loop | Not in the loop |
 | COM or a valve wire leaking to earth, earthed computer on USB | Leg 1, F4, K1, COM, earth, computer, USB ground, `GND`, F1, leg 2 | In the loop | In the loop |
 | Leg 2 earthed, earthed computer on USB, and a board fault from the first two rows | As those rows as far as `GND`, then F1 in parallel with USB ground, computer, earth, leg 2 | Bypassed | In the loop |
 | A second device on the transformer with the same leg as ground, grounds joined, and a board fault | The same, with the other device's ground in place of earth | Bypassed | In the loop |
 
-The first draft had F1 only, for the third and fourth rows: those loops do
+**A shorted C1 does not open a fuse.** Review A2 simulated the current the
+rectifier delivers into a short behind R1 (`hardware/sim/buck_overvoltage.cir`,
+the follow-current lines): 1.6 to 3.7 A rms for a 20 to 75 VA transformer,
+because R1 is 3 ohm and the rectifier conducts on one half-cycle only. That
+is 54 to 122 % of F1 and F4, which open after minutes at those currents or
+not at all. R1 takes 9 to 42 W and burns open. The board is dead and no
+valve runs, so the fault is safe, but it is R1 and not a fuse that ends it.
+A short in C2, C3 or U1 is different since that review: those are behind
+F5, section 4.8.
+
+The first draft had F1 only, for the fourth and fifth rows: those loops do
 not touch terminal 1, so a fuse there does not see them. The last two rows
 are what F1 alone leaves open. A board fault then has two ways back to leg 2,
 and when F1 opens all of the current takes the USB cable or the joined
@@ -989,9 +1142,9 @@ release and remove the hold parts, D21 and R13. So:
 | Event | What K1 does |
 |---|---|
 | Over-current trip | `DRV_EN` falls within 70 us, Q1 turns off 0.1 ms later, the contacts part within the 10 ms release time. K1 may break fault current. Section 6.6. |
-| Keep-alive stops, both detectors healthy | The gate-drive detector removes LED drive after 0.45 to 0.9 s and releases Q1. The relay detector releases Q2 after 0.12 to 0.95 s. Whichever is first opens K1. If the relay detector is first, K1 breaks the valve current, at most 1.5 A, inside its rating. |
-| Keep-alive stops, gate-drive detector stuck on | Q2 opens K1 within 0.95 s, or 1.4 s if the pin stopped high. The triacs are still driven, and it does not matter. |
-| Keep-alive stops, relay detector stuck on | `DRV_EN` falls within 0.9 s, or 1.2 s, and Q1 opens K1. |
+| Keep-alive stops, both detectors healthy | The gate-drive detector removes LED drive after 0.21 to 0.83 s and releases Q1. The relay detector releases Q2 after 0.10 to 1.45 s. Whichever is first opens K1. If the relay detector is first, K1 breaks the valve current, at most 1.5 A, inside its rating. |
+| Keep-alive stops, gate-drive detector stuck on | Q2 opens K1 within 1.45 s, or 2.19 s if the pin stopped high. The triacs are still driven, and it does not matter. |
+| Keep-alive stops, relay detector stuck on | `DRV_EN` falls within 0.83 s, or 1.25 s if the pin stopped high, and Q1 opens K1. |
 | Firmware ends a run | Firmware turns the outputs off, waits 40 ms and clears `RLY_ON`. The contacts break no current. |
 
 K1 is an Omron G5NB-1A-E with a 5 V coil of 125 ohm, 40 mA. From the English
@@ -1107,11 +1260,21 @@ edge, and within 1.4 s if the pin stops high.** With one bleed resistor open
 the limits are 1.9 s and 2.9 s. The pin-high case is longer because C51 then
 discharges through the diode into the reservoir as well.
 
+**Review A2 widened this window.** Its corner runs, review section 4, take
+the threshold drift between -1.5 and -4.5 mV/K where the table above takes
+-3 mV/K, `3V3` from 3.0 to 3.6 V, diodes at both ends of their data and a
+pin of 16 to 70 ohm. With the firmware's 5 ms edges Q2 lets go between 0.10
+and 1.45 s after the last edge, and within 2.19 s if the pin stops high. The
+long end is a Q2 with a 0.65 V threshold at 70 °C. Section 19.4 and the
+limits of section 19.7 use these figures. Which end a real part sits at is a
+bench item, risk 28.
+
 The window is wide, a factor of eight. Most of it is the transistor's
 threshold spread, which a comparator would remove. I kept the bare
 transistor, because every part added between the pin and the gate is another
 part that can stick. The gate-drive detector is the one with the comparator
-and the tighter window, 0.45 to 0.9 s. Nothing requires the relay to open
+and the tighter window, 0.45 to 0.9 s here and 0.21 to 0.83 s over the
+corners of review A2. Nothing requires the relay to open
 after the triacs stop: if it opens first it breaks at most 1.5 A, inside the
 contact rating, into the clamp D23. The earliest release, 0.12 s, is six
 times the 20 ms the keep-alive contract allows between edges.
@@ -1119,7 +1282,14 @@ times the 20 ms the keep-alive contract allows between edges.
 **Gate drive margin.** At the worst corner, -20 °C, a 3.2 V rail, the
 smallest capacitors and the slowest allowed keep-alive of one edge per 20 ms,
 the gate sits at 2.09 V. The highest threshold there is 1.59 V. The margin is
-0.50 V. At the firmware's own 100 Hz it is 0.83 V. The AO3400A data sheet
+0.50 V. At the firmware's own 100 Hz it is 0.83 V. Review A2 took a harsher
+corner: a threshold of 1.66 V at -20 °C, diodes at their highest forward
+voltage, a pin of 70 ohm and the pull-down R33 at 2.2 kohm. There the margin
+is 0.22 V with edges 20 ms apart and 0.55 V at the firmware's 5 ms, and
+0.08 and 0.38 V with `3V3` at 3.0 V. It also found that a keep-alive with
+one phase of 1 ms does not hold Q2 at that corner, because R89 and the pin
+charge C51 with a time constant of about 3 ms. Section 19.4 now forbids a
+phase shorter than 2.5 ms. The AO3400A data sheet
 (AOS, rev 3) guarantees 48 mohm at a gate voltage of 2.5 V and gives a
 transconductance of 33 S at 5.7 A. Its on-resistance is not specified below
 2.5 V. A transistor with 33 S that is 0.5 V above its threshold passes amps,
@@ -1194,7 +1364,7 @@ the next run like any other.
 
 | Ref | Part | Package | LCSC | Connections | Note |
 |---|---|---|---|---|---|
-| R33 | 10k 1% | 0603 | C25804 | `KA` to `GND` | Pull-down |
+| R33 | 2.2k 1% | 0603 | C4190 | `KA` to `GND` | Pull-down. Low enough that a net behind a 10 kohm pull-up cannot run the detectors through a bridge |
 | R29 | 220R 1% | 0603 | C22962 | `KA` to `KA_N0` |  |
 | C22 | 4.7 uF 25 V X5R | 0805 | C1779 | `KA_N0` to `KA_N1` | Pump capacitor |
 | D7 | BAT54S dual Schottky, series | SOT-23 | C47546 | 1 A `GND`, 2 K `KA_N2`, 3 common `KA_N1` |  |
@@ -1230,13 +1400,13 @@ the next run like any other.
 | R25 | 100k 1% | 0603 | C25803 | `3V3` to `DRV_EN_N` | Keeps Q3 off while 3V3 ramps |
 | R26 | 10k 1% | 0603 | C25804 | `V_DRV` to `GND` | Bleed |
 | C21 | 100 nF 50 V X7R | 0603 | C14663 | `V_DRV` to `GND` |  |
-| R92 | 10k 1% | 0603 | C25804 | `DRV_EN` to `DRV_EN_RB` | Read-back of DRV_EN to GPIO42 |
+| R92 | 4.7k 1% | 0603 | C23162 | `V_DRV` to `V_DRV_RB` | Read-back of the LED supply to GPIO42. Taken behind Q3, so that a shorted Q3 shows |
 
 <!-- designsync:end -->
 
 ### 8.2 How it works
 
-Firmware toggles `KA`, GPIO38. Each rising edge pushes charge through C22 and
+Firmware toggles `KA`, GPIO17. Each rising edge pushes charge through C22 and
 D7 into the reservoir C23. R30 and R91 in parallel, 55 kohm, drain C23 all the time. They are two resistors so that one of them failing open doubles the hold-up and does not remove the bleed. Comparator U6A compares
 the reservoir voltage with a reference and drives `KA_OK` high when the
 reservoir is charged.
@@ -1325,6 +1495,23 @@ The fault results are in section 8.5. The rest:
 
 All figures are for the bleed of two 110 kohm resistors, 55 kohm, that
 replaced the single 56 kohm of the first draft. They moved by 2 % or less.
+Both tables are from the two files as merged, with the pull-down R33 at
+10 kohm. With 2.2 kohm most figures move by about 1 %; `hardware/sim/README.md`
+has the comparison.
+
+**Review A2, corner runs.** `hardware/sim/failsafe/` runs both detectors
+together over tolerance, -20 to 70 °C, `3V3` from 3.0 to 3.6 V and five
+keep-alive waveforms: review section 4. For this detector, with the
+firmware's 5 ms edges:
+
+| Question | Result over every corner |
+|---|---|
+| `V_DRV` on after the first edge | 13 to 22 ms |
+| Gate drive removed after the last edge, pin low or high-impedance | 0.21 to 0.83 s |
+| The same, pin stops high | 1.25 s at most |
+| Reservoir while toggling, any waveform | 1.82 V at least, against 0.94 V to release |
+| A steady level, one edge, one pulse | Never enables. One edge charges the reservoir to 1.64 V at most, at a corner where the turn-on threshold is about 1.7 V. |
+| Slow toggling | 1 Hz enables in 2 of 24 corners, 2 Hz in 9, 3 Hz in 12, 5 Hz in 13. The row "slowest rate that enables" above is too firm in both directions. |
 
 The short corner is C23 at 7 uF, C22 at 3.3 uF, the bleed 1 % low, `3V3` at 3.2 V
 and +15 mV of comparator offset. The slow corner is C23 at 12 uF, C22 at
@@ -1332,10 +1519,10 @@ and +15 mV of comparator offset. The slow corner is C23 at 12 uF, C22 at
 
 **Specification for firmware.**
 
-- **Accepted**: an edge at least every 20 ms. The firmware's 5 ms is the design point. 10 Hz works with nominal parts and has too little margin at the slow corner to rely on.
+- **Accepted**: an edge at least every 20 ms, and no phase shorter than 2.5 ms. The firmware's 5 ms is the design point. 10 Hz works with nominal parts and has too little margin at the slow corner to rely on. The lower limit on a phase is for the relay detector, section 7.3.
 - **No upper limit**: the detector is a rectifier, not a window. A square wave at 50 kHz or 1 MHz enables drive as well as 100 Hz does. An earlier version of this section gave 5 kHz as a limit. That was an estimate and it was wrong.
-- **Hold-up**: drive is removed 0.45 to 0.9 s after the last edge if the pin stops low, and at most 1.2 s if it stops high. Above 60 °C on the board the lower figure falls towards 0.3 s.
-- **Not accepted**: a steady level, high or low. Slow toggling is not reliably rejected: between 2 and 3 Hz the result depends on part tolerances. Treat only a steady level as guaranteed off.
+- **Hold-up**: drive is removed 0.21 to 0.83 s after the last edge if the pin stops low, and at most 1.25 s if it stops high. These are the corners of review A2. The first version of this line had 0.45 to 0.9 s and 1.2 s.
+- **Not accepted**: a steady level, high or low. Slow toggling is not reliably rejected. From 1 Hz up the result depends on part tolerances. Treat only a steady level as guaranteed off.
 - **Source**: code that decides every edge from evidence that the control loop is running. Never an output that a peripheral generates by itself: LEDC, RMT, MCPWM or a timer with a pin output keep toggling when the firmware hangs, and the circuit cannot tell the difference. Section 19.4 has the contract agreed with the firmware.
 
 The firmware team asked about the flash sector-erase time, during which both
@@ -1354,183 +1541,300 @@ a valve on. A valve has current only if two things are true together:
 - **K1 is closed.** That needs Q1 and Q2 both conducting. Q1 needs the expander bit `RLY_ON`, and so `DRV_EN` from the gate-drive detector of this section, called A below. Q2 needs the relay detector of section 7.3, called B.
 - **Its triac conducts.** That needs LED current from `V_DRV`, which A switches, into an expander pin that A holds in reset. Or an output device has failed short.
 
-A and B share the keep-alive pin, the ground and nothing else. A uses `3V3`
-and `V5`. B uses no supply rail. Their pump diodes are in separate packages,
-D7 and D22. So a fault in A leaves B to open K1, and a fault in B leaves A to
-remove gate drive and release Q1. The tables go through every part to check
-that, and then through what the two share.
+A and B share the keep-alive net with its pull-down R33, the ground and
+nothing else. A uses `3V3` and `V5`. B uses no supply rail. Their pump
+diodes are in separate packages, D7 and D22. So a fault in A leaves B to
+open K1, and a fault in B leaves A to remove gate drive and release Q1.
 
-"Found by" names the firmware test of section 19.7 that finds a fault while
-the other detector still covers it. The idle test is step 1 there, the
-pin-high test step 2, the start test steps 3 and 4, the weld check step 5,
-the run check steps 6 and 7 and the stop test step 9. A fault that hides until a second fault
-arrives is the thing to avoid, so every row that says "stuck on" has a test.
+**How it was checked.** The first version of this section went through the
+parts by hand, with `hardware/sim/keepalive_faults.cir` and
+`relay_detector.cir` for the two pumps. [Review A2](hardware-review-a2.md)
+did not start from that table. It built the circuit from
+`hardware/netlist.yaml` and injected every fault into a simulation of the
+whole chain: each pin of each part opened, each pair of pins bridged that
+the package allows, each IC output stuck, each net shorted to ground and to
+`3V3`, leaks onto the reservoirs, bridges onto the keep-alive net, and the
+supplies at wrong voltages. 376 faults, each run through the self-test
+sequence of section 19.7 and through a crash with the pin stopping low,
+high and high-impedance. The generator is `hardware/sim/failsafe/`, and the
+complete table is appendix A of the review. Its section 3 lists where the
+result differs from what stood here. This section is corrected to match.
 
-**States of the keep-alive pin and of the firmware.**
+**The result.** With the netlist as it is now:
+
+- **No fault in a component leaves a valve on.** The only faults that do are bridges from the keep-alive net to a net that toggles by itself. They are layout faults and have their own part below.
+- **57 faults stick one layer on.** The other layer turns the valve off in every one, and a step of the self-test finds every one. They are in the next table.
+- **Every fault that sticks a layer on is found**, at the latest at the next start. Before review A2 three were not: a shorted Q3, an open R12, and a bridge of a few kilohms onto the keep-alive net.
+
+"Found by" names the step of section 19.7. The idle test is step 1, the
+pin-high test step 2, the float test step 2b, the start test steps 3 and 4,
+the weld check step 5, the gate bleed check step 5b, the run check steps 6
+and 7 and the stop test step 9.
+
+**States of the keep-alive pin and of the firmware.** The times are from
+the corners of section 8.4: every tolerance, -20 to 70 °C, `3V3` from 3.0 to
+3.6 V.
 
 | Fault or state | What happens | Outputs |
 |---|---|---|
-| `KA` stuck low | No edges. Both reservoirs drain. | Gate drive off within 0.9 s, K1 open within 0.95 s |
-| `KA` stuck high | C22 and C51 block DC. | Gate drive off within 1.2 s, K1 open within 1.4 s |
-| `KA` floating: chip in reset, EN low, or unprogrammed | R33 pulls it low. | Off |
-| `KA` toggling at the wrong rate | Anything from about 3 Hz up enables A, whatever the duty cycle. B needs about the same. | Neither detector catches this. Section 8.4. |
-| USB flashing | The ROM loader runs. GPIO38 stays an input. No edges. | Off |
-| Boot | GPIO38 has no power-up glitch in datasheet table 2-2. One edge enables neither detector: A's reservoir reaches 1.0 V against 1.55 V, and B's gate 1.0 to 1.3 V for at most 0.6 s, with Q1 off. | Off |
-| Brownout of `3V3` | The supervisor U12 holds the ESP32 in reset and toggling stops. The expander keeps its bits down to about 1 V. | Off within 0.95 s. Until then the outputs that were on stay on. |
-| Firmware hangs with outputs on | Toggling stops. | Off within 1.4 s of the last edge |
-| I2C bus stuck by a fault | Firmware cannot write the expander. It must stop toggling. | Off within 0.95 s of that decision |
-| GPIO40, GPIO42 or GPIO7 driven as an output by mistake | R87, R92 and R94 keep each from moving the node it reads. | No effect |
+| `KA` stuck low | No edges. Both reservoirs drain. | Gate drive is off within 0.84 s, and valve current ends with it. Q2 alone lets go within 1.46 s. |
+| `KA` stuck high | C22 and C51 block DC. | Gate drive is off within 1.25 s, and valve current ends with it. Q2 alone lets go within 2.19 s. |
+| `KA` floating: chip in reset, EN low, bootloader, or unprogrammed | R33 pulls it low. | As stuck low |
+| `KA` toggling at the wrong rate | Section 8.4: from 1 Hz up A may enable, depending on tolerances. From one edge per 20 ms it always does. B needs about the same, and both phases at least 2.5 ms long. | Neither detector catches a wrong rate. |
+| USB flashing | The ROM loader runs. GPIO17 stays an input. No edges. | Off |
+| Boot | GPIO17 is driven low for 60 us at power-up, table 2-2 of the datasheet, which is its idle level. One edge enables neither A nor the valves: section 8.4. | Off |
+| Brownout of `3V3` | The supervisor U12 holds the ESP32 in reset and toggling stops. The expander keeps its bits down to about 1 V. | Off as for stuck low. Until then the outputs that were on stay on. |
+| Firmware hangs with outputs on | Toggling stops. | Off as above, counted from the last edge |
+| I2C bus stuck by a fault | Firmware cannot write the expander. It must stop toggling. | Off as above, counted from that decision |
+| GPIO40, GPIO42 or GPIO7 driven as an output by mistake | R87 and R94 keep each from moving the node it reads. GPIO42 driven high feeds `V_DRV` through R92, 0.7 mA at most, with no path through an LED while the expander is in reset. | No effect on the valves. The self-test fails, because the levels it reads are wrong. |
 
-**Detector A and the logic behind it.** Each fault was simulated in
-`hardware/sim/keepalive_faults.cir`. A resistor is taken to fail open, a
-capacitor open or short, a diode or an IC output either way. Resistor shorts
-are in the last table.
+**Faults that stick one layer on.** From the fault injection, for the
+netlist as it is. "Gate drive stays" means LED current still flows 4 s
+after the keep-alive stopped, so detector A or what follows it is stuck. "Q1
+stays on" means the expander still drives `RLY_ON`, or the gate of Q1 kept
+its charge. "Q2 stays on" means detector B is stuck. The valve is off in
+every row, by the other layer.
 
-| Fault | What happens | Valves after the keep-alive stops | Found by |
-|---|---|---|---|
-| R29 open, C22 open, D7 either diode short or open, C23 short, C24 short, R35 open | No charge reaches the comparator, or the reference sits at the rail. A never enables. | Off | Start test: `DRV_EN_RB` stays low |
-| R31 open from power-up | The comparator input stays near 0.27 V. A never enables. | Off | Start test |
-| C23 open | `KA_OK` follows the keep-alive and resets the expander on every cycle. | Off | Start test: expander does not stay configured |
-| R32 open | No hysteresis. Hold-up falls to 0.45 s. | Off | Not found. Harmless. |
-| R33 open | No pull-down. A pin in reset floats and gives no edges. | Off | Not found. Harmless. |
-| R36 open | `KA_OK` is pulled up through R32 only, to 2.9 V. | Off | Not found. Harmless. |
-| R30 or R91 open | The bleed is 110 kohm. Hold-up 1.7 s at 27 °C. | Gate drive off after 1.7 s. K1 open within 0.95 s through B. | Stop test: `DRV_EN_RB` takes more than 1.0 s to fall |
-| **R31 opens while drive is enabled** | R32 holds the comparator input at 3.3 V. **A stuck on** until power is cycled. | K1 opens through Q2 within 0.95 s, 1.4 s if the pin stopped high | Stop test: `DRV_EN_RB` does not fall |
-| **R34 open** | The reference is at 0 V. **A stuck on** from power-up. | As above | Idle test: `DRV_EN_RB` high with no keep-alive |
-| **C22 short** | A passes DC. Normal with a toggling pin. **A stuck on while the pin is high.** | As above | Pin-high test |
-| **U6: output 1 never pulls low, or the IC loses its supply or ground pin** | `KA_OK` is pulled high. **A stuck on.** With the supply pin open, `AC_ZC` and the over-current comparators stop as well. | As above | Idle test |
-| **U7: output 3 stuck low, or output 4 stuck high** | `DRV_EN` high. Output 3 stuck low also holds the LED supply on. **A stuck on.** | As above | Idle test |
-| U7: output 3 stuck high, output 4 stuck low | Drive never enabled. | Off | Start test |
-| U7: latch output stuck so that `FAULT_N` stays high | The over-current latch cannot trip. Keep-alive behaviour unchanged. | Off | Not found by a keep-alive test. Section 9.4. |
-| Q3 shorted drain to source | `V_DRV` stays on. The expander reset still floats every pin, and RN1, RN2 and R96 hold the LED cathodes at `V_DRV`. | Off | Not found. See the note below. |
-| R25, R26 or C21 open | `V_DRV` falls more slowly, or Q3's gate floats while `3V3` ramps. | Off | Not found. Harmless. |
-| U5: `RESET` input ignored, bits kept | Valve bits stay set. `V_DRV` is off, so no LED current. `RLY_ON` stays high, so Q1 stays on. | K1 opens through Q2 | Idle test: the expander answers on I2C |
-| U5: a valve pin stuck low | That valve follows `V_DRV` during runs. | Off, because `V_DRV` is off | Run check: current with that output off |
-| U5: `RLY_ON` pin stuck high, or R12 open | Q1 conducts or floats on. K1 follows Q2 alone. | K1 opens through Q2 | Weld check |
-| RN1, RN2, R96: one element open | That pin floats in reset. A floating pin sinks no LED current. | Off | Not found. Harmless. |
+| Fault | What stays on | Valve current ends after: pin low / high / high-impedance (s) | Found while the valve runs | Found at the next start |
+|---|---|---|---|---|
+| C22 short | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | not found | 2 pin-high |
+| R31 open | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 3 start |
+| R32 short | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| R34 open | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| R35 short | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| R36 short | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| U6 pin 1 1OUT (KA_OK) open | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| U6 pin 3 VCC (V5) open | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| U6 pin 7 1IN+ (KA_INP) open | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| U6 output 1 (KA_OK) never pulls low | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| U7 pin 9 3A (KA_OK) open, holds its last level | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 3 start |
+| U7 pin 9 3A (KA_OK) open, leaks high | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| U7 pin 11 4Y (DRV_EN) open | Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 3 start |
+| U7 pin 12 4A (DRV_EN_N) open, holds its last level | Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| U7 pin 12 4A (DRV_EN_N) open, leaks low | Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| U7 pin 13 4B (DRV_EN_N) open, holds its last level | Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| U7 pin 13 4B (DRV_EN_N) open, leaks low | Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| U7 pins 9 3A and 10 3B bridged (KA_OK to FAULT_N) | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 9 stop |
+| U7 pins 10 3B and 11 4Y bridged (FAULT_N to DRV_EN) | Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| U7 pins 11 4Y and 12 4A bridged (DRV_EN to DRV_EN_N) | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| U7 output 3 (DRV_EN_N) stuck low | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| U7 output 4 (DRV_EN) stuck high | Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| U5 pin 3 RESET (DRV_EN) open, holds its last level | Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 3 start |
+| U5 pin 3 RESET (DRV_EN) open, leaks high | Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| U5 RESET input ignored, bits kept | Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| U5 pin P05 (RLY_ON) stuck high | Q1 stays on | 0.50 / 0.76 / 0.50 | not found | 4 expander |
+| K1 contact welded, or JP1 bridged | relay contact closed | 0.67 / 1.01 / 0.67 | not found | 5 weld check |
+| R12 open | Q1 stays on | 0.50 / 0.76 / 0.50 | not found | 5b gate bleed |
+| Q2 pin G (RLY_G2) open, holds its last level | Q2 stays on | 0.67 / 1.01 / 0.67 | 9 stop | 3 start |
+| Q2 pin G (RLY_G2) open, leaks high | Q2 stays on | 0.67 / 1.01 / 0.67 | 9 stop | 1 idle |
+| Q2 pins G and D bridged (RLY_G2 to RLY_B) | Q2 stays on | 0.66 / 1.00 / 0.66 | 9 stop | 1 idle |
+| Q2 pins S and D bridged (GND to RLY_B) | Q2 stays on | 0.67 / 1.01 / 0.67 | 9 stop | 1 idle |
+| C51 short | Q2 stays on | 0.55 / 1.01 / 0.55 | not found | 2 pin-high |
+| net DRV_EN shorted to 3V3 | Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| net DRV_EN_N shorted to GND | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| net KA_INP shorted to 3V3 | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| net KA_N1 shorted to 3V3 | gate drive stays, Q1 stays on | 0.48 / 0.74 / 0.48 | 9 stop | 1 idle |
+| net KA_N2 shorted to 3V3 | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| net KA_OK shorted to 3V3 | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| net KA_REF shorted to GND | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| net KB_N1 shorted to 3V3 | Q2 stays on | 0.66 / 0.99 / 0.66 | 9 stop | 1 idle |
+| net RLY_A shorted to GND | relay stays closed | 0.67 / 1.01 / 0.67 | 9 stop | 1 idle |
+| net RLY_A shorted to 3V3 | relay stays closed | 0.14 / 0.14 / 0.14 | 9 stop | valve current |
+| net RLY_B shorted to GND | Q2 stays on | 0.67 / 1.01 / 0.67 | 9 stop | 1 idle |
+| net RLY_G1 shorted to 3V3 | Q1 stays on | 0.50 / 0.76 / 0.50 | not found | 4 expander |
+| net RLY_G2 shorted to 3V3 | Q2 stays on | 0.67 / 1.01 / 0.67 | 9 stop | 1 idle |
+| net RLY_ON shorted to 3V3 | Q1 stays on | 0.50 / 0.76 / 0.50 | not found | 4 expander |
+| leak of 47 kohm from 3V3 to KA_N2 | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 2 pin-high |
+| leak of 100 kohm from 3V3 to KA_N2 | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 9 stop |
+| leak of 100 kohm from 3V3 to KA_INP | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 1 idle |
+| leak of 330 kohm from 3V3 to KA_INP | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 2 pin-high |
+| leak of 47 kohm from 3V3 to RLY_G2 | Q2 stays on | 0.67 / 1.01 / 0.67 | 9 stop | 1 idle |
+| leak of 100 kohm from 3V3 to RLY_G2 | Q2 stays on | 0.67 / 1.01 / 0.67 | 9 stop | 2 pin-high |
+| leak of 100 kohm from V_BUCK to RLY_G2 | Q2 stays on | 0.67 / 1.01 / 0.67 | 9 stop | 1 idle |
+| leak of 330 kohm from V_BUCK to RLY_G2 | Q2 stays on | 0.67 / 1.01 / 0.67 | 9 stop | 9 stop |
+| leak of 100 kohm from 3V3 to KB_N1 | Q2 stays on | 0.67 / 1.01 / 0.67 | 9 stop | 2 pin-high |
+| leak of 100 kohm from 3V3 to KA_N1 | gate drive stays, Q1 stays on | 0.50 / 0.76 / 0.50 | 9 stop | 9 stop |
 
-**Detector B, the relay and its drive.** From
-`hardware/sim/relay_detector.cir`; the table in section 7.3 has the numbers.
+Two faults belong in this table and are not in it, because of how the model
+works.
 
-| Fault | What happens | Valves after the keep-alive stops | Found by |
-|---|---|---|---|
-| R89 open, C51 open, D22 either diode open, D22 lower diode short, C50 short | Q2 never turns on. K1 never closes. | Off | Start test: `RLY_B_RB` stays high |
-| D22 upper diode short, C50 open | K1 does not pull in reliably, or chatters. | Off within 0.4 s | Start test, or no valve current |
-| R14 or R90 open | Q2 releases after 1.45 s typical, 1.9 s at worst, 2.9 s if the pin stops high. | Gate drive off within 0.9 s through A. K1 open late. | Stop test: `RLY_B_RB` takes more than 1.0 s to rise |
-| **C51 short** | B passes DC. **B stuck on while the pin is high.** | Gate drive off within 1.2 s through A, which also releases Q1 | Pin-high test |
-| **Q2 shorted drain to source or gate to drain** | **B stuck on.** | As above | Idle test: `RLY_B_RB` not high |
-| Q2 gate shorted to source, or open | K1 never closes. | Off | Start test |
-| **Q1 shorted** | K1 follows Q2 alone. | K1 opens through Q2. Gate drive off through A. | Weld check |
-| Q1 open, R11 open | K1 never closes. | Off | No valve current |
-| **K1 contact welded, or JP1 bridged** | `COM` is live always. | Gate drive off within 0.9 s through A. A healthy triac then stops. | Weld check |
-| K1 coil open | K1 never closes. | Off | No valve current |
-| D5 open | No path for the coil current at turn-off. Q1 or Q2 avalanches at each release, with 0.16 mJ by my estimate for a 0.2 H coil. Not a rated use of the AO3400A; either may fail short in time. | Off through A in any case | Weld check, or the idle test, when one of them has failed |
-| D5 short | The coil is bypassed. Q1 and Q2 short `V_BUCK` when both conduct and the supply collapses. | Off | Board resets when the relay is asked for |
-| D23 short | `COM` is shorted to `GND`. F1 or F4 opens when K1 closes. | Off | No valve current |
-| D23 open | No clamp on `COM`. | Off | Not found |
-| R93 open, R94 open, R95 short | `RLY_B_RB` reads low always. | Unchanged | Idle test fails. A false alarm on the safe side. |
-| R95 open | The pin reaches about 4.8 V through 110 kohm, 15 uA into its protection diode. Reads high as it should. | Unchanged | Not found. Harmless. |
-| R92 open | `DRV_EN_RB` floats; the internal pull-down reads it low. | Unchanged | Start test fails. A false alarm on the safe side. |
+- **U6 with its ground pin open.** The model's comparator finds ground through its input diodes and keeps working. A real LM2901 without ground cannot be relied on to pull `KA_OK` low. Count it as A stuck on, covered by B and found by the idle test.
+- **Q1 shorted drain to source.** The model judges Q1 by its gate voltage. A shorted Q1 conducts whatever its gate does, K1 follows Q2 alone, and the weld check finds it.
+
+Rows that the first version of this section had wrong or did not have:
+
+- **R35 shorted.** The reference of the comparator is then at 0 V and `KA_OK` is high from power-up: A stuck on, exactly as with R34 open. The first version listed it with the faults that keep A from enabling.
+- **Inputs left floating.** Pin 7 of U6, the comparator input, drifts high on its own bias current: A stuck on. Pin 9 of U7 and the reset pin of U5 can float either way. The first version covered IC outputs and supply pins, not inputs.
+- **The gate of Q2 open.** It does not always mean "K1 never closes". A gate that opens while it is charged, or that leaks towards a rail, holds Q2 on.
+- **R12 open.** Listed as found by the weld check. It is not: at the end of a normal run firmware drives `RLY_ON` low before it releases the pin, which discharges the gate of Q1 with or without R12. Only a reset with `RLY_ON` high leaves the gate charged. Step 5b reproduces that on purpose.
+- **Q3 shorted.** Not found before. Found by the idle test since R92 reads `V_DRV`.
+- **U7 output 4 stuck high, and U5 ignoring its reset.** Listed as "A stuck on". The LED supply still switches off, because Q3 follows output 3. What is lost is the expander reset, and with it the release of Q1.
+- **Adjacent pins of U7 bridged.** Pins 9 and 10 (`KA_OK` to `FAULT_N`) and pins 11 and 12 (`DRV_EN` to `DRV_EN_N`) each stick A on. Pins 2 and 3, 5 and 6, and 8 and 9 tie a gate output to its own input. The model oscillates there and those runs did not finish; a real gate would oscillate or sit between levels. In none of the three can `DRV_EN_N` rest low, so they are counted as "drive not reliably enabled", and they are found at the start test.
 
 **Output devices.**
 
 | Fault | Valves after the keep-alive stops | Found by |
 |---|---|---|
-| Triac, TVS D101, opto-triac output or snubber capacitor shorted | K1 opens through Q1 and through Q2 | Run check: current with K1 closed and every output off |
+| Triac, TVS D101, opto-triac output or snubber capacitor shorted | K1 opens through Q1 and through Q2, 0.84 s after the last edge at the latest, 1.25 s if the pin stops high | Step 6: current with K1 closed and every output off |
 
 **What A and B share.**
 
 | Shared item | Fault | Effect | Answer |
 |---|---|---|---|
-| The pin, GPIO38 | Stuck at either level, or floating | No edges reach either detector. | Safe. First table. |
-| The `KA` net | Bridged to a net that toggles with no firmware behind it | Both detectors could be fed at once. This is the one board fault that could defeat both. | Layout rules below. One net on the board can do it. |
+| The pin, GPIO17 | Stuck at either level, or floating | No edges reach either detector. | Safe. First table. |
+| The `KA` net | Bridged to a net that toggles with no control loop behind it | Both detectors are fed at once. | The one kind of board fault that defeats both. Next part. |
+| R33 | Open | The net floats when the pin does. Nothing drives it, so no edges. But the protection R33 gives against a bridge is gone. | Not found. The float test would find the bridge. |
 | The firmware | Keeps toggling the pin while the control loop is dead | Both detectors stay on. | Not a component fault. The contract of section 19.4 exists for it. |
-| `3V3` | Low or absent | The ESP32 stops. U7 has no supply and Q3 no source voltage. | Safe |
-| `3V3` | High, for example U3 shorted input to output | Either the ESP32 keeps running, and then nothing is wrong with the keep-alive, or it stops and there are no edges. A's thresholds scale with the rail. B does not use it. | Safe |
+| `3V3` | Low or absent | The ESP32 is held in reset. U7 has no supply and Q3 no source voltage. | Safe |
+| `3V3` | High: U3 shorted input to output, 4.95 V | The fault injection shows both detectors still letting go at 4.95 V, if the keep-alive stops. Whether it stops is the question. The processor is at 4.95 V against an absolute maximum of 3.6 V, and what it does there is not known. | **Open.** Review A2, finding M5, recommends a detector that holds `EN` low above 3.6 V. |
 | `V5` | Absent | No `3V3` either. | Safe |
 | `V_BUCK` | Absent | The coil of K1 has no supply. | Safe |
-| `V_BUCK` | High: the switch of U1 shorted, up to 45 V on every 5 V part | Not predictable. See below. | Open point |
+| `V_BUCK` | High: the switch of U1 shorted | D25 holds it under 10 V until F5 opens. `3V3` stays in regulation. Then `V_BUCK` is absent. | Safe by calculation and simulation, section 4.8. Risk 21. |
 | Ground | Lost between the two detectors | A layout fault, not a component fault. | One ground plane |
 | Diode packages | D7 fails in any way | Only A is affected. D22 is a separate package. | Safe |
 | Same part type | C22 and C51 are the same 4.7 uF part, C23 and C50 the same 10 uF part | A cracked ceramic capacitor fails short, and board flex can crack two at once. Two shorted pump capacitors is a double fault, and each one alone is found by the pin-high test. | Place the two pumps apart and turn C22 and C51 at right angles to each other. |
-| K1 | Welded | In the table above. | Weld check |
+| K1 | Welded | Gate drive still goes. | Weld check |
 
-**The bridged `KA` net.** A solder bridge or a conductive deposit from `KA`
-to a net that toggles by itself would feed both detectors with no firmware
-behind it. The nets that toggle with a dead processor are these:
+**The bridged `KA` net.** A bridge from `KA` to a net that toggles by
+itself feeds both detectors with no firmware behind it. The first version
+of this section named the backlight and the zero-cross signal. Review A2
+found that it had missed the net next to the pin, and had the zero-cross
+case half wrong.
 
-- **`AC_ZC`**, 50 or 60 Hz from comparator U6D whenever 24 VAC is present. It is an open-collector output with a 10 kohm pull-up, so against R33 it raises `KA` to 1.4 V at most. `hardware/sim/ka_bridge.cir` ties the two nets together with the ESP32 pin floating. A's reservoir settles at 0.89 to 1.03 V, short of the 1.55 V that enables it. B's gate settles at 0.83 to 0.95 V, which is enough to turn on a Q2 from the low end of the threshold range. So this bridge can hold B on and cannot enable A: one detector, not both. I first estimated that neither would charge, and the simulation showed otherwise. The bridge also shows itself. While firmware drives the pin, `AC_ZC` follows the keep-alive and not the mains, and firmware sees a wrong mains frequency or no 24 VAC.
-- **`TFT_BL`**, the backlight PWM, 1 to 20 kHz from the LEDC peripheral. It keeps running when the firmware hangs, it is a push-pull 3.3 V output, and it would run both pumps. **This bridge must be made impossible by layout.**
-- **The buck switch node**, 281 kHz at up to 45 V. A bridge to it destroys the pin.
-- The SPI and I2C clocks stop when the firmware stops.
+What matters is the state of the processor pin. While firmware runs, the
+pin is driven, low when idle, and it takes a bridge of a few ohms to
+overpower it. While the processor is in reset or booting, the pin is an
+input and only R33 holds the net. That is the state the fail-safe exists
+for: a crash, a watchdog reset, a boot loop.
+
+Nets that toggle with no control loop:
+
+- **The PSRAM lines, GPIO35 to GPIO37.** They toggle whenever the processor reads the PSRAM, which the boot code does on every start. The keep-alive used to be on GPIO38, module pin 31, next to GPIO37 on pin 30. With that netlist a bridge of 0 ohm kept the valve on in every case, and a bridge of 1 or 4.7 kohm kept it on whenever the pin was high-impedance. The self-test of the time found the 0 ohm bridge and not the others. This is why the keep-alive moved to GPIO17.
+- **`TFT_BL`**, the backlight PWM, 1 to 20 kHz from the LEDC peripheral. The same result as a PSRAM line.
+- **`U0TXD`**, which carries the boot log after every reset.
+- **`AC_ZC`**, 50 or 60 Hz whenever 24 VAC is present. It is an open-collector output with a 10 kohm pull-up. The first version found, with `hardware/sim/ka_bridge.cir`, that this bridge cannot enable A and can hold B on, and concluded "one detector, not both". That file's own numbers say otherwise. It puts A's reservoir at 1.0 V. A does not turn on below 1.55 V, but once on it does not turn off above 0.94 V. A valve that is running when the processor resets has A on already. With R33 at 10 kohm, as it was, the fault injection kept both detectors on at 27 and 70 °C for a Q2 from the lower third of its threshold range.
+- **`SENS_FLOW`**, pulses from the flow meter while water runs. A valve that is stuck open makes its own flow pulses.
+- **`ADC_LO` and `ADC_HI`**, the current waveform, at mains frequency while a valve draws current.
+- **The USB data lines**, driven by the host.
+- **The display clock and data**, if the display task outlives the control loop.
+- **The buck switch node.** A bridge to it destroys the pin.
+
+Three things were done.
+
+1. **The pin moved.** GPIO17, module pin 10. Its neighbours are `ENC_B` and `BTN_BACK`, and the next pins out are `ENC_A` and `I2C0_SDA`. A contact behind 13 kohm cannot run either detector: the fault injection bridges `KA` to a contact that opens and closes at 20 Hz and both detectors stay off.
+2. **R33 went from 10 kohm to 2.2 kohm.** A net behind a 10 kohm pull-up, such as `AC_ZC`, now lifts `KA` to 0.6 V at most. With the `AC_ZC` bridge and 2.2 kohm, `hardware/sim/ka_bridge.cir` puts A's reservoir at 0.40 V at most and the gate of Q2 at 0.36 V, where they reached 1.03 and 0.95 V. A push-pull output still gets through. A bridge from `TFT_BL` of up to about 3.3 kohm holds both detectors while the pin is high-impedance. The pull-down costs 1.5 mA while the pin is high.
+3. **The self-test floats the pin.** Step 2b makes the pin an input for half a second with the display, the backlight and the PSRAM in use, and fails if the pin reads high or either read-back moves. In the fault injection it finds the 1 kohm bridges that every other step misses.
+
+The sweep of `hardware/sim/failsafe/results/bridges.md`, for the netlist as
+it is. Each row is run at four corners that make the detectors easy to hold.
+The fifth column is the sequence before review A2 and the sixth the sequence
+of section 19.7. In every case where a valve stays on, step 2b or the idle
+test reports the bridge.
+
+| Net bridged to `KA` | Bridge | Pin driven low after the stop | Pin high-impedance after the stop | Reported by the sequence as merged | Reported by the sequence with step 2b |
+|---|---|---|---|---|---|
+| push-pull, 3.3 V | 0 ohm | **valve stays on** in 4 of 4 corners | **valve stays on** in 4 of 4 corners | every corner: 1 idle | every corner: 1 idle |
+| push-pull, 3.3 V | 100 ohm | detector B held, valve off | **valve stays on** in 4 of 4 corners | 2 of 4 corners: 1 idle | every corner: 1 idle, 2b float |
+| push-pull, 3.3 V | 470 ohm | both let go | **valve stays on** in 4 of 4 corners | not reported | every corner: 2b float |
+| push-pull, 3.3 V | 1 kohm | both let go | **valve stays on** in 4 of 4 corners | not reported | every corner: 2b float |
+| push-pull, 3.3 V | 2.2 kohm | both let go | **valve stays on** in 4 of 4 corners | not reported | every corner: 2b float |
+| push-pull, 3.3 V | 3.3 kohm | both let go | **valve stays on** in 1 of 4 corners | not reported | 3 of 4 corners: 2b float |
+| push-pull, 3.3 V | 4.7 kohm | both let go | detector B held, valve off | not reported | 3 of 4 corners: 2b float |
+| push-pull, 3.3 V | 10 kohm | both let go | detector B held, valve off | not reported | not reported |
+| zero-cross signal AC_ZC | 0 ohm | both let go | detector B held, valve off | 1 of 4 corners: 2 pin-high | 2 of 4 corners: 2 pin-high, 2b float |
+| zero-cross signal AC_ZC | 100 ohm | both let go | detector B held, valve off | 1 of 4 corners: 2 pin-high | 2 of 4 corners: 2 pin-high, 2b float |
+| zero-cross signal AC_ZC | 470 ohm | both let go | detector B held, valve off | not reported | 2 of 4 corners: 2b float |
+| zero-cross signal AC_ZC | 1 kohm | both let go | detector B held, valve off | not reported | not reported |
+| zero-cross signal AC_ZC | 2.2 kohm | both let go | both let go | not reported | not reported |
+| zero-cross signal AC_ZC | 3.3 kohm | both let go | both let go | not reported | not reported |
+| zero-cross signal AC_ZC | 4.7 kohm | both let go | both let go | not reported | not reported |
+| zero-cross signal AC_ZC | 10 kohm | both let go | both let go | not reported | not reported |
+
+"Detector B held" means that Q2 still conducts 4 s after the stop, by its
+read-back or by its gate voltage. In the zero-cross rows that happens only
+in the two corners at 70 °C, where the threshold of Q2 has fallen to 0.46 V.
+Detector A lets go in every zero-cross row, so no valve stays on.
 
 Layout rules that follow:
 
-1. Route `KA` from module pin 31 to R29 and R89 with ground on both sides, at least 1 mm from any other signal, and nowhere next to `TFT_BL`, `AC_ZC` or the buck. The neighbouring module pins are GPIO37, not connected, and GPIO39, a button input.
+1. Route `KA` from module pin 10 to R33, R29 and R89 with ground on both sides, at least 1 mm from any other signal. Put R33 at the module pin. Keep the net away from every net in the list above, on every layer.
 2. Put no test pad on `RLY_G2`, `KB_N1`, `KA_N1` or `KA_N2`'s diode side that a probe or a flux residue could bridge to a rail. TP8 on `KA_N2` stays, with ground around it.
-3. Surround the gate node of Q2 with ground. A leakage path from any rail to that node is the only way to hold Q2 on without edges.
+3. Surround the gate node of Q2 with ground. The fault injection puts numbers on a leak from a rail to that node. 100 kohm from `3V3` or `V_BUCK` holds Q2 on. 330 kohm from `V_BUCK` doubles its release time and holds a Q2 with the lowest threshold. 330 kohm from `3V3` or 1 Mohm from `V_BUCK` makes it let go about a fifth later, which no test sees. The same for A's reservoir: 100 kohm from `3V3` to `KA_N2` holds A on, and 220 kohm makes it let go after 1.19 s where it takes 0.67 s.
 4. Place the A pump (R29, C22, D7) and the B pump (R89, C51, D22) at least 10 mm apart.
+5. Do not move the keep-alive to another pin without redoing this list for its neighbours, on the module edge and on the chip's own pin row.
 
-**The regulator fault that this analysis does not cover.** If the switch
-inside U1 shorts, `V_BUCK` rises to `VIN_DC`, 30 to 45 V. U3, the ESP32, U5,
-U6, U7 and U8 are all far beyond their ratings, and what a destroyed part
-does cannot be read from a data sheet. Two properties of the relay path do
-not depend on any of them. Q2's gate has only an AC path, so with no edges
-it turns off after its hold-up whatever the rails do. And Q1 and Q2 in
-series withstand 60 V, so the over-voltage cannot push current through the
-coil by itself. A dying processor that keeps toggling GPIO38 at more than
-3 Hz is the case that would defeat it, and I cannot rule that out on paper.
-The usual cure is an over-voltage clamp or crowbar on `V_BUCK`. Revision A
-has none. It is risk 21 in section 20 and a decision for the owner.
+**The regulator.** If the switch inside U1 shorts, `VIN_DC` reaches
+`V_BUCK`. The first version of this section had no answer. Section 4.8 has
+one now. A clamp and a fuse keep every part of the fail-safe circuits inside
+its ratings, so the analysis above holds during the fault, and afterwards
+the coil of K1 has no supply.
 
-**Resistor shorts.** The brief for this analysis asks for every part open
-and short. A thick-film chip resistor does not normally fail short, and the
-simulations did not include those cases. By inspection:
+**The LDO.** The same fault in U3 puts `V5`, 4.95 V, on `3V3`. The row in
+the table above is all that can be said. The expander, U7 and the op-amp
+take 4.95 V. The processor and the display do not.
 
-| Short | Effect |
-|---|---|
-| R29, R89 | The pin's own resistance limits the pump current. No change in function. |
-| R30, R91, R14, R90, R35, R33 | The reservoir, reference or pin is grounded. That detector never enables. Safe. |
-| R31 | No hysteresis divider. The comparator sees the reservoir directly. Still releases. |
-| R32 | The comparator input is tied to its output. With the output high it stays high: **A stuck on.** Covered by B, found by the idle or stop test. |
-| R34 | The reference is at `3V3`. A never enables. Safe. |
-| R36 | `KA_OK` is tied to `3V3`: **A stuck on.** Covered by B, found by the idle test. |
-| R92 | GPIO42 sits directly on `DRV_EN`. Harmless while the pin is an input, which it always is. |
-| R93 | `V_BUCK` is on the drain of Q2. When Q2 turns on it shorts the supply and the board resets. Safe. |
-| R94 | GPIO7 sees up to 5.1 V through R93. No effect on the valves. |
-| R11, R12 | Q1 is driven without its series resistor, or its gate is grounded. Safe. |
+**Resistor shorts.** A thick-film chip resistor does not normally fail
+short, but a solder bridge across its pads is the same thing. The fault
+injection ran every one. The rows that matter are in the table above: R32,
+R35 and R36 each stick A on. R93 shorted puts `V_BUCK` on the drain of Q2,
+which shorts the supply when Q2 turns on. The rest keep a detector from
+enabling or change nothing.
 
-**Faults that no test finds.** Q3 shorted is the only one in these tables
-that is not harmless and not found: `V_DRV` then stays on, and the expander
-reset is the only thing that removes LED current. It is still one of two
-layers, because B opens K1 regardless. Firmware could find it with one more
-read-back, and the pins are used up. I left it.
+**Faults that no test finds.** 120 of the 374 simulated
+faults lose no layer and fail no step of the sequence as the model runs it.
+None of them leaves a valve on. They are of these kinds.
 
-**Summary.** Every fault marked "stuck on" in A is covered by B and the
-relay. Every such fault in B, in Q1 or in K1 is covered by A. Each is found
-by a firmware test at the next run. What is left is a bridge from `KA` to
-the backlight net, which the layout must exclude, and the regulator
-over-voltage, which is open. The analysis is on paper and in simulation.
-Nothing here has been built, and section 21 has the bench tests that repeat
-it on hardware by opening and shorting the parts one at a time.
+- **The other channels.** The model runs zone 1 only. The LED resistors, opto LEDs and indicator LEDs of the master valve and of the indicator of zone 1 show when their own output runs: no valve current, or no light.
+- **The zero-cross input.** R55 to R58, R88, D9, C34, the fourth comparator of U6 and the nets between them. The model does not run step 0. By the wording of step 0, a board with no zero-cross edges does not start a run.
+- **The over-current latch cannot set, or sets on one polarity only.** With `OC_TRIP_N` or `FAULT_N` held high, `FAULT` held low, or pin 1 of U7 open and floating high, the latch cannot set. With one of the two comparator outputs never pulling low, or one threshold resistor shorted, it has lost one polarity, and an AC over-current still sets it on the other half-cycle. This is from reading the logic. The fault injection ran no over-current together with these faults, which would be two faults. Nothing reports any of them. The PTC still carries a shorted output, section 6.6. This is outside the keep-alive fail-safe. Step 7 of section 21 tests the latch once at bring-up, and nothing tests it in service.
+- **Protection lost with no symptom.** R33 open, which is the pull-down that keeps a bridged net from running the detectors. R92, R87 or R94 shorted, each the resistor that keeps a mis-driven read-back pin from moving its node. D5 open, the flyback path of the coil.
+- **Hysteresis and filters.** R31 shorted, R32 or R36 open, and the filter and decoupling capacitors open. Detector A then lets go 0.05 to 0.08 s earlier with typical parts, inside every limit.
+- **U7 with its supply pin open.** The model powers U7 through the clamp diodes of its inputs, from R36 and R53, at about 2.7 V, and both detectors still release. Before review A2 the read-back on `DRV_EN` saw the reduced level. The read-back on `V_DRV` does not. What a real 74HC132 does there is a bench question.
+- **Series resistors shorted.** R29, R89, R11, R52 and R53. The pin and the gates limit the current without them.
+- **Harmless bridges.** `KA` to `ENC_B` or `BTN_BACK` holds no detector. The firmware would see key presses whenever the keep-alive runs. `KA` to `AC_ZC` holds no detector either, now that R33 is 2.2 kohm, and loads the zero-cross signal to 0.6 V, which stops step 0.
+- **Small leaks.** 330 kohm from `3V3` or 1 Mohm from `V_BUCK` onto the gate of Q2 make it let go about a fifth later, inside the band of step 9.
+- **No effect.** R95 open: GPIO7 still reads both levels, with 15 uA into its clamp diode.
 
-### 8.6 Read-back of `DRV_EN`
+**Summary.** No single component fault leaves a valve on after the
+keep-alive stops. Every fault that sticks one of the two layers on is found
+by the self-test, at the latest at the next start, while the other layer
+still covers it. What is left is of two kinds. A bridge from the keep-alive
+net to a push-pull net that toggles by itself still defeats both layers if
+it is under about 3.3 kohm. The layout must exclude it and step 2b looks
+for it. And a processor outside its ratings, which the clamp on `V_BUCK`
+now prevents for a failed buck converter and nothing prevents for a failed
+LDO. The analysis is in simulation with behavioural models. Nothing here
+has been built, and section 21 has the bench tests that repeat it on
+hardware by opening and shorting the parts one at a time.
 
-R92, 10 kohm, takes `DRV_EN` to GPIO42. It is the signal that resets the
-expander, read after the over-current latch, so it shows the state of
-detector A and of the latch together. `OC_FAULT_N` on GPIO40 tells the two
-apart.
+### 8.6 Read-back of the gate drive
 
-Firmware enables the internal pull-down on GPIO42. U7 drives the node
-through 10 kohm against about 45 kohm, which reads as a solid high, and an
-open R92 reads low. GPIO42 is one of the JTAG pins and is free because JTAG
-runs over the USB controller.
+R92, 4.7 kohm, takes `V_DRV` to GPIO42. `V_DRV` is the opto LED supply
+behind Q3. It is high only when detector A is on, the over-current latch is
+clear and Q3 conducts, so it shows the end of the chain and not a signal in
+the middle of it. `OC_FAULT_N` on GPIO40 tells a latch trip from a detector
+that has let go.
 
-The first draft could tell whether drive was enabled only by asking whether
-the expander answered on I2C. That check stays, because it also finds an
-expander that ignores its reset pin, but it cannot time anything. With the
-read-back firmware measures how long A takes to release after every run,
-which is how an open R30 or R91 is found.
+**Changed by review A2.** Until then R92 was 10 kohm and came from
+`DRV_EN`, the line that resets the expander. Two things were wrong with
+that.
+
+- **A shorted Q3 was found by nothing.** `DRV_EN` falls whether or not Q3 turns off. `V_DRV` does not: with Q3 shorted, or its gate held low, the read-back stays high with no keep-alive, and the idle test fails. What the old connection showed and the new one does not is `DRV_EN` itself. That is covered by the other half of the same tests: the expander answers on I2C exactly when `DRV_EN` is high, and the idle, start and stop tests all address it.
+- **The high level had no margin that the data sheet backs.** Firmware enables the internal pull-down on GPIO42, so that an open R92 reads low. The ESP32-S3 data sheet gives that pull-down as 45 kohm typical with no limits, and the input high level as 0.75 x VDD. Through 10 kohm the pin sat at 3.3 V x 45 / 55 = 2.70 V against 2.48 V needed: a pull-down of 30 kohm, a third under typical, would have failed the start test on a healthy board. Through 4.7 kohm it is 2.99 V, and the pull-down may be as low as 14 kohm.
+
+R26, 10 kohm, pulls `V_DRV` to ground when Q3 is off, so the low level is
+defined on the board. The leakage of Q3, 5 uA at 55 °C from its data sheet,
+raises it by 40 mV.
+
+A GPIO42 driven high by mistake now feeds `V_DRV` through 4.7 kohm: 0.7 mA
+at most. It cannot light an opto LED by itself, because with detector A off
+the expander is in reset and no pin sinks current. GPIO42 is one of the
+JTAG pins and is free because JTAG runs over the USB controller.
+
+With the read-back firmware measures how long A takes to release after
+every run, which is how an open R30 or R91 is found. `V_DRV` falls with a
+time constant of 1 ms behind `DRV_EN`, which does not matter against limits
+of 0.2 to 1.0 s.
 
 ### 8.7 Boot behaviour of the pins
 
@@ -1540,10 +1844,11 @@ here:
 
 | Pin | Use | At reset | Power-up glitch | Consequence |
 |---|---|---|---|---|
-| GPIO38 | `KA` | High impedance | None | R33 holds it low |
+| GPIO17 | `KA` | High impedance | Driven low for 60 us | R33 holds it low. The glitch is the idle level. |
 | GPIO8, GPIO9 | I2C0 | High impedance | Driven low for 60 us | Not a valid I2C write. The expander is in reset anyway. |
 | GPIO7 | Relay detector read-back | High impedance | Driven low for 60 us | 100 kohm in series. It cannot move the node it reads. |
-| GPIO42 | `DRV_EN` read-back | High impedance | None | 10 kohm in series against a push-pull output. No effect. |
+| GPIO42 | Gate-drive read-back | High impedance | None | 4.7 kohm in series to `V_DRV`. Section 8.6. |
+| GPIO38 | Encoder switch | High impedance | None | Input only |
 | GPIO45 | Sensor supply enable | Weak pull-down | None | R86 holds it low. Supply stays off, and the strap reads 0. |
 | GPIO21 | Backlight | High impedance | None | R62 holds the MOSFET off |
 | GPIO18 | Back button | High impedance | Low, then high, 60 us each | Input only. Harmless. |
@@ -1879,6 +2184,21 @@ voltage, and moved the sensor supply enable from GPIO7 to GPIO45. That is my
 choice, not the review's. It costs nothing in function: section 12.3 says why
 the strap is safe.
 
+**What moved after review A2.** Two pins changed places: the keep-alive
+went from GPIO38 to GPIO17 and the encoder switch from GPIO17 to GPIO38.
+GPIO38 is module pin 31. Pin 30 beside it is GPIO37, which this document
+called "not connected". On the N16R8 it is not free: it is the data strobe
+of the octal PSRAM (ESP32-S3 datasheet v2.2, table 2-14), wired inside the
+module, and it toggles whenever the processor reads the PSRAM, with or
+without a control loop. Review A2 showed in simulation that a bridge of up
+to about 5 kohm between the two pins keeps both detectors on while the
+keep-alive pin is high-impedance, which is what it is during every boot,
+and that no step of the self-test found it. GPIO17 is module pin 10. Its
+neighbours are `ENC_B` on pin 9 and `BTN_BACK` on pin 11, contacts behind
+13 kohm, and the pins beyond those are `ENC_A` and the I2C data line. The
+same holds for the chip's own pins inside the module. The read-back on
+GPIO42 now reads `V_DRV` and not `DRV_EN`, section 8.6.
+
 **Review finding m11** asked for `SENS_FLT_N` and `VARIANT_N` to move from
 the expander to GPIOs if any were free. None is. They stay on expander bits
 P15 and P14, which can be read only while the keep-alive runs, and section
@@ -1893,8 +2213,22 @@ can then hang only its own bus. The valve expander and the RTC are on I2C0.
 |---|---|---|---|---|
 | GPIO0 | Boot mode | High for normal boot | SW2 to `GND`, R19 10k to `3V3`, J8 | Standard boot button. Not on the front panel. |
 | GPIO3 | JTAG source | Ignored unless eFuses are burned | `VIN_MON` divider, 10k to `GND` | Reads low, the same as the default floating case would be treated. Analogue input only. |
-| GPIO45 | Flash voltage | Low for 3.3 V | `SENS_PWR_EN`: R86, 100 kohm to `GND`, the enable input of U11 and test pad TP25 | Nothing on the net can source current: one pull-down and one CMOS input. With the internal pull-down the strap reads 0. Firmware drives the pin only after boot. Never add a pull-up or a second driver to this net. |
+| GPIO45 | Flash voltage | Low for 3.3 V, on a chip whose eFuses leave the choice to the pin | `SENS_PWR_EN`: R86, 100 kohm to `GND`, the enable input of U11 and test pad TP25 | Two reasons, either of which is enough. Nothing on the net can source current: one pull-down and one CMOS input, so with the internal pull-down the strap reads 0. And on this module the strap is not used: see below. Firmware drives the pin only after boot. Never add a pull-up or a second driver to this net. |
 | GPIO46 | Boot mode, ROM messages | Low | R20 and LED D6 to `GND` | The LED path can only pull down. |
+
+**GPIO45, checked in review A2.** The strap selects the voltage of
+`VDD_SPI`, the supply of the flash and the PSRAM: 3.3 V with the pin low,
+1.8 V with it high (ESP32-S3 datasheet v2.2, table 3-4). The flash and the
+octal PSRAM of the N16R8 are 3.3 V parts (table 1-1: ESP32-S3R8, `VDD_SPI`
+3.3 V). At 1.8 V they would not be damaged; the module would not boot, and
+a module that does not boot makes no keep-alive edges.
+
+- **The pull state.** Table 2-1 gives GPIO45 a weak pull-down with the input enabled, at reset and after it. R86 adds 100 kohm. The latch samples the pin when reset is released and wants it held for 3 ms after that (table 3-2); U12 releases reset 130 ms or more after `3V3` is good, and the net has a time constant under a microsecond.
+- **A reset while the sensor supply is on.** Firmware then drives the pin high. Any reset that samples the straps also returns the pin to an input with its pull-down, so the pin is low long before the strap is read.
+- **The module's eFuses.** The module data sheet v1.8 says, in the note on its schematic in section 8: "For modules with PSRAM, the VDD_SPI voltage is fixed to 3.3 V or 1.8 V via eFuse, so their VDD_SPI voltage will not be affected by the GPIO45 level." So on the N16R8 the pin's level at reset does not matter at all. Confirm it on the first modules with `espefuse.py summary`: `VDD_SPI_FORCE` must read 1. It is step 2 of the bring-up plan.
+- **What could still pull it high.** U11 failing with its input joined to its enable pin. Then the pin sees `V_BUCK`, the strap would read 1 on a chip without the eFuse, and the processor pin is over-driven whatever the eFuse says. Section 4.8 has the resistor that would bound that; it is not fitted.
+
+So the assignment stays.
 
 ### 12.4 Supply, reset and boot
 
@@ -2322,7 +2656,8 @@ encoder's height from its drawing.
 
 <!-- designsync:end -->
 
-Each of the five contacts has a 3.3 kohm pull-up, which gives the 1 mA the
+The encoder switch is on GPIO38 since review A2, in exchange for the
+keep-alive. Each of the five contacts has a 3.3 kohm pull-up, which gives the 1 mA the
 encoder asks for, then 10 kohm and 100 nF to the GPIO. A closing contact
 discharges the capacitor with a 1.0 ms time constant and an opening one
 charges it with 1.3 ms. At three turns per second the encoder gives 45 pulses
@@ -2501,12 +2836,12 @@ part type, shipping, duty, the coin cell and the enclosure.
 
 <!-- designsync:begin cost -->
 
-`hardware/bom-preliminary.csv` has 96 lines: 46 basic parts, 49 extended parts and 1 that JLCPCB does not fit.
+`hardware/bom-preliminary.csv` has 98 lines: 46 basic parts, 51 extended parts and 1 that JLCPCB does not fit.
 
 | Build | 10 boards | 100 boards |
 |---|---|---|
-| 8-zone | 40.35 USD | 31.50 USD |
-| 4-zone | 34.06 USD | 26.70 USD |
+| 8-zone | 40.77 USD | 31.84 USD |
+| 4-zone | 34.48 USD | 27.04 USD |
 
 Not in the totals, because the line has no price: CR2032 lithium coin cell, 3 V.
 
@@ -2572,7 +2907,7 @@ give the exact procedures.
 
 ### 19.1 Rules
 
-1. **Keep-alive.** Follow the contract in section 19.4. In short: GPIO38 is a plain GPIO output, every edge is decided by code that has checked the control-loop heartbeat, one edge every 5 ms while outputs are wanted, low otherwise.
+1. **Keep-alive.** Follow the contract in section 19.4. In short: GPIO17 is a plain GPIO output, every edge is decided by code that has checked the control-loop heartbeat, one edge every 5 ms while outputs are wanted, low otherwise.
 2. **Self-test.** Run the sequence of section 19.7 at start-up, before every run and after every run. On a failure, write every expander pin back to input if the expander answers, hold the keep-alive low, raise a fault and refuse to run valves until a person has acknowledged it.
 3. **Expander.** Follow the register sequence of section 19.7. A valve bit is on when it is an output and low. Never more than three valve bits low. Read back after every write and once per control tick. A mismatch, a missing acknowledge or a stuck bus means stop the keep-alive.
 4. **Relay sequencing.** `RLY_ON` high 20 ms before the first valve, low 40 ms after the last.
@@ -2585,7 +2920,10 @@ give the exact procedures.
 11. **RTC clock output.** Once at start-up, write 0x00 to PCF8563 register 0x0D. The chip powers up with its 32 kHz output enabled, which doubles its back-up current. Section 14.
 12. **Read-back pins.** GPIO7 and GPIO42 are inputs for the life of the firmware. Enable the internal pull-down on GPIO42. Enable no pull on GPIO7. Never configure either as an output.
 13. **Sensor supply enable.** GPIO45 is a strapping pin. Leave it alone until the application runs, then drive it high to turn the sensor supply on. Never enable its pull-up.
-14. **Weld check.** Before every run, section 19.7 step 5.
+14. **Weld check.** Before every run, section 19.7 steps 5 and 5b.
+15. **Regulator fault.** With mains present on `AC_ZC`, `VIN_MON` in its normal range and the relay read-back on GPIO7 low while the keep-alive is stopped, `V_BUCK` is missing: U1 has failed and F5 has opened, or D25 has failed short. This can only be seen on USB power. Report it as a hardware fault and refuse runs. Section 4.8.
+16. **UART1.** GPIO17 is the default TXD pin of UART1 in ESP-IDF. Never open UART1 on its default pins: a UART idles high and sends bursts of edges, both on the keep-alive net.
+17. **Float test.** Section 19.7 step 2b. It needs the display, the backlight PWM and the PSRAM in use while it runs, because it looks for a net that drives the keep-alive net when the processor does not.
 
 ### 19.2 Measuring current
 
@@ -2613,13 +2951,13 @@ questions.
 | No. | Question | Answer |
 |---|---|---|
 | 1 | Pin map | `hardware/pinmap.yaml`. Valve outputs are expander bits, not GPIOs. |
-| 2 | Keep-alive edge rate and hold time | Section 19.4. One edge at least every 20 ms; the firmware's 5 ms is right. Gate drive is gone 0.45 to 0.9 s after the last edge and the relay has opened within 0.95 s. Flash sector erase up to about 400 ms. |
+| 2 | Keep-alive edge rate and hold time | Section 19.4. One edge at least every 20 ms and no phase under 2.5 ms; the firmware's 5 ms is right. Gate drive is gone 0.21 to 0.83 s after the last edge and the relay transistor has let go within 1.45 s. Flash sector erase up to about 400 ms. |
 | 3 | Pull-downs on outputs and OE | There are no output GPIOs. `KA` has a 10 kohm pull-down. The expander resets to inputs, and resistors hold every one of its pins at its off level. |
 | 4 | Current-sense front end | 0.1 ohm shunt, two AC-coupled-by-arithmetic channels biased at 0.79 V. Section 19.2. Trip flag on GPIO40. |
 | 5 | 24 VAC present | GPIO41, a mains-frequency square wave, not a level. Section 19.9. |
 | 6 | Field input polarity | Contact closed reads low. External pull-ups fitted. Flow passes 200 Hz. |
 | 7 | RTC | PCF8563 at 0x51, as assumed. CR2032, about ten years. Rule 11. |
-| 8 | Display | HS20HS072RX, 240 x 320. The enclosure concept mounts it landscape with the tail towards the encoder. Chip select is on GPIO10 and reset on GPIO14 with a 10 kohm pull-up. Neither is tied off on the board, so firmware drives both. Data/command GPIO13, clock GPIO12, data GPIO11. Backlight GPIO21, high is on, 1 to 20 kHz. Back is GPIO18 and Manual/Home GPIO39, both low when pressed. The encoder has 30 detents and 15 pulses per turn: two quadrature edges per detent. |
+| 8 | Display | HS20HS072RX, 240 x 320. The enclosure concept mounts it landscape with the tail towards the encoder. Chip select is on GPIO10 and reset on GPIO14 with a 10 kohm pull-up. Neither is tied off on the board, so firmware drives both. Data/command GPIO13, clock GPIO12, data GPIO11. Backlight GPIO21, high is on, 1 to 20 kHz. Back is GPIO18 and Manual/Home GPIO39, both low when pressed. The encoder switch is GPIO38. The encoder has 30 detents and 15 pulses per turn: two quadrature edges per detent. |
 | 9 | GPIO15 and 16 | No 32 kHz crystal on the module pins. They carry the encoder. I2C0 is on GPIO8 and 9. |
 | 10 | Current windows | 80 to 700 mA per output is consistent with the hardware. A 3000 mA rms short limit is close to the hardware trip of 4.6 A peak, which is 3.3 A rms for a sine. The hardware will usually act first. |
 | 11 | Output LEDs | They follow the real drive in hardware. Firmware drives only the status LED on GPIO46. |
@@ -2645,18 +2983,18 @@ keep-alive code.
 
 | Item | Agreed |
 |---|---|
-| Pin | GPIO38 as a plain GPIO output, idle low. No peripheral signal may be routed to it through the GPIO matrix. |
+| Pin | GPIO17 as a plain GPIO output, idle low. No peripheral signal may be routed to it through the GPIO matrix. It was GPIO38 until review A2, section 12.2. |
 | Who makes an edge | Code that has just checked the control-loop heartbeat. Today: the 5 ms GPTimer alarm interrupt calling `OutputEnableGuard::step()`. Forbidden: LEDC, RMT, MCPWM, a timer with a pin output, any other self-running source. |
-| Edge interval | 5 ms. The hardware needs an edge at least every 20 ms. Both detectors are designed and simulated at that limit. |
+| Edge interval, changed by review A2 | 5 ms high and 5 ms low. The hardware needs an edge at least every 20 ms and no phase shorter than 2.5 ms. A waveform that is high for 1 ms and low for 20 ms, or the reverse, does not hold the relay at the cold corner. With phases of 2.5 ms and 20 ms the gate of Q2 keeps 0.19 V of margin, and the 5 ms toggle 0.55 V, with `3V3` at 3.2 V. |
 | When it runs | Only while an output is wanted and no fault is latched, and for the short test and polling cycles of sections 19.6 and 19.7. It is low between runs. |
-| Enable delay, changed | `DRV_EN` is high 14 to 41 ms after the first edge at 100 Hz, and the relay transistor Q2 is on after 22 to 82 ms. Firmware waits until both read-backs agree and the expander acknowledges, 150 ms at most, before it writes the expander. |
+| Enable delay, changed | With 5 ms edges `V_DRV` is on 13 to 22 ms after the first edge and the relay transistor Q2 after 1 to 53 ms, over the corners of review A2. Firmware waits until both read-backs agree and the expander acknowledges, 150 ms at most, before it writes the expander. |
 | After every start | The expander has been in reset. Section 19.7 gives the register sequence. |
-| Stopping, changed | Firmware drives the pin low. Gate drive is gone 0.45 to 0.9 s after the last edge, 1.2 s if a fault leaves the pin high. The relay transistor has let go between 0.12 and 0.95 s after the last edge, 1.4 s if the pin is high. |
-| From a dead control loop to no drive, changed | Heartbeat timeout 500 ms, plus one 5 ms period, plus the hold-up: 1.4 s at most to no gate drive, and 1.5 s to an open relay. With the pin left high, 1.7 s and 1.9 s. The specification's "about one second" counts from the last edge and is met. |
+| Stopping, changed | Firmware drives the pin low. Gate drive is gone 0.21 to 0.83 s after the last edge, 1.25 s if a fault leaves the pin high. The relay transistor has let go between 0.10 and 1.45 s after the last edge, 2.19 s if the pin is high. Valve current needs both, so it ends within 0.84 s, 1.25 s if the pin is high. |
+| From a dead control loop to no drive, changed | Heartbeat timeout 500 ms, plus one 5 ms period, plus the hold-up: 1.34 s at most to no gate drive and no valve current, 1.76 s with the pin left high. The relay transistor alone, which matters only if the gate-drive layer has failed, takes up to 1.96 s, and 2.70 s with the pin left high. The specification's "about one second" counts from the last edge. The gate drive meets it. The relay detector alone meets it for most parts and reaches 1.45 s, or 2.19 s with the pin high, at one corner: a Q2 with the lowest threshold at 70 °C. Review A2, finding m10. |
 | Flash | A 4 kB sector erase, up to about 400 ms, plus one 50 ms control period stays inside the 500 ms heartbeat timeout by 50 ms. Do not lower the timeout. Do not run 64 kB block erases while a valve is on. |
 | Clearing the over-current latch | Hold the keep-alive low for 1.5 s. This also resets the expander. Section 19.8. |
 | Self-test, changed | Section 19.7: before every run, at start-up and after every run. It now reads GPIO42 and GPIO7 and times both detectors. |
-| What the circuit does not check | The rate. Any toggling from about 3 Hz to at least 1 MHz enables drive. Correct timing is the firmware's job. |
+| What the circuit does not check | The rate. Toggling from about 1 Hz to at least 1 MHz can enable drive. Correct timing is the firmware's job. |
 
 ### 19.5 Open points between hardware and firmware
 
@@ -2665,7 +3003,8 @@ keep-alive code.
 3. **PSRAM ECC.** *Resolved:* `CONFIG_SPIRAM_ECC_ENABLE=y` in `sdkconfig.defaults`.
 4. **Heartbeat timeout against erase time.** The 50 ms of margin in section 19.4 rests on one flash data sheet, and Espressif does not fix the flash part. Measure the longest control-loop stall on real modules.
 5. **Sensor supply enable moved.** It is on GPIO45, not GPIO7. Rule 13. *Resolved in the firmware.*
-6. **Limits in section 19.7 are from simulation.** The pass windows for the two release times, 0.3 to 1.0 s and 0.08 to 1.0 s, come from tolerance corners of generic models. Measure both on the first boards, at -20 and 50 °C, before the limits go into a release.
+6. **Limits in section 19.7 are from simulation.** The pass windows for the two release times come from tolerance corners of behavioural models. Review A2 widened them, to 0.15 to 1.0 s and 0.05 to 1.6 s, and added a band around a value stored per board. Measure both times on the first boards, from -20 to 70 °C, before the limits go into a release.
+7. **Review A2 changed the procedure.** New in section 19.7: step 2b, the float test, step 5b, the gate bleed check, and the limits of step 9 with a stored value per board. New in section 19.1: rules 15 to 17. The contract of section 19.4 asks for phases of at least 2.5 ms. The keep-alive moved to GPIO17 and the encoder switch to GPIO38; firmware that takes its pins from the generated board header follows without a change. GPIO42 still means "gate drive enabled", read at `V_DRV` now.
 
 ### 19.6 Expander inputs between runs
 
@@ -2685,7 +3024,8 @@ have let go before the idle test of the run.
 
 ### 19.7 Self-test and run sequence
 
-Names: `KA` is GPIO38. `A_RB` is GPIO42, high when gate drive is enabled.
+Names: `KA` is GPIO17. `A_RB` is GPIO42, high when gate drive is enabled:
+it reads `V_DRV`, the opto LED supply behind Q3 (section 8.6).
 `B_RB` is GPIO7, high when the relay transistor Q2 is off. `OC` is GPIO40,
 low when the over-current latch is set. The expander is at 0x74 on I2C0 at
 400 kHz.
@@ -2705,44 +3045,82 @@ Port 0: bits 0 to 3 are Z1 to Z4, bit 4 is MV, bit 5 is `RLY_ON`, bits 6 and
 and low. `RLY_ON` is on when high.
 
 **The sequence.** Every limit is in the step. A step that fails ends the
-sequence in the fault state at the end of this section.
+sequence in the fault state at the end of this section. Steps 2b and 5b and
+the limits of step 9 are from review A2, which simulated every step against
+every single fault: `hardware/sim/failsafe/`.
 
 | Step | When | Do | Pass |
 |---|---|---|---|
-| 0 | Always | Check the preconditions: `AC_ZC` has had an edge in the last 25 ms, `KA` has been low for at least 2.0 s, `OC` is high. | If there is no 24 VAC, do not run and do not test: `B_RB` reads low without it. |
-| 1 | Idle test, always | Read `A_RB` and `B_RB`. Address the expander. | `A_RB` low. `B_RB` high. No acknowledge. |
+| 0 | Always | Check the preconditions: `AC_ZC` has had an edge in the last 25 ms, `KA` has been low for at least 2.5 s, `OC` is high. | If there is no 24 VAC, do not run and do not test: `B_RB` reads low without it. On USB power, `B_RB` low with mains present on `AC_ZC` is rule 15. |
+| 1 | Idle test, always | Read `A_RB` and `B_RB`. Address the expander. | `A_RB` low. `B_RB` high. No acknowledge. A high `A_RB` with no acknowledge is Q3 conducting when it should not. An acknowledge with `A_RB` low is `DRV_EN` stuck high. |
 | 2 | Pin-high test: at start-up and at least once every 24 h. Before every run is better and costs 1.1 s. | Drive `KA` high and hold it. After 1.0 s read `A_RB` and `B_RB`. Drive `KA` low and wait 100 ms. | `A_RB` low. `B_RB` high. A high `A_RB` is a shorted C22. A low `B_RB` is a shorted C51 or an open bleed resistor. |
+| 2b | Float test: with step 2 | Make `KA` an input with no pull for 0.5 s. Keep the display, the backlight PWM and the PSRAM in use meanwhile. Read `KA` as an input every 1 ms. At the end read `A_RB` and `B_RB`. Make `KA` an output again, low, and wait 100 ms. | `KA` reads low every time. `A_RB` low. `B_RB` high. Anything else means another net drives the keep-alive net: a bridge to the backlight, the zero-cross signal, a memory line or the boot log. Section 8.5. |
 | 3 | Start, always | Toggle `KA` every 5 ms. Poll `A_RB`, `B_RB` and the expander every 5 ms. | Within 150 ms: `A_RB` high, `B_RB` low, acknowledge. |
 | 4a | Expander, always | Read input ports 0 and 1. | Port 0 reads 0x1F: valve pins high, `RLY_ON` and spares low. Port 1 reads 0x2F on an 8-zone board and 0x3F on a 4-zone board. Bit 5 low instead means a sensor supply fault, which is reported and is not a reason to stop. |
 | 4b | | Write output port 0 = 0xDF and output port 1 = 0xFF. Read both back. | Equal to what was written. |
 | 4c | | Write configuration 0 = 0xC0. Write configuration 1 = 0xF0 on the 8-zone build, 0xFF on the 4-zone build. Read both back, and read polarity 0 and 1. | Configuration as written. Polarity 0x00. |
 | 5 | Weld check, before every run | With `RLY_ON` still low, turn on the first output of the run by clearing its bit. Measure one 100 ms window. Set the bit again. | Current under the idle threshold. More means a welded K1 contact, a bridged JP1 or a shorted Q1. |
+| 5b | Gate bleed check, before every run | Set `RLY_ON` for 20 ms. Then make its pin an input without clearing it first: write configuration 0 = 0xE0. Wait 10 ms. Turn on the same output as in step 5 for one 100 ms window. Set the bit again, clear `RLY_ON` in the output port and write configuration 0 = 0xC0. | Current under the idle threshold. More means R12 is open: the gate of Q1 keeps its charge when the expander lets go, and Q1 would stay on through a reset. |
 | 6 | Relay | Set `RLY_ON`. Read input port 0. Wait 20 ms. Measure one 100 ms window with every valve bit high. | Bit 5 of the input port is high. Current under the idle threshold. More means a shorted triac, TVS, opto-triac or snubber capacitor: clear `RLY_ON` and go to the fault state. |
 | 7 | Run | Clear valve bits as the schedule asks, at least 100 ms apart, at most three low. After every write read the output port and the input port back. Every control tick, 50 ms, read input, output and configuration ports of both ports, `A_RB`, `B_RB` and `OC`. | Output and configuration ports equal the shadow copy. Valve bits of the input ports equal the output ports. `A_RB` high, `B_RB` low, `OC` high. |
 | 8 | End of run | Set every valve bit. Wait 40 ms. Clear `RLY_ON`. Write configuration 0 and 1 = 0xFF. | Acknowledged. |
-| 9 | Stop test, always | Drive `KA` low and start a timer. Sample `A_RB` and `B_RB` every 5 ms for up to 3 s. tA is the time until `A_RB` is low, tB the time until `B_RB` is high. Then address the expander. | 0.3 s <= tA <= 1.0 s. 0.08 s <= tB <= 1.0 s. No acknowledge. |
+| 9 | Stop test, always | Drive `KA` low and start a timer. Sample `A_RB` and `B_RB` every 5 ms for up to 3 s. tA is the time until `A_RB` is low, tB the time until `B_RB` is high. Then address the expander. | 0.15 s <= tA <= 1.0 s and 0.05 s <= tB <= 1.6 s. Each within 0.5 to 1.5 times the value stored for this board. No acknowledge. |
 
 Note to step 4a. These values are the resistors of section 8.2 showing
 through: every pin is an input at this point. On port 1, bits 0 to 3 must be
 high and bits 6 and 7 low on both builds; anything else is a hardware fault.
 Bit 4 tells the build and bit 5 the state of the sensor supply.
 
-**What a healthy board gives in step 9**, from the simulations: tA 0.45 to
-0.9 s and tB 0.12 to 0.95 s. The pass limits are wider at the short end,
-where nothing is at risk, and tight at 1.0 s. An open bleed resistor shows
-as tA near 1.7 s or tB near 1.45 s. A detector that is stuck on never
-releases, and the 3 s timeout ends the wait.
+Note to step 5b. In a healthy board the 20 ms of `RLY_ON` may close K1 for a
+moment with no output on, which switches no current. R12 then discharges
+the gate of Q1 in 0.1 ms. The step exists because the weld check alone does
+not find an open R12: at the end of a normal run firmware drives `RLY_ON`
+low before it releases the pin, and that discharges the gate whether R12 is
+there or not.
+
+**The limits of step 9.** The release times of a healthy board depend on
+its capacitors, on the threshold of Q2 and on temperature, and the corner
+runs of section 8.4 put them between 0.21 and 0.83 s for tA and between
+0.10 and 1.45 s for tB with the firmware's 5 ms edges. The limits of the
+first version, 0.3 to 1.0 s and 0.08 to 1.0 s, would have failed healthy
+boards at the ends of those ranges. The absolute limits above are wider
+than the corners. They no longer find an open bleed resistor by themselves,
+because a board with small capacitors and one bleed resistor open looks
+like a board with large capacitors and both. The second condition does
+that:
+
+1. At commissioning, with the board at room temperature, run steps 3 and 9 five times and store the medians of tA and tB in non-volatile memory.
+2. In every later step 9, tA and tB must lie between 0.5 and 1.5 times the stored values. An open R30 or R91 doubles tA; an open R14 or R90 doubles tB.
+3. A board that has no stored values applies the absolute limits only and reports that it is not commissioned.
+
+The band has little room and has to be set on real boards. Over -20 to
+70 °C the corner runs move tA of one board between 0.56 and 1.03 times its
+value at 27 °C and tB between 0.55 and 1.38 times. The low ends belong to
+diodes with three times the typical leakage at 70 °C. On such a board a
+doubled time reads as 1.1 times while it is hot, and the same test finds it
+when the board has cooled. A detector that is stuck on never releases, and
+the 3 s timeout ends the wait.
 
 **Start-up self-test.** Steps 0 to 4c, then 8 and 9, with no valve and no
 relay. Read the build variant in step 4a. Without 24 VAC, on USB alone, skip
 it and refuse runs.
 
+**Toggling before a stop test.** The release times depend on how long the
+keep-alive ran before the stop, because the reservoirs take time to fill.
+After 0.3 s of toggling both times are within about 5 % of their final
+values at every corner. After 0.1 s tB is 10 % short with typical parts and
+60 % short at the corner that charges slowest, which would fail the band:
+`hardware/sim/failsafe/results/warmup.md`. So the start-up test and the
+polling cycle of section 19.6 must toggle for at least 0.3 s before step 9.
+The firmware toggles for 1 s.
+
 **The fault state.** Drive `KA` low. If the expander still acknowledges,
-which means detector A is stuck on, write configuration 0 and 1 = 0xFF so
+which means detector A or `DRV_EN` is stuck on, write configuration 0 and
+1 = 0xFF so
 that no valve bit and no relay bit is driven, and repeat that write every
 control tick. Show the fault and its step number on the display and report
 it. Do not start a run until a person has acknowledged the fault. A fault
-from step 1, 2 or 9 means one of the two detectors can no longer be relied
+from step 1, 2, 2b, 5b or 9 means one of the layers can no longer be relied
 on: the board needs repair, and acknowledging it must not be a one-press
 action.
 
@@ -2754,7 +3132,7 @@ tells whether K1 survived breaking the fault current.
 - **Read.** `OC`, GPIO40, is low while the latch is set. Read it every control tick, or take an interrupt on the falling edge. When it is low the hardware has already removed gate drive and released K1: `A_RB` is low and the expander does not answer.
 - **Do not confuse it with a stopped keep-alive.** `A_RB` low with `OC` high while the keep-alive runs is a fault in detector A, not a trip.
 - **On a trip.** Drive `KA` low. Mark the output that was switched on last as faulted, if it was switched on within the last 500 ms; otherwise mark every output that was on as suspect. Record the last current window.
-- **Clear.** Keep `KA` low for 1.5 s. The latch clears when detector A lets go, 0.45 to 0.9 s after the last edge. Then read `OC`: it must be high. If it is still low after 3 s, the latch or detector A is faulty: go to the fault state of section 19.7.
+- **Clear.** Keep `KA` low for 1.5 s. The latch clears when detector A lets go, 0.21 to 0.83 s after the last edge. Then read `OC`: it must be high. If it is still low after 3 s, the latch or detector A is faulty: go to the fault state of section 19.7.
 - **Restart.** Run the sequence of section 19.7 from step 0 without the faulted output. Allow at most three trips per output per day before the output is disabled until a person clears it.
 - **There is no release pin and no release pulse.** Nothing the firmware writes clears the latch except stopping the keep-alive.
 
@@ -2807,32 +3185,36 @@ get its numbers.
 | 18 | Sensor miswire heating | 0.11 W in a 1206 | 32 VAC on each sensor terminal for an hour. Part temperatures. |
 | 19 | Bulk capacitor ripple and life | The ZLJ sheet gives no ripple rating below 120 Hz; 0.8 of the 120 Hz figure is borrowed from the PX sheet. Life by the 10 K rule, section 4.5. The leads are bent through 90 degrees and the can lies on the board. | Capacitor case temperature at peak load and low line. Inspect the lead seal after forming, and after a vibration or drop test of the assembled unit. |
 | 20 | Output LED brightness | 1.6 mA is visible through a light pipe | Look at it in the enclosure. |
-| 21 | Regulator over-voltage | None. If the switch of U1 shorts, `V_BUCK` reaches `VIN_DC` and the logic is destroyed. Section 8.5 argues that K1 still opens and cannot prove it. | Decide whether revision A gets an over-voltage clamp or crowbar on `V_BUCK`. On a sacrificial board, short SW to VIN with a valve running and record what the valve does. |
+| 21 | Regulator over-voltage | D25 clamps `V_BUCK` under 10 V and F5 opens, section 4.8. In the worst case the current reaches the 50 A that F5 is rated to interrupt at 125 V, and it has to break it at 44 V. The fuse model has no arc and no heat loss; the resistance of a failed switch is a guess; D25 is assumed to fail short and not open. | On sacrificial boards, short SW to VIN of U1 with a valve running, at `VIN_DC` of 17, 30 and 44 V, on 20 and 75 VA transformers. Scope `V_BUCK`: under 10.3 V throughout. F5 open, no arcing, no charring. `3V3` in regulation until `V_BUCK` has gone. The valve off. Then check which parts survived: U11 above all. |
 | 22 | Gate drive of Q2 | 2.09 V at the worst corner against a 1.59 V threshold. No on-resistance is guaranteed below 2.5 V. | Drain voltage of Q2 with K1 energised at -20 °C, with the keep-alive slowed to one edge per 20 ms. Under 50 mV. |
 | 23 | Single-fault behaviour of the two detectors | Section 8.5, on paper and in simulation | Fit each fault marked "stuck on" in section 8.5 by hand, one at a time: lift R31 with drive enabled, lift R34, bridge C22, bridge C51, tie the gate of Q2 to its drain, bridge K1. For each, halt the CPU with a valve running and with the pin low and high. The valve must close within the time the table gives, and the self-test must report the fault at the next start. |
 | 24 | Supervisor resets on supply dips | Dips of tens of millivolts on `3V3` | Scope `3V3` and `EN` during WiFi transmit bursts at 21.6 VAC and on USB at 4.4 V. No reset. |
 | 25 | Negative miswire on the sensor supply terminal | D24 holds the output pin of U11 at about -0.25 V; the limit is -0.3 V | -32 VAC peak on the 5V terminal with the supply off, at -20 and 25 °C. Scope `SP_OUT`. |
 | 26 | R1 on repeated power-up | 237 to 385 W for about 1 ms, inside the Yageo single-pulse curve by 1.9 to 3 | 1000 power-ups at the peak of 32 VAC from a 75 VA transformer with C1 discharged. Resistance change under 1 %. |
-| 27 | A bridge from `KA` to another net | Layout rules of section 8.5 | Inspect the bare board and the assembled board under magnification around module pin 31, R29 and R89. Measure resistance from `KA` to `TFT_BL` and `AC_ZC`. |
+| 27 | A bridge from `KA` to another net | Layout rules of section 8.5. The float test of section 19.7 finds a bridge that can turn Q2 on, if the other net toggles during the test. | Inspect the bare board and the assembled board under magnification around module pin 10, R29, R33 and R89. Measure resistance from `KA` to `TFT_BL`, `AC_ZC`, `ENC_B` and `BTN_BACK`. Then fit bridges by hand, 1 kohm and 0 ohm from `KA` to `TFT_BL` and to `AC_ZC`, and check that step 2b reports each. |
+| 28 | The release window of detector B | AO3400A threshold drift of -1.5 to -4.5 mV/K, which the data sheet does not give. With the worst of it Q2 lets go as late as 1.45 s after the last edge, 2.2 s if the pin stops high. Section 7.3. | Part of risk 10: measure the gate threshold of Q2 at 250 uA at -20, 25 and 70 °C on ten boards. |
+| 29 | Hold margin of detector B with a slow or lopsided keep-alive | 0.08 V at one edge per 20 ms and a 3.0 V rail, at -20 °C with every tolerance against it. Phases shorter than 2.5 ms are not held at that corner. Section 7.3. | With risk 22: repeat with the keep-alive at 2.5 ms high and 20 ms low, and the reverse. |
+| 30 | The stop-test limits | Absolute limits from simulated corners, and a band of 0.5 to 1.5 around a value stored per board. Section 19.7. | Record tA and tB of the first boards from -20 to 70 °C. Set the band from that. |
+| 31 | The eFuses of the module | `VDD_SPI` forced to 3.3 V by eFuse on modules with PSRAM, from a note in the module data sheet. Section 12.3. | `espefuse.py summary` on the first modules. |
 
 ## 21. Bring-up test plan
 
 For the first prototype. Stop at the first step that fails.
 
 1. **Before power.** Inspect. Measure resistance from `VIN_DC`, `V5`, `3V3` and `V_DRV` to `GND`. No cell in BT1, no display, no valve wiring.
-2. **USB only.** Feed 5 V from a bench supply limited to 200 mA into VBUS. Expect `V5` 4.4 to 4.9 V, `3V3` 3.20 to 3.40 V, under 80 mA with a blank module. Lower the supply slowly: `EN` must fall when `3V3` passes 2.94 to 3.06 V and rise 130 to 270 ms after it recovers. Then use a USB port and read the ROM boot log. GPIO45 must read under 0.3 V during reset.
-3. **Fail-safe at rest.** `KA_OK` low, `DRV_EN` low, `V_DRV` at 0 V, the gate of Q2 at 0 V, K1 open, no I2C answer at 0x74. The RTC at 0x51 answers.
-4. **Keep-alive.** Test firmware toggles `KA` at 100 Hz. `KA_N2` rises to about 2.9 V and `DRV_EN` goes high within 20 ms. The gate of Q2, probed at C50, rises to about 2.7 V within 50 ms. Stop toggling and time both falls on a scope: `DRV_EN` after 0.45 to 0.9 s, the gate through 1.5 V and 0.6 V between 0.12 and 0.95 s. Repeat stuck high, where `DRV_EN` must fall within 1.2 s and the gate within 1.4 s, and at 25 Hz. Then try 1 Hz, which must not enable, and 2 Hz, 1 kHz and 100 kHz, and record what each does to both.
+2. **USB only.** Feed 5 V from a bench supply limited to 200 mA into VBUS. Expect `V5` 4.4 to 4.9 V, `3V3` 3.20 to 3.40 V, under 80 mA with a blank module. Lower the supply slowly: `EN` must fall when `3V3` passes 2.94 to 3.06 V and rise 130 to 270 ms after it recovers. Then use a USB port and read the ROM boot log. GPIO45 must read under 0.3 V during reset. Run `espefuse.py summary` and check that `VDD_SPI_FORCE` is 1 and `VDD_SPI_TIEH` is 1 (section 12.3).
+3. **Fail-safe at rest.** `KA_OK` low, `DRV_EN` low, `V_DRV` at 0 V, GPIO42 low, the gate of Q2 at 0 V, K1 open, no I2C answer at 0x74. The RTC at 0x51 answers. With `KA` as an input and the display running, `KA` stays under 0.1 V.
+4. **Keep-alive.** Test firmware toggles `KA` at 100 Hz. `KA_N2` rises to about 2.9 V and `DRV_EN` goes high within 20 ms. The gate of Q2, probed at C50, rises to about 2.7 V within 50 ms. Stop toggling and time both falls on a scope: `DRV_EN` after 0.21 to 0.83 s, the gate through 1.5 V and 0.6 V between 0.10 and 1.45 s. Repeat stuck high, where `DRV_EN` must fall within 1.25 s and the gate within 2.19 s, and at 25 Hz. Then try 0.5 Hz, which must not enable, and 1 Hz, 2 Hz, 1 kHz and 100 kHz, and record what each does to both. Then a lopsided keep-alive, 2.5 ms and 20 ms each way round, with the board at -20 °C: Q2 must stay fully on.
 5. **Expander and LEDs.** Turn each output on in turn. Its LED lights. The voltage across R101 is about 1.8 V, 12 mA. `V_DRV` falls when the keep-alive stops, and the expander stops answering.
 6. **Current channels.** Pass a known 50 or 60 Hz current through `ISNS` to `GND` from a low-voltage source. Check 133 mV/A and 665 mV/A and the 0.79 V bias.
 7. **Over-current latch.** Raise that current. `FAULT` sets between 4.0 and 5.4 A peak, D8 lights, `DRV_EN` falls. It stays set until the keep-alive stops.
-8. **First AC power.** Unplug USB. Check both fuses for continuity. Feed J1 from a variable 0 to 32 VAC isolated source. The buck starts at about 9 V on `VIN_DC`. At 24 VAC: `VIN_DC` 28 to 31 V, `V_BUCK` 5.16 to 5.40 V, `AC_ZC` a clean square wave, `VIN_MON` about 0.97 V. Raise to 32 VAC for 30 minutes: `VIN_DC` under 45 V, D1 cold.
+8. **First AC power.** Unplug USB. Check F1, F4 and F5 for continuity. Feed J1 from a variable 0 to 32 VAC isolated source. The buck starts at about 9 V on `VIN_DC`. At 24 VAC: `VIN_DC` 28 to 31 V, `V_BUCK` 5.16 to 5.40 V, `AC_ZC` a clean square wave, `VIN_MON` about 0.97 V. Raise to 32 VAC for 30 minutes: `VIN_DC` under 45 V, D1 cold.
 9. **Both supplies.** Add USB from a battery laptop. No current flows back into VBUS beyond 1 mA.
 10. **Relay.** With 24 VAC and the keep-alive stopped, GPIO7 reads about 3.05 V. Start the keep-alive: it reads 0 V. Command K1 closed. `COM` is live. Stop the keep-alive and time K1 opening against `DRV_EN` and the gate of Q2: it opens when the first of the two lets go. Trip the over-current latch with K1 closed: it opens within 10 ms. Run the firmware sequence of section 19.7 and check the times it reports against the scope.
 11. **Resistive load.** 47 ohm, 25 W from `COM` to each output in turn: 0.5 A. Scope T2: firing voltage a few volts each half-cycle. Compare the current reading with a meter.
 12. **Valve.** A real solenoid on each output. Scope T2 at turn-off: one clean stop at the current zero, ringing under the 77 V clamp. Then a 50 mA relay coil.
 13. **Short circuit.** With a 40 VA transformer, short an output to `COM` and turn it on. One or two half-cycles of current, latch set, fuses intact, triac still working, weld check passes. Repeat with the short applied while the output is on. Risk 4 has the full test.
-14. **Fail-safe with a valve running.** Halt the CPU, hold reset, start a USB flash. The valve closes within 0.95 s each time, or 1.4 s if the pin stopped high, and does not reopen. Then the fault-injection runs of risk 23.
+14. **Fail-safe with a valve running.** Halt the CPU, hold reset, start a USB flash. The valve closes within 0.84 s each time, or 1.25 s if the pin stopped high, and does not reopen. Then the fault-injection runs of risk 23.
 15. **Sensors.** Contact on each input. 200 Hz square wave on FLOW with no lost counts. 24 VAC onto each sensor terminal for ten minutes, then check the input still works. Short and miswire the 5V terminal.
 16. **RTC.** Fit the cell. Measure cell current with `3V3` off: under 1 uA. Check the clock against a reference over a day.
 17. **Display and controls.** Plug the panel in. Backlight current about 59 mA at full duty. Run the SPI at 20 MHz, then higher. Encoder and buttons.
@@ -2871,11 +3253,12 @@ Still open:
 - **Generic capacitors, the tactile switches, the JST connector and the coin-cell holder.** Ratings are from the listing. The switch and JST files are drawings without extractable text and were not read in detail. LCSC has no data sheet for the holder.
 - **Second sources.** PCA9539PW for the expander is named in the BOM note and its datasheet is not read. For the output PTC the BHFUSE part is now the primary and the Littelfuse part the alternative; both data sheets are read.
 - **AO3400A threshold over temperature.** The data sheet gives 0.65 to 1.45 V at 25 °C. The -3 mV/K used in section 7.3 is an assumption.
-- **BAT54S leakage when hot.** The data sheet limits it at 25 °C only. Both detectors are sized so that it matters little, and risk 10 measures it.
+- **BAT54S leakage when hot.** The Nexperia data sheet limits it at 25 °C only. It does give typical curves at 85 and 125 °C, figure 2: about 20 uA and 200 uA at a few volts. Review A2 found that the model in the simulations reproduces those curves, and ran its corners at three times typical as well. No maximum above 25 °C exists. Risk 10 measures it.
 - **PTC trip time above 8 A.** One data sheet point, scaled. Section 6.6.
 - **Bulk capacitor ripple rating at 50 and 60 Hz, and Rubycon's rules for forming leads.** Section 4.5.
 - **Resistor array pin pairs.** The UNI-ROYAL data sheet shows the circuit as a picture. Pairs 1-8, 2-7, 3-6 and 4-5 are assumed from the usual numbering.
-- **Regulator over-voltage.** Section 8.5.
+- **Regulator over-voltage.** Covered on paper since review A2, section 4.8. Not built, not tested: risk 21.
+- **A shorted LDO.** `3V3` at 4.95 V. Section 8.5 and finding M5 of review A2. Open.
 - **Lifecycle status.** The JLCPCB listing does not give it. Only the LM5164DDAR is confirmed active, from the TI data sheet addendum.
 - **The micro-crystal RV-8263-C7 and RV-3028-C7.** Not evaluated.
 
@@ -2918,6 +3301,9 @@ is LCSC's copy of the maker's PDF for that LCSC number.
 | EC11J1525402 | ALPS product sheet | <https://www.lcsc.com/datasheet/C209762.pdf> |
 | G5NB-1A-E | Omron G5NB, Chinese edition; English edition read in review A1 | <https://www.lcsc.com/datasheet/C48746.pdf>, <https://omronfs.omron.com/en_US/ecb/products/pdf/en-g5nb.pdf> |
 | AO3401A, SS34, SS210, M7, BAT54S, USBLC6-2SC6 | Maker datasheets, key ratings only | LCSC pages for C15127, C8678, C14996, C95872, C47546, C7519 |
+| SMBJ6.0A | Littelfuse SMBJ series, revised 2025 (review A2) | <https://www.lcsc.com/datasheet/C83270.pdf> |
+| 0451.500MRL | Littelfuse 451/453 series, revised 2015 (review A2) | <https://www.lcsc.com/datasheet/C142836.pdf> |
+| BAT54S, figures 1 and 2 | Nexperia product data sheet, 1 July 2022 (review A2) | <https://www.lcsc.com/datasheet/C47546.pdf> |
 | ESP32-S3 hardware design | Espressif hardware design guidelines, release of 2026-11-10 (review A1) | <https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32s3/> |
 | ST7789V | Sitronix datasheet v1.3 (review A1) | <https://dl.espressif.com/dl/schematics/LCD_ST7789.pdf> |
 | W25Q128JV | Winbond datasheet rev C (review A1) | <https://www.pjrc.com/teensy/W25Q128JV.pdf> |
@@ -2961,12 +3347,12 @@ something other than what the reviewer proposed, with the reason.
 **Where I departed from the review, or went further.**
 
 1. **The relay detector's values.** The proposal used 1 uF capacitors and 1 Mohm bleed resistors, and its own simulation showed the hold-up halving at 60 °C. The cause is Schottky leakage of the same size as the bleed current. I used 100 kohm, 10 uF and 4.7 uF, which makes the bleed ten times the leakage. Section 7.3.
-2. **The release window is stated in full.** The proposal quoted the time at which Q2 is certainly off. The transistor's threshold spread means K1 may release much earlier. The window is 0.12 to 0.95 s, and section 7.3 says why that is acceptable.
+2. **The release window is stated in full.** The proposal quoted the time at which Q2 is certainly off. The transistor's threshold spread means K1 may release much earlier. The window is 0.12 to 0.95 s, and section 7.3 says why that is acceptable. Review A2 widened it to 0.10 to 1.45 s.
 3. **A read-back for the relay detector.** The proposal read back `DRV_EN` only. A stuck relay transistor would then be found by nothing, and the second detector could fail silently. GPIO7 reads the drain of Q2. To free it, the sensor supply enable moved to GPIO45. Sections 7.4 and 12.2.
 4. **A stocked pulse-rated resistor exists.** The review found none in stock. The Yageo SR series is, and its 5 % parts have four times the pulse rating of its 1 % parts. Section 4.4.
 5. **The output PTC.** The review noted that 20 A is not a guaranteed ceiling for a Class 2 source and left the part. I replaced it with one rated for 40 A. Section 6.6.
 6. **The fold of the display tail.** The review's text said the fold reverses the pin order as the board sees it. It does not. Section 16.4.
-7. **A bridge from the keep-alive net to the zero-cross net.** Not in the review. I estimated by hand that it could not run either detector, simulated it and found that it can hold the relay detector on. It cannot enable the other. Section 8.5.
+7. **A bridge from the keep-alive net to the zero-cross net.** Not in the review. I estimated by hand that it could not run either detector, simulated it and found that it can hold the relay detector on. It cannot enable the other. Section 8.5. Review A2 found that it also holds the other detector once that one is on, and lowered R33 so that it holds neither.
 8. **The operating temperature inside the enclosure** is 70 °C, from the enclosure concept's own estimate, not the 60 °C the first draft and the review used. PSRAM ECC becomes mandatory. Sections 3.3 and 6.7.
 
 **After revision 2 of the mechanical contract.** The contract was merged
@@ -2978,7 +3364,54 @@ capture.
 
 **What I did not resolve.**
 
-- **Regulator over-voltage.** If U1's switch shorts, the fail-safe analysis has no proof. Section 8.5 and risk 21.
-- **Q3 shorted** is found by no self-test. Section 8.5.
+- **Regulator over-voltage.** If U1's switch shorts, the fail-safe analysis has no proof. Section 8.5 and risk 21. Resolved by review A2: section 4.8.
+- **Q3 shorted** is found by no self-test. Section 8.5. Resolved by review A2: section 8.6.
 - **Who solders C1 and K1.** The contract settles where they go. Whether the assembly house hand-solders parts on the side opposite the SMT has not been asked. Section 16.4.
 - **Everything in section 20.** No bench work has been done.
+
+## 25. What changed after review A2
+
+[Hardware review A2](hardware-review-a2.md) is the second, independent
+review of the fail-safe circuits that the changes of section 24 asked for.
+It rebuilt the single-fault analysis from the netlist by fault injection,
+ran tolerance corners of both detectors, and answered the two points this
+document had left open. The reviewer changed the design files in the same
+pull request. One blocking finding, seven major, thirteen minor.
+
+**Circuit.** Every changed designator and net is in section 9 of the review.
+
+| Finding | What was wrong | What was done | Section |
+|---|---|---|---|
+| B1 | The keep-alive pin was next to GPIO37, the PSRAM data strobe. A bridge kept both detectors on while the pin floated. | `KA` moved from GPIO38 to GPIO17. `ENC_SW` took GPIO38. | 8.5, 12.2 |
+| M1 | A bridge to `AC_ZC` could hold both detectors. This document said one. | R33 from 10 kohm to 2.2 kohm | 8.5 |
+| M2 | Regulator over-voltage, risk 21 | D25 on `V_BUCK`, F5 in the input of U1, new net `VIN_U1` | 4.8 |
+| M4 | Q3 shorted was found by no test | R92 reads `V_DRV`. Net `DRV_EN_RB` is now `V_DRV_RB`. | 8.6 |
+| m1 | The read-back level at GPIO42 had no margin that the data sheet backs | R92 from 10 kohm to 4.7 kohm | 8.6 |
+
+**Procedure and contract.** No part changes; firmware does.
+
+| Finding | What was wrong | What was done | Section |
+|---|---|---|---|
+| M3 | The self-test could not see a net that drives `KA` while the pin floats | Step 2b, the float test | 19.7 |
+| M6 | A keep-alive with one phase of 1 ms is not held by detector B at the cold corner | The contract asks for phases of 2.5 ms or more | 7.3, 19.4 |
+| M7 | The time limits of the stop test rejected healthy boards at tolerance corners | Wider absolute limits and a band around a value stored per board | 19.7 |
+| m3 | An open R12 was not found by the weld check | Step 5b, the gate bleed check | 19.7 |
+| m11 | GPIO17 is the default TXD pin of UART1 | Rule 16 | 19.1 |
+| | A failed regulator should be reported, not only survived | Rule 15 | 4.8, 19.1 |
+
+**Corrections to this document.**
+
+- **Section 8.5** is rewritten from the fault injection. R35 shorted, floating inputs, an open gate of Q2 and bridged pins of U7 were wrong or missing. The complete table is appendix A of the review.
+- **Sections 7.3 and 8.4** carry the corner results. The release window of detector B is wider than the first version said, and the statements about slow toggling are less firm.
+- **Section 5.3**: a shorted C1 does not open a fuse.
+- **Section 12.3**: the GPIO45 strap is checked against both data sheets. On this module it is not used.
+- **Section 22**: the BAT54S data sheet does have leakage curves above 25 °C.
+
+**What review A2 left open.**
+
+- **A shorted LDO.** `3V3` at 4.95 V and a processor outside its ratings. Finding M5. A decision for the owner.
+- **A resistor in `SENS_PWR_EN`.** Finding m6. Recommended, not fitted.
+- **The release time of the relay detector alone.** Up to 1.45 s, and 2.19 s if the pin stops high, at one corner. The specification says "in about the same time" as the one second of the gate drive. Finding m10. The threshold drift of the AO3400A has to be measured before anyone decides whether that needs a change.
+- **U7 without its supply pin** is no longer found, since the read-back moved from `DRV_EN` to `V_DRV`. Finding m13. Both layers still work with it in the model.
+- **A smaller R89.** 220 ohm would hold the relay through a 1 ms phase. Review section 4.2. Not fitted, because it moves the single-edge results and wants its own pass through the fault table.
+- **Everything in section 20.** No bench work has been done. Risks 21 and 27 to 31 are new or rewritten.

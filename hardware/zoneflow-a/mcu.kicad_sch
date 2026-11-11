@@ -1958,7 +1958,7 @@
 		)
 		(uuid "d946a279-b47f-557b-bf32-0d4e6f3e23ca")
 	)
-	(text "MCU (hardware design section 12; every pin with its reset state is in hardware/pinmap.yaml).\n\nU4 ESP32-S3-WROOM-1-N16R8: 16 MB flash, 8 MB octal PSRAM, which takes GPIO35 to 37.\nRated to 65 C, or 85 C with PSRAM ECC on: firmware must enable it. C14 and C15 at pin 2.\n\nNo valve, relay or enable function is on a GPIO. The valve outputs are on the I2C expander,\nwhich the fail-safe circuit holds in reset. Only KA (GPIO38) and I2C0 can influence a valve.\n\nStrapping pins:\n  GPIO0   BOOT: R19 pull-up and button SW2. Low at reset selects download mode.\n  GPIO3   VIN_MON: analogue input, held low at reset by its 10k divider leg.\n  GPIO45  SENS_PWR_EN: 100k to GND and one CMOS input. Never add a pull-up to this net.\n  GPIO46  STATUS_LED: R20 and D6 to GND can only pull down.\n\nADC1 only: GPIO1 ADC_LO, GPIO2 ADC_HI, GPIO3 VIN_MON, GPIO7 RLY_B_RB.\nGPIO7 and GPIO42 read back the two keep-alive detectors. They stay inputs for the life of the\nfirmware. GPIO40 reads the over-current latch through 10k.\nUSB: GPIO19 D-, GPIO20 D+, through the series footprints on the USB sheet.\n\nU12 TLV803EA30: open drain, pulls EN low while 3V3 is under 3.0 V (2.94 to 3.06 V) and for\n130 to 270 ms after. R18 10k and C16 1 uF delay EN by about 10 ms. SW1 is reset.\n\nLAYOUT: the 18 x 6 mm antenna end of the module is beyond the top board edge. No copper on any\nlayer under or beside it. Route KA from pin 31 with ground on both sides, at least 1 mm from\nany other signal and never next to TFT_BL, AC_ZC or the buck converter (section 8.5)."
+	(text "MCU (hardware design section 12; every pin with its reset state is in hardware/pinmap.yaml).\n\nU4 ESP32-S3-WROOM-1-N16R8: 16 MB flash, 8 MB octal PSRAM, which takes GPIO35 to 37.\nRated to 65 C, or 85 C with PSRAM ECC on: firmware must enable it. C14 and C15 at pin 2.\n\nNo valve, relay or enable function is on a GPIO. The valve outputs are on the I2C expander,\nwhich the fail-safe circuit holds in reset. Only KA (GPIO17) and I2C0 can influence a valve.\nKA is on module pin 10, between ENC_B and BTN_BACK, on purpose: no net beside it toggles by\nitself. Do not move it without redoing section 8.5 of the hardware design for its neighbours.\n\nStrapping pins:\n  GPIO0   BOOT: R19 pull-up and button SW2. Low at reset selects download mode.\n  GPIO3   VIN_MON: analogue input, held low at reset by its 10k divider leg.\n  GPIO45  SENS_PWR_EN: 100k to GND and one CMOS input. Never add a pull-up to this net.\n  GPIO46  STATUS_LED: R20 and D6 to GND can only pull down.\n\nADC1 only: GPIO1 ADC_LO, GPIO2 ADC_HI, GPIO3 VIN_MON, GPIO7 RLY_B_RB.\nGPIO7 and GPIO42 read back the two keep-alive detectors. They stay inputs for the life of the\nfirmware. GPIO40 reads the over-current latch through 10k.\nUSB: GPIO19 D-, GPIO20 D+, through the series footprints on the USB sheet.\n\nU12 TLV803EA30: open drain, pulls EN low while 3V3 is under 3.0 V (2.94 to 3.06 V) and for\n130 to 270 ms after. R18 10k and C16 1 uF delay EN by about 10 ms. SW1 is reset.\n\nLAYOUT: the 18 x 6 mm antenna end of the module is beyond the top board edge. No copper on any\nlayer under or beside it. Route KA from pin 10 with ground on both sides, at least 1 mm from\nany other signal and never next to TFT_BL, AC_ZC, U0TXD or the buck converter. Put R33 at the\nmodule pin (section 8.5)."
 		(exclude_from_sim no)
 		(at 254 93.98 0)
 		(effects
@@ -1967,7 +1967,7 @@
 			)
 			(justify left top)
 		)
-		(uuid "f33fc8b2-d6ba-5e3a-987a-7d219a574d87")
+		(uuid "ffa57461-2b8e-54d1-8cdd-bc9cd4ea3789")
 	)
 	(junction
 		(at 116.84 63.5)
@@ -2857,8 +2857,8 @@
 		)
 		(uuid "146dfb9a-63f4-588e-b749-0adb2c937045")
 	)
-	(hierarchical_label "KA"
-		(shape output)
+	(hierarchical_label "ENC_SW"
+		(shape input)
 		(at 170.18 139.7 180)
 		(effects
 			(font
@@ -2912,8 +2912,8 @@
 		)
 		(uuid "2a4610f3-da8d-5c33-9667-dac622d71459")
 	)
-	(hierarchical_label "ENC_SW"
-		(shape input)
+	(hierarchical_label "KA"
+		(shape output)
 		(at 236.22 132.08 0)
 		(effects
 			(font
@@ -3165,7 +3165,7 @@
 		)
 		(uuid "de5a12df-03bf-5c13-b768-c198e18984bf")
 	)
-	(hierarchical_label "DRV_EN_RB"
+	(hierarchical_label "V_DRV_RB"
 		(shape input)
 		(at 170.18 147.32 180)
 		(effects
@@ -3231,7 +3231,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "0e17983f-72f1-5e43-b2a4-248c24d59363")
-		(property "Reference" "#PWR0034"
+		(property "Reference" "#PWR0035"
 			(at 167.64 83.82 0)
 			(hide yes)
 			(show_name no)
@@ -3292,7 +3292,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/82440552-92e4-5b15-939f-0f8fa513d1fa"
-					(reference "#PWR0034")
+					(reference "#PWR0035")
 					(unit 1)
 				)
 			)
@@ -3682,7 +3682,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "48ba397a-b975-5568-a379-f54cebcb6d78")
-		(property "Reference" "#PWR0043"
+		(property "Reference" "#PWR0044"
 			(at 119.38 137.16 0)
 			(hide yes)
 			(show_name no)
@@ -3743,7 +3743,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/82440552-92e4-5b15-939f-0f8fa513d1fa"
-					(reference "#PWR0043")
+					(reference "#PWR0044")
 					(unit 1)
 				)
 			)
@@ -3760,7 +3760,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "5d0b554d-dc70-5484-95da-30fd01499d0d")
-		(property "Reference" "#PWR0038"
+		(property "Reference" "#PWR0039"
 			(at 33.02 77.47 0)
 			(hide yes)
 			(show_name no)
@@ -3821,7 +3821,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/82440552-92e4-5b15-939f-0f8fa513d1fa"
-					(reference "#PWR0038")
+					(reference "#PWR0039")
 					(unit 1)
 				)
 			)
@@ -3838,7 +3838,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "65428727-17dc-5bf8-b5a2-456aa88a3869")
-		(property "Reference" "#PWR0047"
+		(property "Reference" "#PWR0048"
 			(at 205.74 172.72 0)
 			(hide yes)
 			(show_name no)
@@ -3899,7 +3899,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/82440552-92e4-5b15-939f-0f8fa513d1fa"
-					(reference "#PWR0047")
+					(reference "#PWR0048")
 					(unit 1)
 				)
 			)
@@ -4541,7 +4541,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "92136c4e-533c-5f01-b024-81341f3e509c")
-		(property "Reference" "#PWR0040"
+		(property "Reference" "#PWR0041"
 			(at 104.14 76.2 0)
 			(hide yes)
 			(show_name no)
@@ -4602,7 +4602,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/82440552-92e4-5b15-939f-0f8fa513d1fa"
-					(reference "#PWR0040")
+					(reference "#PWR0041")
 					(unit 1)
 				)
 			)
@@ -4619,7 +4619,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "a66f5f3d-f9bd-5dc9-bfc1-7b9a0888b077")
-		(property "Reference" "#PWR0041"
+		(property "Reference" "#PWR0042"
 			(at 119.38 78.74 0)
 			(hide yes)
 			(show_name no)
@@ -4680,7 +4680,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/82440552-92e4-5b15-939f-0f8fa513d1fa"
-					(reference "#PWR0041")
+					(reference "#PWR0042")
 					(unit 1)
 				)
 			)
@@ -4825,7 +4825,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "bd2e9972-eff6-5c95-ba4e-3f93c5d4b0c7")
-		(property "Reference" "#PWR0046"
+		(property "Reference" "#PWR0047"
 			(at 144.272 68.58 0)
 			(hide yes)
 			(show_name no)
@@ -4886,7 +4886,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/82440552-92e4-5b15-939f-0f8fa513d1fa"
-					(reference "#PWR0046")
+					(reference "#PWR0047")
 					(unit 1)
 				)
 			)
@@ -4903,7 +4903,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "c9fe1fd5-0eed-529d-bdc6-09e22f8fd451")
-		(property "Reference" "#PWR0035"
+		(property "Reference" "#PWR0036"
 			(at 154.94 83.82 0)
 			(hide yes)
 			(show_name no)
@@ -4964,7 +4964,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/82440552-92e4-5b15-939f-0f8fa513d1fa"
-					(reference "#PWR0035")
+					(reference "#PWR0036")
 					(unit 1)
 				)
 			)
@@ -4981,7 +4981,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "cef0689d-1bc5-54ab-bb34-ad948f9c5e7e")
-		(property "Reference" "#PWR0039"
+		(property "Reference" "#PWR0040"
 			(at 90.932 50.8 0)
 			(hide yes)
 			(show_name no)
@@ -5042,7 +5042,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/82440552-92e4-5b15-939f-0f8fa513d1fa"
-					(reference "#PWR0039")
+					(reference "#PWR0040")
 					(unit 1)
 				)
 			)
@@ -5309,7 +5309,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "dabc1e9a-2d8e-597f-abb6-736d1f6b2dfd")
-		(property "Reference" "#PWR0042"
+		(property "Reference" "#PWR0043"
 			(at 90.932 109.22 0)
 			(hide yes)
 			(show_name no)
@@ -5370,7 +5370,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/82440552-92e4-5b15-939f-0f8fa513d1fa"
-					(reference "#PWR0042")
+					(reference "#PWR0043")
 					(unit 1)
 				)
 			)
@@ -5387,7 +5387,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "dae5f9a9-cf76-5af1-aac4-f30620f00ecd")
-		(property "Reference" "#PWR0045"
+		(property "Reference" "#PWR0046"
 			(at 319.532 50.8 0)
 			(hide yes)
 			(show_name no)
@@ -5448,7 +5448,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/82440552-92e4-5b15-939f-0f8fa513d1fa"
-					(reference "#PWR0045")
+					(reference "#PWR0046")
 					(unit 1)
 				)
 			)
@@ -5465,7 +5465,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "dc1e14c4-0786-5697-acf9-37085040271d")
-		(property "Reference" "#PWR0044"
+		(property "Reference" "#PWR0045"
 			(at 304.292 50.8 0)
 			(hide yes)
 			(show_name no)
@@ -5526,7 +5526,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/82440552-92e4-5b15-939f-0f8fa513d1fa"
-					(reference "#PWR0044")
+					(reference "#PWR0045")
 					(unit 1)
 				)
 			)
@@ -5791,7 +5791,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "e39d54e7-32f0-5999-b170-43d26398e4ec")
-		(property "Reference" "#PWR0048"
+		(property "Reference" "#PWR0049"
 			(at 45.212 55.88 0)
 			(hide yes)
 			(show_name no)
@@ -5852,7 +5852,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/82440552-92e4-5b15-939f-0f8fa513d1fa"
-					(reference "#PWR0048")
+					(reference "#PWR0049")
 					(unit 1)
 				)
 			)
@@ -5869,7 +5869,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "e4ebaef4-6a3a-54af-af02-671cd330ad79")
-		(property "Reference" "#PWR0037"
+		(property "Reference" "#PWR0038"
 			(at 32.512 62.23 0)
 			(hide yes)
 			(show_name no)
@@ -5930,7 +5930,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/82440552-92e4-5b15-939f-0f8fa513d1fa"
-					(reference "#PWR0037")
+					(reference "#PWR0038")
 					(unit 1)
 				)
 			)
@@ -5947,7 +5947,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "ef1ead45-23d8-54e2-a3cf-acc9ae33bf8c")
-		(property "Reference" "#PWR0049"
+		(property "Reference" "#PWR0050"
 			(at 111.76 167.64 0)
 			(hide yes)
 			(show_name no)
@@ -6008,7 +6008,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/82440552-92e4-5b15-939f-0f8fa513d1fa"
-					(reference "#PWR0049")
+					(reference "#PWR0050")
 					(unit 1)
 				)
 			)
@@ -6267,7 +6267,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "f6361c17-91f9-5c5c-b53d-6f83dcb2f381")
-		(property "Reference" "#PWR0036"
+		(property "Reference" "#PWR0037"
 			(at 66.04 76.2 0)
 			(hide yes)
 			(show_name no)
@@ -6328,7 +6328,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/82440552-92e4-5b15-939f-0f8fa513d1fa"
-					(reference "#PWR0036")
+					(reference "#PWR0037")
 					(unit 1)
 				)
 			)

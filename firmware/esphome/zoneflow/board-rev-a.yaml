@@ -17,10 +17,10 @@ substitutions:
   zf_pin_tft_reset: "GPIO14"  # TFT_RST
   zf_pin_encoder_a: "GPIO15"  # ENC_A
   zf_pin_encoder_b: "GPIO16"  # ENC_B
-  zf_pin_encoder_switch: "GPIO17"  # ENC_SW
+  zf_pin_encoder_switch: "GPIO38"  # ENC_SW
   zf_pin_button_back: "GPIO18"  # BTN_BACK
   zf_pin_backlight: "GPIO21"  # TFT_BL
-  zf_pin_keepalive: "GPIO38"  # KEEPALIVE
+  zf_pin_keepalive: "GPIO17"  # KEEPALIVE
   zf_pin_button_home: "GPIO39"  # BTN_HOME
   zf_pin_overcurrent: "GPIO40"  # OC_FAULT_N
   zf_pin_zero_cross: "GPIO41"  # AC_ZC

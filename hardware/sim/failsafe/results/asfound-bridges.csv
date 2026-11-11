@@ -1,0 +1,193 @@
+source,ohms,corner,stop,on,a,b,found_old,found_new,suspect
+"push-pull, 3.3 V",0.01,"typical parts, 27 C",low,True,True,True,,,False
+"push-pull, 3.3 V",0.01,"typical parts, 27 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",0.01,"typical parts, 27 C",selftest,,,,1 idle,1 idle,False
+"push-pull, 3.3 V",0.01,"Q2 at 0.65 V, 27 C",low,True,True,True,,,False
+"push-pull, 3.3 V",0.01,"Q2 at 0.65 V, 27 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",0.01,"Q2 at 0.65 V, 27 C",selftest,,,,1 idle,1 idle,False
+"push-pull, 3.3 V",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C",low,True,True,True,,,False
+"push-pull, 3.3 V",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,,,,1 idle,1 idle,False
+"push-pull, 3.3 V",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",low,True,True,True,,,False
+"push-pull, 3.3 V",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",hiz,True,True,True,,,False
+"push-pull, 3.3 V",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,,,,1 idle,1 idle,False
+"push-pull, 3.3 V",100.0,"typical parts, 27 C",low,False,False,False,,,False
+"push-pull, 3.3 V",100.0,"typical parts, 27 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",100.0,"typical parts, 27 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",100.0,"Q2 at 0.65 V, 27 C",low,False,False,False,,,False
+"push-pull, 3.3 V",100.0,"Q2 at 0.65 V, 27 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",100.0,"Q2 at 0.65 V, 27 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",100.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",low,False,False,True,,,False
+"push-pull, 3.3 V",100.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",100.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,,,,1 idle,1 idle,False
+"push-pull, 3.3 V",100.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",low,False,False,True,,,False
+"push-pull, 3.3 V",100.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",hiz,True,True,True,,,False
+"push-pull, 3.3 V",100.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,,,,1 idle,1 idle,False
+"push-pull, 3.3 V",470.0,"typical parts, 27 C",low,False,False,False,,,False
+"push-pull, 3.3 V",470.0,"typical parts, 27 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",470.0,"typical parts, 27 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",470.0,"Q2 at 0.65 V, 27 C",low,False,False,False,,,False
+"push-pull, 3.3 V",470.0,"Q2 at 0.65 V, 27 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",470.0,"Q2 at 0.65 V, 27 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",low,False,False,False,,,False
+"push-pull, 3.3 V",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",low,False,False,False,,,False
+"push-pull, 3.3 V",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",hiz,True,True,True,,,False
+"push-pull, 3.3 V",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,,,,,2b float,False
+"push-pull, 3.3 V",1000.0,"typical parts, 27 C",low,False,False,False,,,False
+"push-pull, 3.3 V",1000.0,"typical parts, 27 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",1000.0,"typical parts, 27 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",1000.0,"Q2 at 0.65 V, 27 C",low,False,False,False,,,False
+"push-pull, 3.3 V",1000.0,"Q2 at 0.65 V, 27 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",1000.0,"Q2 at 0.65 V, 27 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",low,False,False,False,,,False
+"push-pull, 3.3 V",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",low,False,False,False,,,False
+"push-pull, 3.3 V",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",hiz,True,True,True,,,False
+"push-pull, 3.3 V",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,,,,,2b float,False
+"push-pull, 3.3 V",2200.0,"typical parts, 27 C",low,False,False,False,,,False
+"push-pull, 3.3 V",2200.0,"typical parts, 27 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",2200.0,"typical parts, 27 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",2200.0,"Q2 at 0.65 V, 27 C",low,False,False,False,,,False
+"push-pull, 3.3 V",2200.0,"Q2 at 0.65 V, 27 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",2200.0,"Q2 at 0.65 V, 27 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",low,False,False,False,,,False
+"push-pull, 3.3 V",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",low,False,False,False,,,False
+"push-pull, 3.3 V",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",hiz,True,True,True,,,False
+"push-pull, 3.3 V",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,,,,,2b float,False
+"push-pull, 3.3 V",3300.0,"typical parts, 27 C",low,False,False,False,,,False
+"push-pull, 3.3 V",3300.0,"typical parts, 27 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",3300.0,"typical parts, 27 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",3300.0,"Q2 at 0.65 V, 27 C",low,False,False,False,,,False
+"push-pull, 3.3 V",3300.0,"Q2 at 0.65 V, 27 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",3300.0,"Q2 at 0.65 V, 27 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",low,False,False,False,,,False
+"push-pull, 3.3 V",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",low,False,False,False,,,False
+"push-pull, 3.3 V",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",hiz,True,True,True,,,False
+"push-pull, 3.3 V",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,,,,,2b float,False
+"push-pull, 3.3 V",4700.0,"typical parts, 27 C",low,False,False,False,,,False
+"push-pull, 3.3 V",4700.0,"typical parts, 27 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",4700.0,"typical parts, 27 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",4700.0,"Q2 at 0.65 V, 27 C",low,False,False,False,,,False
+"push-pull, 3.3 V",4700.0,"Q2 at 0.65 V, 27 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",4700.0,"Q2 at 0.65 V, 27 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",low,False,False,False,,,False
+"push-pull, 3.3 V",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",hiz,True,True,True,,,False
+"push-pull, 3.3 V",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",low,False,False,False,,,False
+"push-pull, 3.3 V",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",hiz,True,True,True,,,False
+"push-pull, 3.3 V",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,,,,,2b float,False
+"push-pull, 3.3 V",10000.0,"typical parts, 27 C",low,False,False,False,,,False
+"push-pull, 3.3 V",10000.0,"typical parts, 27 C",hiz,False,False,False,,,False
+"push-pull, 3.3 V",10000.0,"typical parts, 27 C",selftest,,,,,,False
+"push-pull, 3.3 V",10000.0,"Q2 at 0.65 V, 27 C",low,False,False,False,,,False
+"push-pull, 3.3 V",10000.0,"Q2 at 0.65 V, 27 C",hiz,False,False,True,,,False
+"push-pull, 3.3 V",10000.0,"Q2 at 0.65 V, 27 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",10000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",low,False,False,False,,,False
+"push-pull, 3.3 V",10000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",hiz,False,False,True,,,False
+"push-pull, 3.3 V",10000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,,,,,2b float,False
+"push-pull, 3.3 V",10000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",low,False,False,False,,,False
+"push-pull, 3.3 V",10000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",hiz,False,False,True,,,False
+"push-pull, 3.3 V",10000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,0.01,"typical parts, 27 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,0.01,"typical parts, 27 C",hiz,False,True,True,,,False
+zero-cross signal AC_ZC,0.01,"typical parts, 27 C",selftest,,,,,,False
+zero-cross signal AC_ZC,0.01,"Q2 at 0.65 V, 27 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,0.01,"Q2 at 0.65 V, 27 C",hiz,True,True,True,,,False
+zero-cross signal AC_ZC,0.01,"Q2 at 0.65 V, 27 C",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C",hiz,True,True,True,,,False
+zero-cross signal AC_ZC,0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,,,,2 pin-high,2 pin-high,False
+zero-cross signal AC_ZC,0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",low,False,False,False,,,False
+zero-cross signal AC_ZC,0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",hiz,True,True,True,,,False
+zero-cross signal AC_ZC,0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,,,,2 pin-high,2 pin-high,False
+zero-cross signal AC_ZC,100.0,"typical parts, 27 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,100.0,"typical parts, 27 C",hiz,False,True,True,,,False
+zero-cross signal AC_ZC,100.0,"typical parts, 27 C",selftest,,,,,,False
+zero-cross signal AC_ZC,100.0,"Q2 at 0.65 V, 27 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,100.0,"Q2 at 0.65 V, 27 C",hiz,True,True,True,,,False
+zero-cross signal AC_ZC,100.0,"Q2 at 0.65 V, 27 C",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,100.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,100.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",hiz,False,False,True,,,False
+zero-cross signal AC_ZC,100.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,,,,2 pin-high,2 pin-high,False
+zero-cross signal AC_ZC,100.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",low,False,False,False,,,False
+zero-cross signal AC_ZC,100.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",hiz,True,True,True,,,False
+zero-cross signal AC_ZC,100.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,470.0,"typical parts, 27 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,470.0,"typical parts, 27 C",hiz,False,True,True,,,False
+zero-cross signal AC_ZC,470.0,"typical parts, 27 C",selftest,,,,,,False
+zero-cross signal AC_ZC,470.0,"Q2 at 0.65 V, 27 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,470.0,"Q2 at 0.65 V, 27 C",hiz,True,True,True,,,False
+zero-cross signal AC_ZC,470.0,"Q2 at 0.65 V, 27 C",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",hiz,True,True,True,,,False
+zero-cross signal AC_ZC,470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",low,False,False,False,,,False
+zero-cross signal AC_ZC,470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",hiz,True,True,True,,,False
+zero-cross signal AC_ZC,470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,1000.0,"typical parts, 27 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,1000.0,"typical parts, 27 C",hiz,False,False,False,,,False
+zero-cross signal AC_ZC,1000.0,"typical parts, 27 C",selftest,,,,,,False
+zero-cross signal AC_ZC,1000.0,"Q2 at 0.65 V, 27 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,1000.0,"Q2 at 0.65 V, 27 C",hiz,False,False,True,,,False
+zero-cross signal AC_ZC,1000.0,"Q2 at 0.65 V, 27 C",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",hiz,False,False,True,,,False
+zero-cross signal AC_ZC,1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",low,False,False,False,,,False
+zero-cross signal AC_ZC,1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",hiz,False,False,True,,,False
+zero-cross signal AC_ZC,1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,2200.0,"typical parts, 27 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,2200.0,"typical parts, 27 C",hiz,False,False,False,,,False
+zero-cross signal AC_ZC,2200.0,"typical parts, 27 C",selftest,,,,,,False
+zero-cross signal AC_ZC,2200.0,"Q2 at 0.65 V, 27 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,2200.0,"Q2 at 0.65 V, 27 C",hiz,False,False,True,,,False
+zero-cross signal AC_ZC,2200.0,"Q2 at 0.65 V, 27 C",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",hiz,False,False,True,,,False
+zero-cross signal AC_ZC,2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",low,False,False,False,,,False
+zero-cross signal AC_ZC,2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",hiz,False,False,True,,,False
+zero-cross signal AC_ZC,2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,3300.0,"typical parts, 27 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,3300.0,"typical parts, 27 C",hiz,False,False,False,,,False
+zero-cross signal AC_ZC,3300.0,"typical parts, 27 C",selftest,,,,,,False
+zero-cross signal AC_ZC,3300.0,"Q2 at 0.65 V, 27 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,3300.0,"Q2 at 0.65 V, 27 C",hiz,False,False,True,,,False
+zero-cross signal AC_ZC,3300.0,"Q2 at 0.65 V, 27 C",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",hiz,False,False,True,,,False
+zero-cross signal AC_ZC,3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",low,False,False,False,,,False
+zero-cross signal AC_ZC,3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",hiz,False,False,True,,,False
+zero-cross signal AC_ZC,3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,4700.0,"typical parts, 27 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,4700.0,"typical parts, 27 C",hiz,False,False,False,,,False
+zero-cross signal AC_ZC,4700.0,"typical parts, 27 C",selftest,,,,,,False
+zero-cross signal AC_ZC,4700.0,"Q2 at 0.65 V, 27 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,4700.0,"Q2 at 0.65 V, 27 C",hiz,False,False,True,,,False
+zero-cross signal AC_ZC,4700.0,"Q2 at 0.65 V, 27 C",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",hiz,False,False,True,,,False
+zero-cross signal AC_ZC,4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",low,False,False,False,,,False
+zero-cross signal AC_ZC,4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",hiz,False,False,True,,,False
+zero-cross signal AC_ZC,4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,,,,,2b float,False
+zero-cross signal AC_ZC,10000.0,"typical parts, 27 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,10000.0,"typical parts, 27 C",hiz,False,False,False,,,False
+zero-cross signal AC_ZC,10000.0,"typical parts, 27 C",selftest,,,,,,False
+zero-cross signal AC_ZC,10000.0,"Q2 at 0.65 V, 27 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,10000.0,"Q2 at 0.65 V, 27 C",hiz,False,False,False,,,False
+zero-cross signal AC_ZC,10000.0,"Q2 at 0.65 V, 27 C",selftest,,,,,,False
+zero-cross signal AC_ZC,10000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",low,False,False,False,,,False
+zero-cross signal AC_ZC,10000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",hiz,False,False,True,,,False
+zero-cross signal AC_ZC,10000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,,,,,,False
+zero-cross signal AC_ZC,10000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",low,False,False,False,,,False
+zero-cross signal AC_ZC,10000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",hiz,False,False,True,,,False
+zero-cross signal AC_ZC,10000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,,,,,2b float,False
