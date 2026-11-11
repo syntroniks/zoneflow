@@ -105,9 +105,12 @@ erc: sch $(if $(SCH_LINT),lint)
 board: erc
 	$(KICAD_PY) -m hwflow.pcbbuild build $(DESIGN) . --fab-rules $(FAB_RULES)
 
-# Autoroute. Reuses route/$(NAME).ses while the DSN is unchanged.
+# Autoroute. Reuses route/$(NAME).ses while the DSN is unchanged. ROUTE_LIMITS is for a board that
+# needs more passes or more time than the defaults of hwflow.route (20 passes, 1800 s): nothing is
+# kept of a run that the time limit stops.
+ROUTE_LIMITS ?=
 route: board
-	$(KICAD_PY) -m hwflow.route . --cache $(CACHE) $(ROUTE_FLAGS)
+	$(KICAD_PY) -m hwflow.route . --cache $(CACHE) $(ROUTE_LIMITS) $(ROUTE_FLAGS)
 
 # Throw the stored routing away and route again.
 reroute:
