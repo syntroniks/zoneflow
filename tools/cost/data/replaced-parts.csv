@@ -1,0 +1,6 @@
+replaced_by,lcsc,manufacturer,mpn,package,library,preferred,stock,least_patch_number,loss_number,min_purchase,price_breaks,date_checked,source
+C1604,C16033,Samsung Electro-Mechanics,CL10B222KB8NNNC,0603,extended,no,194381,20,10,1,1:0.008;500:0.0063;1500:0.0053;4000:0.0048;24000:0.0043;48000:0.004,2026-11-11,"JLCPCB parts search, selectSmtComponentList"
+C7420333,C47546,Nexperia,"BAT54S,215",SOT-23,extended,no,267096,5,5,1,1:0.0223;200:0.0167;600:0.0143;3000:0.0124;9000:0.0117;21000:0.0112,2026-11-11,"JLCPCB parts search, selectSmtComponentList"
+C57112,C1589,Samsung Electro-Mechanics,CL10B103KB8NNNC,0603,extended,no,1813908,20,16,1,1:0.0074;500:0.0058;1500:0.005;4000:0.0037;24000:0.0035;48000:0.0033,2026-11-11,"JLCPCB parts search, selectSmtComponentList"
+C1664,C27675,Samsung Electro-Mechanics,CL10C221JB8NNNC,0603,extended,no,162110,20,10,1,1:0.0087;200:0.0072;600:0.0063;4000:0.0058;8000:0.0053;20000:0.0051,2026-11-11,"JLCPCB parts search, selectSmtComponentList"
+C53987,C1621,Samsung Electro-Mechanics,CL10B472KB8NNNC,0603,extended,no,344069,20,10,1,1:0.0097;500:0.0074;1500:0.0062;4000:0.0055;24000:0.0048;48000:0.0045,2026-11-11,"JLCPCB parts search, selectSmtComponentList"

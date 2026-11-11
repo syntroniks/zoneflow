@@ -6184,7 +6184,7 @@
 				)
 			)
 		)
-		(property "MPN" "BAT54S,215"
+		(property "MPN" "BAT54S"
 			(at 256.54 162.56 0)
 			(hide yes)
 			(show_name no)
@@ -6195,7 +6195,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Nexperia"
+		(property "Manufacturer" "hongjiacheng"
 			(at 256.54 162.56 0)
 			(hide yes)
 			(show_name no)
@@ -6206,7 +6206,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C47546"
+		(property "LCSC" "C7420333"
 			(at 256.54 162.56 0)
 			(hide yes)
 			(show_name no)

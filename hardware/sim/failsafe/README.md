@@ -150,7 +150,7 @@ Every model is behavioural and is fitted to the data sheet figures quoted in
 
 | Part | Model | Fitted to |
 |---|---|---|
-| BAT54S | Diode, IS 2.2e-7 A, N 1.05, EG 0.69, XTI 2 | Nexperia data sheet of 1 July 2022, Fig. 2: 0.25 to 0.7 uA at 25 C, 18 to 35 uA at 85 C, 180 to 300 uA at 125 C (typical, 1 to 10 V). The model gives 0.22, 19 and 196 uA. Corners use 1.5e-8 A (the maximum forward voltages of table 7) and 6.6e-7 A (three times the typical leakage). |
+| BAT54S | Diode, IS 2.2e-7 A, N 1.05, EG 0.69, XTI 2 | Nexperia data sheet of 1 July 2022, Fig. 2: 0.25 to 0.7 uA at 25 C, 18 to 35 uA at 85 C, 180 to 300 uA at 125 C (typical, 1 to 10 V). The model gives 0.22, 19 and 196 uA. Corners use 1.5e-8 A (the maximum forward voltages of table 7) and 6.6e-7 A (three times the typical leakage). The part fitted since the BOM consolidation is Hongjiacheng's (LCSC C7420333). Its sheet, rev 2.0, has the same maximum forward voltages up to 30 mA and typical leakage of about 0.1 to 0.3 uA at 25 C and 25 to 55 uA at 100 C from 0 to 10 V, where this model gives 0.22 and 48 uA: inside the same two ends. The decks do not change with the part number. |
 | AO3400A, AO3401A | Square-law FET with a smooth sub-threshold corner | VGS(th) limits and Fig. 1 of the AOS sheets. Threshold drift with temperature is not in the sheet: -3 mV/K nominal, -1.5 to -4.5 mV/K in corners. |
 | LM2901 | Four comparators: offset, input bias current out of the pins, open-collector output that sinks 16 mA | TI SLCS006S |
 | 74HC132 | Four NAND gates, Schmitt inputs at 0.55 and 0.36 x VCC, 80 ohm outputs, input clamp diodes | Nexperia rev 8, interpolated to 3.3 V |
@@ -236,11 +236,12 @@ where it held it for 1.0 s.
 |---|---|---|
 | `faults`, `bridges`, `sequence`, `ldo`, `floatload` | With U13 | Step 2 at 2.0 s |
 | `commission` | Before U13 | Does not run the sequence |
-| `corners`, `duty`, `warmup` | Before U13, as review A2 ran them | Do not run the sequence |
+| `corners` | With U13, run again with the BOM consolidation on 2026-11-11. Against the files of review A2, 197 of 2,104 rows moved by one unit in the last printed digit, no verdict changed and the summary has the same figures | Does not run the sequence |
+| `duty`, `warmup` | Before U13, as review A2 ran them | Do not run the sequence |
 | `asfound*` | Pull request #20 | As merged there, and as review A2 left it |
 
-U13 pulls the latch input only with `3V3` above 3.9 V, and no run of the
-last three groups goes above 3.6 V. As a check, `sequence` ran the 96
+U13 pulls the latch input only with `3V3` above 3.9 V, and no run of
+`commission`, `corners`, `duty` or `warmup` goes above 3.6 V. As a check, `sequence` ran the 96
 corners of the grid with U13 in the deck and found the same range of
 release times as `corners`: tA 0.22 to 0.83 s and tB 0.10 to 1.45 s.
 Appendix A of review A2 is the fault table as that review ran it, without

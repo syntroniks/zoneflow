@@ -103,16 +103,17 @@ def compare_dirs(old_dir: Path, new_dir: Path) -> list[str]:
 
 
 SVG_DIR = "schematic-svg"
+SCH_PDF = "*-schematic.pdf"     # the PDFs of the board (assembly drawings, layers) are not this module's business
 
 
 def stash(out_dir: Path, scratch: Path) -> int:
-    """Move the plots of the last build (the SVG directory and the PDFs) out of the way."""
+    """Move the schematic plots of the last build (the SVG directory and the PDF) out of the way."""
     out_dir, scratch = Path(out_dir), Path(scratch)
     if scratch.exists():
         shutil.rmtree(scratch)
     scratch.mkdir(parents=True)
     moved = 0
-    for item in [out_dir / SVG_DIR, *sorted(out_dir.glob("*.pdf"))]:
+    for item in [out_dir / SVG_DIR, *sorted(out_dir.glob(SCH_PDF))]:
         if item.exists():
             shutil.move(str(item), str(scratch / item.name))
             moved += 1

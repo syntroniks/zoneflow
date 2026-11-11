@@ -86,7 +86,13 @@ What it showed:
 ## isense.cir
 
 The current-sense amplifiers of section 10, the window comparators and the
-latch of section 9.
+latch of section 9. C28 and C29 are 330 pF since the BOM consolidation
+(design section 27); they were 220 pF. Run with both values on 2026-11-11,
+the table below is the same to the digits shown: the high-gain channel
+gives 0.664935 V/A with 220 pF and 0.664932 V/A with 330 pF at 0.2 A, the
+ground-shift ripple is 0.000943 V peak to peak with both, and the trip
+comes 65.7 and 65.9 us after the short, one time step apart, in a path
+these two capacitors are not in.
 
 | Run | Result |
 |---|---|

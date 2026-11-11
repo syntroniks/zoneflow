@@ -19,7 +19,7 @@ hide:
 !!! danger zf-status "Status: designed on paper. Not built. Not tested."
     - No ZoneFlow board has been made. No firmware has run on one.
     - Every figure on this site is a design value, a calculation or a simulation result. None is a measurement.
-    - **Do not order boards yet.** The PCB layout is not finished and no prototype has been bench-tested. See [ordering boards](hardware/ordering.md).
+    - **Do not order boards yet.** The PCB layout has had an independent review, but nobody has gone through its pre-order checklist, and no prototype has been bench-tested. See [ordering boards](hardware/ordering.md).
     - ZoneFlow has no safety, EMC or radio certification.
 
     Read the [safety notes](safety.md) before you build anything from this
@@ -49,7 +49,7 @@ people who build their own electronics.
 | Circuit design | Written with calculations and simulations, reviewed once (review A1), findings resolved | [Hardware design](design/hardware-design.md), [review A1](design/hardware-review-a1.md) |
 | Schematic | Captured in KiCad 10 from the design netlist; ERC clean; 20 pages | [Schematic](hardware/schematic.md) |
 | Bill of materials | Every line with an LCSC number, stock and price checked on 2026-11-10 | [BOM](hardware/bom.md) |
-| PCB layout | In progress, not published | [Issue #5](https://github.com/syntroniks/zoneflow/issues/5) |
+| PCB layout | Placed and routed, four layers; DRC, mechanical contract and fail-safe layout rules checked on the files; not reviewed, not built | [PCB layout](hardware/layout.md), [layout document](design/hardware-layout.md) |
 | Enclosure | Parametric model, interference-checked, STL and 3MF files; not printed | [Enclosure](enclosure/index.md) |
 | Standalone firmware | Written; builds in CI; logic covered by host tests; display runs in a desktop simulator | [Web interface](firmware/standalone.md), [display](guide/display.md) |
 | ESPHome package | Written; compiles for the board; logic covered by host tests | [ESPHome](firmware/esphome.md) |

@@ -1,0 +1,24 @@
+(version 1)
+
+# Board rules of ZoneFlow rev A. The fab limits are in hardware/rules/jlcpcb.kicad_dru.
+# The reasons are in docs/design/hardware-layout.md.
+
+# The keep-alive net (hardware design, section 8.5): no other track within 1 mm of its tracks.
+# Pads are left out: at the module and at the 0603 resistors the neighbours are closer than that.
+(rule "keep-alive guard"
+  (condition "A.NetName == '/KA' && A.Type == 'Track' && B.Type == 'Track' && B.NetName != '/KA'")
+  (constraint clearance (min 1.0mm)))
+
+# The high-impedance nodes of the keep-alive detectors (net class HiZ, 0.6 mm): their own pads are
+# as close to their neighbours as the parts make them. The wide clearance is for what is routed.
+(rule "high-impedance nodes at their pads"
+  (condition "A.NetClass == 'HiZ' && A.Type == 'Pad'")
+  (constraint clearance (min 0.2mm)))
+
+# The solder jumper JP1 bridges the contact of relay K1 on a board built without the relay. Its
+# two pads, AC_L and COM, are 0.3 mm apart in KiCad's footprint, closer than the 0.5 mm of their
+# class: that is what makes it bridgeable. The two nets are joined whenever the relay is closed.
+# This is the one pair of pads on the board that is closer than its net class allows.
+(rule "solder jumper JP1: pads 0.3 mm apart by design"
+  (condition "A.Type == 'Pad' && B.Type == 'Pad' && A.memberOfFootprint('JP1') && B.memberOfFootprint('JP1')")
+  (constraint clearance (min 0.25mm)))

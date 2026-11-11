@@ -113,6 +113,7 @@ nav:
       - Specifications: hardware/specifications.md
       - How the fail-safe works: hardware/fail-safe.md
       - Schematic: hardware/schematic.md
+      - PCB layout: hardware/layout.md
       - Bill of materials: hardware/bom.md
       - The 4-zone build: hardware/four-zone.md
       - Ordering boards: hardware/ordering.md
@@ -133,6 +134,8 @@ nav:
       - Hardware review A1: design/hardware-review-a1.md
       - Hardware review A2: design/hardware-review-a2.md
       - Hardware answers A2: design/hardware-answers-a2.md
+      - Hardware layout: design/hardware-layout.md
+      - Hardware layout review: design/hardware-layout-review.md
       - Hardware toolchain: design/hardware-toolchain.md
       - Mechanical design: design/mechanical.md
       - Firmware architecture: design/firmware-architecture.md

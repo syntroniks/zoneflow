@@ -2,8 +2,8 @@
 
 ## Can I buy one?
 
-No. ZoneFlow is a design on paper. No board has been made, the PCB layout is
-not finished, and nobody sells it. See [status](status.md) and
+No. ZoneFlow is a design on paper. No board has been made, the pre-order
+checklist of the PCB layout review has not been done, and nobody sells it. See [status](status.md) and
 [ordering boards](hardware/ordering.md).
 
 ## Does it work?
@@ -103,9 +103,9 @@ rain delay from any source.
 Nobody sells ZoneFlow controllers; you have one made. The
 [cost estimate](hardware/cost.md), from prices checked on 2026-11-11, puts a
 finished 8-zone controller, assembled by JLCPCB, delivered to the United
-States with duty paid and in its printed enclosure, at about 136 USD each
-for a batch of 5, 74 USD for 25 and 55 USD for 100. The 4-zone build is 6 to
-7 USD less. The transformer and the valve cable come on top. These are
+States with duty paid and in its printed enclosure, at about 121 USD each
+for a batch of 5, 71 USD for 25 and 54 USD for 100. The 4-zone build is 6 to
+8 USD less. The transformer and the valve cable come on top. These are
 estimates, not prices, and US tariffs move them most.
 
 ## Is it certified?

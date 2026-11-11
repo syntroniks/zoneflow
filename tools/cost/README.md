@@ -19,6 +19,7 @@ uv run pytest -q
 | File | What |
 |---|---|
 | `data/jlcpcb-parts.csv` | One row per LCSC number of `hardware/bom-preliminary.csv`: stock, price breaks, basic or extended, preferred, the two quantities JLCPCB uses for minimum order and attrition, and the date. Written by `zfcost fetch`. |
+| `data/replaced-parts.csv` | The snapshot rows of the five part numbers that the BOM consolidation replaced, each with the number that replaced it, fetched on the same day. The model prices the board as it was from them, for the before-and-after table. `zfcost fetch` does not touch it. |
 | `data/sourced.toml` | Facts read from a source, each with the source and the date: the board from the layout, the JLCPCB board and freight quotes, the assembly price list, the coin cell, filament and inserts, US duty, end-user items, retail prices. |
 | `data/assumptions.toml` | Guesses and choices, each named, with what it means. Change one there or with `--set name=value`. |
 | `zfcost/model.py` | The rules: how many parts JLCPCB buys, which price break applies, assembly fees, board quantity, freight, duty, enclosure, scenarios. |

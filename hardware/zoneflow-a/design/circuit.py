@@ -9,6 +9,7 @@ is compared with the netlist after every build.
 Coordinates are in units of 1.27 mm (``P``), x to the right and y down.
 """
 
+import re
 import sys
 from pathlib import Path
 
@@ -29,6 +30,34 @@ TABLE = committed.load_table(HERE / "parts.toml")  # parts, builds and the mount
 G = 2.54
 POWER = {"GND": "power:GND", "3V3": "ZoneFlow:3V3", "V5": "ZoneFlow:V5", "V_BUCK": "ZoneFlow:V_BUCK",
          "VIN_DC": "ZoneFlow:VIN_DC", "VBUS": "ZoneFlow:VBUS", "V_DRV": "ZoneFlow:V_DRV"}
+
+# Net classes for the board, by voltage domain. Widths and clearances are in design/board.toml;
+# the reasons are in docs/design/hardware-layout.md. A net that is not named here is "Default".
+NETCLASS = {
+    # 24 VAC paths that carry valve or supply current.
+    "AC24": "AC_L_IN AC_N AC_L COM VRECT OUT T2",
+    # The shunt node: the return of every triac, within 3 V of ground.
+    "Shunt": "ISNS",
+    # At 24 VAC potential, milliamps: triac gates, opto outputs, snubber mid-points.
+    "AC24S": "G OGT SNB",
+    # Rectified input, up to 45 V, and the buck converter's switching nodes.
+    "HVDC": "VIN_DC VIN_U1 SW BST",
+    # Sensor terminals and the sensor supply output: they leave the enclosure.
+    "Field": "T_RAIN T_FLOW T_AUX SENS_5V SP_A SP_B",
+    # Supply rails.
+    "Power": "V_BUCK V5 VBUS 3V3 V_DRV SP_OUT QW_3V3 VDD_RTC TFT_LEDA TFT_LEDK RLY_A RLY_B",
+    "USB": "USB_DP USB_DM USB_DP_MCU USB_DM_MCU",
+    # High-impedance nodes of the two keep-alive detectors: a leak from a rail onto one of them holds
+    # a detector on (hardware design, section 8.5, layout rules 2 and 3). Wide clearance for their tracks.
+    "HiZ": "KA_N1 KA_N2 KA_INP RLY_G2 KB_N1",
+}
+_CLASS_OF = {net: cls for cls, nets in NETCLASS.items() for net in nets.split()}
+
+
+def netclass(net):
+    """The class of a design net. A channel net (T2_Z3, OUT_MV) takes the class of its base name."""
+    return _CLASS_OF.get(net) or _CLASS_OF.get(re.sub(r"_(Z[1-8]|MV)$", "", net))
+
 
 SHEETS = {
     "power": "F1 F4 D1 D2 R1 C1 F5 C2 C3 U1 C4 L1 D25 C5 C6 R2 R3 R4 R5 R6 C7 C8 R7 R8 R9 R10 C9",
@@ -1263,7 +1292,7 @@ def build() -> Design:
     d.comments[3] = "Generated from design/circuit.py and hardware/netlist.yaml. Do not edit by hand."
     comps = yaml.safe_load((HW / "netlist.yaml").read_text())["components"]
     cap = Capture(d, comps, parity.load_parts(HERE / "parts.toml"), parity.load_bom(HW / "bom-preliminary.csv"),
-                  power=POWER)
+                  power=POWER, netclass=netclass)
     d.capture = cap
     for sheet, nets in DRIVERS.items():
         for net in nets.split():

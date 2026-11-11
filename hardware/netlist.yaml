@@ -134,7 +134,7 @@ components:
   - ref: C4
     value: "2.2 nF 50 V X7R"
     package: "0603"
-    lcsc: C16033
+    lcsc: C1604
     block: "A power"
     variant: "all"
     note: "Bootstrap, value fixed by the datasheet"
@@ -388,7 +388,7 @@ components:
   - ref: D22
     value: "BAT54S dual Schottky, series"
     package: "SOT-23"
-    lcsc: C47546
+    lcsc: C7420333
     block: "B valve common relay"
     variant: "all"
     note: "Its own package, not shared with D7"
@@ -1178,7 +1178,7 @@ components:
   - ref: D7
     value: "BAT54S dual Schottky, series"
     package: "SOT-23"
-    lcsc: C47546
+    lcsc: C7420333
     block: "F keep-alive detector"
     variant: "all"
     pins:
@@ -1237,7 +1237,7 @@ components:
   - ref: C24
     value: "10 nF 50 V X7R"
     package: "0603"
-    lcsc: C1589
+    lcsc: C57112
     block: "F keep-alive detector"
     variant: "all"
     pins:
@@ -1382,9 +1382,9 @@ components:
       "1": "SB_N"
       "2": "ISENSE_HI"
   - ref: C28
-    value: "220 pF 50 V C0G"
+    value: "330 pF 50 V C0G"
     package: "0603"
-    lcsc: C27675
+    lcsc: C1664
     block: "G current sense and over-current latch"
     variant: "all"
     pins:
@@ -1410,9 +1410,9 @@ components:
       "1": "SB_P"
       "2": "VB"
   - ref: C29
-    value: "220 pF 50 V C0G"
+    value: "330 pF 50 V C0G"
     package: "0603"
-    lcsc: C27675
+    lcsc: C1664
     block: "G current sense and over-current latch"
     variant: "all"
     pins:
@@ -1513,7 +1513,7 @@ components:
   - ref: C33
     value: "4.7 nF 50 V X7R"
     package: "0603"
-    lcsc: C1621
+    lcsc: C53987
     block: "G current sense and over-current latch"
     variant: "all"
     pins:
@@ -1594,7 +1594,7 @@ components:
   - ref: C55
     value: "10 nF 50 V X7R"
     package: "0603"
-    lcsc: C1589
+    lcsc: C57112
     block: "G current sense and over-current latch"
     variant: "all"
     note: "With the divider, 1 ms: a spike on 3V3 does not set the latch"
@@ -1632,7 +1632,7 @@ components:
   - ref: C34
     value: "10 nF 50 V X7R"
     package: "0603"
-    lcsc: C1589
+    lcsc: C57112
     block: "H AC zero-cross"
     variant: "all"
     pins:
@@ -1641,7 +1641,7 @@ components:
   - ref: D9
     value: "BAT54S dual Schottky, series"
     package: "SOT-23"
-    lcsc: C47546
+    lcsc: C7420333
     block: "H AC zero-cross"
     variant: "all"
     note: "Clamp"
@@ -2075,7 +2075,7 @@ components:
   - ref: D15
     value: "BAT54S dual Schottky, series"
     package: "SOT-23"
-    lcsc: C47546
+    lcsc: C7420333
     block: "L sensor inputs and sensor supply"
     variant: "all"
     note: "Clamp to the rails"
@@ -2134,7 +2134,7 @@ components:
   - ref: D16
     value: "BAT54S dual Schottky, series"
     package: "SOT-23"
-    lcsc: C47546
+    lcsc: C7420333
     block: "L sensor inputs and sensor supply"
     variant: "all"
     note: "Clamp to the rails"
@@ -2193,7 +2193,7 @@ components:
   - ref: D17
     value: "BAT54S dual Schottky, series"
     package: "SOT-23"
-    lcsc: C47546
+    lcsc: C7420333
     block: "L sensor inputs and sensor supply"
     variant: "all"
     note: "Clamp to the rails"

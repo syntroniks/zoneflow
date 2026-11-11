@@ -21,10 +21,10 @@ user buys them whichever controller they choose.
 
 | USD per controller | 5 units | 10 units | 25 units | 100 units |
 |---|---|---|---|---|
-| 8-zone, board landed | 126.14 | 90.33 | 68.35 | 49.79 |
-| 8-zone, with enclosure | 136.01 | 97.47 | 74.18 | 54.97 |
-| 4-zone, board landed | 118.89 | 82.58 | 61.72 | 44.04 |
-| 4-zone, with enclosure | 128.76 | 89.72 | 67.56 | 49.22 |
+| 8-zone, board landed | 111.40 | 82.58 | 64.79 | 48.57 |
+| 8-zone, with enclosure | 121.28 | 89.72 | 70.62 | 53.76 |
+| 4-zone, board landed | 104.15 | 74.83 | 58.16 | 42.83 |
+| 4-zone, with enclosure | 114.03 | 81.97 | 63.99 | 48.01 |
 
 <!-- zfcost:end -->
 
@@ -40,8 +40,8 @@ What a whole batch costs, which is what has to be paid up front:
 
 | USD for the whole batch | 5 units | 10 units | 25 units | 100 units |
 |---|---|---|---|---|
-| 8-zone | 680.07 | 974.74 | 1,854.57 | 5,496.79 |
-| 4-zone | 643.82 | 897.23 | 1,688.90 | 4,921.96 |
+| 8-zone | 606.38 | 897.22 | 1,765.51 | 5,375.55 |
+| 4-zone | 570.13 | 819.70 | 1,599.84 | 4,800.73 |
 
 <!-- zfcost:end -->
 
@@ -51,16 +51,16 @@ What a whole batch costs, which is what has to be paid up front:
 
 | 8-zone, USD per controller | 5 units | 10 units | 25 units | 100 units |
 |---|---|---|---|---|
-| Parts fitted by JLCPCB | 38.11 | 34.49 | 31.90 | 25.62 |
+| Parts fitted by JLCPCB | 38.08 | 34.46 | 31.87 | 25.62 |
 | Parts bought loose: headers, C1, K1, plugs, display, spare fuse | 6.45 | 5.73 | 5.57 | 4.43 |
 | Coin cell (US distributor) | 2.74 | 1.37 | 0.61 | 0.37 |
-| Bare board | 14.38 | 8.23 | 4.54 | 2.56 |
-| Assembly fees | 27.95 | 14.66 | 6.68 | 2.97 |
-| &nbsp;&nbsp;of which for extended parts | 24.56 | 12.28 | 4.91 | 0.66 |
+| Bare board | 6.56 | 4.05 | 2.55 | 1.65 |
+| Assembly fees | 24.88 | 13.12 | 6.06 | 2.97 |
+| &nbsp;&nbsp;of which for extended parts | 21.49 | 10.74 | 4.30 | 0.60 |
 | Freight to the US | 6.10 | 3.77 | 2.01 | 1.40 |
-| US duty | 30.41 | 22.09 | 17.04 | 12.45 |
+| US duty | 26.59 | 20.08 | 16.12 | 12.14 |
 | Enclosure materials | 9.87 | 7.14 | 5.83 | 5.18 |
-| **Total per controller** | **136.01** | **97.47** | **74.18** | **54.97** |
+| **Total per controller** | **121.28** | **89.72** | **70.62** | **53.76** |
 | Assembly service | economic 5 | economic 10 | economic 25 | standard 100 |
 | Boards ordered | 5 | 10 | 25 | 100 |
 
@@ -70,16 +70,16 @@ What a whole batch costs, which is what has to be paid up front:
 
 | 4-zone, USD per controller | 5 units | 10 units | 25 units | 100 units |
 |---|---|---|---|---|
-| Parts fitted by JLCPCB | 33.28 | 29.29 | 27.53 | 21.79 |
+| Parts fitted by JLCPCB | 33.25 | 29.26 | 27.50 | 21.79 |
 | Parts bought loose: headers, C1, K1, plugs, display, spare fuse | 6.08 | 5.37 | 5.20 | 4.14 |
 | Coin cell (US distributor) | 2.74 | 1.37 | 0.61 | 0.37 |
-| Bare board | 14.38 | 8.23 | 4.54 | 2.56 |
-| Assembly fees | 27.78 | 14.48 | 6.50 | 2.82 |
-| &nbsp;&nbsp;of which for extended parts | 24.56 | 12.28 | 4.91 | 0.66 |
+| Bare board | 6.56 | 4.05 | 2.55 | 1.65 |
+| Assembly fees | 24.71 | 12.94 | 5.89 | 2.82 |
+| &nbsp;&nbsp;of which for extended parts | 21.49 | 10.74 | 4.30 | 0.60 |
 | Freight to the US | 6.10 | 3.77 | 2.01 | 1.40 |
-| US duty | 28.53 | 20.08 | 15.32 | 10.96 |
+| US duty | 24.71 | 18.07 | 14.40 | 10.65 |
 | Enclosure materials | 9.87 | 7.14 | 5.83 | 5.18 |
-| **Total per controller** | **128.76** | **89.72** | **67.56** | **49.22** |
+| **Total per controller** | **114.03** | **81.97** | **63.99** | **48.01** |
 | Assembly service | economic 5 | economic 10 | economic 25 | standard 100 |
 | Boards ordered | 5 | 10 | 25 | 100 |
 
@@ -87,26 +87,27 @@ What a whole batch costs, which is what has to be paid up front:
 
 ### Reading the tables
 
-- **At 5 units, fixed charges per order dominate.** The board's engineering
-  fee and the 0.2 mm hole option, the assembly setup, and above all the
-  extended-part fees are charged once per order whatever its size. With the
-  duty on them they are about 53 USD, 39 % of the 136 USD. Parts are about
-  a third.
-- **At 100 units, parts and duty dominate.** Parts are 30 of the 55 USD and
-  duty 12. Board and assembly fees together have fallen to 5.53 USD.
+- **At 5 units, fixed charges per order are the largest share.** The board's
+  engineering fee, the assembly setup and stencil, and above all the
+  extended-part fees are charged once per order whatever its size:
+  142.16 USD. With the duty on them they are about 38 USD per controller,
+  32 % of the 121 USD. Parts are 47 USD, 39 %.
+- **At 100 units, parts and duty dominate.** Parts are 30 of the 54 USD and
+  duty 12. Board and assembly fees together have fallen to 4.62 USD.
 - **Extended-part fees are the largest single fixed charge.** JLCPCB's
   Economic assembly charges 3.07 USD for each extended part type that is not
-  "preferred"; this board has 40 such types, so every order pays 122.80 USD
-  before it fits a part. On five boards that is 25 USD each, 33 USD with
-  duty, a quarter of the total. Standard assembly, which the model uses
+  "preferred"; this board has 35 such types, so every order pays 107.45 USD
+  before it fits a part. On five boards that is 21 USD each, 29 USD with
+  duty, a quarter of the total. It had 40 until five were replaced:
+  [fewer extended part types](#fewer-extended-part-types). Standard assembly, which the model uses
   above 50 boards, charges 1.53 USD for every type, basic or extended.
 
 <!-- zfcost:begin types -->
 
 | Build | Parts placed | Joints | Part types | Basic | Preferred extended | Extended, fee charged |
 |---|---|---|---|---|---|---|
-| 8-zone | 312 | 850 | 89 | 46 | 3 | 40 |
-| 4-zone | 267 | 740 | 89 | 46 | 3 | 40 |
+| 8-zone | 312 | 850 | 89 | 50 | 4 | 35 |
+| 4-zone | 267 | 740 | 89 | 50 | 4 | 35 |
 
 <!-- zfcost:end -->
 
@@ -114,21 +115,21 @@ What a whole batch costs, which is what has to be paid up front:
 
 | Units | Service | Extended-part fees, USD per batch | With duty, USD per controller | Share of the total |
 |---|---|---|---|---|
-| 5 | economic | 122.80 | 33.16 | 24 % |
-| 10 | economic | 122.80 | 16.58 | 17 % |
-| 25 | economic | 122.80 | 6.63 | 9 % |
-| 100 | standard | 65.79 | 0.89 | 2 % |
+| 5 | economic | 107.45 | 29.01 | 24 % |
+| 10 | economic | 107.45 | 14.51 | 16 % |
+| 25 | economic | 107.45 | 5.80 | 8 % |
+| 100 | standard | 59.67 | 0.81 | 1 % |
 
 <!-- zfcost:end -->
 
 - **US duty is the second-largest line at every quantity.** At the 35 % that
   JLCPCB says it collects on boards, it adds 35 % to everything made in
-  China, fees included: 30 USD of the 136 at 5 units, 12 of the 55 at 100.
-- **The 4-zone build saves only 5.75 to 7.25 USD.** It drops 45 parts, but every
+  China, fees included: 27 USD of the 121 at 5 units, 12 of the 54 at 100.
+- **The 4-zone build saves only 5.75 to 7.75 USD.** It drops 45 parts, but every
   part type stays (zones 1 to 4 use the same types as 5 to 8), so it pays
   the same per-order fees and the same board.
 - **Batch size is the biggest lever a builder controls.** Five boards cost
-  61 USD more each than 25 boards.
+  51 USD more each than 25 boards.
 
 ## Components
 
@@ -141,17 +142,15 @@ bought is the number fitted plus JLCPCB's attrition quantity for that part,
 and at least its minimum assembly quantity; the price break is the one that
 total reaches. Both quantities come from the parts search; reading them as
 attrition and minimum is an [assumption](#assumptions). They add 8.46 USD to
-a batch of five (1.69 per controller) and 6.62 USD to a batch of a hundred
+a batch of five (1.69 per controller) and 6.68 USD to a batch of a hundred
 (under 0.07 per controller): the minimums are 20 or fewer, and the parts they
 apply to cost a cent or less.
 
-Which parts JLCPCB fits comes from the layout in
-[pull request #39](https://github.com/syntroniks/zoneflow/pull/39): its
-placement files hold 307 parts for the 8-zone build and 262 for the 4-zone
-build, all SMT on the top side. The netlist has gained five parts since, the
-over-voltage detector of [hardware design section 9.5](../design/hardware-design.md#95-over-voltage-on-3v3-detector-u13),
-which that layout has yet to place. The model counts them: 312 and 267
-parts, and it checks that the BOM gives the same counts. The six through-hole parts (four terminal headers, the bulk
+Which parts JLCPCB fits comes from the [layout](layout.md) as it stands
+after its [review](../design/hardware-layout-review.md): its placement files
+hold 312 parts for the 8-zone build and 267 for the 4-zone build, all SMT on
+the top side. The model checks that the BOM gives the same counts. The six
+through-hole parts (four terminal headers, the bulk
 capacitor C1 and the relay K1) are not in the placement files, so they are
 bought loose with the order, as are the four plugs, the display panel and
 one spare 3 A fuse (0452003.MRL, the replacement named in the BOM). They are
@@ -211,35 +210,36 @@ From JLCPCB's online quote page, which needs no login, on 2026-11-11: FR-4,
 4 layers, 114 x 110 mm, 1.6 mm, 1 oz outer and 0.5 oz inner copper, green,
 single boards, default build time, every other option at its default. That
 is the stack-up the layout asks for; it needs no special option
-(hardware-layout section 2 in pull request #39). The calculator gave the same
+([hardware layout](../design/hardware-layout.md), section 2). The calculator gave the same
 price for HASL with lead, lead-free HASL and ENIG; the model assumes
 lead-free HASL.
 
 <!-- zfcost:begin pcbfab -->
 
-| Boards | USD, smallest hole 0.3 mm | USD, smallest hole 0.2 mm (this layout) | USD per board, 0.2 mm |
+| Boards | USD, smallest hole 0.3 mm (this layout) | USD per board, 0.3 mm | USD, smallest hole 0.2 mm |
 |---|---|---|---|
-| 5 | 32.80 | 71.89 | 14.38 |
-| 10 | 40.50 | 82.28 | 8.23 |
-| 20 | 56.00 | 103.17 | 5.16 |
-| 25 | 63.70 | 113.57 | 4.54 |
-| 30 | 71.40 | 123.98 | 4.13 |
-| 50 | 102.40 | 165.76 | 3.32 |
-| 75 | 131.50 | 208.35 | 2.78 |
-| 100 | 165.40 | 255.73 | 2.56 |
-| 150 | 233.40 | 350.68 | 2.34 |
-| 200 | 301.20 | 445.45 | 2.23 |
+| 5 | 32.80 | 6.56 | 71.89 |
+| 10 | 40.50 | 4.05 | 82.28 |
+| 20 | 56.00 | 2.80 | 103.17 |
+| 25 | 63.70 | 2.55 | 113.57 |
+| 30 | 71.40 | 2.38 | 123.98 |
+| 50 | 102.40 | 2.05 | 165.76 |
+| 75 | 131.50 | 1.75 | 208.35 |
+| 100 | 165.40 | 1.65 | 255.73 |
+| 150 | 233.40 | 1.56 | 350.68 |
+| 200 | 301.20 | 1.51 | 445.45 |
 
 <!-- zfcost:end -->
 
-**The 0.2 mm holes cost more than the layout expected.** The layout uses
-0.2 mm for the twelve thermal vias under the buck regulator U1 and records
-it as the smallest hole without a surcharge. On 2026-11-11, choosing
+**A 0.2 mm hole costs more, so the layout has none.** The layout first
+drilled twelve vias in the ground pad of the module U4 at 0.2 mm and recorded
+that as the smallest hole without a surcharge. On 2026-11-11, choosing
 "0.2mm/(0.3/0.35mm)" in the quote page added 18.10 USD for the hole size and
 switched on TG155 material and the 4-wire Kelvin test, 39 USD on five boards
-and 90 USD on a hundred. Enlarging those vias to 0.3 mm is the third
-[cost cut](#five-cheap-ways-to-cut-cost). It is a layout change, and the
-thermal path under U1 would have to be checked again.
+and 90 USD on a hundred. The
+[layout review](../design/hardware-layout-review.md) drilled those vias
+0.3 mm (its finding L9), and the design rules now fail a board with a smaller
+hole. The model uses the 0.3 mm column.
 
 The board quantity is rounded up to a quantity the quote page offers; the
 extra bare boards are spares.
@@ -250,7 +250,7 @@ From JLCPCB's price page, last updated 2026-10-22, and its capability page.
 Economic assembly takes 2 to 50 boards with parts on one side; Standard
 takes 2 to 80,000 on one or both sides. The model uses Economic up to 50
 and Standard above. For 100 eight-zone boards, one Standard order comes to
-54.97 USD per controller and two Economic orders of 50 to 62.89 USD, because
+53.76 USD per controller and two Economic orders of 50 to 60.42 USD, because
 each Economic order pays the extended-part fees and the board's engineering
 fee again.
 
@@ -264,10 +264,8 @@ fee again.
 | Packing | free | 0.50 + 0.00003 per cm² of board |
 | Manual (through-hole) assembly | 0.0164 per joint up to 10,000, plus 3.58 hand-soldering labour per order | the same, plus fixtures (8.21 each, 2 to 5 for these quantities) |
 
-Joints are counted from the layout: 836 soldered pins on the 8-zone board and
-726 on the 4-zone board, counting each pin once. The five parts of the
-over-voltage detector, which the layout has yet to place, add 14: 850 and
-740.
+Joints are counted from the layout: 850 soldered pins on the 8-zone board and
+740 on the 4-zone board, counting each pin once.
 
 **Through-hole parts.** The layout plans to solder C1 and K1 by hand from
 the top and leaves all six through-hole parts out of the placement files. The
@@ -280,8 +278,8 @@ options, by the published rules:
 
 | 8-zone, USD per controller (builder minutes per controller) | 5 units | 25 units | 100 units |
 |---|---|---|---|
-| Builder solders them | 136.01 (79 min) | 74.18 (60 min) | 54.97 (56 min) |
-| JLCPCB fits them (Standard service) | 152.26 (69 min) | 77.90 (50 min) | 56.15 (46 min) |
+| Builder solders them | 121.28 (79 min) | 70.62 (60 min) | 53.76 (56 min) |
+| JLCPCB fits them (Standard service) | 141.67 (69 min) | 75.16 (50 min) | 54.93 (46 min) |
 
 <!-- zfcost:end -->
 
@@ -412,9 +410,9 @@ transformer and the cable already installed.
 |---|---|---|
 | Economic assembly: setup, stencil, placement confirmation | 10.16 | Every order |
 | Standard assembly: setup, stencil, placement confirmation | 34.22 | Every order |
-| Economic extended-part fees, 8-zone | 122.80 | Every order |
-| Bare boards, 5 pieces, 0.2 mm holes | 71.89 | Every order; 25.00 of it is the engineering fee |
-| Prototype run: 5 eight-zone controllers, landed, with enclosures | 680.07 | Once |
+| Economic extended-part fees, 8-zone | 107.45 | Every order |
+| Bare boards, 5 pieces, smallest hole 0.3 mm | 32.80 | Every order; 25.00 of it is the engineering fee |
+| Prototype run: 5 eight-zone controllers, landed, with enclosures | 606.38 | Once |
 
 <!-- zfcost:end -->
 
@@ -476,7 +474,177 @@ from 2025-08-01 to internet-connected radio equipment, cybersecurity against
 EN 18031-1. RoHS applies too, which is one reason the model assumes
 lead-free HASL.
 
-## Five cheap ways to cut cost
+## Fewer extended part types
+
+Revision A had 40 part types that pay JLCPCB's Economic feeder fee. On
+2026-11-11 each of the 40 was looked up again in JLCPCB's parts library, for a
+basic part or a preferred extended part **in the same footprint** that meets
+every figure the design relies on. The rule was: no change to what the
+circuit does, no footprint change, no new layout. Five types changed, so 35
+are left.
+
+The library was read whole, not searched by keyword: the parts search
+returned 351 basic parts and 1,235 preferred extended parts that day, and
+every candidate below was matched against those two lists.
+
+<!-- zfcost:begin consolidation -->
+
+| Build | Units | Service | Fee-carrying types | Extended-part fees, USD per batch | Saved per batch, USD, with duty and part prices | USD per controller | Saved per controller, USD |
+|---|---|---|---|---|---|---|---|
+| 8-zone | 5 | economic | 40 to 35 | 122.80 to 107.45 | 20.92 | 125.46 to 121.28 | 4.18 |
+| 8-zone | 10 | economic | 40 to 35 | 122.80 to 107.45 | 21.12 | 91.83 to 89.72 | 2.11 |
+| 8-zone | 25 | economic | 40 to 35 | 122.80 to 107.45 | 21.74 | 71.49 to 70.62 | 0.87 |
+| 8-zone | 100 | standard | 40 to 35 | 65.79 to 59.67 | -0.71 | 53.75 to 53.76 | -0.01 |
+| 4-zone | 5 | economic | 40 to 35 | 122.80 to 107.45 | 20.92 | 118.21 to 114.03 | 4.18 |
+| 4-zone | 10 | economic | 40 to 35 | 122.80 to 107.45 | 21.12 | 84.08 to 81.97 | 2.11 |
+| 4-zone | 25 | economic | 40 to 35 | 122.80 to 107.45 | 21.74 | 64.86 to 63.99 | 0.87 |
+| 4-zone | 100 | standard | 40 to 35 | 65.79 to 59.67 | -0.71 | 48.00 to 48.01 | -0.01 |
+
+<!-- zfcost:end -->
+
+The table is the model run twice: once on the board as it is now and once
+with the five old part numbers put back
+(`tools/cost/data/replaced-parts.csv`, fetched the same day). The fees fall
+by 5 x 3.07 = 15.35 USD per Economic order. The batch saves a little more
+than that with duty, and a few cents come from part prices. At 100 units
+there is no saving, because Standard assembly charges 1.53 USD for every
+type, basic or extended; the new parts cost a cent more per board there.
+
+### What was swapped
+
+| Parts | Was | Is now | Library, stock | Why it is the same part for this circuit |
+|---|---|---|---|---|
+| C4, bootstrap of the buck converter | Samsung CL10B222KB8NNNC, C16033 | Fenghua 0603B222K500NT, C1604 | Basic, 543,476 | 2.2 nF, X7R, ±10 %, 50 V, 0603: all equal |
+| C24, C34, C55: comparator inputs of the keep-alive detector, the zero-cross input and the 3V3 over-voltage detector | Samsung CL10B103KB8NNNC, C1589 | Fenghua 0603B103K500NT, C57112 | Basic, 5,459,902 | 10 nF, X7R, ±10 %, 50 V, 0603: all equal. Insulation resistance 10 Gohm minimum in both makers' specifications |
+| C33, filter ahead of the over-current comparators | Samsung CL10B472KB8NNNC, C1621 | Fenghua 0603B472K500NT, C53987 | Basic, 818,247 | 4.7 nF, X7R, ±10 %, 50 V, 0603: all equal |
+| C28, C29, feedback capacitors of the high-gain current amplifier | Samsung CL10C221JB8NNNC, 220 pF C0G, C27675 | Samsung CL10C331JB8NNNC, 330 pF C0G, C1664 | Basic, 627,149 | **A value change**, the only one. Same maker, series, C0G, ±5 %, 50 V, 0603. No 220 pF C0G is basic or preferred in 0603; the basic 220 pF is X7R. See below |
+| D7, D9, D15, D16, D17, D22: the two keep-alive pump diodes and four input clamps | Nexperia BAT54S,215, C47546 | Hongjiacheng BAT54S, C7420333 | Preferred extended, 514,643 | Data-sheet limits equal where the design uses them. See below |
+
+**The three X7R capacitors.** Value, dielectric, tolerance, voltage and
+package were read from the listings, and the insulation resistance from the
+Fenghua general specification that LCSC serves for these numbers (10 Gohm
+minimum up to 25 nF) and the Samsung catalogue (10 Gohm or 500 Mohm x uF,
+whichever is less). C24, C33 and C55 sit in circuits that the reviews
+simulated. Those simulations take a capacitance and its tolerance, which did
+not change: see "checks" below.
+
+**C28 and C29, 220 pF to 330 pF.** With the 49.9 kohm feedback resistors
+they set the corner of the high-gain current amplifier: 14.5 kHz before,
+9.7 kHz now. That output goes only to the ADC pin, through the 1.6 kHz filter
+R47 and C31, so the corner that the firmware sees does not move. The
+over-current comparators hang on the other amplifier. A larger feedback
+capacitor makes the stage slower and no less stable. `hardware/sim/isense.cir`
+run with 330 pF gives the same results at the precision the design quotes:
+664.9 mV/A on the high-gain channel (0.664935 V/A before, 0.664932 after),
+0.94 mV peak to peak for 20 mV of ground shift on both channels, the same
+low-gain figures, and the trip 66 us after a short (65.7 and 65.9 us, a
+difference of one time step in a path that does not contain these parts).
+The other choice was 100 pF C0G, which is on the board already as C8 and
+would remove a type; it moves the corner up to 32 kHz, the direction of less
+filtering, so I took 330 pF.
+
+**BAT54S.** I read the Hongjiacheng sheet (BAT54 to BAT54S, rev 2.0) against
+the Nexperia one the design and review A2 used:
+
+| | Nexperia BAT54S | Hongjiacheng BAT54S |
+|---|---|---|
+| Forward voltage, maximum at 0.1, 1, 10, 30 mA | 240, 320, 400, 500 mV | 240, 320, 400, 500 mV |
+| The same at 100 mA | 800 mV | 1000 mV |
+| Reverse current, maximum at 25 V and 25 °C | 2 uA | 2 uA |
+| Reverse current, typical, hot | 18 to 35 uA at 85 °C, 180 to 300 uA at 125 °C, from 1 to 10 V | about 25 to 55 uA at 100 °C from 0 to 10 V, read from figure 2 |
+| Reverse current, typical, 25 °C | 0.25 to 0.7 uA from 1 to 10 V | about 0.1 to 0.3 uA from 0 to 10 V |
+| Capacitance, recovery | 10 pF, 5 ns | 10 pF, 5 ns |
+| Reverse voltage, forward current, surge | 30 V, 200 mA, 600 mA | 30 V, 200 mA, 600 mA |
+| Junction temperature | 150 °C | 125 °C |
+| Pins | 1 anode, 2 cathode, 3 common | The same, from the function diagram |
+
+No diode on this board carries more than about 15 mA (3.3 V through R29,
+220 ohm), so the 100 mA row is not used, and the air inside the enclosure
+stays at or below 70 °C. The corner runs of review A2
+(`hardware/sim/failsafe/`) take the diode between two ends: the maximum
+forward voltages of the table, which are equal in the two sheets, and three
+times the typical leakage of the Nexperia figure, which the Hongjiacheng
+curves stay under. So those corners cover the new part as they covered the
+old one. The limit that matters for safety, how long a detector can hold
+after the keep-alive stops, is set by the bleed resistors with a diode that
+does not leak at all, and does not depend on the maker. What neither sheet
+gives is a maximum leakage when hot; that stays the bench item it was
+([design](../design/hardware-design.md), section 22).
+
+"Preferred extended" is JLCPCB's flag and JLCPCB can withdraw it. If it
+does, this type pays 3.07 USD again and nothing else changes.
+
+**Checks run for the swaps.** No board exists; these are the checks that ran.
+
+- `make -C hardware design-check`: netlist, design tables, BOM and the committed schematic outputs agree.
+- `make` in `hardware/zoneflow-a/` with the autorouter forbidden (`ROUTE_FLAGS=--stored-only`): netlist parity, ERC, DRC with schematic parity and every board check pass on the stored routing.
+- The board file differs from the one before in 41 lines, each a `Value`, `Spec`, `LCSC`, `MPN` or `Manufacturer` field of one of the 13 parts. No Gerber, drill or placement file changed.
+- `make cpl-check`: 312 placements of the 8-zone build and 267 of the 4-zone build against JLCPCB's library footprints for the new numbers, none misfits. The new BAT54S lands pin 1 on pin 1 with the same 180 degree correction, 0.06 mm at worst. JLCPCB's library **symbol** for it names the pins as a common-anode pair, which is not what the maker's sheet draws; the footprint numbers the pads as every SOT-23 does. One more reason to look at the placement preview and to probe D7 on the first board.
+- The fail-safe simulation builds its decks from the netlist. All 1,440 corner decks and the four scenario decks are byte for byte what they were before the swap. `failsafe.py corners` run again (2,104 runs): no run changed its verdict, and every line of the summary is the same but for one coil current of zero that prints as -1.04e-05 mA where it printed -1.11e-05. 197 rows differ from the committed files by one unit in the last printed digit (1 ms, 1 mV, 0.01 mA). That is not this change: the committed files were from the netlist of review A2, before the over-voltage detector U13. Three of those rows run on that netlist give the committed figures, and on the netlist before and after the swap they give one and the same new figure. The result files are now those of the present netlist.
+- `hardware/sim/isense.cir` with 330 pF, as above.
+
+### What was not swapped, and why
+
+**Protection parts, 11 types.** Left alone unless the same maker's part
+number is basic, and none is: the fuses 0154003.DRT and 0451.500MRL, the
+PTCs 1206L012WR, 1812L020/60DR and BSMD2920-100-60V, the triac
+T810-600B-TR, the opto-triac MOC3023SR2M, and the clamps SMCJ48CA, SMBJ48CA,
+SMBJ6.0A and USBLC6-2SC6. The design's surge and short-circuit sums rest on
+these makers' curves.
+
+**No basic or preferred part of the kind, 13 types.** LM5164DDAR,
+SRN6045TA-470M, ESP32-S3-WROOM-1-N16R8, TCA9539PWR, TLV803EA30DBZR,
+TPS3701DDCR, TPS2553DBVR, the USB-C, Qwiic and display connectors, the cell
+holder, the encoder, and the 6 x 6 mm tactile switch. The two lists hold no
+connector, no power inductor and no part of these functions; the two basic
+tactile switches are 5.1 x 5.1 mm and 4 x 3 mm.
+
+**A near part exists and fails on a figure, 11 types.**
+
+| Type | Nearest basic or preferred part | Why not |
+|---|---|---|
+| LDL1117S33R, 3.3 V regulator | AMS1117-3.3, C6186, basic, same SOT-223 pins | Drops 1.1 V at 0.8 A by its listing. On USB power the input falls to 4.1 V, which leaves 0.8 V |
+| LM2901DR, quad comparator | LM393, C7955, basic | Two comparators in SOIC-8, 0 to 70 °C. The board needs four, in SOIC-14, from -20 °C |
+| 74HC132D, quad Schmitt NAND | 74HC14D, C5605, basic | A hex inverter. It cannot make the latch |
+| CL32B225KCJSNNE, 2.2 uF 100 V, 1210 | None | No 1210 capacitor is basic or preferred |
+| SR2512JK-073RL, 3 ohm surge resistor, and RLP25FEER100, 0.1 ohm shunt | None | No 2512 resistor is basic or preferred. The basic 0.1 ohm is a 1206 thick-film part, 0.25 W and 800 ppm/K |
+| CL21B103KCANNNC, 10 nF 100 V, 0805: nine snubbers and C48 | 10 nF 50 V, C1710, basic | The snubber sees 45 V peak at 32 VAC and up to the 77 V of the clamp. The only basic 100 V part in 0805 is 100 nF, ten times the snubber current |
+| 1206W4F330JT5E, 33 ohm, backlight | 22 ohm 1206, C17958, basic | 89 mA into a backlight rated 80 mA. The basic 33 ohm parts are 0805 and 0603: 0.125 W against the 0.16 W it dissipates |
+| 1206W4F470KT5E, 4.7 ohm, sensor supply | 1 ohm and 10 ohm 1206, basic | 10 ohm doubles the drop to the sensor terminal. 1 ohm lets five times the current into D24 in a miswire, where the margin is small already (design section 13.5) |
+| 4D03WGJ0104T5E, 100 kohm x4 | 10 kohm x4, C29718, basic | Each element limits what one fault can push into a valve pin or the LED supply to 33 uA, far under the 0.25 mA at which the fail-safe analysis counts an opto-triac as fired. 10 kohm lets 0.2 to 0.33 mA through. It would need the fault-injection runs redone and their margins judged again |
+| LTST-C190KGKT, yellow-green LED | NCD0603Y2, yellow, C89811, preferred, 129,644 | Another colour, and its forward voltage may be 2.6 V where this one stops at 2.4 V. It is brighter (50 mcd minimum at 15 mA against 18 at 20 mA) and would work. The colour of the front panel is the owner's choice |
+
+**Values that could share a type.** Merging two basic values saves nothing
+on an Economic order and 1.53 USD on a Standard one. I looked at the pairs
+that serve one purpose and merged none:
+
+- **Pull-ups of 3.3 kohm (five controls) into 2.2 kohm.** The encoder would get 1.5 mA, inside its 1 to 10 mA. But these pull-ups are in the fail-safe bridge analysis: a control net bridged to the keep-alive pin is modelled as 13.3 kohm to 3V3 (`hardware/sim/failsafe/faults.py`). A change means those runs again.
+- **Pull-ups of 4.7 kohm on the Qwiic bus into 2.2 kohm.** Boards plugged in bring their own pull-ups, and the sum must stay above 1 kohm. The third 4.7 kohm part, R92, is in the gate-drive read-back.
+- **22 nF on the three sensor inputs into 10 nF.** It would halve the filter time on the flow input for no saving that counts.
+- **SS34 and SS210, M7.** Different voltage ratings for different places.
+- **LED resistors.** Already one value, 680 ohm; the red fault LED uses the 1 kohm that 19 other places use.
+
+### What a design change could still remove
+
+For [issue #31](https://github.com/syntroniks/zoneflow/issues/31). Each row
+is one fee-carrying type, 3.07 USD per Economic order.
+
+| Type | Change it needs |
+|---|---|
+| Yellow-green LED | A decision to make the lights yellow: NCD0603Y2 is preferred extended and fits the footprint and the 680 ohm resistors |
+| 100 kohm x4 arrays | 10 kohm arrays, with the fail-safe fault runs redone, or twelve basic 100 kohm 0603 resistors on a changed layout |
+| SMBJ48CA, SMCJ48CA, SMBJ6.0A | A second maker qualified for each clamp. Hongjiacheng parts of these names are preferred extended (2,619, 14,082 and 174,679 in stock; the first is thin). Their clamping curves would have to be read against the sums of design sections 4.4, 4.8 and 6.6 |
+| USBLC6-2SC6 | SRV05-4 is preferred extended and its pins suit this wiring. The same qualification |
+| 10 nF 100 V, 0805 | Dropping the snubbers, the issue's own candidate, removes nine of the ten. The tenth, C48, could then be the basic 100 nF 100 V part |
+| 33 ohm 1206 | Two basic 1206 resistors in series, 22 and 10 ohm, on a changed layout |
+| 4.7 ohm 1206 | Two basic 10 ohm 1206 resistors in parallel, on a changed layout |
+| 6 x 6 mm tactile switch | The basic 5.1 mm switch that SW1 and SW2 use, with longer button caps in the enclosure |
+| 0.1 ohm shunt, 3 ohm surge resistor, 2.2 uF 100 V | None found: the ratings are the reason for the parts |
+
+The scenario `needs_decision` in the next section prices the first four rows
+(six types) together.
+
+## Four cheap ways to cut cost
 
 Ordered from least work to most. Each saving is the model run with the
 change, against the base case, for the 8-zone build.
@@ -486,8 +654,7 @@ change, against the base case, for the 8-zone build.
 | Scenario | Change | Saves USD per controller at 5 | Saves USD per controller at 25 | Saves USD per controller at 100 |
 |---|---|---|---|---|
 | `selftap` | Self-tapping screws in place of the seven heat-set inserts | 1.67 | 0.67 | 0.58 |
-| `basic_passives` | Seven extended passives of common values replaced by basic parts of the same value | 5.80 | 1.16 | 0.00 |
-| `vias` | The twelve 0.2 mm thermal vias under U1 enlarged to 0.3 mm | 10.55 | 2.69 | 1.22 |
+| `needs_decision` | Six more extended types moved to a basic or preferred part in the same footprint; each needs a decision | 4.97 | 0.99 | 0.00 |
 | `issue31` | Issue #31: no output snubbers; zone LED in series with the opto-triac LED | 0.34 | 0.36 | 0.32 |
 
 <!-- zfcost:end -->
@@ -496,29 +663,29 @@ change, against the base case, for the 8-zone build.
 
 | Build | 5 units | 25 units | Saved 5 to 25 | 100 units | Saved 25 to 100 |
 |---|---|---|---|---|---|
-| 8-zone | 136.01 | 74.18 | 61.83 | 54.97 | 19.21 |
-| 4-zone | 128.76 | 67.56 | 61.21 | 49.22 | 18.34 |
+| 8-zone | 121.28 | 70.62 | 50.65 | 53.76 | 16.86 |
+| 4-zone | 114.03 | 63.99 | 50.03 | 48.01 | 15.99 |
 
 <!-- zfcost:end -->
 
 1. **Order more at once** (no design change). Going from 5 to 25 boards
-   saves 61 USD per controller, more than all the design changes together.
+   saves 51 USD per controller, more than all the design changes together.
    Five friends ordering one batch of 25 pay less each than one person
    ordering five.
 2. **Self-tapping screws** (`fastener = "selftap"` in the enclosure model, no
    design change): 0.58 to 1.67 USD. The printing page says this suits a unit
    that is opened a few times.
-3. **Basic passives** (BOM change only): seven extended, non-preferred
-   passives have common values (2.2 nF, 4.7 nF, 10 nF and 220 pF at 50 V in
-   0603, 10 nF 100 V in 0805, 33 ohm and 4.7 ohm in 1206). Each type moved to
-   a basic part saves 3.07 USD per Economic order. 5.80 USD per controller at
-   5 boards, nothing at 100, where Standard charges every type alike. The
-   replacement parts have not been chosen: each needs a basic part of the
-   same value, voltage, dielectric and package, checked against its
-   datasheet.
-4. **0.3 mm thermal vias under U1** (small layout change): 10.55 USD at 5,
-   1.22 at 100. The thermal path of U1's ground pad has to be checked again.
-5. **Part-count reduction,
+3. **Fewer extended part types** (BOM change only). The swaps that change
+   nothing in the circuit are made: five types,
+   [above](#fewer-extended-part-types). Of the seven passives this page
+   first named, four are among them; the other three (10 nF 100 V in 0805,
+   33 ohm and 4.7 ohm in 1206) have no basic part in their footprint. Six
+   more types have a basic or preferred part that fits, and each needs a
+   decision first: the colour of the lights, the pull-up arrays of the
+   fail-safe circuit, a second maker for three clamps and for the USB
+   protection. Together they are 4.97 USD per controller at 5 boards and
+   nothing at 100, where Standard charges every type alike.
+4. **Part-count reduction,
    [issue #31](https://github.com/syntroniks/zoneflow/issues/31)**: the two
    candidates priced here, dropping the output snubbers and putting each zone
    LED in series with its opto-triac's LED, remove 27 parts and 54 joints and
@@ -530,7 +697,7 @@ change, against the base case, for the 8-zone build.
    price of whatever drives the triacs instead; it also removes a protection
    layer and needs an explicit decision.
 
-The 4-zone build saves 5.75 to 7.25 USD over the 8-zone build, far less than
+The 4-zone build saves 5.75 to 7.75 USD over the 8-zone build, far less than
 ordering ten boards in place of five.
 
 ## Against other controllers
@@ -553,10 +720,10 @@ A builder's cost is not a retail price: a seller adds labour, testing,
 certification, support, returns, a margin and, in the EU, VAT. With that in
 mind:
 
-- **At 5 units**, an 8-zone ZoneFlow costs about 136 USD landed, close to
-  the 150 USD of an OpenSprinkler 3.4 AC, which arrives built and
+- **At 5 units**, an 8-zone ZoneFlow costs about 121 USD landed, 29 USD
+  under the 150 USD of an OpenSprinkler 3.4 AC, which arrives built and
   supported.
-- **At 25 units**, 74 USD; **at 100**, 55 USD. That is materials and fees
+- **At 25 units**, 71 USD; **at 100**, 54 USD. That is materials and fees
   only; it leaves room under the OpenSprinkler prices for the costs a seller
   carries, but nothing here says how much.
 - The cheaper open controllers switch relays or latching DC valves, with
@@ -568,21 +735,21 @@ mind:
 
 | 8-zone, USD per controller | 5 units | 25 units | 100 units |
 |---|---|---|---|
-| Base case | 136.01 | 74.18 | 54.97 |
-| US duty 0 % | 105.60 | 57.14 | 42.52 |
-| US duty 25 % | 127.33 | 69.31 | 51.41 |
-| US duty 60 % | 157.73 | 86.35 | 63.86 |
-| Display panel price x 0.5 | 133.60 | 72.13 | 53.34 |
-| Display panel price x 1.5 | 138.43 | 76.24 | 56.59 |
-| ESP32-S3 module price x 0.75 | 134.34 | 72.73 | 53.84 |
-| ESP32-S3 module price x 1.25 | 137.68 | 75.63 | 56.10 |
+| Base case | 121.28 | 70.62 | 53.76 |
+| US duty 0 % | 94.69 | 54.50 | 41.62 |
+| US duty 25 % | 113.68 | 66.02 | 50.29 |
+| US duty 60 % | 140.27 | 82.13 | 62.42 |
+| Display panel price x 0.5 | 118.86 | 68.57 | 52.13 |
+| Display panel price x 1.5 | 123.69 | 72.67 | 55.38 |
+| ESP32-S3 module price x 0.75 | 119.61 | 69.17 | 52.63 |
+| ESP32-S3 module price x 1.25 | 122.95 | 72.07 | 54.89 |
 
 <!-- zfcost:end -->
 
 Duty moves the answer most: each 10 points of duty is about 3.5 USD per
-controller at 100 units and 8.5 USD at 5. The display panel and the module
+controller at 100 units and 7.6 USD at 5. The display panel and the module
 are the two parts most likely to change price or source, and neither moves
-the total by more than 2 USD within the ranges shown.
+the total by more than 2.5 USD within the ranges shown.
 
 ## Supply risks
 
@@ -595,11 +762,11 @@ the total by more than 2 USD within the ranges shown.
 - **The 48 V TVS** SMBJ48CA has about four 100-unit batches in stock. It is
   a common part from several makers, so this is a matter of choosing a
   second LCSC number, not a redesign.
-- **Extended parts in general**: 40 of the 89 types are extended, and an
+- **Extended parts in general**: 39 of the 89 types are extended, and an
   extended part can go out of stock at JLCPCB between ordering and
   production. Pre-ordering them is possible but ties up money.
 - **Tariffs** changed several times in 2026 (see above). A change of 25 points
-  moves an 8-zone controller by 9 to 21 USD.
+  moves an 8-zone controller by 9 to 19 USD.
 - **Prices are one day's prices.** JLCPCB's price page says prices vary with
   exchange rates; it adjusted board prices in August 2026.
 
@@ -630,7 +797,7 @@ Each is in `tools/cost/data/assumptions.toml` and can be changed there or with
 | `tier_by_order_qty` | `true` | A part's price break is chosen by the quantity ordered for the whole batch, as on the JLCPCB parts search. |
 | `service` | `auto` | JLCPCB assembly service: 'auto' uses Economic up to 50 boards (its limit) and Standard above; 'economic' or 'standard' forces one. Economic above 50 is priced as several orders of at most 50. |
 | `tht_by` | `builder` | Who solders the six through-hole parts (four headers, C1, K1). 'builder': bought loose with the order and soldered by hand, as hardware-layout.md section 12 plans. 'assembler': JLCPCB's manual assembly fee per joint plus its hand-soldering labour per order, and Standard service because C1 and K1 are on the bottom side. Neither has been asked of JLCPCB. |
-| `pcb_hole` | `0p2` | The layout needs 0.2 mm holes (twelve thermal vias under U1), so the 0.2 mm price applies. '0p3' prices the board with those vias enlarged to 0.3 mm, which is a layout change. |
+| `pcb_hole` | `0p3` | The smallest hole of the layout is 0.3 mm since its review (finding L9 of hardware-layout-review.md), so the default price applies. '0p2' prices the board as it was before, with twelve 0.2 mm vias in the ground pad of the module. |
 | `pcb_qty_round_up` | `true` | The board quantity is the smallest quoted quantity at or above the number of controllers. Extra bare boards are spares. |
 | `us_tariff_rate` | `0.35` | Duty rate on the China-made goods (parts, board, assembly). 0.35 is what JLCPCB says it collects on PCBs under DDP (Section 301 25 % plus 10 %). It changes often; the page shows 0, 0.25, 0.35 and 0.60. |
 | `tariff_on_freight` | `false` | US duty is assessed on the goods' value, not on the international freight. |
@@ -656,7 +823,15 @@ Each is in `tools/cost/data/assumptions.toml` and can be changed there or with
 All read on 2026-11-11 unless a date is given.
 
 - JLCPCB parts search, per LCSC number: stock, price breaks, library, minimum
-  and attrition quantities (`tools/cost/data/jlcpcb-parts.csv`).
+  and attrition quantities (`tools/cost/data/jlcpcb-parts.csv`). The same
+  search with the library filter set to basic (351 parts) and to preferred
+  (1,235 parts), read whole for the part swaps.
+- For the swaps: Zhuhai Hongjiacheng, "BAT54 thru BAT54S", rev 2.0, the sheet
+  LCSC serves for C7420333. Fenghua, general specification of multilayer
+  chip capacitors, the sheet LCSC serves for C1604, C57112 and C53987.
+  Samsung Electro-Mechanics MLCC catalogue, the sheet for C1589 and C1664.
+  NationStar NCD0603Y2 and Lite-On LTST-C190KGKT sheets for the LED that was
+  not swapped. JLCEDA library footprints for the five new numbers.
 - JLCPCB online quote page, cart.jlcpcb.com/quote: board prices and US
   freight.
 - JLCPCB, [PCB assembly price](https://jlcpcb.com/help/article/pcb-assembly-price),

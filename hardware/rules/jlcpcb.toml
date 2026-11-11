@@ -16,13 +16,23 @@ read = "2026-11-10"
 # "0.10 / 0.10 mm (4 / 4 mil)" for 1 oz, 1-2 layer; "Multilayer: 0.09 / 0.09 mm".
 min_track_width = 0.10
 min_clearance = 0.10
-# "Preferred Min. Via hole size: 0.2mm". Holes of 0.1 or 0.15 mm, and 0.2 or
-# 0.25 mm holes with a via diameter under 0.45 mm, "will cost more"; the
-# absolute minimum is 0.15 mm hole / 0.25 mm diameter. These two values keep
-# the board in the no-surcharge range.
-min_through_hole_diameter = 0.20
+# The smallest hole that costs nothing extra is 0.30 mm. JLCPCB's help article
+# "In what cases will there be charged extra?", section 4, last updated
+# 2026-11-10 and read 2026-11-11: holes below "the standard size (diameter of
+# 0.3mm or more)" cost more, and a four-wire Kelvin test is often required for
+# them. On 2026-11-11 the quote page priced a board with 0.2 mm holes with a
+# surcharge and forced TG155 material and that test (project cost analysis,
+# pull request #40; the reviewer did not open the quote page). The capabilities
+# page, read the same day, still says "Preferred Min. Via hole size: 0.2mm" and
+# that only "0.2mm or 0.25mm hole size with via diameter less than 0.45mm,
+# will cost more": the two pages disagree and the quote decides. What the fab
+# can drill at a price is 0.15 mm hole / 0.25 mm diameter. DRC fails on any
+# hole under 0.30 mm, in a via or in a footprint.
+min_through_hole_diameter = 0.30
+# "Via diameter should be 0.1mm(0.15mm preferred) larger than Via hole size."
+# The ring below is wider than that asks for: it is the value this file had
+# when 0.20 mm holes were allowed, and no via of either board is under it.
 min_via_diameter = 0.45
-# (0.45 - 0.20) / 2, the ring of the smallest no-surcharge via.
 min_via_annular_width = 0.125
 # "Via Hole-to-Hole Spacing 0.2mm". Pad holes need 0.45 mm; see jlcpcb.kicad_dru.
 min_hole_to_hole = 0.20

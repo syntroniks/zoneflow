@@ -421,16 +421,17 @@ def enclosure_cost(n: int, inp: Inputs) -> float:
 # Scenarios
 # --------------------------------------------------------------------------
 
-# Extended, non-preferred passives of common values: a basic part of the same
-# value, rating and package is likely to exist. Not checked part by part.
-GENERIC_EXTENDED_PASSIVES = {
-    "C16033": "2.2 nF 50 V 0603",
-    "C1589": "10 nF 50 V 0603",
-    "C27675": "220 pF 50 V C0G 0603",
-    "C1621": "4.7 nF 50 V 0603",
-    "C18741": "10 nF 100 V 0805",
-    "C18005": "33 R 1206",
-    "C17937": "4.7 R 1206",
+# Extended, non-preferred types for which the JLCPCB library held a basic or a
+# preferred extended part in the same footprint on 2026-11-11, and which the
+# BOM consolidation left alone because the swap is a decision and not a
+# like-for-like replacement. docs/hardware/cost.md says why for each.
+NEEDS_DECISION = {
+    "C125094": "zone and status LED: yellow NCD0603Y2 (C89811, preferred) in place of yellow-green",
+    "C1996": "100 kohm x4 arrays: 10 kohm x4 (C29718, basic)",
+    "C151264": "TVS SMBJ48CA: the same type from another maker (C19077591, preferred)",
+    "C151287": "TVS SMCJ48CA: the same type from another maker (C41411765, preferred)",
+    "C83270": "TVS SMBJ6.0A: the same type from another maker (C19077560, preferred)",
+    "C7519": "USBLC6-2SC6: SRV05-4 (C7420376, preferred)",
 }
 
 # Issue #31 candidates priced here: drop the output snubbers (47 R + 10 nF per
@@ -440,14 +441,9 @@ SNUBBER_R, SNUBBER_C, LED_R = "C17714", "C18741", "C23228"
 CHANNELS = {"8-zone": 9, "4-zone": 5}
 
 
-def scenario_basic_passives(inp: Inputs) -> Inputs:
-    return inp.copy(basic_override=frozenset(GENERIC_EXTENDED_PASSIVES))
-
-
-def scenario_vias(inp: Inputs) -> Inputs:
-    new = inp.copy()
-    new.a["pcb_hole"] = "0p3"
-    return new
+def scenario_needs_decision(inp: Inputs) -> Inputs:
+    """The fee of the six types of NEEDS_DECISION removed. Part prices are left as they are."""
+    return inp.copy(basic_override=frozenset(NEEDS_DECISION))
 
 
 def scenario_selftap(inp: Inputs) -> Inputs:
@@ -472,16 +468,46 @@ def scenario_issue31(inp: Inputs) -> Inputs:
 
 SCENARIOS = {
     "selftap": ("Self-tapping screws in place of the seven heat-set inserts", scenario_selftap),
-    "basic_passives": (
-        "Seven extended passives of common values replaced by basic parts of the same value",
-        scenario_basic_passives,
+    "needs_decision": (
+        "Six more extended types moved to a basic or preferred part in the same footprint; each needs a decision",
+        scenario_needs_decision,
     ),
-    "vias": ("The twelve 0.2 mm thermal vias under U1 enlarged to 0.3 mm", scenario_vias),
     "issue31": (
         "Issue #31: no output snubbers; zone LED in series with the opto-triac LED",
         scenario_issue31,
     ),
 }
+
+
+# The BOM consolidation (issue #31) replaced five extended part numbers by
+# basic or preferred ones. data/replaced-parts.csv keeps the snapshot rows of
+# the old numbers, fetched on the same day as the new ones, with the number
+# that replaced each. From it the model prices the board as it was, so that
+# the saving on the page is calculated and not copied.
+def load_replaced(path: Path = DATA / "replaced-parts.csv") -> dict[str, Part]:
+    """New LCSC number -> the part it replaced."""
+    with path.open(newline="") as f:
+        new_of = {r["lcsc"]: r["replaced_by"] for r in csv.DictReader(f)}
+    old = load_parts(path)
+    return {new_of[code]: part for code, part in old.items()}
+
+
+def before_consolidation(inp: Inputs) -> Inputs:
+    """The same order with the five replaced part numbers put back."""
+    replaced = load_replaced()
+    lines = [
+        replace(ln, lcsc=replaced[ln.lcsc].lcsc, mpn=replaced[ln.lcsc].mpn) if ln.lcsc in replaced else ln
+        for ln in inp.lines
+    ]
+    parts = dict(inp.parts)
+    parts.update({p.lcsc: p for p in replaced.values()})
+    return inp.copy(lines=lines, parts=parts)
+
+
+def fee_types(inp: Inputs, build: str) -> int:
+    """SMT part types of a build that pay the Economic feeder fee."""
+    smt = {ln.lcsc for ln in inp.lines if ln.qty[build] > 0 and ln.kind == "smt"}
+    return sum(1 for c in smt if inp.fee_extended(c))
 
 
 def with_price_factor(inp: Inputs, lcsc: str, factor: float) -> Inputs:

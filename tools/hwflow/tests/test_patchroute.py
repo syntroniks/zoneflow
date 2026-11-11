@@ -1,0 +1,184 @@
+# SPDX-License-Identifier: Apache-2.0
+"""The maze router of the patch step, on made-up boards. Reading a KiCad board is not tested here."""
+
+from hwflow import patchroute as pr
+
+LAYERS = ["F.Cu", "In2.Cu", "B.Cu"]
+F, ALL = frozenset(["F.Cu"]), frozenset(LAYERS + ["In1.Cu"])
+
+
+def clearance(net):
+    return 0.6 if net == "/WIDE" else 0.2
+
+
+def grid_for(items, areas=(), net="/A", width=0.2, extra=(), window=(0.5, 0.5, 10.5, 6.5)):
+    return pr.build_grid(list(items), list(areas), clearance, net, width, window, LAYERS, list(extra), {"GND"},
+                         (12.0, 8.0))
+
+
+def route(grid, a, b, la=F, lb=F):
+    starts, goals = pr.nodes_of(grid, la, a), pr.nodes_of(grid, lb, b)
+    for n in starts + goals:
+        grid.blocked[grid.layers[n[0]]][n[2] * grid.w + n[1]] = 0
+    return pr.search(grid, starts, goals)
+
+
+def test_a_free_board_gives_a_straight_track():
+    g = grid_for([])
+    path = route(g, (1.0, 3.0), (9.0, 3.0))
+    tracks = pr.to_tracks(g, path, "/A", 0.2)
+    assert len(tracks) == 1 and tracks[0]["layer"] == "F.Cu"
+    assert tracks[0]["points"] == [[1.0, 3.0], [9.0, 3.0]]
+
+
+def test_a_wall_on_one_layer_is_passed_with_two_vias():
+    wall = ("/B", F, ("seg", (5.0, 0.0), (5.0, 8.0), 0.3), "", 0.0)
+    g = grid_for([wall])
+    path = route(g, (1.0, 3.0), (9.0, 3.0))
+    tracks = pr.to_tracks(g, path, "/A", 0.2)
+    # up beside the wall, across on another layer, down at the far end: the end is a bare point here
+    assert tracks[0]["layer"] == "F.Cu" and {t["layer"] for t in tracks[1:]} <= {"In2.Cu", "B.Cu", "F.Cu"}
+    assert sum(1 for t in tracks if "via" in t) == 2
+    # the vias keep the clearance of the wall plus the via's own radius: 0.15 + 0.2 + 0.3
+    for t in tracks:
+        if "via" in t:
+            assert abs(t["points"][-1]["via"][0] - 5.0) >= 0.65
+
+
+def test_a_wall_on_every_layer_cannot_be_passed():
+    wall = ("/B", ALL, ("seg", (5.0, 0.0), (5.0, 8.0), 0.3), "", 0.0)
+    g = grid_for([wall])
+    assert route(g, (1.0, 3.0), (9.0, 3.0)) is None
+    cells, box = pr.reach_of(g, pr.nodes_of(g, F, (1.0, 3.0)))
+    assert cells > 100 and box[2] < 5.0            # the flood stays on its side of the wall
+
+
+def test_the_gap_a_track_needs_is_width_and_two_clearances():
+    def gap(g_mm):
+        lower = ("/B", ALL, ("rect", (4.0, 0.0, 6.0, 3.0 - g_mm / 2)), "", 0.0)
+        upper = ("/B", ALL, ("rect", (4.0, 3.0 + g_mm / 2, 6.0, 8.0)), "", 0.0)
+        return route(grid_for([lower, upper]), (1.0, 3.0), (9.0, 3.0))
+    assert gap(0.5) is None                        # 0.2 + 2 x 0.2 = 0.6 at least, plus the grid's margin
+    assert gap(0.8) is not None
+
+
+def test_a_net_that_asks_for_more_room_gets_it():
+    post = ("/WIDE", ALL, ("circle", (5.0, 3.0), 0.3), "", 0.0)
+    path = route(grid_for([post]), (1.0, 3.0), (9.0, 3.0))
+    pts = [pr.Grid.point(grid_for([post]), n[1], n[2]) for n in path]
+    assert min(((x - 5.0) ** 2 + (y - 3.0) ** 2) ** 0.5 for x, y in pts) >= 0.3 + 0.6 + 0.1
+    far = [("/GUARDED", ["*"], [], 1.0)]
+    guarded = ("/GUARDED", ALL, ("circle", (5.0, 3.0), 0.3), "", 0.0)
+    g = grid_for([guarded], extra=far)
+    path = route(g, (1.0, 3.0), (9.0, 3.0))
+    assert min(((g.point(n[1], n[2])[0] - 5.0) ** 2 + (g.point(n[1], n[2])[1] - 3.0) ** 2) ** 0.5 for n in path) >= 1.4
+
+
+def test_a_keepout_and_a_foreign_zone_block_and_a_pour_does_not():
+    square = [(4.0, 0.0), (6.0, 0.0), (6.0, 8.0), (4.0, 8.0)]
+    assert route(grid_for([], areas=[(ALL, square, True, True, "")]), (1.0, 3.0), (9.0, 3.0)) is None
+    assert route(grid_for([], areas=[(ALL, square, True, True, "/ISLAND")]), (1.0, 3.0), (9.0, 3.0)) is None
+    assert route(grid_for([], areas=[(ALL, square, True, True, "GND")]), (1.0, 3.0), (9.0, 3.0)) is not None
+    # a keep-out on one layer only: over it on another
+    path = route(grid_for([], areas=[(F, square, True, False, "")]), (1.0, 3.0), (9.0, 3.0))
+    assert path is not None and {n[0] for n in path} != {0}
+
+
+def test_no_via_in_a_surface_mount_pad_of_the_net_itself():
+    wall = ("/B", F, ("seg", (5.0, 0.0), (5.0, 8.0), 0.3), "", 0.0)
+    pad = ("/A", F, ("rect", (8.5, 2.6, 9.5, 3.4)), "", 0.0)
+    g = grid_for([wall, pad])
+    tracks = pr.to_tracks(g, route(g, (1.0, 3.0), (9.0, 3.0)), "/A", 0.2)
+    last_via = [t for t in tracks if "via" in t][-1]["points"][-1]["via"]
+    assert not (8.5 - 0.2 <= last_via[0] <= 9.5 + 0.2 and 2.6 - 0.2 <= last_via[1] <= 3.4 + 0.2)
+    assert tracks[-1]["layer"] == "F.Cu" and tracks[-1]["points"][-1] == [9.0, 3.0]
+
+
+def test_a_via_of_the_net_is_used_and_no_second_one_drilled_beside_it():
+    wall = ("/B", F, ("seg", (5.0, 0.0), (5.0, 8.0), 0.3), "", 0.0)
+    own = ("/A", ALL, ("circle", (3.0, 3.0), 0.3), "", 0.15)
+    g = grid_for([wall, own])
+    tracks = pr.to_tracks(g, route(g, (1.0, 3.0), (9.0, 3.0)), "/A", 0.2)
+    vias = [t["points"][-1]["via"] for t in tracks if "via" in t]
+    assert len(vias) == 1 and vias[0][0] > 5.0          # down through the existing via, one new via beyond the wall
+    foreign = ("/B", ALL, ("circle", (3.0, 3.0), 0.3), "", 0.15)
+    g = grid_for([wall, foreign])
+    for t in pr.to_tracks(g, route(g, (1.0, 3.0), (9.0, 3.0)), "/A", 0.2):
+        if "via" in t:
+            v = t["points"][-1]["via"]
+            assert ((v[0] - 3.0) ** 2 + (v[1] - 3.0) ** 2) ** 0.5 >= 0.15 + 0.15 + 0.3
+
+
+def test_the_patch_file_names_its_session():
+    text = pr.toml([{"layer": "F.Cu", "net": "/A", "width": 0.2, "stay": True, "via": [0.6, 0.3],
+                     "points": [[1.0, 3.0], {"via": [2.0, 3.0]}]}], "abc123", ["/A: one"])
+    assert '[patches]\nsession = "abc123"' in text
+    assert "points = [[1, 3], {via = [2, 3]}]" in text and "via = [0.6, 0.3]" in text and "stay = true" in text
+
+
+def bends(points):
+    turns = 0
+    for a, b, c in zip(points, points[1:], points[2:]):
+        if (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]) != 0:
+            turns += 1
+    return turns
+
+
+def test_a_staircase_is_pulled_straight():
+    # 40 steps right and 10 up, taken one cell at a time in the worst order
+    cells, x, y = [(2, 2)], 2, 2
+    for i in range(40):
+        x += 1
+        if i % 4 == 0:
+            y += 1
+        cells.append((x, y))
+    w = 60
+    corners = pr.straighten(bytearray(w * 30), w, cells)
+    assert corners[0] == (2, 2) and corners[-1] == cells[-1]
+    assert len(corners) == 3 and bends(corners) == 1
+
+
+def test_a_straightened_track_stays_on_free_cells_and_turns_by_45_degrees():
+    block = ("/B", F, ("rect", (4.0, 1.0, 6.0, 4.0)), "", 0.0)
+    g = grid_for([block])
+    path = route(g, (1.0, 3.0), (9.0, 3.5))
+    assert {n[0] for n in path} == {0}                      # round it on the same layer: cheaper than two vias
+    cells = [(n[1], n[2]) for n in path]
+    corners = pr.straighten(g.blocked["F.Cu"], g.w, cells)
+    assert corners[0] == cells[0] and corners[-1] == cells[-1]
+    assert len(corners) < len(cells) / 10 and bends(corners) <= 6
+    for a, b in zip(corners, corners[1:]):
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        assert dx == 0 or dy == 0 or abs(dx) == abs(dy)
+        assert pr._free(g.blocked["F.Cu"], g.w, a, b)
+
+
+def test_a_path_of_one_cell_or_two_is_left_alone():
+    assert pr.straighten(bytearray(100), 10, [(3, 3)]) == [(3, 3)]
+    assert pr.straighten(bytearray(100), 10, [(3, 3), (4, 4)]) == [(3, 3), (4, 4)]
+
+
+def test_a_last_resort_layer_is_used_only_under_the_wall_and_not_inside_a_fence():
+    two = ["F.Cu", "B.Cu"]
+    outer = frozenset(two)
+    wall = ("/B", outer, ("seg", (5.0, 0.0), (5.0, 8.0), 0.3), "", 0.0)
+
+    def grid(layers, fences=()):
+        g = pr.build_grid([wall], [], clearance, "/A", 0.2, (0.5, 0.5, 10.5, 6.5), layers, [], {"GND"}, (12.0, 8.0),
+                          list(fences))
+        if "In2.Cu" in layers:
+            g.cost[layers.index("In2.Cu")] = 6.0
+        return g
+
+    assert route(grid(two), (1.0, 3.0), (9.0, 3.0)) is None              # a wall on both routing layers
+    g = grid(two + ["In2.Cu"])
+    tracks = pr.to_tracks(g, route(g, (1.0, 3.0), (9.0, 3.0)), "/A", 0.2)
+    inner = [t for t in tracks if t["layer"] == "In2.Cu"]
+    assert len(inner) == 1 and sum(1 for t in tracks if "via" in t) == 2
+    xs = [(p["via"] if isinstance(p, dict) else p)[0] for p in inner[0]["points"]]
+    # it costs six times as much there, so the run on the plane layer is no longer than the wall asks:
+    # 0.3 wall, twice the clearance, the via's radius and the track's half width on each side
+    assert max(xs) - min(xs) < 2.2
+    # with the plane layer fenced off where the wall is, there is no way again
+    fence = [(frozenset(["In2.Cu"]), (4.0, 0.0, 6.0, 8.0))]
+    assert route(grid(two + ["In2.Cu"], fence), (1.0, 3.0), (9.0, 3.0)) is None

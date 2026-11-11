@@ -1,9 +1,9 @@
 # Hardware reference
 
 !!! warning "Design values; not yet verified on hardware"
-    The revision A board exists as a reviewed circuit design and a captured
-    schematic. The PCB layout is not finished and nothing has been built or
-    measured. Every figure in this section is a design value, a calculation
+    The revision A board exists as a reviewed circuit design, a captured
+    schematic and a PCB layout that passes its checks. Nothing has been built
+    or measured. Every figure in this section is a design value, a calculation
     or a simulation result, from the
     [hardware design](../design/hardware-design.md).
 
@@ -27,9 +27,10 @@ In words:
 - [Specifications](specifications.md): ratings, interfaces and sizes, as designed.
 - [How the fail-safe works](fail-safe.md): why a crashed controller cannot hold a valve open.
 - [Schematic](schematic.md): the 20-page KiCad schematic, sheet by sheet.
+- [PCB layout](layout.md): renders, every layer, an interactive BOM, and what was checked.
 - [Bill of materials](bom.md): every part, with LCSC numbers and data sheets.
 - [The 4-zone build](four-zone.md): what is left off.
-- [Ordering boards](ordering.md): what is missing before anyone can order.
+- [Ordering boards](ordering.md): the fabrication files, and what is missing before anyone should order.
 - [What a controller costs](cost.md): landed cost for 5 to 100 units, both builds.
 - [Design notes](design-notes.md): where the calculations are.
 

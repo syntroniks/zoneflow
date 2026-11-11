@@ -105,7 +105,7 @@ footprint = "Package_SO:TI_SO-PowerPAD-8"
 package = "SO-8 PowerPAD"
 pins = { "EP" = "9" }
 
-[part.C16033]  # C4: 2.2 nF 50 V X7R
+[part.C1604]  # C4: 2.2 nF 50 V X7R
 value = "2.2n"
 symbol = "Device:C"
 footprint = "Capacitor_SMD:C_0603_1608Metric"
@@ -230,7 +230,7 @@ symbol = "Device:C"
 footprint = "Capacitor_SMD:C_0805_2012Metric"
 package = "0805"
 
-[part.C47546]  # D22: BAT54S dual Schottky, series
+[part.C7420333]  # D22: BAT54S dual Schottky, series
 value = "BAT54S"
 symbol = "Diode:BAT54S"
 footprint = "Package_TO_SOT_SMD:SOT-23"
@@ -435,7 +435,7 @@ symbol = "Device:R"
 footprint = "Resistor_SMD:R_0603_1608Metric"
 package = "0603"
 
-[part.C1589]  # C24: 10 nF 50 V X7R
+[part.C57112]  # C24: 10 nF 50 V X7R
 value = "10n"
 symbol = "Device:C"
 footprint = "Capacitor_SMD:C_0603_1608Metric"
@@ -477,8 +477,8 @@ symbol = "Device:R"
 footprint = "Resistor_SMD:R_0603_1608Metric"
 package = "0603"
 
-[part.C27675]  # C28: 220 pF 50 V C0G
-value = "220p C0G"
+[part.C1664]  # C28: 330 pF 50 V C0G
+value = "330p C0G"
 symbol = "Device:C"
 footprint = "Capacitor_SMD:C_0603_1608Metric"
 package = "0603"
@@ -495,7 +495,7 @@ symbol = "Device:R"
 footprint = "Resistor_SMD:R_0603_1608Metric"
 package = "0603"
 
-[part.C1621]  # C33: 4.7 nF 50 V X7R
+[part.C53987]  # C33: 4.7 nF 50 V X7R
 value = "4.7n"
 symbol = "Device:C"
 footprint = "Capacitor_SMD:C_0603_1608Metric"
@@ -641,7 +641,7 @@ package = "0805"
 [part.C40701]  # U101: MOC3023SR2M random-phase opto-triac
 value = "MOC3023S"
 symbol = "Relay_SolidState:MOC3023M"
-footprint = "Package_DIP:SMDIP-6_W9.53mm"
+footprint = "ZoneFlow:SMDIP-6_onsemi_646BY"
 package = "SMD-6"
 
 [part.C22808]  # R101: 150R 1%

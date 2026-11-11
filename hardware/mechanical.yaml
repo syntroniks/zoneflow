@@ -1,10 +1,11 @@
 # ZoneFlow rev A: mechanical contract between the enclosure and the PCB layout.
 #
-# Status: paper design, revision 2 of the contract, 2026-11-10. No board
+# Status: paper design, revision 3 of the contract, 2026-11-10. No board
 # exists and no part has been printed. Every dimension is from a datasheet or
 # drawing named in `sources`, or is a design decision made here. `unconfirmed`
 # lists what must be checked against a physical sample before the board is
-# ordered. `changes` at the end lists what moved since revision 1.
+# ordered. `changes` at the end lists what moved since revision 1, and
+# `changes_3` what the board layout changed in revision 3.
 #
 # This file is the source. `enclosure/tools/gen_params.py` turns it into
 # `enclosure/board_params.scad`, which the enclosure model and the placeholder
@@ -13,7 +14,7 @@
 # The reasoning is in docs/design/mechanical.md.
 
 schema: 1
-revision: 2
+revision: 3
 units: mm
 
 frame:
@@ -63,9 +64,9 @@ assembly:
     the builder at final assembly, when the display and the cell go in. Ask
     the assembler which it will do for parts on the side opposite the SMT.
   c1: >-
-    C1 is the through-hole Rubycon 63PX470MEFC12.5X20, not the SMD Lelon can.
+    C1 is the through-hole Rubycon 63ZLJ470M12.5X20, not the SMD Lelon can.
     The Lelon part would be the only SMT part on the bottom and would need a
-    second SMT side. The Rubycon part is 21.5 mm long at most and does not
+    second SMT side. The Rubycon part is 22.0 mm long at most and does not
     fit standing, so it lies on its side. Two ribs in the enclosure base hold
     it against the board. A dot of neutral-cure silicone between the can and
     the board is recommended and is not relied on.
@@ -289,7 +290,9 @@ parts:
     name: JST SH 4-way side entry, Qwiic
     side: top
     x: 109.25
-    y: 1.625                 # body centre; mouth 0.5 mm beyond the board edge
+    y: 2.63                  # body centre; mouth 0.45 mm inside the board edge.
+                             # Revision 2 had 1.625, which put the two mounting
+                             # lands 0.7 mm over the edge of the board.
     rot: 0                   # 0 = mouth towards -y
     model:
       - box: [0, 0, 6.0, 4.25, 0, 2.95]
@@ -336,19 +339,21 @@ parts:
     name: CR2032 holder BS-6
     side: top
     x: 95.0
-    y: 64.0
-    rot: 0                   # 0 = long axis along x
+    y: 65.3
+    rot: 0                   # 0 = long axis along x; the + contact is at -x
     placement: >-
-      Reserved position. May move anywhere on the top side that is in zone
-      T_GENERAL and not under the display carrier, a button or the light-pipe
-      strip, so that the cell lifts out once the fascia is off.
+      Position from the board layout (revision 3): 1.3 mm above the reserved
+      position of revision 2, to clear the row of opto-triacs. May move
+      anywhere on the top side that is in zone T_GENERAL and not under the
+      display carrier, a button or the light-pipe strip, so that the cell
+      lifts out once the fascia is off. Change it here first.
     model:
       - box: [0, 0, 31.3, 16.0, 0, 5.5]
   # The two parts that do not fit on the top side. Both through-hole.
   - ref: C1
-    name: Rubycon 63PX470MEFC12.5X20, lying on its side
+    name: Rubycon 63ZLJ470M12.5X20, lying on its side
     side: bottom
-    x: 21.0                  # centre of the can
+    x: 20.75                 # centre of the can
     y: 30.0
     rot: 0                   # 0 = can axis along x, leads towards +x
     fixed: true
@@ -358,17 +363,20 @@ parts:
       The position may change, but the YAML must change first so that the
       ribs follow.
     model:
-      - box: [0, 0, 21.5, 13.0, 0, 13.0]     # can: 20 + 1.5 long, 12.5 + 0.5 diameter
-      - box: [13.5, 0, 5.5, 6.0, 0, 7.5]     # bent leads
+      - box: [0, 0, 22.0, 13.0, 0, 13.0]     # can: 20 + 2.0 long, 12.5 + 0.5 diameter
+      - box: [13.75, 0, 5.5, 6.0, 0, 7.5]    # bent leads
   - ref: K1
     name: Omron G5NB-1A-E relay
     side: bottom
-    x: 50.0
-    y: 22.0
-    rot: 0
-    placement: Suggested position. Free within the bottom zones.
+    x: 4.8                   # centre of the body
+    y: 27.85
+    rot: 90                  # long axis along y, contacts towards -y, coil towards +y
+    placement: >-
+      Position from the board layout (revision 3): along the left edge, beside
+      C1. Free within the bottom zones, but change it here first: the
+      interference check uses this box.
     model:
-      - box: [0, 0, 20.5, 7.2, 0, 15.3]
+      - box: [0, 0, 7.2, 20.5, 0, 15.3]
 
 # Maximum component height above each surface, per region. A region listed
 # later overrides one listed earlier where they overlap. `max_height: 0` means
@@ -456,8 +464,8 @@ display_options:
 
 # Heights of the tall or awkward parts, with where each number came from.
 heights:
-  - {ref: C1, part: 63PX470MEFC12.5X20, height: 13.0, src: rubycon,
-     note: "Lying down. 12.5 + 0.5 diameter, 20 + 1.5 long, 5.0 lead spacing, 0.6 leads. Bottom side."}
+  - {ref: C1, part: 63ZLJ470M12.5X20, height: 13.0, src: rubycon,
+     note: "Lying down. 12.5 + 0.5 diameter, 20 + 2.0 long, 5.0 lead spacing, 0.6 leads. Bottom side."}
   - {ref: C1-smd, part: VZH471M1JTR-1616, height: 17.0, src: cap,
      note: "The SMD part of the BOM. Not used: it would need a second SMT side."}
   - {ref: K1, part: G5NB-1A-E, height: 15.3, src: relay,
@@ -536,9 +544,9 @@ unconfirmed:
   - id: c1_lying
     what: Whether the Rubycon capacitor is acceptable electrically and for life when lying down
     assumed: >-
-      Yes. The hardware design gives its ripple rating as 560 mA at 50 Hz
-      against 480 mA peak. Its life rating and the stress of bent leads are
-      for the circuit designer to confirm.
+      Yes. The part is now the Rubycon ZLJ, which the hardware design,
+      section 4.5, rates at 1320 mA at 120 Hz and 10 000 h at 105 C. The
+      stress of bent leads is not covered by the data sheet.
     if_wrong: The SMD Lelon part on a second SMT side. Remove the two ribs under C1 in the base.
   - id: tht_bottom_assembly
     what: Whether the assembly house hand-solders through-hole parts on the side opposite the SMT
@@ -599,9 +607,12 @@ sources:
     url: https://www.lcsc.com/datasheet/C249935.pdf
     read: Text, dimension table row 16 x 16.5
   rubycon:
-    doc: Rubycon PX series, dimensions drawing and table
-    url: https://www.lcsc.com/datasheet/C88758.pdf
-    read: Image. D + 0.5 maximum, L + 1.5 maximum up to 100 V, F = 5.0 and lead 0.6 for 12.5 diameter.
+    doc: Rubycon ZLJ series, dimensions drawing and table
+    url: https://www.lcsc.com/datasheet/C2940725.pdf
+    read: >-
+      By the circuit designer, hardware design section 4.5: D + 0.5 maximum,
+      L + 2.0 maximum, F = 5.0 and lead 0.6 for 12.5 diameter. Revision 2 of
+      this file used the PX series sheet (C88758), L + 1.5.
   relay:
     doc: Omron G5NB, Chinese edition
     url: https://www.lcsc.com/datasheet/C48746.pdf
@@ -645,3 +656,10 @@ changes:
   - "T_CARRIER is 5.0 mm, was 6.5, and now reaches x = 79.5."
   - "cover_inner_z is 12.5, was 13.0."
   - "New zone B_C1 under C1. T_BTN_BACK and T_BTN_HOME end at y = 67.5."
+
+# What the board layout changed in revision 3 (docs/design/hardware-layout.md).
+changes_3:
+  - "C1 is the Rubycon 63ZLJ470M12.5X20 (hardware design section 4.5). Its can is 22.0 mm long at most, 0.5 mm more than the PX part. The pads keep their place; the can centre moves from x = 21.0 to 20.75."
+  - "K1 moves from the suggested (50, 22) to (4.8, 27.85) and is turned: long axis along y, on the bottom side under the left edge. At (50, 22) its four pins come up between the output triacs, where the soldering access rule cannot be met."
+  - "BT1 moves 1.3 mm up, to (95.0, 65.3), and its positive contact is at the left."
+  - "J6 moves 1.0 mm in, to y = 2.63. At y = 1.625 its two mounting lands were 0.7 mm beyond the board edge. The mouth of the connector is now 0.45 mm inside the edge instead of 0.5 mm beyond it."

@@ -160,6 +160,40 @@ def cuts(inp: m.Inputs, qtys=(5, 25, 100)) -> str:
     return table(["Scenario", "Change"] + [f"Saves USD per controller at {n}" for n in qtys], rows)
 
 
+def consolidation(inp: m.Inputs, qtys=QTYS) -> str:
+    """Before and after the BOM consolidation: fee-carrying types, fees per order, cost per controller."""
+    was = m.before_consolidation(inp)
+    rows = []
+    for b in m.BUILDS:
+        for n in qtys:
+            old, new = m.batch_cost(n, b, was), m.batch_cost(n, b, inp)
+            rows.append(
+                [
+                    b,
+                    str(n),
+                    " + ".join(s for _, s in new.orders),
+                    f"{m.fee_types(was, b)} to {m.fee_types(inp, b)}",
+                    f"{usd(old.extended_fee)} to {usd(new.extended_fee)}",
+                    usd(old.total - new.total),
+                    f"{usd(old.per_unit())} to {usd(new.per_unit())}",
+                    usd(old.per_unit() - new.per_unit()),
+                ]
+            )
+    return table(
+        [
+            "Build",
+            "Units",
+            "Service",
+            "Fee-carrying types",
+            "Extended-part fees, USD per batch",
+            "Saved per batch, USD, with duty and part prices",
+            "USD per controller",
+            "Saved per controller, USD",
+        ],
+        rows,
+    )
+
+
 def batch_size(inp: m.Inputs) -> str:
     rows = []
     for b in m.BUILDS:
@@ -222,8 +256,8 @@ def one_off(inp: m.Inputs) -> str:
             "Every order",
         ],
         [
-            "Bare boards, 5 pieces, 0.2 mm holes",
-            usd(fab["via_0p2"][0]),
+            f"Bare boards, 5 pieces, smallest hole {inp.sourced['board']['smallest_hole_mm']:g} mm",
+            usd(fab["via_" + inp.a["pcb_hole"]][0]),
             "Every order; 25.00 of it is the engineering fee",
         ],
     ]
@@ -258,9 +292,9 @@ def retail(inp: m.Inputs) -> str:
 
 def pcb_quotes(inp: m.Inputs) -> str:
     fab = inp.sourced["pcb_fab"]
-    rows = [[str(q), usd(a), usd(b), usd(b / q)] for q, a, b in zip(fab["quantities"], fab["via_0p3"], fab["via_0p2"])]
+    rows = [[str(q), usd(a), usd(a / q), usd(b)] for q, a, b in zip(fab["quantities"], fab["via_0p3"], fab["via_0p2"])]
     return table(
-        ["Boards", "USD, smallest hole 0.3 mm", "USD, smallest hole 0.2 mm (this layout)", "USD per board, 0.2 mm"],
+        ["Boards", "USD, smallest hole 0.3 mm (this layout)", "USD per board, 0.3 mm", "USD, smallest hole 0.2 mm"],
         rows,
     )
 
@@ -285,6 +319,7 @@ BLOCKS = {
     "stock": stock,
     "sensitivity": sensitivity,
     "cuts": cuts,
+    "consolidation": consolidation,
     "batch": batch_size,
     "time": time_table,
     "oneoff": one_off,

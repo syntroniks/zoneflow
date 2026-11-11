@@ -22,7 +22,7 @@ corner,kind,temp,v33,sim,a_enabled,n2_max,g2_max,vth_q2,b_on,expander
 "3 Hz; -20 C, 3V3 3.0 V, charges easily, IS 6.6e-07",3 Hz,-20,3,ok,True,1.714,1.569,0.8525,True,True
 "5 Hz; -20 C, 3V3 3.0 V, charges easily, IS 6.6e-07",5 Hz,-20,3,ok,True,1.899,1.767,0.8525,True,True
 "pin low from power-up; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",pin low from power-up,-20,3,ok,False,0.0018,2.168e-05,1.518,False,False
-"pin high from power-up; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",pin high from power-up,-20,3,ok,False,0.5592,0.5519,1.518,False,False
+"pin high from power-up; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",pin high from power-up,-20,3,ok,False,0.5591,0.5519,1.518,False,False
 "pin high-impedance from power-up; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",pin high-impedance from power-up,-20,3,ok,False,0.0018,2.168e-05,1.518,False,False
 "one rising edge, then high; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08","one rising edge, then high",-20,3,ok,False,0.56,0.5519,1.518,False,False
 "one pulse of 60 us (a power-up glitch); -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",one pulse of 60 us (a power-up glitch),-20,3,ok,False,0.05269,0.01223,1.518,False,False
@@ -30,7 +30,7 @@ corner,kind,temp,v33,sim,a_enabled,n2_max,g2_max,vth_q2,b_on,expander
 "0.5 Hz; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",0.5 Hz,-20,3,ok,False,0.56,0.5519,1.518,False,False
 "1 Hz; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",1 Hz,-20,3,ok,False,0.6326,0.6206,1.518,False,False
 "2 Hz; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",2 Hz,-20,3,ok,False,0.8228,0.8066,1.518,False,False
-"3 Hz; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",3 Hz,-20,3,ok,False,0.9863,0.9667,1.518,False,False
+"3 Hz; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",3 Hz,-20,3,ok,False,0.9864,0.9667,1.518,False,False
 "5 Hz; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",5 Hz,-20,3,ok,False,1.234,1.21,1.518,False,False
 "pin low from power-up; -20 C, 3V3 3.0 V, charges least, IS 6.6e-07",pin low from power-up,-20,3,ok,False,0.001788,2.168e-05,1.518,False,False
 "pin high from power-up; -20 C, 3V3 3.0 V, charges least, IS 6.6e-07",pin high from power-up,-20,3,ok,False,0.5771,0.5695,1.518,False,False
@@ -63,7 +63,7 @@ corner,kind,temp,v33,sim,a_enabled,n2_max,g2_max,vth_q2,b_on,expander
 "0.5 Hz; -20 C, 3V3 3.6 V, charges easily, IS 6.6e-07",0.5 Hz,-20,3.6,ok,False,1.574,1.537,0.8525,True,False
 "1 Hz; -20 C, 3V3 3.6 V, charges easily, IS 6.6e-07",1 Hz,-20,3.6,ok,False,1.605,1.561,0.8525,True,False
 "2 Hz; -20 C, 3V3 3.6 V, charges easily, IS 6.6e-07",2 Hz,-20,3.6,ok,True,1.874,1.75,0.8525,True,True
-"3 Hz; -20 C, 3V3 3.6 V, charges easily, IS 6.6e-07",3 Hz,-20,3.6,ok,True,2.092,1.92,0.8525,True,True
+"3 Hz; -20 C, 3V3 3.6 V, charges easily, IS 6.6e-07",3 Hz,-20,3.6,ok,True,2.093,1.92,0.8525,True,True
 "5 Hz; -20 C, 3V3 3.6 V, charges easily, IS 6.6e-07",5 Hz,-20,3.6,ok,True,2.321,2.165,0.8525,True,True
 "pin low from power-up; -20 C, 3V3 3.6 V, charges least, IS 1.5e-08",pin low from power-up,-20,3.6,ok,False,0.001952,2.168e-05,1.518,False,False
 "pin high from power-up; -20 C, 3V3 3.6 V, charges least, IS 1.5e-08",pin high from power-up,-20,3.6,ok,False,0.6818,0.6731,1.518,False,False
@@ -230,7 +230,7 @@ corner,kind,temp,v33,sim,a_enabled,n2_max,g2_max,vth_q2,b_on,expander
 "2 Hz; 70 C, 3V3 3.6 V, charges easily, IS 1.5e-08",2 Hz,70,3.6,ok,True,1.961,1.828,0.4475,True,True
 "3 Hz; 70 C, 3V3 3.6 V, charges easily, IS 1.5e-08",3 Hz,70,3.6,ok,True,2.183,2.006,0.4475,True,True
 "5 Hz; 70 C, 3V3 3.6 V, charges easily, IS 1.5e-08",5 Hz,70,3.6,ok,True,2.422,2.262,0.4475,True,True
-"pin low from power-up; 70 C, 3V3 3.6 V, charges easily, IS 6.6e-07",pin low from power-up,70,3.6,ok,False,0.001259,2.178e-05,0.4475,False,False
+"pin low from power-up; 70 C, 3V3 3.6 V, charges easily, IS 6.6e-07",pin low from power-up,70,3.6,ok,False,0.001259,2.177e-05,0.4475,False,False
 "pin high from power-up; 70 C, 3V3 3.6 V, charges easily, IS 6.6e-07",pin high from power-up,70,3.6,ok,False,1.634,1.584,0.4475,True,False
 "pin high-impedance from power-up; 70 C, 3V3 3.6 V, charges easily, IS 6.6e-07",pin high-impedance from power-up,70,3.6,ok,False,0.001259,3.681e-05,0.4475,False,False
 "one rising edge, then high; 70 C, 3V3 3.6 V, charges easily, IS 6.6e-07","one rising edge, then high",70,3.6,ok,False,1.638,1.584,0.4475,True,False
