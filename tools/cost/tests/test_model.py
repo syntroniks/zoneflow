@@ -88,8 +88,8 @@ def test_every_priced_line_is_in_the_snapshot(inp):
 
 def test_extended_type_count(inp):
     smt = {ln.lcsc for ln in inp.lines if ln.kind == "smt" and ln.qty["8-zone"]}
-    assert len(smt) == 88
-    assert sum(1 for c in smt if inp.parts[c].fee_extended) == 39
+    assert len(smt) == 89
+    assert sum(1 for c in smt if inp.parts[c].fee_extended) == 40
 
 
 # --- Whole-batch arithmetic, redone by hand from the parts of the result ---
@@ -105,9 +105,9 @@ def test_economic_fees_by_hand(inp):
     a = inp.sourced["assembly"]
     c = m.batch_cost(10, "8-zone", inp)
     expect = a["economic_setup"] + a["economic_stencil"] + a["confirm_placement"]
-    expect += 836 * 10 * a["economic_joint"] + 39 * a["economic_feeder_extended"]
+    expect += 850 * 10 * a["economic_joint"] + 40 * a["economic_feeder_extended"]
     assert c.assembly == pytest.approx(expect)
-    assert c.extended_fee == pytest.approx(39 * 3.07)
+    assert c.extended_fee == pytest.approx(40 * 3.07)
 
 
 def test_duty_is_rate_times_goods(inp):
@@ -140,7 +140,7 @@ def test_scenarios_save_money_and_issue31_removes_parts(inp):
     alt = m.scenario_issue31(inp)
     removed = sum(ln.qty["8-zone"] for ln in inp.lines) - sum(ln.qty["8-zone"] for ln in alt.lines)
     assert removed == 27
-    assert alt.joints["8-zone"] == 836 - 54
+    assert alt.joints["8-zone"] == 850 - 54
 
 
 def test_unit_cost_falls_with_quantity(inp):

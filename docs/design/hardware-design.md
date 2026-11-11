@@ -3038,7 +3038,7 @@ Lines with the least stock against a 100-board order of the 8-zone build:
 This section prices parts only. The landed cost of a finished controller,
 with the board, assembly fees, freight, US duty and the enclosure, re-priced
 on 2026-11-11, is on [what a controller costs](../hardware/cost.md): about
-134 USD each for 5 eight-zone controllers and 54 USD for 100.
+136 USD each for 5 eight-zone controllers and 55 USD for 100.
 
 **What the review changes cost.** By this method the BOM as it stood before
 the changes comes to 38.90 and 30.35 USD for the 8-zone board at 10 and 100
@@ -3064,7 +3064,9 @@ where the other cost 0.59 USD.
 The over-voltage detector U13 of section 9.5 came after that table. It adds
 0.41 USD to a board at 100 boards: 0.39 USD for the part and the rest for
 two resistors and two capacitors of values that were on the BOM already. It
-is an extended part at JLCPCB.
+is an extended part at JLCPCB, and the fee for one more part type counts on
+a small order: on the landed estimate the detector costs 1.78 USD per
+controller at 5 units and 0.60 USD at 100.
 
 The CR2032 cell is on the BOM as a line with no LCSC number, marked as not
 fitted by JLCPCB. Review A1 noted that the rule "an LCSC number on every
