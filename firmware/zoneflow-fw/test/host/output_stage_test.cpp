@@ -568,6 +568,45 @@ TEST(OutputStage, RestartWithTheKeepAliveBridgedSwitchesAValveOffAtOnce)
     EXPECT_EQ(r.board.valvesLow(), 0);
 }
 
+// Soak finding (test/soak, liveness seeds 10, 11 and 14 of the long run):
+// the keep-alive interrupt counts its time in 32-bit milliseconds, which
+// wrap after 49.7 days of uptime. The stage took "later < earlier" for
+// "not yet", so a keep-alive stopped shortly before the wrap read as low
+// for 0 ms ever after: step 0 waited, and every run with it, for another
+// 49.7 days, with no fault raised. The keep-alive is also left off for 49.7
+// days before that, which a signed difference would read as negative.
+TEST(OutputStage, RunsAcrossTheWrapOfTheInterruptsMillisecondCount)
+{
+    StageRig r;
+    r.sensorSupplyOn = false; // no polling cycles while time is fast-forwarded
+    startUp(r);
+    // Fast-forward the interrupt's time (it counts the periods it is
+    // given) to 20 s before 2^32 ms, with the keep-alive stopped.
+    constexpr uint64_t kWrap = uint64_t{1} << 32;
+    constexpr uint32_t kStride = 1'000'000;
+    while (r.clock.mono + kStride < kWrap - 20'000) {
+        r.clock.advanceMs(kStride);
+        r.board.step5ms(kStride);
+        r.tick();
+    }
+    // StageRig ticks when its clock is a multiple of 50 ms; 2^32 is not.
+    r.run((kWrap - 20'000) / 50 * 50 - r.clock.mono);
+    // A run whose stop test ends a few seconds before the wrap.
+    powerUp(r);
+    r.stage.requestPower(false, 0xFF);
+    ASSERT_TRUE(r.runUntil([&] { return r.phase() == StagePhase::Idle; }, 10'000)) << toString(r.fault());
+    ASSERT_LT(r.clock.mono, kWrap);
+    r.run((kWrap + 1'000) / 50 * 50 - r.clock.mono); // past the wrap
+    // The next run starts as usual.
+    r.stage.requestPower(true, 0);
+    EXPECT_TRUE(r.runUntil([&] { return r.stage.powerReady(); }, 8'000)) << toString(r.phase());
+    EXPECT_EQ(r.fault(), HwCheck::None);
+    // And its stop test, across nothing, still measures the detectors.
+    r.stage.requestPower(false, 0xFF);
+    ASSERT_TRUE(r.runUntil([&] { return r.phase() == StagePhase::Idle; }, 10'000)) << toString(r.fault());
+    EXPECT_EQ(r.fault(), HwCheck::None);
+}
+
 TEST(OutputStage, TrippedGuardHaltsWithoutBusTraffic)
 {
     StageRig r;
