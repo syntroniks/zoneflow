@@ -156,8 +156,12 @@ void Scheduler::configure(const SchedulerConfig &cfg, const TimeZone &tz)
         p.startCount = static_cast<uint8_t>(std::unique(first, first + p.startCount) - first);
     }
 
+    // Advance to the last instant evaluated, not to now: a start at an
+    // instant after it (the same second as this edit, before the tick that
+    // evaluates it) has not passed and still runs.
     const bool advance = configured_ && timeValid_;
-    const int64_t nowKey = advance ? keyAt(clock_.nowUtc()) : kNoKey;
+    const UtcSeconds evaluated = cursorValid_ ? std::min(cursor_, clock_.nowUtc()) : clock_.nowUtc();
+    const int64_t nowKey = advance ? keyAt(evaluated) : kNoKey;
     for (std::size_t i = 0; i < kMaxPrograms; ++i) {
         int64_t key = kNoKey;
         if (i < sched.programCount) {

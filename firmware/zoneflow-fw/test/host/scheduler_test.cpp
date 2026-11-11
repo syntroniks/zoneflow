@@ -639,6 +639,24 @@ TEST_F(SchedulerTest, BogusFutureClockCorrectedThenSmallStepStillRuns)
     EXPECT_EQ(rec.started.size(), 2u);
 }
 
+// Soak finding (test/soak, chaos seed 455 of the long run): an unrelated
+// configuration edit handled in the control step in which the clock reached
+// a start, before the scheduler evaluated that second, advanced the keys to
+// the current minute and lost the start without a missed report.
+TEST_F(SchedulerTest, EditInTheSecondOfAStartDoesNotLoseIt)
+{
+    addProgram(makeProgram(1, {at(6, 0)}, {{0, 60}}));
+    apply();
+    begin(utcOf(2026, 6, 1, 5, 59, 58));
+    runUntil(utcOf(2026, 6, 1, 5, 59, 59));
+    ASSERT_TRUE(rec.started.empty());
+    clock.utc = utcOf(2026, 6, 1, 6, 0, 0);
+    apply(); // the edit is handled first, then the tick evaluates 06:00:00
+    sched->tick();
+    EXPECT_EQ(rec.started.size(), 1u);
+    EXPECT_TRUE(rec.missed.empty());
+}
+
 TEST_F(SchedulerTest, EditingConfigDoesNotTriggerPastStarts)
 {
     apply();
