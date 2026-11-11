@@ -1,16 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
-// Interactive window. Keys go through the same ButtonDecoder, EncoderDecoder
-// and Accelerator the device uses, so debounce, long press and acceleration
-// behave as on the hardware.
+// Interactive window. Keys become raw control levels for sim::Controls.
 #include <SDL.h>
 
 #include <chrono>
 #include <ctime>
 #include <vector>
 
+#include "controls.hpp"
 #include "sim.hpp"
-#include "zf_board/board.hpp"
-#include "zf_ui/input.hpp"
 
 namespace zf::sim {
 
@@ -39,18 +36,7 @@ int runWindow(Screen &screen, bool wizard, int scale)
     h.systemTime.t = static_cast<UtcSeconds>(std::time(nullptr));
     h.time.onNetworkSync();
 
-    // The device's timings and counts per detent: keys and the wheel feed the
-    // same decoders the board's controls do.
-    ui::ButtonDecoder select(ui::selectButtonTiming());
-    ui::ButtonDecoder back(ui::backButtonTiming());
-    ui::ButtonDecoder home(ui::homeButtonTiming());
-    constexpr int kDetent = board::kEncoderCountsPerDetent;
-    ui::EncoderDecoder encoder(kDetent);
-    ui::Accelerator accelerator;
-    int32_t encoderCount = 0;
-    bool keySelect = false;
-    bool keyBack = false;
-    bool keyHome = false;
+    Controls controls;
 
     bool running = true;
     uint32_t shownSerial = 0;
@@ -62,29 +48,29 @@ int runWindow(Screen &screen, bool wizard, int scale)
             if (e.type == SDL_QUIT) {
                 running = false;
             } else if (e.type == SDL_MOUSEWHEEL) {
-                encoderCount += kDetent * (e.wheel.y > 0 ? -1 : 1);
+                controls.encoderCount += Controls::kDetent * (e.wheel.y > 0 ? -1 : 1);
             } else if (e.type == SDL_KEYDOWN || e.type == SDL_KEYUP) {
                 const bool down = e.type == SDL_KEYDOWN;
                 switch (e.key.keysym.sym) {
                 case SDLK_RIGHT:
                 case SDLK_DOWN:
-                    encoderCount += down ? kDetent : 0; // key repeat = a steady spin
+                    controls.encoderCount += down ? Controls::kDetent : 0; // key repeat = a steady spin
                     break;
                 case SDLK_LEFT:
                 case SDLK_UP:
-                    encoderCount -= down ? kDetent : 0;
+                    controls.encoderCount -= down ? Controls::kDetent : 0;
                     break;
                 case SDLK_RETURN:
                 case SDLK_SPACE:
-                    keySelect = down;
+                    controls.selectDown = down;
                     break;
                 case SDLK_BACKSPACE:
                 case SDLK_ESCAPE:
-                    keyBack = down;
+                    controls.backDown = down;
                     break;
                 case SDLK_h:
                 case SDLK_m:
-                    keyHome = down;
+                    controls.homeDown = down;
                     break;
                 case SDLK_f:
                     if (down && e.key.repeat == 0) {
@@ -119,39 +105,7 @@ int runWindow(Screen &screen, bool wizard, int scale)
             }
         }
 
-        // Sample the controls every 10 ms of simulated time, five times per
-        // 50 ms controller tick, as the device's UI task does.
-        for (int i = 0; i < 5; ++i) {
-            const MonoMs now = h.clock.mono + static_cast<MonoMs>(i) * 10;
-            const int steps = encoder.update(encoderCount, now);
-            if (steps != 0) {
-                h.ui->handleInput(ui::InputEvent::turn(steps, accelerator.apply(steps, now)), now);
-            }
-            struct {
-                ui::ButtonDecoder &decoder;
-                bool down;
-                ui::Key key;
-            } buttons[] = {
-                {select, keySelect, ui::Key::Select}, {back, keyBack, ui::Key::Back}, {home, keyHome, ui::Key::Home}};
-            for (auto &b : buttons) {
-                switch (b.decoder.update(b.down, now)) {
-                case ui::ButtonEdge::Press:
-                    h.ui->handleInput(ui::InputEvent::press(b.key), now);
-                    break;
-                case ui::ButtonEdge::LongPress:
-                    h.ui->handleInput(ui::InputEvent::press(b.key, ui::InputType::LongPress), now);
-                    break;
-                case ui::ButtonEdge::Repeat:
-                    h.ui->handleInput(ui::InputEvent::press(b.key, ui::InputType::Repeat), now);
-                    break;
-                case ui::ButtonEdge::Hold:
-                    h.ui->handleInput(ui::InputEvent::press(b.key, ui::InputType::Hold), now);
-                    break;
-                case ui::ButtonEdge::None:
-                    break;
-                }
-            }
-        }
+        controls.sample(h);
         h.step();
         Screen::tickMs = static_cast<uint32_t>(h.clock.mono);
 
