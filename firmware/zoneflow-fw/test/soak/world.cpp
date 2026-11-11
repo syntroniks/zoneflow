@@ -110,6 +110,9 @@ const char *toString(BoardFault f)
     return i < std::size(kNames) ? kNames[i] : "?";
 }
 
+// A keep-alive net held high has no edges, so both detectors release with
+// the pin-high hold-up; a weak bridge loses to the driven pin. Only a strong
+// bridge to a net that toggles by itself keeps both on (review A2 appendix A).
 bool faultDisablesA(BoardFault f)
 {
     switch (f) {
@@ -121,9 +124,6 @@ bool faultDisablesA(BoardFault f)
     case BoardFault::PinStuckLow:
     case BoardFault::ShortedOutput: // gate drive cannot stop a shorted triac
     case BoardFault::KaToggleStrong:
-    case BoardFault::KaHighStrong:
-    case BoardFault::KaHighWeak:
-    case BoardFault::KaToggleWeak:
         return true;
     default:
         return false;
@@ -139,9 +139,6 @@ bool faultDisablesB(BoardFault f)
     case BoardFault::RelayWelded:
     case BoardFault::R12Open:
     case BoardFault::KaToggleStrong:
-    case BoardFault::KaHighStrong:
-    case BoardFault::KaHighWeak:
-    case BoardFault::KaToggleWeak:
         return true;
     default:
         return false;
