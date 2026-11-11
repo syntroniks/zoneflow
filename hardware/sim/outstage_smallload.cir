@@ -1,0 +1,108 @@
+* Output stage with a small load: what the load loses while the triac
+* cannot latch (design section 6.4, review A2)
+*
+* The gate of Q101 is fed from its own T2 through the opto-triac U101 and
+* R103. The triac latches only above its latching current IL and drops out
+* below its holding current IH. With a small load the current is under those
+* figures for part of every half-cycle. In that part the load current flows
+* through U101, R103 and the gate, and the output drops
+*     V(opto) + V(gate) + R103 x gate current
+* instead of about 1 V. The gate current is the load current up to the
+* trigger current IGT: above that the triac conducts the rest.
+*
+* This is a behavioural model of that, not a triac model: a voltage drop
+* that depends on the current and on a latch with hysteresis (on above IL,
+* off below IH). It answers one question: how much rms voltage the load
+* loses.
+*
+* T810-600B (ST DocID7472 rev 12): IGT 10 mA, IH 15 mA, IL 25 mA, all
+* maximum at 25 C. Fig. 8: IGT x 1.75 and IH, IL x 1.45 at -20 C. On-state
+* 0.85 V + 0.05 ohm. The T410-600B of the first draft has the same three
+* limits (DocID7699 rev 9), so the result is the same for both.
+* MOC3023 (onsemi rev 3): on-state 1.8 V typical, 3.0 V maximum at 100 mA.
+*
+* Loads, assumed: a 24 VAC relay coil drawing 50 mA is 480 ohm; taken as
+* 160 ohm + 1.44 H (power factor 0.33). A valve drawing 150 mA is 160 ohm;
+* taken as 60 ohm + 0.47 H. Neither is a measured part.
+*
+* Run:  ngspice -b outstage_smallload.cir
+
+.param vrms=24 rl=160 ll=1.44 igt=10m ih=15m il=25m vopto=1.8 vgt=1.0 ideal=0
+VS    src 0 SIN(0 {vrms*1.4142} 50)
+VI    src a 0
+RL    a b {rl}
+LL    b t2 {ll} IC=0
+* latch state from the size of the load current
+BIA   iabs 0 V = abs(I(VI))
+VONE  one 0 1
+SLAT  lat one iabs 0 LATCH
+RLAT  lat 0 1k
+.model LATCH SW(VT={(il+ih)/2} VH={(il-ih)/2} RON=1 ROFF=1e9)
+* the drop across the output: latched, or carried by the gate path
+BVT   t2 0 V = (1-{ideal}) * tanh(I(VI)/0.2m) * ( V(lat) > 0.5 ? (0.85 + 0.05*abs(I(VI))) : ({vopto} + {vgt} + 100*min(abs(I(VI)), {igt})) )
+BVL   vl 0 V = V(src) - V(t2)
+.options method=gear reltol=1e-4
+.tran 20u 0.4 0 20u uic
+
+.control
+set noaskquit
+* load 50 is the 50 mA relay coil, load 150 the 150 mA valve
+foreach load 50 150
+  if $load = 50
+    alterparam rl = 160
+    alterparam ll = 1.44
+  else
+    alterparam rl = 60
+    alterparam ll = 0.47
+  end
+  foreach v 21.6 24
+    alterparam vrms = $v
+    * reference: no drop at all
+    alterparam ideal = 1
+    reset
+    run
+    meas tran i0 rms i(VI) from=0.3 to=0.4
+    meas tran v0 rms v(vl) from=0.3 to=0.4
+    echo "RESULT $load mA load, $v VAC, no output drop: {$&i0} A rms, {$&v0} V rms at the load"
+    alterparam ideal = 0
+    * typical triac at 25 C
+    alterparam igt = 5m
+    alterparam ih = 8m
+    alterparam il = 12m
+    alterparam vopto = 1.8
+    alterparam vgt = 0.8
+    reset
+    run
+    meas tran i1 rms i(VI) from=0.3 to=0.4
+    meas tran v1 rms v(vl) from=0.3 to=0.4
+    meas tran lat1 avg v(lat) from=0.3 to=0.4
+    echo "RESULT $load mA load, $v VAC, typical triac (IGT 5, IH 8, IL 12 mA, my estimate): {$&i1} A rms, {$&v1} V rms, latched for {$&lat1} of the time"
+    * data sheet maximum at 25 C
+    alterparam igt = 10m
+    alterparam ih = 15m
+    alterparam il = 25m
+    alterparam vopto = 3.0
+    alterparam vgt = 1.2
+    reset
+    run
+    meas tran i2 rms i(VI) from=0.3 to=0.4
+    meas tran v2 rms v(vl) from=0.3 to=0.4
+    meas tran lat2 avg v(lat) from=0.3 to=0.4
+    echo "RESULT $load mA load, $v VAC, limit triac at 25 C (IGT 10, IH 15, IL 25 mA): {$&i2} A rms, {$&v2} V rms, latched for {$&lat2} of the time"
+    * data sheet maximum at -20 C
+    alterparam igt = 17.5m
+    alterparam ih = 22m
+    alterparam il = 36m
+    alterparam vopto = 3.0
+    alterparam vgt = 1.5
+    reset
+    run
+    meas tran i3 rms i(VI) from=0.3 to=0.4
+    meas tran v3 rms v(vl) from=0.3 to=0.4
+    meas tran lat3 avg v(lat) from=0.3 to=0.4
+    echo "RESULT $load mA load, $v VAC, limit triac at -20 C (IGT 17.5, IH 22, IL 36 mA): {$&i3} A rms, {$&v3} V rms, latched for {$&lat3} of the time"
+  end
+end
+quit
+.endc
+.end

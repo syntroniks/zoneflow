@@ -1,0 +1,265 @@
+corner,kind,temp,v33,sim,a_enabled,n2_max,g2_max,vth_q2,b_on,expander
+"pin low from power-up; -20 C, 3V3 3.0 V, charges easily, IS 1.5e-08",pin low from power-up,-20,3,ok,False,0.02216,4.096e-05,0.8525,False,False
+"pin high from power-up; -20 C, 3V3 3.0 V, charges easily, IS 1.5e-08",pin high from power-up,-20,3,ok,False,1.251,1.227,0.8525,True,False
+"pin high-impedance from power-up; -20 C, 3V3 3.0 V, charges easily, IS 1.5e-08",pin high-impedance from power-up,-20,3,ok,False,0.02216,4.096e-05,0.8525,False,False
+"one rising edge, then high; -20 C, 3V3 3.0 V, charges easily, IS 1.5e-08","one rising edge, then high",-20,3,ok,False,1.258,1.227,0.8525,True,False
+"one pulse of 60 us (a power-up glitch); -20 C, 3V3 3.0 V, charges easily, IS 1.5e-08",one pulse of 60 us (a power-up glitch),-20,3,ok,False,0.1135,0.02345,0.8525,False,False
+"one pulse of 100 ms; -20 C, 3V3 3.0 V, charges easily, IS 1.5e-08",one pulse of 100 ms,-20,3,ok,False,1.258,1.227,0.8525,True,False
+"0.5 Hz; -20 C, 3V3 3.0 V, charges easily, IS 1.5e-08",0.5 Hz,-20,3,ok,False,1.258,1.227,0.8525,True,False
+"1 Hz; -20 C, 3V3 3.0 V, charges easily, IS 1.5e-08",1 Hz,-20,3,ok,False,1.258,1.227,0.8525,True,False
+"2 Hz; -20 C, 3V3 3.0 V, charges easily, IS 1.5e-08",2 Hz,-20,3,ok,False,1.379,1.338,0.8525,True,False
+"3 Hz; -20 C, 3V3 3.0 V, charges easily, IS 1.5e-08",3 Hz,-20,3,ok,True,1.61,1.467,0.8525,True,True
+"5 Hz; -20 C, 3V3 3.0 V, charges easily, IS 1.5e-08",5 Hz,-20,3,ok,True,1.78,1.652,0.8525,True,True
+"pin low from power-up; -20 C, 3V3 3.0 V, charges easily, IS 6.6e-07",pin low from power-up,-20,3,ok,False,0.02204,4.095e-05,0.8525,False,False
+"pin high from power-up; -20 C, 3V3 3.0 V, charges easily, IS 6.6e-07",pin high from power-up,-20,3,ok,False,1.291,1.266,0.8525,True,False
+"pin high-impedance from power-up; -20 C, 3V3 3.0 V, charges easily, IS 6.6e-07",pin high-impedance from power-up,-20,3,ok,False,0.02204,4.095e-05,0.8525,False,False
+"one rising edge, then high; -20 C, 3V3 3.0 V, charges easily, IS 6.6e-07","one rising edge, then high",-20,3,ok,False,1.298,1.266,0.8525,True,False
+"one pulse of 60 us (a power-up glitch); -20 C, 3V3 3.0 V, charges easily, IS 6.6e-07",one pulse of 60 us (a power-up glitch),-20,3,ok,False,0.1169,0.02424,0.8525,False,False
+"one pulse of 100 ms; -20 C, 3V3 3.0 V, charges easily, IS 6.6e-07",one pulse of 100 ms,-20,3,ok,False,1.298,1.266,0.8525,True,False
+"0.5 Hz; -20 C, 3V3 3.0 V, charges easily, IS 6.6e-07",0.5 Hz,-20,3,ok,False,1.298,1.266,0.8525,True,False
+"1 Hz; -20 C, 3V3 3.0 V, charges easily, IS 6.6e-07",1 Hz,-20,3,ok,False,1.316,1.278,0.8525,True,False
+"2 Hz; -20 C, 3V3 3.0 V, charges easily, IS 6.6e-07",2 Hz,-20,3,ok,True,1.535,1.431,0.8525,True,True
+"3 Hz; -20 C, 3V3 3.0 V, charges easily, IS 6.6e-07",3 Hz,-20,3,ok,True,1.714,1.569,0.8525,True,True
+"5 Hz; -20 C, 3V3 3.0 V, charges easily, IS 6.6e-07",5 Hz,-20,3,ok,True,1.899,1.767,0.8525,True,True
+"pin low from power-up; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",pin low from power-up,-20,3,ok,False,0.0018,2.168e-05,1.518,False,False
+"pin high from power-up; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",pin high from power-up,-20,3,ok,False,0.5592,0.5519,1.518,False,False
+"pin high-impedance from power-up; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",pin high-impedance from power-up,-20,3,ok,False,0.0018,2.168e-05,1.518,False,False
+"one rising edge, then high; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08","one rising edge, then high",-20,3,ok,False,0.56,0.5519,1.518,False,False
+"one pulse of 60 us (a power-up glitch); -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",one pulse of 60 us (a power-up glitch),-20,3,ok,False,0.05269,0.01223,1.518,False,False
+"one pulse of 100 ms; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",one pulse of 100 ms,-20,3,ok,False,0.56,0.5519,1.518,False,False
+"0.5 Hz; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",0.5 Hz,-20,3,ok,False,0.56,0.5519,1.518,False,False
+"1 Hz; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",1 Hz,-20,3,ok,False,0.6326,0.6206,1.518,False,False
+"2 Hz; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",2 Hz,-20,3,ok,False,0.8228,0.8066,1.518,False,False
+"3 Hz; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",3 Hz,-20,3,ok,False,0.9863,0.9667,1.518,False,False
+"5 Hz; -20 C, 3V3 3.0 V, charges least, IS 1.5e-08",5 Hz,-20,3,ok,False,1.234,1.21,1.518,False,False
+"pin low from power-up; -20 C, 3V3 3.0 V, charges least, IS 6.6e-07",pin low from power-up,-20,3,ok,False,0.001788,2.168e-05,1.518,False,False
+"pin high from power-up; -20 C, 3V3 3.0 V, charges least, IS 6.6e-07",pin high from power-up,-20,3,ok,False,0.5771,0.5695,1.518,False,False
+"pin high-impedance from power-up; -20 C, 3V3 3.0 V, charges least, IS 6.6e-07",pin high-impedance from power-up,-20,3,ok,False,0.001788,2.168e-05,1.518,False,False
+"one rising edge, then high; -20 C, 3V3 3.0 V, charges least, IS 6.6e-07","one rising edge, then high",-20,3,ok,False,0.5779,0.5695,1.518,False,False
+"one pulse of 60 us (a power-up glitch); -20 C, 3V3 3.0 V, charges least, IS 6.6e-07",one pulse of 60 us (a power-up glitch),-20,3,ok,False,0.05447,0.01264,1.518,False,False
+"one pulse of 100 ms; -20 C, 3V3 3.0 V, charges least, IS 6.6e-07",one pulse of 100 ms,-20,3,ok,False,0.5779,0.5695,1.518,False,False
+"0.5 Hz; -20 C, 3V3 3.0 V, charges least, IS 6.6e-07",0.5 Hz,-20,3,ok,False,0.5862,0.5762,1.518,False,False
+"1 Hz; -20 C, 3V3 3.0 V, charges least, IS 6.6e-07",1 Hz,-20,3,ok,False,0.6754,0.6627,1.518,False,False
+"2 Hz; -20 C, 3V3 3.0 V, charges least, IS 6.6e-07",2 Hz,-20,3,ok,False,0.8789,0.8616,1.518,False,False
+"3 Hz; -20 C, 3V3 3.0 V, charges least, IS 6.6e-07",3 Hz,-20,3,ok,False,1.054,1.033,1.518,False,False
+"5 Hz; -20 C, 3V3 3.0 V, charges least, IS 6.6e-07",5 Hz,-20,3,ok,False,1.318,1.293,1.518,False,False
+"pin low from power-up; -20 C, 3V3 3.6 V, charges easily, IS 1.5e-08",pin low from power-up,-20,3.6,ok,False,0.02231,4.096e-05,0.8525,False,False
+"pin high from power-up; -20 C, 3V3 3.6 V, charges easily, IS 1.5e-08",pin high from power-up,-20,3.6,ok,False,1.526,1.497,0.8525,True,False
+"pin high-impedance from power-up; -20 C, 3V3 3.6 V, charges easily, IS 1.5e-08",pin high-impedance from power-up,-20,3.6,ok,False,0.02231,4.096e-05,0.8525,False,False
+"one rising edge, then high; -20 C, 3V3 3.6 V, charges easily, IS 1.5e-08","one rising edge, then high",-20,3.6,ok,False,1.534,1.497,0.8525,True,False
+"one pulse of 60 us (a power-up glitch); -20 C, 3V3 3.6 V, charges easily, IS 1.5e-08",one pulse of 60 us (a power-up glitch),-20,3.6,ok,False,0.1369,0.02881,0.8525,False,False
+"one pulse of 100 ms; -20 C, 3V3 3.6 V, charges easily, IS 1.5e-08",one pulse of 100 ms,-20,3.6,ok,False,1.534,1.497,0.8525,True,False
+"0.5 Hz; -20 C, 3V3 3.6 V, charges easily, IS 1.5e-08",0.5 Hz,-20,3.6,ok,False,1.534,1.497,0.8525,True,False
+"1 Hz; -20 C, 3V3 3.6 V, charges easily, IS 1.5e-08",1 Hz,-20,3.6,ok,False,1.534,1.497,0.8525,True,False
+"2 Hz; -20 C, 3V3 3.6 V, charges easily, IS 1.5e-08",2 Hz,-20,3.6,ok,True,1.77,1.657,0.8525,True,True
+"3 Hz; -20 C, 3V3 3.6 V, charges easily, IS 1.5e-08",3 Hz,-20,3.6,ok,True,1.988,1.818,0.8525,True,True
+"5 Hz; -20 C, 3V3 3.6 V, charges easily, IS 1.5e-08",5 Hz,-20,3.6,ok,True,2.202,2.049,0.8525,True,True
+"pin low from power-up; -20 C, 3V3 3.6 V, charges easily, IS 6.6e-07",pin low from power-up,-20,3.6,ok,False,0.02219,4.095e-05,0.8525,False,False
+"pin high from power-up; -20 C, 3V3 3.6 V, charges easily, IS 6.6e-07",pin high from power-up,-20,3.6,ok,False,1.566,1.537,0.8525,True,False
+"pin high-impedance from power-up; -20 C, 3V3 3.6 V, charges easily, IS 6.6e-07",pin high-impedance from power-up,-20,3.6,ok,False,0.02219,4.095e-05,0.8525,False,False
+"one rising edge, then high; -20 C, 3V3 3.6 V, charges easily, IS 6.6e-07","one rising edge, then high",-20,3.6,ok,False,1.574,1.537,0.8525,True,False
+"one pulse of 60 us (a power-up glitch); -20 C, 3V3 3.6 V, charges easily, IS 6.6e-07",one pulse of 60 us (a power-up glitch),-20,3.6,ok,False,0.1403,0.0296,0.8525,False,False
+"one pulse of 100 ms; -20 C, 3V3 3.6 V, charges easily, IS 6.6e-07",one pulse of 100 ms,-20,3.6,ok,False,1.574,1.537,0.8525,True,False
+"0.5 Hz; -20 C, 3V3 3.6 V, charges easily, IS 6.6e-07",0.5 Hz,-20,3.6,ok,False,1.574,1.537,0.8525,True,False
+"1 Hz; -20 C, 3V3 3.6 V, charges easily, IS 6.6e-07",1 Hz,-20,3.6,ok,False,1.605,1.561,0.8525,True,False
+"2 Hz; -20 C, 3V3 3.6 V, charges easily, IS 6.6e-07",2 Hz,-20,3.6,ok,True,1.874,1.75,0.8525,True,True
+"3 Hz; -20 C, 3V3 3.6 V, charges easily, IS 6.6e-07",3 Hz,-20,3.6,ok,True,2.092,1.92,0.8525,True,True
+"5 Hz; -20 C, 3V3 3.6 V, charges easily, IS 6.6e-07",5 Hz,-20,3.6,ok,True,2.321,2.165,0.8525,True,True
+"pin low from power-up; -20 C, 3V3 3.6 V, charges least, IS 1.5e-08",pin low from power-up,-20,3.6,ok,False,0.001952,2.168e-05,1.518,False,False
+"pin high from power-up; -20 C, 3V3 3.6 V, charges least, IS 1.5e-08",pin high from power-up,-20,3.6,ok,False,0.6818,0.6731,1.518,False,False
+"pin high-impedance from power-up; -20 C, 3V3 3.6 V, charges least, IS 1.5e-08",pin high-impedance from power-up,-20,3.6,ok,False,0.001952,2.168e-05,1.518,False,False
+"one rising edge, then high; -20 C, 3V3 3.6 V, charges least, IS 1.5e-08","one rising edge, then high",-20,3.6,ok,False,0.6829,0.6731,1.518,False,False
+"one pulse of 60 us (a power-up glitch); -20 C, 3V3 3.6 V, charges least, IS 1.5e-08",one pulse of 60 us (a power-up glitch),-20,3.6,ok,False,0.06479,0.01502,1.518,False,False
+"one pulse of 100 ms; -20 C, 3V3 3.6 V, charges least, IS 1.5e-08",one pulse of 100 ms,-20,3.6,ok,False,0.6829,0.6731,1.518,False,False
+"0.5 Hz; -20 C, 3V3 3.6 V, charges least, IS 1.5e-08",0.5 Hz,-20,3.6,ok,False,0.6829,0.6731,1.518,False,False
+"1 Hz; -20 C, 3V3 3.6 V, charges least, IS 1.5e-08",1 Hz,-20,3.6,ok,False,0.7799,0.7654,1.518,False,False
+"2 Hz; -20 C, 3V3 3.6 V, charges least, IS 1.5e-08",2 Hz,-20,3.6,ok,False,1.015,0.9956,1.518,False,False
+"3 Hz; -20 C, 3V3 3.6 V, charges least, IS 1.5e-08",3 Hz,-20,3.6,ok,False,1.218,1.194,1.518,False,False
+"5 Hz; -20 C, 3V3 3.6 V, charges least, IS 1.5e-08",5 Hz,-20,3.6,ok,False,1.525,1.496,1.518,False,False
+"pin low from power-up; -20 C, 3V3 3.6 V, charges least, IS 6.6e-07",pin low from power-up,-20,3.6,ok,False,0.001939,2.168e-05,1.518,False,False
+"pin high from power-up; -20 C, 3V3 3.6 V, charges least, IS 6.6e-07",pin high from power-up,-20,3.6,ok,False,0.6997,0.6908,1.518,False,False
+"pin high-impedance from power-up; -20 C, 3V3 3.6 V, charges least, IS 6.6e-07",pin high-impedance from power-up,-20,3.6,ok,False,0.001939,2.168e-05,1.518,False,False
+"one rising edge, then high; -20 C, 3V3 3.6 V, charges least, IS 6.6e-07","one rising edge, then high",-20,3.6,ok,False,0.7008,0.6908,1.518,False,False
+"one pulse of 60 us (a power-up glitch); -20 C, 3V3 3.6 V, charges least, IS 6.6e-07",one pulse of 60 us (a power-up glitch),-20,3.6,ok,False,0.06657,0.01544,1.518,False,False
+"one pulse of 100 ms; -20 C, 3V3 3.6 V, charges least, IS 6.6e-07",one pulse of 100 ms,-20,3.6,ok,False,0.7008,0.6908,1.518,False,False
+"0.5 Hz; -20 C, 3V3 3.6 V, charges least, IS 6.6e-07",0.5 Hz,-20,3.6,ok,False,0.7136,0.7016,1.518,False,False
+"1 Hz; -20 C, 3V3 3.6 V, charges least, IS 6.6e-07",1 Hz,-20,3.6,ok,False,0.8228,0.8075,1.518,False,False
+"2 Hz; -20 C, 3V3 3.6 V, charges least, IS 6.6e-07",2 Hz,-20,3.6,ok,False,1.072,1.051,1.518,False,False
+"3 Hz; -20 C, 3V3 3.6 V, charges least, IS 6.6e-07",3 Hz,-20,3.6,ok,False,1.286,1.261,1.518,False,False
+"5 Hz; -20 C, 3V3 3.6 V, charges least, IS 6.6e-07",5 Hz,-20,3.6,ok,False,1.609,1.58,1.518,True,False
+"pin low from power-up; 27 C, 3V3 3.0 V, charges easily, IS 1.5e-08",pin low from power-up,27,3,ok,False,0.02182,4.093e-05,0.641,False,False
+"pin high from power-up; 27 C, 3V3 3.0 V, charges easily, IS 1.5e-08",pin high from power-up,27,3,ok,False,1.289,1.264,0.641,True,False
+"pin high-impedance from power-up; 27 C, 3V3 3.0 V, charges easily, IS 1.5e-08",pin high-impedance from power-up,27,3,ok,False,0.02182,4.093e-05,0.641,False,False
+"one rising edge, then high; 27 C, 3V3 3.0 V, charges easily, IS 1.5e-08","one rising edge, then high",27,3,ok,False,1.296,1.264,0.641,True,False
+"one pulse of 60 us (a power-up glitch); 27 C, 3V3 3.0 V, charges easily, IS 1.5e-08",one pulse of 60 us (a power-up glitch),27,3,ok,False,0.1157,0.02404,0.641,False,False
+"one pulse of 100 ms; 27 C, 3V3 3.0 V, charges easily, IS 1.5e-08",one pulse of 100 ms,27,3,ok,False,1.296,1.264,0.641,True,False
+"0.5 Hz; 27 C, 3V3 3.0 V, charges easily, IS 1.5e-08",0.5 Hz,27,3,ok,False,1.296,1.264,0.641,True,False
+"1 Hz; 27 C, 3V3 3.0 V, charges easily, IS 1.5e-08",1 Hz,27,3,ok,False,1.32,1.281,0.641,True,False
+"2 Hz; 27 C, 3V3 3.0 V, charges easily, IS 1.5e-08",2 Hz,27,3,ok,True,1.539,1.433,0.641,True,True
+"3 Hz; 27 C, 3V3 3.0 V, charges easily, IS 1.5e-08",3 Hz,27,3,ok,True,1.716,1.57,0.641,True,True
+"5 Hz; 27 C, 3V3 3.0 V, charges easily, IS 1.5e-08",5 Hz,27,3,ok,True,1.899,1.766,0.641,True,True
+"pin low from power-up; 27 C, 3V3 3.0 V, charges easily, IS 6.6e-07",pin low from power-up,27,3,ok,False,0.01433,3.95e-05,0.641,False,False
+"pin high from power-up; 27 C, 3V3 3.0 V, charges easily, IS 6.6e-07",pin high from power-up,27,3,ok,False,1.336,1.309,0.641,True,False
+"pin high-impedance from power-up; 27 C, 3V3 3.0 V, charges easily, IS 6.6e-07",pin high-impedance from power-up,27,3,ok,False,0.01433,4.501e-05,0.641,False,False
+"one rising edge, then high; 27 C, 3V3 3.0 V, charges easily, IS 6.6e-07","one rising edge, then high",27,3,ok,False,1.343,1.309,0.641,True,False
+"one pulse of 60 us (a power-up glitch); 27 C, 3V3 3.0 V, charges easily, IS 6.6e-07",one pulse of 60 us (a power-up glitch),27,3,ok,False,0.1165,0.02493,0.641,False,False
+"one pulse of 100 ms; 27 C, 3V3 3.0 V, charges easily, IS 6.6e-07",one pulse of 100 ms,27,3,ok,False,1.343,1.309,0.641,True,False
+"0.5 Hz; 27 C, 3V3 3.0 V, charges easily, IS 6.6e-07",0.5 Hz,27,3,ok,False,1.35,1.312,0.641,True,False
+"1 Hz; 27 C, 3V3 3.0 V, charges easily, IS 6.6e-07",1 Hz,27,3,ok,True,1.416,1.362,0.641,True,True
+"2 Hz; 27 C, 3V3 3.0 V, charges easily, IS 6.6e-07",2 Hz,27,3,ok,True,1.64,1.528,0.641,True,True
+"3 Hz; 27 C, 3V3 3.0 V, charges easily, IS 6.6e-07",3 Hz,27,3,ok,True,1.827,1.678,0.641,True,True
+"5 Hz; 27 C, 3V3 3.0 V, charges easily, IS 6.6e-07",5 Hz,27,3,ok,True,2.029,1.893,0.641,True,True
+"pin low from power-up; 27 C, 3V3 3.0 V, charges least, IS 1.5e-08",pin low from power-up,27,3,ok,False,0.001772,2.167e-05,1.447,False,False
+"pin high from power-up; 27 C, 3V3 3.0 V, charges least, IS 1.5e-08",pin high from power-up,27,3,ok,False,0.5765,0.5689,1.447,False,False
+"pin high-impedance from power-up; 27 C, 3V3 3.0 V, charges least, IS 1.5e-08",pin high-impedance from power-up,27,3,ok,False,0.001772,2.167e-05,1.447,False,False
+"one rising edge, then high; 27 C, 3V3 3.0 V, charges least, IS 1.5e-08","one rising edge, then high",27,3,ok,False,0.5773,0.5689,1.447,False,False
+"one pulse of 60 us (a power-up glitch); 27 C, 3V3 3.0 V, charges least, IS 1.5e-08",one pulse of 60 us (a power-up glitch),27,3,ok,False,0.05388,0.01254,1.447,False,False
+"one pulse of 100 ms; 27 C, 3V3 3.0 V, charges least, IS 1.5e-08",one pulse of 100 ms,27,3,ok,False,0.5773,0.5689,1.447,False,False
+"0.5 Hz; 27 C, 3V3 3.0 V, charges least, IS 1.5e-08",0.5 Hz,27,3,ok,False,0.5891,0.5789,1.447,False,False
+"1 Hz; 27 C, 3V3 3.0 V, charges least, IS 1.5e-08",1 Hz,27,3,ok,False,0.6782,0.6655,1.447,False,False
+"2 Hz; 27 C, 3V3 3.0 V, charges least, IS 1.5e-08",2 Hz,27,3,ok,False,0.8821,0.8647,1.447,False,False
+"3 Hz; 27 C, 3V3 3.0 V, charges least, IS 1.5e-08",3 Hz,27,3,ok,False,1.057,1.036,1.447,False,False
+"5 Hz; 27 C, 3V3 3.0 V, charges least, IS 1.5e-08",5 Hz,27,3,ok,False,1.322,1.296,1.447,False,False
+"pin low from power-up; 27 C, 3V3 3.0 V, charges least, IS 6.6e-07",pin low from power-up,27,3,ok,False,0.001126,2.128e-05,1.447,False,False
+"pin high from power-up; 27 C, 3V3 3.0 V, charges least, IS 6.6e-07",pin high from power-up,27,3,ok,False,0.5972,0.5889,1.447,False,False
+"pin high-impedance from power-up; 27 C, 3V3 3.0 V, charges least, IS 6.6e-07",pin high-impedance from power-up,27,3,ok,False,0.001126,2.132e-05,1.447,False,False
+"one rising edge, then high; 27 C, 3V3 3.0 V, charges least, IS 6.6e-07","one rising edge, then high",27,3,ok,False,0.598,0.5889,1.447,False,False
+"one pulse of 60 us (a power-up glitch); 27 C, 3V3 3.0 V, charges least, IS 6.6e-07",one pulse of 60 us (a power-up glitch),27,3,ok,False,0.05585,0.013,1.447,False,False
+"one pulse of 100 ms; 27 C, 3V3 3.0 V, charges least, IS 6.6e-07",one pulse of 100 ms,27,3,ok,False,0.598,0.5889,1.447,False,False
+"0.5 Hz; 27 C, 3V3 3.0 V, charges least, IS 6.6e-07",0.5 Hz,27,3,ok,False,0.6101,0.5998,1.447,False,False
+"1 Hz; 27 C, 3V3 3.0 V, charges least, IS 6.6e-07",1 Hz,27,3,ok,False,0.705,0.6915,1.447,False,False
+"2 Hz; 27 C, 3V3 3.0 V, charges least, IS 6.6e-07",2 Hz,27,3,ok,False,0.9269,0.9084,1.447,False,False
+"3 Hz; 27 C, 3V3 3.0 V, charges least, IS 6.6e-07",3 Hz,27,3,ok,False,1.118,1.095,1.447,False,False
+"5 Hz; 27 C, 3V3 3.0 V, charges least, IS 6.6e-07",5 Hz,27,3,ok,False,1.407,1.379,1.447,False,False
+"pin low from power-up; 27 C, 3V3 3.6 V, charges easily, IS 1.5e-08",pin low from power-up,27,3.6,ok,False,0.02197,4.093e-05,0.641,False,False
+"pin high from power-up; 27 C, 3V3 3.6 V, charges easily, IS 1.5e-08",pin high from power-up,27,3.6,ok,False,1.564,1.534,0.641,True,False
+"pin high-impedance from power-up; 27 C, 3V3 3.6 V, charges easily, IS 1.5e-08",pin high-impedance from power-up,27,3.6,ok,False,0.02197,4.093e-05,0.641,False,False
+"one rising edge, then high; 27 C, 3V3 3.6 V, charges easily, IS 1.5e-08","one rising edge, then high",27,3.6,ok,False,1.571,1.534,0.641,True,False
+"one pulse of 60 us (a power-up glitch); 27 C, 3V3 3.6 V, charges easily, IS 1.5e-08",one pulse of 60 us (a power-up glitch),27,3.6,ok,False,0.139,0.02939,0.641,False,False
+"one pulse of 100 ms; 27 C, 3V3 3.6 V, charges easily, IS 1.5e-08",one pulse of 100 ms,27,3.6,ok,False,1.571,1.534,0.641,True,False
+"0.5 Hz; 27 C, 3V3 3.6 V, charges easily, IS 1.5e-08",0.5 Hz,27,3.6,ok,False,1.571,1.534,0.641,True,False
+"1 Hz; 27 C, 3V3 3.6 V, charges easily, IS 1.5e-08",1 Hz,27,3.6,ok,False,1.608,1.564,0.641,True,False
+"2 Hz; 27 C, 3V3 3.6 V, charges easily, IS 1.5e-08",2 Hz,27,3.6,ok,True,1.877,1.751,0.641,True,True
+"3 Hz; 27 C, 3V3 3.6 V, charges easily, IS 1.5e-08",3 Hz,27,3.6,ok,True,2.094,1.92,0.641,True,True
+"5 Hz; 27 C, 3V3 3.6 V, charges easily, IS 1.5e-08",5 Hz,27,3.6,ok,True,2.321,2.163,0.641,True,True
+"pin low from power-up; 27 C, 3V3 3.6 V, charges easily, IS 6.6e-07",pin low from power-up,27,3.6,ok,False,0.01444,3.949e-05,0.641,False,False
+"pin high from power-up; 27 C, 3V3 3.6 V, charges easily, IS 6.6e-07",pin high from power-up,27,3.6,ok,False,1.611,1.58,0.641,True,False
+"pin high-impedance from power-up; 27 C, 3V3 3.6 V, charges easily, IS 6.6e-07",pin high-impedance from power-up,27,3.6,ok,False,0.01444,4.519e-05,0.641,False,False
+"one rising edge, then high; 27 C, 3V3 3.6 V, charges easily, IS 6.6e-07","one rising edge, then high",27,3.6,ok,False,1.618,1.58,0.641,True,False
+"one pulse of 60 us (a power-up glitch); 27 C, 3V3 3.6 V, charges easily, IS 6.6e-07",one pulse of 60 us (a power-up glitch),27,3.6,ok,False,0.1398,0.03027,0.641,False,False
+"one pulse of 100 ms; 27 C, 3V3 3.6 V, charges easily, IS 6.6e-07",one pulse of 100 ms,27,3.6,ok,False,1.618,1.58,0.641,True,False
+"0.5 Hz; 27 C, 3V3 3.6 V, charges easily, IS 6.6e-07",0.5 Hz,27,3.6,ok,False,1.627,1.584,0.641,True,False
+"1 Hz; 27 C, 3V3 3.6 V, charges easily, IS 6.6e-07",1 Hz,27,3.6,ok,True,1.707,1.645,0.641,True,True
+"2 Hz; 27 C, 3V3 3.6 V, charges easily, IS 6.6e-07",2 Hz,27,3.6,ok,True,1.979,1.846,0.641,True,True
+"3 Hz; 27 C, 3V3 3.6 V, charges easily, IS 6.6e-07",3 Hz,27,3.6,ok,True,2.205,2.028,0.641,True,True
+"5 Hz; 27 C, 3V3 3.6 V, charges easily, IS 6.6e-07",5 Hz,27,3.6,ok,True,2.451,2.29,0.641,True,True
+"pin low from power-up; 27 C, 3V3 3.6 V, charges least, IS 1.5e-08",pin low from power-up,27,3.6,ok,False,0.001921,2.167e-05,1.447,False,False
+"pin high from power-up; 27 C, 3V3 3.6 V, charges least, IS 1.5e-08",pin high from power-up,27,3.6,ok,False,0.699,0.69,1.447,False,False
+"pin high-impedance from power-up; 27 C, 3V3 3.6 V, charges least, IS 1.5e-08",pin high-impedance from power-up,27,3.6,ok,False,0.001921,2.167e-05,1.447,False,False
+"one rising edge, then high; 27 C, 3V3 3.6 V, charges least, IS 1.5e-08","one rising edge, then high",27,3.6,ok,False,0.7001,0.69,1.447,False,False
+"one pulse of 60 us (a power-up glitch); 27 C, 3V3 3.6 V, charges least, IS 1.5e-08",one pulse of 60 us (a power-up glitch),27,3.6,ok,False,0.06597,0.01533,1.447,False,False
+"one pulse of 100 ms; 27 C, 3V3 3.6 V, charges least, IS 1.5e-08",one pulse of 100 ms,27,3.6,ok,False,0.7001,0.69,1.447,False,False
+"0.5 Hz; 27 C, 3V3 3.6 V, charges least, IS 1.5e-08",0.5 Hz,27,3.6,ok,False,0.7163,0.7042,1.447,False,False
+"1 Hz; 27 C, 3V3 3.6 V, charges least, IS 1.5e-08",1 Hz,27,3.6,ok,False,0.8254,0.8101,1.447,False,False
+"2 Hz; 27 C, 3V3 3.6 V, charges least, IS 1.5e-08",2 Hz,27,3.6,ok,False,1.075,1.054,1.447,False,False
+"3 Hz; 27 C, 3V3 3.6 V, charges least, IS 1.5e-08",3 Hz,27,3.6,ok,False,1.289,1.263,1.447,False,False
+"5 Hz; 27 C, 3V3 3.6 V, charges least, IS 1.5e-08",5 Hz,27,3.6,ok,False,1.612,1.582,1.447,True,False
+"pin low from power-up; 27 C, 3V3 3.6 V, charges least, IS 6.6e-07",pin low from power-up,27,3.6,ok,False,0.001222,2.128e-05,1.447,False,False
+"pin high from power-up; 27 C, 3V3 3.6 V, charges least, IS 6.6e-07",pin high from power-up,27,3.6,ok,False,0.7198,0.7101,1.447,False,False
+"pin high-impedance from power-up; 27 C, 3V3 3.6 V, charges least, IS 6.6e-07",pin high-impedance from power-up,27,3.6,ok,False,0.001222,2.132e-05,1.447,False,False
+"one rising edge, then high; 27 C, 3V3 3.6 V, charges least, IS 6.6e-07","one rising edge, then high",27,3.6,ok,False,0.7209,0.7101,1.447,False,False
+"one pulse of 60 us (a power-up glitch); 27 C, 3V3 3.6 V, charges least, IS 6.6e-07",one pulse of 60 us (a power-up glitch),27,3.6,ok,False,0.06793,0.01579,1.447,False,False
+"one pulse of 100 ms; 27 C, 3V3 3.6 V, charges least, IS 6.6e-07",one pulse of 100 ms,27,3.6,ok,False,0.7209,0.7101,1.447,False,False
+"0.5 Hz; 27 C, 3V3 3.6 V, charges least, IS 6.6e-07",0.5 Hz,27,3.6,ok,False,0.7367,0.7243,1.447,False,False
+"1 Hz; 27 C, 3V3 3.6 V, charges least, IS 6.6e-07",1 Hz,27,3.6,ok,False,0.8523,0.8362,1.447,False,False
+"2 Hz; 27 C, 3V3 3.6 V, charges least, IS 6.6e-07",2 Hz,27,3.6,ok,False,1.119,1.097,1.447,False,False
+"3 Hz; 27 C, 3V3 3.6 V, charges least, IS 6.6e-07",3 Hz,27,3.6,ok,False,1.349,1.322,1.447,False,False
+"5 Hz; 27 C, 3V3 3.6 V, charges least, IS 6.6e-07",5 Hz,27,3.6,ok,True,1.844,1.665,1.447,True,True
+"pin low from power-up; 70 C, 3V3 3.0 V, charges easily, IS 1.5e-08",pin low from power-up,70,3,ok,False,0.01657,4.003e-05,0.4475,False,False
+"pin high from power-up; 70 C, 3V3 3.0 V, charges easily, IS 1.5e-08",pin high from power-up,70,3,ok,False,1.323,1.297,0.4475,True,False
+"pin high-impedance from power-up; 70 C, 3V3 3.0 V, charges easily, IS 1.5e-08",pin high-impedance from power-up,70,3,ok,False,0.01657,4.027e-05,0.4475,False,False
+"one rising edge, then high; 70 C, 3V3 3.0 V, charges easily, IS 1.5e-08","one rising edge, then high",70,3,ok,False,1.331,1.297,0.4475,True,False
+"one pulse of 60 us (a power-up glitch); 70 C, 3V3 3.0 V, charges easily, IS 1.5e-08",one pulse of 60 us (a power-up glitch),70,3,ok,False,0.1156,0.02456,0.4475,False,False
+"one pulse of 100 ms; 70 C, 3V3 3.0 V, charges easily, IS 1.5e-08",one pulse of 100 ms,70,3,ok,False,1.331,1.297,0.4475,True,False
+"0.5 Hz; 70 C, 3V3 3.0 V, charges easily, IS 1.5e-08",0.5 Hz,70,3,ok,False,1.34,1.301,0.4475,True,False
+"1 Hz; 70 C, 3V3 3.0 V, charges easily, IS 1.5e-08",1 Hz,70,3,ok,False,1.389,1.348,0.4475,True,False
+"2 Hz; 70 C, 3V3 3.0 V, charges easily, IS 1.5e-08",2 Hz,70,3,ok,True,1.623,1.51,0.4475,True,True
+"3 Hz; 70 C, 3V3 3.0 V, charges easily, IS 1.5e-08",3 Hz,70,3,ok,True,1.805,1.656,0.4475,True,True
+"5 Hz; 70 C, 3V3 3.0 V, charges easily, IS 1.5e-08",5 Hz,70,3,ok,True,2.001,1.865,0.4475,True,True
+"pin low from power-up; 70 C, 3V3 3.0 V, charges easily, IS 6.6e-07",pin low from power-up,70,3,ok,False,0.00125,2.178e-05,0.4475,False,False
+"pin high from power-up; 70 C, 3V3 3.0 V, charges easily, IS 6.6e-07",pin high from power-up,70,3,ok,False,1.358,1.313,0.4475,True,False
+"pin high-impedance from power-up; 70 C, 3V3 3.0 V, charges easily, IS 6.6e-07",pin high-impedance from power-up,70,3,ok,False,0.00125,3.667e-05,0.4475,False,False
+"one rising edge, then high; 70 C, 3V3 3.0 V, charges easily, IS 6.6e-07","one rising edge, then high",70,3,ok,False,1.361,1.313,0.4475,True,False
+"one pulse of 60 us (a power-up glitch); 70 C, 3V3 3.0 V, charges easily, IS 6.6e-07",one pulse of 60 us (a power-up glitch),70,3,ok,False,0.1089,0.02448,0.4475,False,False
+"one pulse of 100 ms; 70 C, 3V3 3.0 V, charges easily, IS 6.6e-07",one pulse of 100 ms,70,3,ok,False,1.361,1.313,0.4475,True,False
+"0.5 Hz; 70 C, 3V3 3.0 V, charges easily, IS 6.6e-07",0.5 Hz,70,3,ok,False,1.361,1.313,0.4475,True,False
+"1 Hz; 70 C, 3V3 3.0 V, charges easily, IS 6.6e-07",1 Hz,70,3,ok,False,1.361,1.313,0.4475,True,False
+"2 Hz; 70 C, 3V3 3.0 V, charges easily, IS 6.6e-07",2 Hz,70,3,ok,False,1.362,1.314,0.4475,True,False
+"3 Hz; 70 C, 3V3 3.0 V, charges easily, IS 6.6e-07",3 Hz,70,3,ok,True,1.474,1.379,0.4475,True,True
+"5 Hz; 70 C, 3V3 3.0 V, charges easily, IS 6.6e-07",5 Hz,70,3,ok,True,1.837,1.684,0.4475,True,True
+"pin low from power-up; 70 C, 3V3 3.0 V, charges least, IS 1.5e-08",pin low from power-up,70,3,ok,False,0.001314,2.143e-05,1.382,False,False
+"pin high from power-up; 70 C, 3V3 3.0 V, charges least, IS 1.5e-08",pin high from power-up,70,3,ok,False,0.5922,0.584,1.382,False,False
+"pin high-impedance from power-up; 70 C, 3V3 3.0 V, charges least, IS 1.5e-08",pin high-impedance from power-up,70,3,ok,False,0.001314,2.144e-05,1.382,False,False
+"one rising edge, then high; 70 C, 3V3 3.0 V, charges least, IS 1.5e-08","one rising edge, then high",70,3,ok,False,0.593,0.584,1.382,False,False
+"one pulse of 60 us (a power-up glitch); 70 C, 3V3 3.0 V, charges least, IS 1.5e-08",one pulse of 60 us (a power-up glitch),70,3,ok,False,0.0549,0.01281,1.382,False,False
+"one pulse of 100 ms; 70 C, 3V3 3.0 V, charges least, IS 1.5e-08",one pulse of 100 ms,70,3,ok,False,0.593,0.584,1.382,False,False
+"0.5 Hz; 70 C, 3V3 3.0 V, charges least, IS 1.5e-08",0.5 Hz,70,3,ok,False,0.6091,0.5986,1.382,False,False
+"1 Hz; 70 C, 3V3 3.0 V, charges least, IS 1.5e-08",1 Hz,70,3,ok,False,0.7041,0.6905,1.382,False,False
+"2 Hz; 70 C, 3V3 3.0 V, charges least, IS 1.5e-08",2 Hz,70,3,ok,False,0.9223,0.9035,1.382,False,False
+"3 Hz; 70 C, 3V3 3.0 V, charges least, IS 1.5e-08",3 Hz,70,3,ok,False,1.109,1.087,1.382,False,False
+"5 Hz; 70 C, 3V3 3.0 V, charges least, IS 1.5e-08",5 Hz,70,3,ok,False,1.392,1.365,1.382,False,False
+"pin low from power-up; 70 C, 3V3 3.0 V, charges least, IS 6.6e-07",pin low from power-up,70,3,ok,False,0.0001033,1.572e-05,1.382,False,False
+"pin high from power-up; 70 C, 3V3 3.0 V, charges least, IS 6.6e-07",pin high from power-up,70,3,ok,False,0.6028,0.5841,1.382,False,False
+"pin high-impedance from power-up; 70 C, 3V3 3.0 V, charges least, IS 6.6e-07",pin high-impedance from power-up,70,3,ok,False,0.0001033,1.64e-05,1.382,False,False
+"one rising edge, then high; 70 C, 3V3 3.0 V, charges least, IS 6.6e-07","one rising edge, then high",70,3,ok,False,0.6061,0.5841,1.382,False,False
+"one pulse of 60 us (a power-up glitch); 70 C, 3V3 3.0 V, charges least, IS 6.6e-07",one pulse of 60 us (a power-up glitch),70,3,ok,False,0.0559,0.01279,1.382,False,False
+"one pulse of 100 ms; 70 C, 3V3 3.0 V, charges least, IS 6.6e-07",one pulse of 100 ms,70,3,ok,False,0.6061,0.5841,1.382,False,False
+"0.5 Hz; 70 C, 3V3 3.0 V, charges least, IS 6.6e-07",0.5 Hz,70,3,ok,False,0.6063,0.5841,1.382,False,False
+"1 Hz; 70 C, 3V3 3.0 V, charges least, IS 6.6e-07",1 Hz,70,3,ok,False,0.6063,0.5841,1.382,False,False
+"2 Hz; 70 C, 3V3 3.0 V, charges least, IS 6.6e-07",2 Hz,70,3,ok,False,0.6066,0.5845,1.382,False,False
+"3 Hz; 70 C, 3V3 3.0 V, charges least, IS 6.6e-07",3 Hz,70,3,ok,False,0.6369,0.6129,1.382,False,False
+"5 Hz; 70 C, 3V3 3.0 V, charges least, IS 6.6e-07",5 Hz,70,3,ok,False,0.9993,0.965,1.382,False,False
+"pin low from power-up; 70 C, 3V3 3.6 V, charges easily, IS 1.5e-08",pin low from power-up,70,3.6,ok,False,0.01669,4.002e-05,0.4475,False,False
+"pin high from power-up; 70 C, 3V3 3.6 V, charges easily, IS 1.5e-08",pin high from power-up,70,3.6,ok,False,1.599,1.567,0.4475,True,False
+"pin high-impedance from power-up; 70 C, 3V3 3.6 V, charges easily, IS 1.5e-08",pin high-impedance from power-up,70,3.6,ok,False,0.01669,4.027e-05,0.4475,False,False
+"one rising edge, then high; 70 C, 3V3 3.6 V, charges easily, IS 1.5e-08","one rising edge, then high",70,3.6,ok,False,1.606,1.567,0.4475,True,False
+"one pulse of 60 us (a power-up glitch); 70 C, 3V3 3.6 V, charges easily, IS 1.5e-08",one pulse of 60 us (a power-up glitch),70,3.6,ok,False,0.1388,0.0299,0.4475,False,False
+"one pulse of 100 ms; 70 C, 3V3 3.6 V, charges easily, IS 1.5e-08",one pulse of 100 ms,70,3.6,ok,False,1.606,1.567,0.4475,True,False
+"0.5 Hz; 70 C, 3V3 3.6 V, charges easily, IS 1.5e-08",0.5 Hz,70,3.6,ok,False,1.617,1.572,0.4475,True,False
+"1 Hz; 70 C, 3V3 3.6 V, charges easily, IS 1.5e-08",1 Hz,70,3.6,ok,False,1.678,1.631,0.4475,True,False
+"2 Hz; 70 C, 3V3 3.6 V, charges easily, IS 1.5e-08",2 Hz,70,3.6,ok,True,1.961,1.828,0.4475,True,True
+"3 Hz; 70 C, 3V3 3.6 V, charges easily, IS 1.5e-08",3 Hz,70,3.6,ok,True,2.183,2.006,0.4475,True,True
+"5 Hz; 70 C, 3V3 3.6 V, charges easily, IS 1.5e-08",5 Hz,70,3.6,ok,True,2.422,2.262,0.4475,True,True
+"pin low from power-up; 70 C, 3V3 3.6 V, charges easily, IS 6.6e-07",pin low from power-up,70,3.6,ok,False,0.001259,2.178e-05,0.4475,False,False
+"pin high from power-up; 70 C, 3V3 3.6 V, charges easily, IS 6.6e-07",pin high from power-up,70,3.6,ok,False,1.634,1.584,0.4475,True,False
+"pin high-impedance from power-up; 70 C, 3V3 3.6 V, charges easily, IS 6.6e-07",pin high-impedance from power-up,70,3.6,ok,False,0.001259,3.681e-05,0.4475,False,False
+"one rising edge, then high; 70 C, 3V3 3.6 V, charges easily, IS 6.6e-07","one rising edge, then high",70,3.6,ok,False,1.638,1.584,0.4475,True,False
+"one pulse of 60 us (a power-up glitch); 70 C, 3V3 3.6 V, charges easily, IS 6.6e-07",one pulse of 60 us (a power-up glitch),70,3.6,ok,False,0.1321,0.02972,0.4475,False,False
+"one pulse of 100 ms; 70 C, 3V3 3.6 V, charges easily, IS 6.6e-07",one pulse of 100 ms,70,3.6,ok,False,1.638,1.584,0.4475,True,False
+"0.5 Hz; 70 C, 3V3 3.6 V, charges easily, IS 6.6e-07",0.5 Hz,70,3.6,ok,False,1.638,1.584,0.4475,True,False
+"1 Hz; 70 C, 3V3 3.6 V, charges easily, IS 6.6e-07",1 Hz,70,3.6,ok,False,1.638,1.584,0.4475,True,False
+"2 Hz; 70 C, 3V3 3.6 V, charges easily, IS 6.6e-07",2 Hz,70,3.6,ok,False,1.64,1.586,0.4475,True,False
+"3 Hz; 70 C, 3V3 3.6 V, charges easily, IS 6.6e-07",3 Hz,70,3.6,ok,True,1.847,1.728,0.4475,True,True
+"5 Hz; 70 C, 3V3 3.6 V, charges easily, IS 6.6e-07",5 Hz,70,3.6,ok,True,2.26,2.082,0.4475,True,True
+"pin low from power-up; 70 C, 3V3 3.6 V, charges least, IS 1.5e-08",pin low from power-up,70,3.6,ok,False,0.001425,2.143e-05,1.382,False,False
+"pin high from power-up; 70 C, 3V3 3.6 V, charges least, IS 1.5e-08",pin high from power-up,70,3.6,ok,False,0.7147,0.705,1.382,False,False
+"pin high-impedance from power-up; 70 C, 3V3 3.6 V, charges least, IS 1.5e-08",pin high-impedance from power-up,70,3.6,ok,False,0.001425,2.144e-05,1.382,False,False
+"one rising edge, then high; 70 C, 3V3 3.6 V, charges least, IS 1.5e-08","one rising edge, then high",70,3.6,ok,False,0.7157,0.705,1.382,False,False
+"one pulse of 60 us (a power-up glitch); 70 C, 3V3 3.6 V, charges least, IS 1.5e-08",one pulse of 60 us (a power-up glitch),70,3.6,ok,False,0.06697,0.01559,1.382,False,False
+"one pulse of 100 ms; 70 C, 3V3 3.6 V, charges least, IS 1.5e-08",one pulse of 100 ms,70,3.6,ok,False,0.7157,0.705,1.382,False,False
+"0.5 Hz; 70 C, 3V3 3.6 V, charges least, IS 1.5e-08",0.5 Hz,70,3.6,ok,False,0.736,0.7234,1.382,False,False
+"1 Hz; 70 C, 3V3 3.6 V, charges least, IS 1.5e-08",1 Hz,70,3.6,ok,False,0.8513,0.835,1.382,False,False
+"2 Hz; 70 C, 3V3 3.6 V, charges least, IS 1.5e-08",2 Hz,70,3.6,ok,False,1.115,1.092,1.382,False,False
+"3 Hz; 70 C, 3V3 3.6 V, charges least, IS 1.5e-08",3 Hz,70,3.6,ok,False,1.341,1.314,1.382,False,False
+"5 Hz; 70 C, 3V3 3.6 V, charges least, IS 1.5e-08",5 Hz,70,3.6,ok,False,1.683,1.65,1.382,True,False
+"pin low from power-up; 70 C, 3V3 3.6 V, charges least, IS 6.6e-07",pin low from power-up,70,3.6,ok,False,0.000112,1.572e-05,1.382,False,False
+"pin high from power-up; 70 C, 3V3 3.6 V, charges least, IS 6.6e-07",pin high from power-up,70,3.6,ok,False,0.7252,0.7055,1.382,False,False
+"pin high-impedance from power-up; 70 C, 3V3 3.6 V, charges least, IS 6.6e-07",pin high-impedance from power-up,70,3.6,ok,False,0.000112,1.643e-05,1.382,False,False
+"one rising edge, then high; 70 C, 3V3 3.6 V, charges least, IS 6.6e-07","one rising edge, then high",70,3.6,ok,False,0.7296,0.7055,1.382,False,False
+"one pulse of 60 us (a power-up glitch); 70 C, 3V3 3.6 V, charges least, IS 6.6e-07",one pulse of 60 us (a power-up glitch),70,3.6,ok,False,0.06792,0.01552,1.382,False,False
+"one pulse of 100 ms; 70 C, 3V3 3.6 V, charges least, IS 6.6e-07",one pulse of 100 ms,70,3.6,ok,False,0.7296,0.7055,1.382,False,False
+"0.5 Hz; 70 C, 3V3 3.6 V, charges least, IS 6.6e-07",0.5 Hz,70,3.6,ok,False,0.7298,0.7055,1.382,False,False
+"1 Hz; 70 C, 3V3 3.6 V, charges least, IS 6.6e-07",1 Hz,70,3.6,ok,False,0.7298,0.7055,1.382,False,False
+"2 Hz; 70 C, 3V3 3.6 V, charges least, IS 6.6e-07",2 Hz,70,3.6,ok,False,0.731,0.7068,1.382,False,False
+"3 Hz; 70 C, 3V3 3.6 V, charges least, IS 6.6e-07",3 Hz,70,3.6,ok,False,0.8276,0.7983,1.382,False,False
+"5 Hz; 70 C, 3V3 3.6 V, charges least, IS 6.6e-07",5 Hz,70,3.6,ok,False,1.291,1.251,1.382,False,False

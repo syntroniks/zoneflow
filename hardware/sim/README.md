@@ -4,9 +4,34 @@ ngspice netlists for the parts of the rev A design where a simulation
 tells more than a hand calculation. `keepalive.cir`, `isense.cir`,
 `supply.cir`, `relay_detector.cir` and `ka_bridge.cir` are the author's.
 `keepalive_faults.cir`, `isense_corners.cir` and `zerocross.cir` were added
-by review A1 (`docs/design/hardware-review-a1.md`). The design is in
+by review A1 (`docs/design/hardware-review-a1.md`).
+`buck_overvoltage.cir`, `outstage_smallload.cir` and the directory
+`failsafe/` were added by review A2 (`docs/design/hardware-review-a2.md`).
+The design is in
 `docs/design/hardware-design.md`. No board exists. These runs check the
 circuit as drawn against idealised parts. They do not replace a bench test.
+
+`failsafe/` is different from the files here: it builds its ngspice decks
+from `hardware/netlist.yaml`, injects every single fault into both
+keep-alive detectors and what they drive, and runs tolerance corners. It has
+its own `README.md`. The hand-written files below model one block each and
+are kept. Section 11 of the review compares `failsafe/` with them where the
+two overlap.
+
+Four of the older files predate one change of review A2.
+`keepalive.cir`, `keepalive_faults.cir`, `relay_detector.cir` and
+`ka_bridge.cir` have the pull-down R33 at 10 kohm. It is 2.2 kohm now. The
+files are kept as merged, because the results quoted below and in design
+sections 7.3 and 8.4 come from them. I ran each with only that value
+changed, to see what it moves:
+
+- **`keepalive.cir`**: every figure within 1.1 %.
+- **`keepalive_faults.cir`**: half the lines within 1.1 %. The cases at the edge of enabling move more: 3 Hz enables after 1.0 s where it took 0.67 s, and the slowest enable at 10 Hz takes a fifth longer.
+- **`relay_detector.cir`**: half the lines within 1.1 %. The gate margin of Q2 falls by 25 to 30 mV, because the pull-down loads the pin's high level.
+- **`ka_bridge.cir`**: the reservoir of detector A reaches 0.18 to 0.40 V where it reached 0.89 to 1.03 V, and the gate of Q2 0.17 to 0.36 V where it reached 0.83 to 0.95 V. Detector A releases below 0.94 V and the lowest threshold of Q2 is 0.51 V, so the bridge now holds neither. That is the purpose of the change.
+
+`failsafe/` reads the value from the netlist, so its fault table and
+corners are for 2.2 kohm.
 
 Run each file with `ngspice -b <file>`. Every result line starts with
 `RESULT`, `FAULT` or `CHECK`. The results below are from ngspice 47 on
@@ -30,7 +55,7 @@ swept only where a result line says so.
 
 ## keepalive.cir
 
-The keep-alive detector of section 8: the diode pump on GPIO38, the reservoir
+The keep-alive detector of section 8: the diode pump on GPIO17, the reservoir
 C23 with its bleed, and comparator U6A with hysteresis. The bleed is R30 and
 R91, 110 kohm each, in parallel; before the review it was one 56 kohm
 resistor, and the figures moved by 2 % or less. The 3.3 V rail
@@ -258,6 +283,81 @@ What it showed:
 - **Gate drive**: 2.09 V at the worst corner against a highest threshold of 1.59 V there.
 - **One dangerous fault**: a shorted C51 with the pin high. The other detector covers it.
 - **Limits of the model**: generic diode with a leakage that the BAT54S data sheet does not limit above 25 °C, capacitor ranges that are my allowance for X5R parts, and an assumed threshold drift.
+
+## buck_overvoltage.cir
+
+Added by review A2. The switch inside U1 fails short and `VIN_DC` reaches
+`V_BUCK` through L1 (design section 4.8, risk 21). The file runs the fault
+with no protection, then with the clamp D25 (SMBJ6.0A on `V_BUCK`) and the
+fuse F5 (0451.500MRL in the input of U1) that the review added. F5 is a
+resistor whose value rises by a factor of 100 000 when the integral of the
+square of its current reaches a set value: the nominal melting I²t of the
+data sheet, 0.0824 A²s, or three times that. D25 is a threshold and a
+resistance fitted to its data sheet limits.
+
+| Case | `V_BUCK` | Peak current | F5 opens after | D25 takes |
+|---|---|---|---|---|
+| No protection, `VIN_DC` 30 V | Past 7 V after 14 us, peak 42.7 V | | | |
+| No protection, `VIN_DC` 44.3 V | Past 7 V after 11 us, peak 63.4 V | | | |
+| Welded switch, 44.3 V, L1 saturated | 9.67 V | 46.3 A | 0.04 ms, 0.15 ms at three times the I²t | 0.015 J, 0.052 J |
+| Welded switch, 44.3 V, L1 47 uH | 9.19 to 9.24 V | 36.6 to 37.7 A | 0.11 ms, 0.22 ms | 0.022 J, 0.059 J |
+| Welded switch, 30 V | 8.54 to 8.78 V | 23.7 to 28.5 A | 0.12 to 0.19 ms, 18.9 ms | 0.025 to 0.029 J, 0.18 J |
+| Welded switch, 17 V | 7.90 to 7.99 V | 10.9 to 12.6 A | 2.9 ms, 58 ms | 0.093 J, 0.39 J |
+| Switch 0.725 ohm, 17 to 44.3 V | 7.67 to 8.60 V | 6.4 to 24.8 A | 0.15 to 20 ms, 1.4 to 63 ms | 0.027 to 0.14 J, 0.13 to 0.45 J |
+| Switch 5 ohm, 17 to 44.3 V | 7.46 to 7.67 V | 2.2 to 6.8 A | 22 to 62 ms, 160 to 199 ms | 0.15 to 0.23 J, 0.62 to 0.70 J |
+| D25 at its lowest clamp, welded switch, 17 and 44.3 V | 7.07 and 8.12 V | 13.7 to 14.1 and 48.5 A | | |
+| 40 and 75 VA instead of 20 VA | The same within 0.01 V | The same within 0.3 A | | |
+
+Where two figures are given, the first is for F5 opening at its nominal
+melting I²t and the second at three times that. In the cases that end
+within 10 ms, the pulse curve of the SMBJ data sheet (600 W at 1 ms, falling
+with the square root of the pulse length) allows 4.5 to 11 times the energy
+D25 takes.
+
+The last block holds F5 closed and reports the current the rectifier
+delivers through R1 into the clamp, which is what would flow if F5 were not
+there:
+
+| Transformer | Open-circuit voltage | Current in F5 | Of F5's rating | D25 | R1 |
+|---|---|---|---|---|---|
+| 20 VA | 24.2 V | 1.62 A rms, 3.6 A peak | 323 % | 5.5 W | 8.7 W |
+| 20 VA | 32 V | 2.37 A rms | 474 % | 9.0 W | 18 W |
+| 40 VA | 27.5 V | 2.56 A rms | 512 % | 9.8 W | 21 W |
+| 75 VA | 24.2 V | 2.52 A rms | 503 % | 9.5 W | 20 W |
+| 75 VA | 32 V | 3.67 A rms, 7.8 A peak | 734 % | 15 W | 42 W |
+
+What it showed:
+
+- **The fault needs protection.** Without it `V_BUCK` is past the 7 V limit of U11 in 11 to 14 us and reaches 43 to 63 V.
+- **The clamp holds.** 9.7 V at most, with the part that clamps highest. `3V3` stays regulated: U3 takes 20 V.
+- **F5 opens in every case**, on the charge of C1 from about 23 V up and with the help of the rectifier below that.
+- **A fuse rated for the board's 3 A input could not do this.** The rectifier and R1 limit the current to 1.6 to 3.7 A rms. The time-lag input fuses F1 and F4 would not open, and R1 would burn at 9 to 42 W.
+- **Limits of the model**: a fuse heats without loss only for milliseconds, so the rows that end after tens of milliseconds are optimistic. The data sheet row that bounds them is 5 s at 200 %. The resistance of the failed switch is a parameter, not a known value. No arc is modelled.
+
+## outstage_smallload.cir
+
+Added by review A2. The output stage of section 6 with a small load, which
+is under the triac's latching current for part of every half-cycle. In that
+part the load current flows through the opto-triac, R103 and the gate, and
+the output drops several volts instead of about one. The file is not a triac
+model: it is a voltage drop that depends on the current and on a latch with
+hysteresis (latched above IL, released below IH). The loads are assumed: a
+relay coil of 160 ohm and 1.44 H for 50 mA, a valve of 60 ohm and 0.47 H
+for 150 mA.
+
+| Load | Supply | Triac | Load voltage | Lost | Latched for |
+|---|---|---|---|---|---|
+| 50 mA coil | 21.6 VAC | Typical (IGT 5, IH 8, IL 12 mA: my estimate) | 21.24 V | 1.7 % | 89 % of the time |
+| 50 mA coil | 21.6 VAC | Data sheet limits at 25 °C (10, 15, 25 mA) | 20.83 V | 3.6 % | 77 % |
+| 50 mA coil | 21.6 VAC | Data sheet limits at -20 °C (17.5, 22, 36 mA) | 20.32 V | 5.9 % | 65 % |
+| 50 mA coil | 24 VAC | Data sheet limits at -20 °C | 22.88 V | 4.7 % | 70 % |
+| 150 mA valve | 21.6 VAC | Data sheet limits at -20 °C | 21.03 V | 2.7 % | 89 % |
+| 150 mA valve | 24 VAC | Data sheet limits at -20 °C | 23.46 V | 2.2 % | 90 % |
+
+What it showed:
+
+- **A 50 mA coil keeps 94 % of its voltage at the worst corner.** That is 20.3 V from a 21.6 VAC supply. A coil that pulls in at 80 % of 24 V works. One that needs 85 %, 20.4 V, has no margin at -20 °C on the lowest supply with a triac at every data sheet limit.
+- **The T810 is no worse than the T410 here.** Their trigger, holding and latching limits are the same, so this result does not depend on the change of triac.
 
 ## ka_bridge.cir
 

@@ -1,0 +1,29 @@
+case,toggled_s,sim,suspect,a_on,b_on,t_a,t_b
+"typical parts, 27 C",0.1,ok,,True,True,0.656,0.508
+"typical parts, 27 C",0.15,ok,,True,True,0.669,0.55
+"typical parts, 27 C",0.2,ok,,True,True,0.671,0.565
+"typical parts, 27 C",0.3,ok,,True,True,0.672,0.573
+"typical parts, 27 C",0.5,ok,,True,True,0.672,0.575
+"typical parts, 27 C",1,ok,,True,True,0.672,0.575
+"typical parts, 27 C",2,ok,,True,True,0.672,0.575
+"latest release: 70 C, 3.6 V, large capacitors, Q2 at 0.65 V",0.1,ok,,True,True,0.805,1.352
+"latest release: 70 C, 3.6 V, large capacitors, Q2 at 0.65 V",0.15,ok,,True,True,0.821,1.408
+"latest release: 70 C, 3.6 V, large capacitors, Q2 at 0.65 V",0.2,ok,,True,True,0.824,1.43
+"latest release: 70 C, 3.6 V, large capacitors, Q2 at 0.65 V",0.3,ok,,True,True,0.825,1.444
+"latest release: 70 C, 3.6 V, large capacitors, Q2 at 0.65 V",0.5,ok,,True,True,0.826,1.447
+"latest release: 70 C, 3.6 V, large capacitors, Q2 at 0.65 V",1,ok,,True,True,0.826,1.448
+"latest release: 70 C, 3.6 V, large capacitors, Q2 at 0.65 V",2,ok,,True,True,0.826,1.448
+"earliest release: 70 C, 3.0 V, small capacitors, Q2 at 1.45 V, leaky diodes",0.1,ok,,True,True,0.216,0.118
+"earliest release: 70 C, 3.0 V, small capacitors, Q2 at 1.45 V, leaky diodes",0.15,ok,,True,True,0.219,0.127
+"earliest release: 70 C, 3.0 V, small capacitors, Q2 at 1.45 V, leaky diodes",0.2,ok,,True,True,0.22,0.129
+"earliest release: 70 C, 3.0 V, small capacitors, Q2 at 1.45 V, leaky diodes",0.3,ok,,True,True,0.219,0.13
+"earliest release: 70 C, 3.0 V, small capacitors, Q2 at 1.45 V, leaky diodes",0.5,ok,,True,True,0.22,0.13
+"earliest release: 70 C, 3.0 V, small capacitors, Q2 at 1.45 V, leaky diodes",1,ok,,True,True,0.22,0.13
+"earliest release: 70 C, 3.0 V, small capacitors, Q2 at 1.45 V, leaky diodes",2,ok,,True,True,0.219,0.13
+"slowest to charge: -20 C, 3.0 V, large reservoirs, small pump capacitors, Q2 at 1.45 V",0.1,ok,,True,True,0.613,0.077
+"slowest to charge: -20 C, 3.0 V, large reservoirs, small pump capacitors, Q2 at 1.45 V",0.15,ok,,True,True,0.657,0.144
+"slowest to charge: -20 C, 3.0 V, large reservoirs, small pump capacitors, Q2 at 1.45 V",0.2,ok,,True,True,0.671,0.172
+"slowest to charge: -20 C, 3.0 V, large reservoirs, small pump capacitors, Q2 at 1.45 V",0.3,ok,,True,True,0.678,0.191
+"slowest to charge: -20 C, 3.0 V, large reservoirs, small pump capacitors, Q2 at 1.45 V",0.5,ok,,True,True,0.679,0.196
+"slowest to charge: -20 C, 3.0 V, large reservoirs, small pump capacitors, Q2 at 1.45 V",1,ok,,True,True,0.679,0.196
+"slowest to charge: -20 C, 3.0 V, large reservoirs, small pump capacitors, Q2 at 1.45 V",2,ok,,True,True,0.679,0.196

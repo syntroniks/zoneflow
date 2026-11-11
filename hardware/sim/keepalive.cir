@@ -1,6 +1,6 @@
 * ZoneFlow keep-alive detector (docs/design/hardware-design.md section 8)
 *
-* KA (GPIO38) -> R29 -> C22 -> diode pump D7 -> C23 || R30 || R91 -> comparator U6A
+* KA (GPIO17; GPIO38 until review A2) -> R29 -> C22 -> diode pump D7 -> C23 || R30 || R91 -> comparator U6A
 * with hysteresis (R31, R32) -> KA_OK. Reference from R34/R35.
 *
 * Run:  ngspice -b keepalive.cir
