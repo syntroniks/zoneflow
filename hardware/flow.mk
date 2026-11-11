@@ -30,6 +30,11 @@ INNER_LAYERS ?=
 # build fails when a constrained part is off position or a height zone is violated.
 MECH_CONTRACT ?=
 
+# Set to 1 on the board that the pre-order review walkthrough of the documentation is about: `make`
+# then draws its pictures from the finished board (docs/hardware/review/, tools/reviewwalk).
+REVIEW ?=
+REVIEWWALK := $(HW_ROOT)../tools/reviewwalk
+
 # Generation runs in the locked uv environment. The board steps need KiCad's
 # pcbnew module, which only the system interpreter has.
 UV_PY     := uv run --project $(HWFLOW) --frozen --no-dev python
@@ -60,10 +65,10 @@ comma := ,
 empty :=
 space := $(empty) $(empty)
 
-.PHONY: all schematic footprints layout sch lint erc sch-outputs board route reroute finish patches drc mech rules board-check ibom outputs check committed cpl-check
+.PHONY: all schematic footprints layout sch lint erc sch-outputs board route reroute finish patches drc mech rules board-check ibom outputs check committed cpl-check review review-check
 .NOTPARALLEL:
 
-all: outputs ibom
+all: outputs ibom $(if $(REVIEW),review)
 	@echo "build complete: ERC and DRC passed, outputs are in $(OUT)/"
 
 # The schematic half only: generate, check, and export the schematic deliverables.
@@ -264,6 +269,23 @@ cpl-check:
 		--cache $(JLC_LIBRARY) --fetch --report $(OUT)/reports/placement-check.md
 	$(foreach v,$(VARIANTS),$(KICAD_PY) -m hwflow.cplcheck build/placement.json $(OUT)/$(NAME)-cpl-jlcpcb-$(v).csv \
 		$(OUT)/$(NAME)-bom-jlcpcb-$(v).csv --cache $(JLC_LIBRARY) --fetch &&) true
+
+# The pictures of the pre-order review walkthrough (tools/reviewwalk): crops of the board with parts
+# and nets marked, the assembly drawings at true size, the numbered boxes over the top render. Drawn
+# from the saved board and from $(OUT)/$(NAME)-top.png, so it runs after `outputs`. It fails if a step
+# of the walkthrough names a part or a net that the board no longer has. The site build refuses
+# pictures that were not drawn from the committed board.
+REVIEW_RUN = PYTHONPATH=$(abspath $(REVIEWWALK)) $(KICAD_PY) -m reviewwalk
+review: | build
+	$(REVIEW_RUN) generate --board $(PCB) --top-render $(OUT)/$(NAME)-top.png --out $(OUT)/review
+	$(REVIEW_RUN) check --board $(PCB) --top-render $(OUT)/$(NAME)-top.png --out $(OUT)/review
+
+# Draw the pictures again into build/ and compare them with the committed ones. Builds nothing
+# else and changes nothing: CI runs it on the committed board.
+review-check: | build
+	rm -rf build/review
+	$(REVIEW_RUN) generate --board $(PCB) --top-render $(OUT)/$(NAME)-top.png --out build/review
+	$(REVIEW_RUN) compare build/review $(OUT)/review
 
 # Unit tests, KiCad round-trip tests, and proof that ERC and DRC catch
 # deliberately broken inputs. Needs the board to have been built.

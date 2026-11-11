@@ -1,0 +1,657 @@
+# Steps done with a maker's datasheet open. The pin lists under "fact" were read from the sheets
+# named there on 2026-11-11. The nets on the pictures are read from the board file by the build.
+
+[[step]]
+id = "s-d25"
+group = "sheets"
+title = "D25, the 6 V clamp: which pad is the cathode"
+source = "Finding L23, \"one not verified\". Layout review, section 4, row D25, and section 16"
+findings = ["L23"]
+minutes = 4
+check = '''
+D25 is a one-way clamp, SMBJ6.0A. Its cathode must be on `V_BUCK` and its anode on ground. Confirm
+that pad 1 is on `V_BUCK`, and that the maker marks the cathode with a band.
+'''
+why = '''
+D25 limits the 5 V rail to under 10 V if the buck converter fails short. Fitted backwards it is a
+forward diode from ground to the 5 V rail: the rail sits at 0.7 V, the fuse F5 opens at the first
+power-up and the board never starts. This is the one polarity the reviewer could not check, because
+JLCPCB's library footprint for this part does not name its pads.
+'''
+good = '''
+- **Pad 1**, the left pad, is on `V_BUCK`. Pad 2 is on `GND`.
+- **The silkscreen and the outline on the fabrication layer** show the bar and the diode symbol's
+  bar at the left, at pad 1.
+'''
+bad = '''
+- **Pad 1 on `GND`.** The part would be the wrong way round in the netlist.
+- **A datasheet for a bidirectional part**, SMBJ6.0CA. That part has no band and no polarity. The
+  BOM must say SMBJ6.0A.
+'''
+how = '''
+Find D25. Click each pad and read its net. Then look at the same part in JLCPCB's placement preview:
+that is its own step in the last group.
+'''
+fact = '''
+**Littelfuse SMBJ series data sheet**, the copy LCSC serves for [C83270](https://www.lcsc.com/datasheet/C83270.pdf),
+under "Physical Specifications", Polarity: "Uni-directional products are denoted with a cathode
+band". SMBJ6.0A is the uni-directional part. In KiCad's `D_SMB` footprint pad 1 is the cathode.
+'''
+kicad = { find = ["D25"], nets = ["V_BUCK"], layers = ["F.Cu", "F.Silkscreen", "F.Fab"], at = [12.9, 36.75] }
+ibom = { ref = "D25" }
+
+[[step.figure]]
+id = "pads"
+alt = "D25 with its two pads and their nets"
+caption = "D25 on F.Cu with the silkscreen and the fabrication outline. Yellow is the 5 V rail V_BUCK. Pad 1, at the left, is the cathode."
+around = ["D25"]
+margin = 2.6
+layers = ["F.Cu", "F.Silkscreen", "F.Fab", "Edge.Cuts"]
+marks = [{ nets = ["V_BUCK"], label = "V_BUCK" }]
+pad_labels = ["D25"]
+callouts = [{ pad = "D25.1", text = "cathode: the band goes here", dx = -0.6, dy = 3.3 }]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "s-u11"
+group = "sheets"
+title = "U11, the sensor supply switch TPS2553"
+source = "Layout review, section 4: nine makers' sheets not opened"
+findings = ["L23"]
+minutes = 3
+check = '''
+Compare the net on each pad of U11 with the pin list from TI's sheet.
+'''
+why = '''
+U11 switches and limits the 5 V supply for flow meters. With input and output swapped, the limit
+does not work and a shorted sensor cable loads the 5 V rail directly.
+'''
+good = '''
+Pad 1 `V_BUCK` is IN. Pad 2 `GND`. Pad 3 `SENS_PWR_EN` is EN. Pad 4 `SENS_FLT_N` is FAULT. Pad 5
+`SP_ILIM` is ILIM. Pad 6 `SP_OUT` is OUT. Pad 1 is at the upper left, where the fabrication outline
+has its cut corner.
+'''
+bad = '''
+Any pad whose net does not fit the pin's function, or pin 1 at another corner than the sheet's
+drawing shows.
+'''
+how = '''
+Find U11. Open the sheet at the pin table and at the package drawing for the DBV package.
+'''
+fact = '''
+**TI SLVS841G**, [TPS2552, TPS2553](https://www.ti.com/lit/ds/symlink/tps2553.pdf), table 5-1, column
+TPS2553 SOT-23:
+
+| Pin | Name |
+|---|---|
+| 1 | IN |
+| 2 | GND |
+| 3 | EN, active high |
+| 4 | FAULT, open drain, active low |
+| 5 | ILIM |
+| 6 | OUT |
+'''
+kicad = { find = ["U11"], layers = ["F.Cu", "F.Fab"], at = [56.8, 65.5] }
+ibom = { ref = "U11" }
+
+[[step.figure]]
+id = "pads"
+alt = "U11 with the net on each of its six pads"
+caption = "U11 on F.Cu with the fabrication outline. Each pad shows its number and its net."
+around = ["U11"]
+margin = 1.6
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+pad_labels = ["U11"]
+marks = [{ refs = ["U11"], label = "U11" }]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "s-u5"
+group = "sheets"
+title = "U5, the I/O expander TCA9539"
+source = "Layout review, section 4: nine makers' sheets not opened"
+findings = ["L23"]
+minutes = 5
+check = '''
+Compare the net on each of the 24 pads of U5 with TI's pin list. Look hardest at pins 3, 12 and 24.
+'''
+why = '''
+Every valve is switched through this chip, and its RESET pin is how the fail-safe turns all valves
+off at once. If RESET were on the wrong pad, a crashed controller could leave a valve on.
+'''
+good = '''
+- **Pin 3, RESET,** is on `DRV_EN`.
+- **Pin 12** is `GND` and **pin 24** is `3V3`.
+- **Pins 22 and 23** are `I2C0_SCL` and `I2C0_SDA`. **Pin 1, INT,** is `EXP_INT_N`.
+- **Pins 2 and 21,** the address inputs A1 and A0, are both on `GND`. That gives I2C address 0x74.
+- **Port pins:** 4 to 8 are `ZD_Z1_N` to `ZD_Z4_N` and `ZD_MV_N`, 9 is `RLY_ON`, 13 to 16 are
+  `ZD_Z5_N` to `ZD_Z8_N`, 17 is `VARIANT_N`, 18 is `SENS_FLT_N`. Pins 10, 11, 19 and 20 are the
+  spare port pins `P06`, `P07`, `P16`, `P17`.
+'''
+bad = '''
+Supply, ground or RESET on another pad than the sheet says. A port pin on the wrong pad would also
+be wrong, but the firmware's pin map decides that, not the sheet.
+'''
+how = '''
+Find U5. Pin 1 is at the upper left of the picture.
+'''
+fact = '''
+**TI SCPS202C**, [TCA9539](https://www.ti.com/lit/ds/symlink/tca9539.pdf), "Pin Functions", column
+TSSOP (PW):
+
+| Pin | Name | Pin | Name |
+|---|---|---|---|
+| 1 | INT | 13 to 20 | P10 to P17 |
+| 2 | A1 | 21 | A0 |
+| 3 | RESET | 22 | SCL |
+| 4 to 11 | P00 to P07 | 23 | SDA |
+| 12 | GND | 24 | VCC |
+'''
+kicad = { find = ["U5"], layers = ["F.Cu", "F.Fab"], at = [35.0, 72.5] }
+ibom = { ref = "U5" }
+
+[[step.figure]]
+id = "pads"
+alt = "U5 with the net on each of its 24 pads"
+caption = "U5 on F.Cu. Pin 1 is at the upper left. Click to enlarge and read the nets."
+around = ["U5"]
+margin = 1.2
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["U5"]
+minimap = "none"
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "s-u6"
+group = "sheets"
+title = "U6, the quad comparator LM2901"
+source = "Layout review, section 4: nine makers' sheets not opened"
+findings = ["L23"]
+minutes = 4
+check = '''
+Compare the net on each of the 14 pads of U6 with TI's pin list: the supply pins first, then that
+each output sits with its own pair of inputs.
+'''
+why = '''
+U6 holds keep-alive detector A, the over-current window and the zero-cross detector. A comparator
+wired to another comparator's inputs gives a fail-safe that never trips, or one that always does.
+'''
+good = '''
+- **Pin 3** is `V5` and **pin 12** is `GND`.
+- **Pin 1** `KA_OK` is the output for the inputs on pins 6 and 7, `KA_REF` and `KA_INP`.
+- **Pin 2** `OC_TRIP_N` is the output for pins 4 and 5, `OC_CMP` and `VH`.
+- **Pin 14** `OC_TRIP_N` is the output for pins 8 and 9, `VL` and `OC_CMP`.
+- **Pin 13** `AC_ZC` is the output for pins 10 and 11, `VL` and `ZC_DIV`.
+'''
+bad = '''
+Supply or ground on another pad, or an output grouped with the wrong pair of inputs.
+'''
+how = '''
+Find U6. The part is turned a quarter: pin 1 is at the upper right of the picture.
+'''
+fact = '''
+**TI SLCS006Z**, [LM2901](https://www.ti.com/lit/ds/symlink/lm2901.pdf), table 5-1, column D:
+
+| Pin | Name | Pin | Name |
+|---|---|---|---|
+| 1 | Output for inputs 6 and 7 | 8 | IN3 minus |
+| 2 | Output for inputs 4 and 5 | 9 | IN3 plus |
+| 3 | VCC | 10 | IN4 minus |
+| 4 | Minus input | 11 | IN4 plus |
+| 5 | Plus input | 12 | GND |
+| 6 | Minus input | 13 | OUT4, for inputs 10 and 11 |
+| 7 | Plus input | 14 | OUT3, for inputs 8 and 9 |
+
+TI's note to the table says makers name channels 1 and 2 differently and that the pinout is the
+same. So this list gives the pairing and leaves the two names out.
+'''
+kicad = { find = ["U6"], layers = ["F.Cu", "F.Fab"], at = [108.0, 78.9] }
+ibom = { ref = "U6" }
+
+[[step.figure]]
+id = "pads"
+alt = "U6 with the net on each of its 14 pads"
+caption = "U6 on F.Cu. Pin 1 is at the upper right: the part is turned a quarter."
+around = ["U6"]
+margin = 1.4
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["U6"]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "s-u7"
+group = "sheets"
+title = "U7, the fail-safe logic 74HC132"
+source = "Layout review, section 4: nine makers' sheets not opened"
+findings = ["L23"]
+minutes = 3
+check = '''
+Compare the net on each of the 14 pads of U7 with Nexperia's pin list.
+'''
+why = '''
+U7 is the over-current latch and the gate that makes `DRV_EN`. Its supply on the wrong pad means no
+valve ever turns on. An output on an input pad can mean drive that never turns off.
+'''
+good = '''
+- **Pin 14** is `3V3` and **pin 7** is `GND`.
+- **Outputs:** pin 3 `FAULT`, pin 6 `FAULT_N`, pin 8 `DRV_EN_N`, pin 11 `DRV_EN`.
+- **Every other pin** is an input and carries one of `OC_TRIP_N`, `FAULT_N`, `FAULT`, `KA_OK`,
+  `DRV_EN_N`.
+'''
+bad = '''
+A net that is an output in the list above on a pin the sheet calls an input, or the reverse.
+'''
+how = '''
+Find U7. Pin 1 is at the upper left.
+'''
+fact = '''
+**Nexperia 74HC132; 74HCT132, rev. 8**, the copy LCSC serves for [C5601](https://www.lcsc.com/datasheet/C5601.pdf),
+table 2:
+
+| Pins | Function |
+|---|---|
+| 1, 4, 9, 12 | Inputs A of gates 1 to 4 |
+| 2, 5, 10, 13 | Inputs B of gates 1 to 4 |
+| 3, 6, 8, 11 | Outputs Y of gates 1 to 4 |
+| 7 | GND |
+| 14 | VCC |
+'''
+kicad = { find = ["U7"], layers = ["F.Cu", "F.Fab"], at = [20.0, 74.0] }
+ibom = { ref = "U7" }
+
+[[step.figure]]
+id = "pads"
+alt = "U7 with the net on each of its 14 pads"
+caption = "U7 on F.Cu. Pin 1 is at the upper left."
+around = ["U7"]
+margin = 1.4
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["U7"]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "s-u8"
+group = "sheets"
+title = "U8, the current-sense amplifier MCP6002"
+source = "Layout review, section 4: nine makers' sheets not opened"
+findings = ["L23"]
+minutes = 3
+check = '''
+Compare the net on each of the 8 pads of U8 with Microchip's pin list.
+'''
+why = '''
+U8 reads the shunt for both current ranges. With the supply pins swapped the part is destroyed at
+power-up and the controller reports no current on any valve.
+'''
+good = '''
+Pin 1 `ISENSE_LO` is output A. Pins 2 and 3, `SA_N` and `SA_P`, are its inputs. Pin 4 is `GND`.
+Pins 5 and 6, `SB_P` and `SB_N`, are the inputs of amplifier B. Pin 7 `ISENSE_HI` is output B. Pin
+8 is `3V3`.
+'''
+bad = '''
+`3V3` on pin 4 or `GND` on pin 8. An output net on an input pin.
+'''
+how = '''
+Find U8. The part is turned a quarter: pin 1 is at the lower left of the picture.
+'''
+fact = '''
+**Microchip DS20001733L**, [MCP6001/1R/1U/2/4](https://ww1.microchip.com/downloads/aemDocuments/documents/MSLD/ProductDocuments/DataSheets/MCP6001-1R-1U-2-4-1-MHz-Low-Power-Op-Amp-DS20001733L.pdf),
+table 3-1, column MCP6002 SOIC:
+
+| Pin | Name |
+|---|---|
+| 1 | VOUTA |
+| 2 | VINA minus |
+| 3 | VINA plus |
+| 4 | VSS |
+| 5 | VINB plus |
+| 6 | VINB minus |
+| 7 | VOUTB |
+| 8 | VDD |
+'''
+kicad = { find = ["U8"], layers = ["F.Cu", "F.Fab"], at = [35.0, 62.6] }
+ibom = { ref = "U8" }
+
+[[step.figure]]
+id = "pads"
+alt = "U8 with the net on each of its 8 pads"
+caption = "U8 on F.Cu. Pin 1 is at the lower left: the part is turned a quarter."
+around = ["U8"]
+margin = 1.6
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["U8"]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "s-u10"
+group = "sheets"
+title = "U10, the clock PCF8563"
+source = "Layout review, section 4: nine makers' sheets not opened"
+findings = ["L23"]
+minutes = 3
+check = '''
+Compare the net on each of the 8 pads of U10 with NXP's pin list.
+'''
+why = '''
+The clock runs the watering schedule when the network is down. A wrong pad here means a controller
+that forgets the time at every power cut, or a coin cell drained in days.
+'''
+good = '''
+Pins 1 and 2, `OSCI` and `OSCO`, go to the crystal Y1. Pin 3 is `RTC_INT_N`. Pin 4 is `GND`. Pin 5
+is `I2C0_SDA` and pin 6 is `I2C0_SCL`. Pin 7, CLKOUT, is not connected. Pin 8 is `VDD_RTC`.
+'''
+bad = '''
+SDA and SCL exchanged, or the supply on another pad than 8.
+'''
+how = '''
+Find U10. Pin 1 is at the upper left.
+'''
+fact = '''
+**NXP PCF8563, rev. 11.1**, [product data sheet](https://www.nxp.com/docs/en/data-sheet/PCF8563.pdf),
+table 3, column SO8:
+
+| Pin | Name |
+|---|---|
+| 1 | OSCI |
+| 2 | OSCO |
+| 3 | INT |
+| 4 | VSS |
+| 5 | SDA |
+| 6 | SCL |
+| 7 | CLKOUT |
+| 8 | VDD |
+'''
+kicad = { find = ["U10", "Y1"], layers = ["F.Cu", "F.Fab"], at = [66.0, 72.0] }
+ibom = { ref = "U10" }
+
+[[step.figure]]
+id = "pads"
+alt = "U10 with the net on each of its 8 pads, and the crystal Y1"
+caption = "U10 on F.Cu, with the crystal Y1 at the left."
+around = ["U10", "Y1"]
+margin = 1.4
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["U10", "Y1"]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "s-u3"
+group = "sheets"
+title = "U3, the 3.3 V regulator LDL1117"
+source = "Layout review, section 4: nine makers' sheets not opened"
+findings = ["L23", "L3"]
+minutes = 3
+check = '''
+Compare the net on each pad of U3 with ST's pin list. The tab is the output, not ground.
+'''
+why = '''
+Some regulators in this package have ground on the tab. This one has its output there, and
+the board joins the tab to the 3.3 V plane. If the footprint had the tab as ground, the rail would be shorted
+to the plane through five vias.
+'''
+good = '''
+Pad 1, the upper lead, is `GND`. Pad 2, the middle lead, and the tab are both `3V3`. Pad 3, the
+lower lead, is `V5`.
+'''
+bad = '''
+The tab on any net but `3V3`. Input and ground exchanged.
+'''
+how = '''
+Find U3. The three leads are at the left and the tab at the right. ST draws the part with the leads
+down and pin 1 at the left. Turn that drawing a quarter clockwise to match the board.
+'''
+fact = '''
+**ST DocID030319 rev 3**, LDL1117, the copy LCSC serves for [C435835](https://www.lcsc.com/datasheet/C435835.pdf),
+figure 2 and table 1:
+
+| Pin | Name |
+|---|---|
+| 1 | GND |
+| 2 | VOUT |
+| 3 | VIN |
+| Tab | "The tab is connected to VOUT" |
+'''
+kicad = { find = ["U3"], nets = ["3V3"], layers = ["F.Cu", "F.Fab"], at = [14.5, 50.1] }
+ibom = { ref = "U3" }
+
+[[step.figure]]
+id = "pads"
+alt = "U3 with the net on each pad"
+caption = "U3 on F.Cu. Yellow is the 3.3 V rail: the middle lead, the tab and the bar that joins them."
+around = ["U3"]
+margin = 2.0
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+marks = [{ nets = ["3V3"], label = "3V3" }]
+pad_labels = ["U3"]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "s-ao3400"
+group = "sheets"
+title = "Q1, Q2 and Q4, the N-channel MOSFET AO3400A"
+source = "Layout review, section 4: nine makers' sheets not opened"
+findings = ["L23"]
+minutes = 3
+check = '''
+On each of the three transistors, pad 1 must be the gate, pad 2 the source and pad 3, alone on its
+side, the drain.
+'''
+why = '''
+Q1 and Q2 are in series in the relay coil's ground path. Q2 is the relay half of the fail-safe. With
+gate and source exchanged the body diode conducts and the relay cannot be released.
+'''
+good = '''
+- **Q2:** pad 1 `RLY_G2`, pad 2 `GND`, pad 3 `RLY_B`.
+- **Q1:** pad 1 `RLY_G1`, pad 2 `RLY_B`, pad 3 `RLY_A`.
+- **Q4,** the backlight switch at (54.5, 96.0): pad 1 `BL_G`, pad 2 `GND`, pad 3 `TFT_LEDK`.
+- **On each,** the single pad on the right is pad 3.
+'''
+bad = '''
+A gate net on pad 2 or 3.
+'''
+how = '''
+Find Q1, Q2 and Q4 in turn. The sheet has a drawing with letters and no pin numbers. Seen from
+above and going anticlockwise it reads gate, source, drain, and the dot on the body is beside the
+gate. A SOT-23 footprint counts 1, 2, 3 the same way round.
+'''
+fact = '''
+**Alpha & Omega AO3400A**, the copy LCSC serves for [C20917](https://www.lcsc.com/datasheet/C20917.pdf),
+front page, "SOT23 Top View": D alone on one side, G and S on the other.
+'''
+kicad = { find = ["Q1", "Q2", "Q4"], layers = ["F.Cu", "F.Fab"], at = [53.6, 72.2] }
+ibom = { ref = "Q2" }
+
+[[step.figure]]
+id = "pads"
+alt = "Q1 and Q2 with the net on each pad"
+caption = "Q1 at the left and Q2 at the right, on F.Cu. Pad 3, the drain, is the single pad on the right of each."
+around = ["Q1", "Q2"]
+margin = 1.3
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["Q1", "Q2"]
+marks = [{ refs = ["Q1", "Q2"], label = "Q1, Q2" }]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "s-ao3401"
+group = "sheets"
+title = "Q3, the P-channel MOSFET AO3401A"
+source = "Layout review, section 4: nine makers' sheets not opened"
+findings = ["L23"]
+minutes = 2
+check = '''
+Pad 1 of Q3 must be the gate, pad 2 the source and pad 3 the drain.
+'''
+why = '''
+Q3 switches the supply of the opto-triac LEDs, `V_DRV`. It is the gate-drive half of the fail-safe.
+With source and drain exchanged its body diode feeds `V_DRV` all the time, and removing drive no
+longer turns the valves off.
+'''
+good = '''
+Pad 1 `DRV_EN_N` is the gate. Pad 2 `3V3` is the source. Pad 3 `V_DRV`, alone on the right, is the
+drain.
+'''
+bad = '''
+`3V3` on pad 3 and `V_DRV` on pad 2.
+'''
+how = '''
+Find Q3. Same drawing as for the AO3400A: drain alone on one side.
+'''
+fact = '''
+**Alpha & Omega AO3401A**, the copy LCSC serves for [C15127](https://www.lcsc.com/datasheet/C15127.pdf),
+front page, "SOT23 Top View": D alone on one side, G and S on the other. For a P-channel part
+that switches a positive supply, the source is on the supply and the drain on the load.
+'''
+kicad = { find = ["Q3"], layers = ["F.Cu", "F.Fab"], at = [13.6, 76.5] }
+ibom = { ref = "Q3" }
+
+[[step.figure]]
+id = "pads"
+alt = "Q3 with the net on each pad"
+caption = "Q3 on F.Cu."
+around = ["Q3"]
+margin = 1.8
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["Q3"]
+marks = [{ refs = ["Q3"], label = "Q3" }]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "s-usblc6"
+group = "sheets"
+title = "U2 and U9, the ESD arrays USBLC6-2SC6"
+source = "Layout review, section 4: checked \"from memory\""
+findings = ["L23"]
+minutes = 3
+check = '''
+On both parts, pads 1 and 6 must be one line, pads 3 and 4 the other line, pad 2 ground and pad 5
+the supply.
+'''
+why = '''
+The reviewer checked this pinout from memory, because JLCPCB's library numbers these pins without
+naming them. With the part's ground and supply exchanged, the array clamps the USB supply to ground
+and the port does not work.
+'''
+good = '''
+- **U2:** pads 1 and 6 `USB_DM`, pads 3 and 4 `USB_DP`, pad 2 `GND`, pad 5 `VBUS`.
+- **U9:** pads 1 and 6 `QW_SDA`, pads 3 and 4 `QW_SCL`, pad 2 `GND`, pad 5 `QW_3V3`.
+'''
+bad = '''
+A line that enters on pad 1 and leaves on pad 4, or supply on pad 2.
+'''
+how = '''
+Find U2, at the lower left, then U9, at the lower right.
+'''
+fact = '''
+**ST USBLC6-2**, the copy LCSC serves for [C7519](https://www.lcsc.com/datasheet/C7519.pdf), figure 1,
+"Functional diagram (top view)":
+
+| Pin | Name | Pin | Name |
+|---|---|---|---|
+| 1 | I/O1 | 6 | I/O1 |
+| 2 | GND | 5 | VBUS |
+| 3 | I/O2 | 4 | I/O2 |
+'''
+kicad = { find = ["U2", "U9"], layers = ["F.Cu", "F.Fab"], at = [3.3, 17.7] }
+ibom = { ref = "U2" }
+
+[[step.figure]]
+id = "u2"
+alt = "U2 with the net on each of its six pads"
+caption = "U2, beside the USB connector, on F.Cu."
+around = ["U2"]
+margin = 1.6
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["U2"]
+
+[[step.figure]]
+id = "u9"
+alt = "U9 with the net on each of its six pads"
+caption = "U9, beside the Qwiic connector, on F.Cu."
+around = ["U9"]
+margin = 1.6
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["U9"]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "s-bat54s"
+group = "sheets"
+title = "The six BAT54S diode pairs"
+source = "Layout review, section 4: checked \"from memory\". Ordering page, assembly step 4"
+findings = ["L23"]
+minutes = 4
+check = '''
+On each of D7, D9, D15, D16, D17 and D22, pad 1 is the anode end of the pair, pad 2 the cathode end
+and pad 3 the point between the two diodes.
+'''
+why = '''
+The part number changed after the review, to a cheaper maker, and JLCPCB's library symbol for the
+new number draws the pair as two diodes with a common anode. The maker's sheet does not. Four of
+these six are input clamps: pad 1 on ground, pad 2 on 3.3 V, pad 3 on the signal. The other two,
+D7 and D22, are the charge pumps of the two keep-alive detectors. A pump fitted as a common-anode
+pair does not pump, and that detector never enables.
+'''
+good = '''
+- **Clamps D9, D15, D16, D17:** pad 1 `GND`, pad 2 `3V3`, pad 3 the signal.
+- **Pump D7:** pad 1 `GND`, pad 2 `KA_N2`, pad 3 `KA_N1`.
+- **Pump D22:** pad 1 `GND`, pad 2 `RLY_G2`, pad 3 `KB_N1`.
+- **In the sheet** the BAT54S drawing has one diode pointing from pin 1 to pin 3 and one from pin
+  3 to pin 2.
+'''
+bad = '''
+A sheet whose BAT54S drawing has both arrows pointing away from pin 3, or both towards it. That is
+a BAT54A or a BAT54C and the wrong part.
+'''
+how = '''
+Find each of the six. In JLCPCB's preview, go by the pads and not by the symbol.
+'''
+fact = '''
+**hongjiacheng BAT54 thru BAT54S**, the copy LCSC serves for [C7420333](https://www.lcsc.com/datasheet/C7420333.pdf),
+"Function Diagram", fourth drawing, BAT54S: pin 1 anode, pin 3 the common point, pin 2 cathode.
+The marking code for the BAT54S is KL4.
+'''
+kicad = { find = ["D7", "D9", "D15", "D16", "D17", "D22"], layers = ["F.Cu", "F.Fab"], at = [101.5, 86.1] }
+ibom = { ref = "D7" }
+
+[[step.figure]]
+id = "d7"
+alt = "The pump diode D7 with the net on each pad"
+caption = "D7, the pump of detector A, on F.Cu."
+around = ["D7"]
+margin = 1.8
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["D7"]
+marks = [{ refs = ["D7"], label = "D7" }]
+
+[[step.figure]]
+id = "d9"
+alt = "The clamp diode D9 with the net on each pad"
+caption = "D9, a clamp, on F.Cu. Pad 1 on ground, pad 2 on 3.3 V, pad 3 on the signal."
+around = ["D9"]
+margin = 1.8
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["D9"]
+marks = [{ refs = ["D9"], label = "D9" }]

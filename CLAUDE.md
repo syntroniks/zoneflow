@@ -61,6 +61,12 @@ before touching anything under `hardware/`.
   maker's drawing you read and the dimensions you compared.
 - `hardware/toolchain-test/` is a test of the flow, not the product. Do not
   reuse its part choices.
+- `docs/hardware/review/` is a guided review of the product board for its
+  owner. Its steps name parts and nets, and its pictures are drawn from the
+  board by `make` into `output/review/`. After any change to the board,
+  commit the new pictures. If a part or a net that a step names is gone, the
+  build says which step: change the step in `docs/hardware/review/data/`.
+  See `tools/reviewwalk/README.md`.
 
 ## Enclosure flow
 

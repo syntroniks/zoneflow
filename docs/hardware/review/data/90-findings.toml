@@ -1,0 +1,362 @@
+# The 30 findings of the layout review, as cards. Condensed from the table in
+# docs/design/hardware-layout-review.md, section 2. "check" says what guards the fix on every build.
+# "images" are the review's own pictures, in docs/design/hardware-layout-review/.
+
+[[finding]]
+id = "L1"
+severity = "Blocking"
+status = "fixed"
+where = "Placement files"
+found = "26 of 307 placements were wrong against JLCPCB's own footprints: nine triacs and nine opto-triacs a quarter turn off, both USB ESD arrays a quarter turn off, the display connector a quarter turn off and 1.6 mm from its lands, the module 3.6 mm from its lands, the USB-C receptacle 1.5 mm, the three resistor arrays half a turn round."
+action = "The correction table `hardware/rules/jlcpcb-cpl-rotations.csv` is rewritten per part number, with offsets."
+check = "`make cpl-check` places JLCPCB's library footprint for every part as the file says and compares pads: 312 of 312 and 267 of 267 fit. It needs the network and is run on demand, not on every build."
+section = "5-the-placement-file-against-jlcpcbs-library"
+images = [{ file = "placement.png", caption = "The review's picture. Top row: JLCPCB's footprint in red, placed as the first file said, over the board's pads in grey. Bottom row: the corrected file." }]
+steps = ["o-commands", "o-prev-triacs", "o-prev-optos", "o-prev-big3", "o-prev-rest"]
+
+[[finding]]
+id = "L2"
+severity = "Major"
+status = "fixed"
+where = "U1 at (21.5, 33.0)"
+found = "The exposed pad of the buck converter had no via and no track. Four thermal spokes 0.4 mm wide joined it to a sliver of the top pour. The GND pin was not tied to it."
+action = "Six vias under the pad, the pin tied to it, a second via at the pin and at C2."
+check = "The vias are written in `design/layout.py`, and DRC with schematic parity checks their net. No program counts them: that is the step below."
+section = "8-buck-converter-and-supplies"
+images = [{ file = "u1.png", caption = "The review's picture. Left as first laid out, right now. Ground in yellow." }]
+steps = ["k-u1-vias"]
+
+[[finding]]
+id = "L3"
+severity = "Major"
+status = "fixed"
+where = "3.3 V, the whole logic area"
+found = "The 3.3 V pour on In2.Cu was in 21 pieces and the one on B.Cu in 15, cut by 2.4 m of autorouted track. C25 was 7.5 mm from the supply pin it serves, on 23 mm of 0.2 mm track."
+action = "In2.Cu is one plane of 71 cm² that the autorouter may not use. The regulator U3 reaches it through five vias where it had one. C25 is 2.4 mm from its pin."
+check = "The build fails if an autorouted track is on In2.Cu or any track is on In1.Cu."
+section = "9-planes-clearances-heat-signals-antenna"
+images = [{ file = "in2.png", caption = "The review's picture of In2.Cu. Left as first laid out, right now." }]
+steps = ["k-patches", "o-layers", "s-u3"]
+
+[[finding]]
+id = "L4"
+severity = "Major"
+status = "fixed"
+where = "The 5 V chain, x 2 to 24, y 26 to 55"
+found = "Buck output to OR-ing diode to regulator, and the USB feed, were autorouted at 0.4 mm, part of it on 17 um inner copper. The feedback divider sensed 6 mm down the load track."
+action = "Routed by hand on the outer layers, 0.55 to 1.0 mm wide. The divider senses at the pad of D25 on its own track."
+check = "Hand-routed copper is written in `design/layout.py` and locked. DRC checks its width against the net class."
+section = "7-power-and-ac-paths"
+images = [{ file = "v5.png", caption = "The review's picture. V_BUCK, V5 and VBUS in yellow. Left as first laid out, right now." }]
+
+[[finding]]
+id = "L5"
+severity = "Major"
+status = "fixed"
+where = "Nets VIN_MON and RLY_B_RB"
+found = "The supply monitor line was 120 mm through ten vias, laid by a maze router. The relay read-back, 50 kohm behind it, was autorouted."
+action = "`VIN_MON` by hand: 137 mm, four vias, on B.Cu under the 3.3 V plane. `RLY_B_RB` by hand: 71 mm, two vias."
+check = "Hand-routed copper is written in `design/layout.py`. `output/reports/routing.md` lists what the autorouter and the patch router laid, and these nets are not in it."
+section = "7-power-and-ac-paths"
+images = [{ file = "vinmon.png", caption = "The review's picture. VIN_MON in yellow on the whole board. Left as first laid out, right now." }]
+
+[[finding]]
+id = "L6"
+severity = "Major"
+status = "fixed"
+where = "The nine output columns"
+found = "Two 0.3 mm vias carried a shorted output. With JLCPCB's published plating, 18 um on average, they heat by 131 K in the case where only the PTC ends the fault."
+action = "Four vias per output, 33 K, and three at each A1 lead, 40 K."
+check = "The vias are written once for all nine columns in `design/layout.py`. No program repeats the heating calculation."
+section = "7-power-and-ac-paths"
+images = [{ file = "outvias.png", caption = "The review's picture. Output Z1 in yellow below its PTC. Left as first laid out, right now." }]
+steps = ["k-valve", "o-ask"]
+
+[[finding]]
+id = "L7"
+severity = "Major"
+status = "fixed"
+where = "Holes C at (4.5, 12) and D at (109.5, 12)"
+found = "Autorouted copper lay under the heads of the two pan-head board screws: `USB_DM` 0.44 mm from hole C, and the Qwiic supply and a via of the Qwiic clock under the head at hole D."
+action = "The autorouter and the patch router are kept out of a 6 mm square at each hole on F.Cu. Nearest top-side copper now: 3.25 mm from the centre of hole C, 3.55 mm from hole D."
+check = "The keep-out squares are in `design/board.toml`, and both routers obey them."
+section = "13-mechanical-and-the-three-rules-not-met-as-written"
+images = [
+  { file = "screw-before.png", caption = "The review's picture, as first laid out: USB_DM in yellow at hole C and the Qwiic supply at hole D." },
+  { file = "screw-after.png", caption = "The same two places now." },
+]
+steps = ["k-screws"]
+
+[[finding]]
+id = "L8"
+severity = "Major"
+status = "fixed"
+where = "DRC itself"
+found = "Two clearances were not what the layout document said. KiCad's footprint for U1 carries its own 0.2 mm, which outranks the net class, so the ground pour stood 0.2 mm from the 45 V input pin and the switch node where the class asks 0.4 mm. And a shared rule gave every pair of surface-mount pads 0.15 mm, whatever their nets."
+action = "The builder removes clearance overrides from footprints and prints which. The general rule is gone, and the one pair it hid, the solder jumper JP1, has a rule of its own."
+check = "Every build: the builder strips footprint overrides before DRC runs."
+section = "10-the-checks-themselves"
+images = [{ file = "u1.png", caption = "The review's picture of U1. On the right the pour stands 0.4 mm from pins 2 and 8, where it was 0.2 mm." }]
+steps = ["k-u1-vias"]
+
+[[finding]]
+id = "L9"
+severity = "Major"
+status = "fixed"
+where = "The ground pad of the module U4"
+found = "Twelve holes of 0.2 mm, from KiCad's stock module footprint. The rules file recorded 0.2 mm as free of surcharge. JLCPCB's help article of 2026-11-10 says the standard hole is 0.3 mm."
+action = "0.3 mm holes in 0.7 mm lands."
+check = "Every build: DRC fails on any hole under 0.3 mm."
+section = "11-manufacturability-at-jlcpcb"
+steps = ["o-commands", "o-options"]
+
+[[finding.figure]]
+id = "pad"
+alt = "The ground pad of the module with its vias"
+caption = "As it is now, drawn from the board file: the nine ground lands under the module with their twelve 0.3 mm vias. There is no picture of the earlier state."
+box = [98.0, 97.2, 105.0, 104.4]
+layers = ["F.Cu", "Edge.Cuts"]
+marks = [{ nets = ["GND"], label = "GND" }]
+
+[[finding]]
+id = "L10"
+severity = "Minor"
+status = "fixed"
+where = "Silkscreen, both sides"
+found = "Terminal labels stood 0.1 mm apart and read as one word (\"FLOWGND\"). Designators lay flush against each other. The designators of J1 to J4, J6 and TP16 were beyond the board edge, where nothing is printed, and those of U6 and SW1 were cut by it."
+action = "Narrower label letters. The silkscreen cleaner now compares text with text and with the outline, and moves or hides a designator that is too close."
+check = "Every build: the cleaner runs and reports to `build/silk.json`. The review's own check found 98 texts, no two boxes overlapping."
+section = "12-silkscreen"
+images = [
+  { file = "silk-before.png", caption = "The review's picture: terminal labels and test pads as first laid out." },
+  { file = "silk-after.png", caption = "The same now." },
+]
+steps = ["k-silk"]
+
+[[finding]]
+id = "L11"
+severity = "Minor"
+status = "fixed"
+where = "D1 at (16.3, 21.8)"
+found = "The ground pad of the input surge clamp had one 0.3 mm via and thermal spokes."
+action = "Three more vias."
+check = "The vias are written in `design/layout.py`. No program counts them."
+section = "7-power-and-ac-paths"
+
+[[finding.figure]]
+id = "vias"
+alt = "The surge clamp D1 with its ground vias"
+caption = "As it is now, drawn from the board file: D1 with ground in yellow. The ground pad is the right one. There is no picture of the earlier state."
+around = ["D1"]
+margin = 2.0
+layers = ["F.Cu", "Edge.Cuts"]
+marks = [{ nets = ["GND"], label = "GND" }]
+pad_labels = ["D1"]
+
+[[finding]]
+id = "L12"
+severity = "Minor"
+status = "open"
+where = "Gerber job file"
+found = "The stack-up in the board file is KiCad's default: 35 um on all four layers and three equal dielectrics. The build that is ordered has 17.5 um inner copper and thin outer dielectrics. JLCPCB does not read the job file."
+action = "Not fixed. The options chosen on the order page state the build."
+check = "Not checked by a program. It is a step of this walkthrough."
+section = "11-manufacturability-at-jlcpcb"
+steps = ["o-options", "o-layers"]
+
+[[finding]]
+id = "L13"
+severity = "Minor"
+status = "open"
+where = "JLCPCB BOM"
+found = "The BOM lists seven parts that are not in the placement file and that JLCPCB does not place: C1, K1, J1 to J4 and the display. Nothing marks them."
+action = "Not fixed, because the BOM is checked against the netlist. The lines are taken out by hand in JLCPCB's BOM step."
+check = "Not checked by a program. It is a step of this walkthrough."
+section = "5-the-placement-file-against-jlcpcbs-library"
+steps = ["o-bom"]
+
+[[finding]]
+id = "L14"
+severity = "Note"
+status = "accepted"
+where = "Triac tabs"
+found = "Four 0.3 mm vias in each tab land sit under the solder paste. They are open on the top and covered by mask on the bottom, so solder runs in and stops there."
+action = "Left as it is. Look at the tab joints of the first boards."
+check = "Not checked by a program. An inspection of the first boards."
+section = "11-manufacturability-at-jlcpcb"
+steps = ["k-valve"]
+
+[[finding]]
+id = "L15"
+severity = "Minor"
+status = "open"
+where = "Test pads"
+found = "Nine designators find no place on the silkscreen and are hidden: TP9, TP11, TP13, TP14, TP22, TP27, TP28, TP29 and U1."
+action = "Not fixed. Section 14 of the review lists every test pad with its net and position, and the interactive BOM finds them."
+check = "Every build: the silkscreen cleaner lists what it hid in `build/silk.json`."
+section = "14-test-and-bring-up"
+steps = ["k-silk"]
+
+[[finding]]
+id = "L16"
+severity = "Note"
+status = "accepted"
+where = "R33"
+found = "R33 is not at module pin 10 as fail-safe rule 1 asks. It is 12.3 mm of track away."
+action = "Harmless, with numbers: 24 milliohm against 2200 ohm, and a break on either side of R33 leaves both detectors off. The reviewer would change the rule's wording."
+check = "Every build: the layout rules measure the keep-alive distances. The position of R33 is the owner's decision."
+section = "13-mechanical-and-the-three-rules-not-met-as-written"
+steps = ["k-dev-r33"]
+
+[[finding]]
+id = "L17"
+severity = "Note"
+status = "accepted"
+where = "J7"
+found = "The display bus is 61 to 72 mm long against the \"about 40 mm\" the design asks for."
+action = "Harmless at 15 MHz, with numbers. It cannot be met where the enclosure puts J7 and the module."
+check = "Not checked by a program. A bench item if the edges ring."
+section = "13-mechanical-and-the-three-rules-not-met-as-written"
+steps = ["k-dev-j7"]
+
+[[finding]]
+id = "L18"
+severity = "Minor"
+status = "accepted"
+where = "C30 and C31"
+found = "The two ADC filter capacitors are 19 mm from the pins they filter."
+action = "Not met, and cannot be with this pin map. The filter works the same. Radio-frequency pick-up at the pin is a bench item."
+check = "Not checked by a program. Bench: ADC noise with WiFi transmitting."
+section = "13-mechanical-and-the-three-rules-not-met-as-written"
+steps = ["k-dev-adc"]
+
+[[finding]]
+id = "L19"
+severity = "Note"
+status = "accepted"
+where = "The Kelvin sense pair"
+found = "The pair that reads the shunt runs under U1 and beside L1 on B.Cu, with the ground plane between."
+action = "Left. Estimate: 0.2 mV at the switching frequency before two filters. The other way round crosses eighteen gate lines."
+check = "Not checked by a program. Bench: noise on the low current range."
+section = "8-buck-converter-and-supplies"
+steps = ["k-open-risks"]
+
+[[finding]]
+id = "L20"
+severity = "Note"
+status = "open"
+where = "Assembly"
+found = "The board has no fiducial marks. The module overhangs the top edge by 6.0 mm. Parts stand 0.9 mm from the right edge."
+action = "JLCPCB adds process edges with fiducials on the two 110 mm sides. That is asked for in the order."
+check = "Not checked by a program. It is a step of this walkthrough."
+section = "11-manufacturability-at-jlcpcb"
+steps = ["o-assembly"]
+
+[[finding]]
+id = "L21"
+severity = "Note"
+status = "accepted"
+where = "Antenna"
+found = "The encoder's metal frame ends 12.5 mm from the antenna area, where Espressif asks for 15 mm."
+action = "Left. Both positions are fixed by the mechanical contract."
+check = "Every build: the mechanical contract check holds both positions. Bench: radio range in the enclosure."
+section = "9-planes-clearances-heat-signals-antenna"
+steps = ["k-open-risks"]
+
+[[finding]]
+id = "L22"
+severity = "Note"
+status = "no-defect"
+where = "Fail-safe layout rules"
+found = "The reviewer measured the keep-alive distances again with a script of its own that shares no code with the author's check, on the new routing. Both agree. Two I2C conductors stand 0.2 mm from the node behind R29, which the rule does not cover."
+action = "No defect. The two I2C conductors are left for the owner to accept."
+check = "Every build: `hwflow.layoutrules` checks 278 keep-away distances, one spacing, one angle and one pad ban, and fails the build on any."
+section = "6-fail-safe-layout-rules"
+steps = ["k-ka-pin10", "k-ka-n0", "k-q2-gate"]
+
+[[finding]]
+id = "L23"
+severity = "Note"
+status = "no-defect"
+where = "Footprints"
+found = "Pin order and polarity of the part types of section 4 were compared with the makers' documents and JLCPCB's library. One was not verified: the cathode of D25 in the library. For nine part types the maker's sheet was not opened, and two were checked from memory."
+action = "No defect found. The unverified ones are the datasheet steps of this walkthrough."
+check = "Every build: the netlist carries the pin number of every pin, and the build fails unless KiCad puts the same net on the pad of that number. That proves the board is the netlist. It does not prove the netlist's pin numbers are the maker's."
+section = "4-footprints-against-the-makers-documents"
+steps = ["s-d25", "s-u11", "s-u5", "s-u6", "s-u7", "s-u8", "s-u10", "s-u3", "s-ao3400", "s-ao3401", "s-usblc6", "s-bat54s", "p-headers", "p-j7", "p-sw3", "p-bt1", "p-j5", "p-bottom", "h-display"]
+
+[[finding]]
+id = "L24"
+severity = "Note"
+status = "no-defect"
+where = "Mechanical"
+found = "The board was compared with the mechanical contract by a second program, and the enclosure with the real 3D model of the board: 1339 bodies, none meets a printed part. KiCad has no model for the fuse holders, F5, the PTCs, the USB-C receptacle, the buttons, the encoder, the display connector and the cell holder."
+action = "No defect. For the parts without a model the contract's boxes are all there is."
+check = "Every build: `hwflow mech` compares outline, holes, 26 placed parts and the height zones of 294 parts with `hardware/mechanical.yaml`."
+section = "13-mechanical-and-the-three-rules-not-met-as-written"
+steps = ["h-heights"]
+
+[[finding]]
+id = "L25"
+severity = "Minor"
+status = "accepted"
+where = "The nine PTC fuses at y = 20.9"
+found = "Each PTC shares its upper land with the triac tab through a 5 mm wide link, so the triac heats it. The design derates the PTC for 70 °C air: 0.64 A hold. The maker's chart gives 0.50 A at 85 °C, which is the full load."
+action = "Not changed. A PTC that trips closes the valve. Bench: 0.5 A through one output for an hour in the warmest air, and measure the PTC body. Above 80 °C, narrow the link to 1.2 mm."
+check = "Not checked by a program. A bench item with a number to look for."
+section = "9-planes-clearances-heat-signals-antenna"
+steps = ["k-open-risks"]
+
+[[finding]]
+id = "L26"
+severity = "Note"
+status = "no-defect"
+where = "Test and bring-up"
+found = "Every step of the bring-up plan was held against the pads on the board. `VBUS` and `VIN_MON` have no pad of their own, and there is no ground post."
+action = "No defect. Section 14 of the review says where to probe instead."
+check = "Not checked by a program."
+section = "14-test-and-bring-up"
+
+[[finding]]
+id = "L27"
+severity = "Minor"
+status = "open"
+where = "Patched nets, logic area"
+found = "On two layers the autorouter left 17 connections open. A maze router closed twelve and the reviewer five. Some are long and change layer often: `N_RAIN` 156 mm and 13 vias, `SENS_PWR_EN` 126 mm and 12, `STATUS_LED` 161 mm and 7."
+action = "Not fixed. All are static or slow signals. Lay the logic area by hand before a second revision."
+check = "Every build: `output/reports/routing.md` lists every patched net with its length and vias. DRC checks clearances and that nothing is unconnected."
+section = "9-planes-clearances-heat-signals-antenna"
+steps = ["k-patches"]
+
+[[finding]]
+id = "L28"
+severity = "Minor"
+status = "accepted"
+where = "The 3.3 V plane, In2.Cu"
+found = "Eleven of the patched connections pass under an obstacle on In2.Cu: 114 mm of track in all, each a slot in the plane, the longest 21 mm. Five of the nets cross under the display lines or the ADC lines."
+action = "Accepted. The plane stays one piece. The first routing had 2356 mm in 51 nets there."
+check = "Every build: the routing report lists every track on In2.Cu, and the build fails if the autorouter put one there."
+section = "9-planes-clearances-heat-signals-antenna"
+steps = ["k-patches"]
+
+[[finding]]
+id = "L29"
+severity = "Major"
+status = "fixed"
+where = "The patch router"
+found = "It did not know the rectangles that keep the autorouter out, nor a rule area inside a footprint. It laid the 5 V sensor supply 2.26 mm from the centre of hole D, under the screw head, and two nets across a stretch of the keep-alive net that the board closes."
+action = "Fixed in the tool, and the patches were made again. No track of another net on In2.Cu is now within 3 mm of the keep-alive."
+check = "Every build that makes patches: the router takes every keep-out rectangle as a fence and reads the rule areas of footprints. `tools/hwflow` has tests for it."
+section = "10-the-checks-themselves"
+steps = ["k-screws", "k-patches"]
+
+[[finding]]
+id = "L30"
+severity = "Note"
+status = "accepted"
+where = "Hole B at (75, 106)"
+found = "Five autorouted nets pass under the plastic leg of the display carrier, the nearest 0.47 mm from the wall of the hole."
+action = "Left. The leg is plastic and the copper is under solder mask. The contract's keep-out there is for parts and bare copper."
+check = "Not checked by a program for tracks. The contract check covers parts."
+section = "13-mechanical-and-the-three-rules-not-met-as-written"
+steps = ["k-hole-b"]

@@ -1,0 +1,644 @@
+# Steps done at the command line and on JLCPCB's order pages.
+
+[[step]]
+id = "o-commands"
+group = "order"
+title = "Run the two commands that guard the order"
+source = "Layout review, section 17, items 2 and 5"
+findings = ["L1", "L9"]
+minutes = 5
+check = '''
+Run the placement check and the search for small holes on the files you are about to upload.
+'''
+why = '''
+The placement check is what found 26 parts that JLCPCB would have placed wrong, the nine triacs and
+the nine opto-triacs among them. It is not part of the normal build, because it needs the network.
+The hole search finds any hole under 0.3 mm, which JLCPCB charges for and which switches the order
+to a costlier material.
+'''
+good = '''
+```
+$ make -C hardware/zoneflow-a cpl-check
+...
+zoneflow-a-cpl-jlcpcb.csv: 312 placements compared, 0 do not fit.
+```
+
+and for the 4-zone file 267 placements, 0 do not fit. Then
+
+```
+$ grep '^T.*C0\\.[012]' hardware/zoneflow-a/output/gerbers/*.drl
+```
+
+prints nothing. I ran this second command on the committed files on 2026-11-11 and it printed
+nothing. The smallest tool in either drill file is 0.300 mm. I did not run the first: the committed
+report `output/reports/placement-check.md` has its last result.
+'''
+bad = '''
+- **Any number but 0** before "do not fit". Do not upload.
+- **Any line from the search.** A hole under 0.3 mm is in the files.
+'''
+how = '''
+Both commands run in the repository root. `make cpl-check` needs KiCad 10 and fetches JLCPCB's
+library footprints once. Upload the files from the same checkout you ran them on.
+'''
+cannot = '''
+This step has no place on the board to look at. The check is a program's answer.
+'''
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "o-options"
+group = "order"
+title = "Board options that match the calculations"
+source = "Layout review, section 17, item 2. Finding L12"
+findings = ["L12", "L9"]
+minutes = 6
+check = '''
+Upload the Gerber and drill files and set the board options. Then read the price breakdown.
+'''
+why = '''
+The current and heating calculations assume 1 oz outer copper and JLCPCB's standard hole plating.
+The Gerber job file in the upload carries KiCad's default stack-up, which is not the build you
+order, and JLCPCB does not read it. So the options you click are the only statement of the build.
+'''
+good = '''
+- **Layers** 4. **Size** 114 x 110 mm. **Thickness** 1.6 mm. **Material** FR-4.
+- **Outer copper** 1 oz. **Inner copper** 0.5 oz.
+- **Smallest hole** 0.3 mm. **Via covering** tented.
+- **No** gold fingers and **no** castellated holes.
+- **Surface finish** ENIG. The display connector has 0.3 mm lands on a 0.5 mm pitch and the module
+  has forty castellations, and a flat finish helps both.
+- **The price breakdown** shows no charge for small holes and no forced material upgrade.
+'''
+bad = '''
+- **A surcharge for hole size or a four-wire test.** Stop and run the hole search of the previous
+  step.
+- **The page proposes another material** than standard FR-4 without your asking.
+'''
+how = '''
+Zip the contents of `hardware/zoneflow-a/output/gerbers/` and upload the zip on JLCPCB's quote
+page. The page fills in size and layer count from the files. The option names here are from the
+layout review and the [ordering page](doc:hardware/ordering.md), which read them from JLCPCB's
+capabilities page on 2026-11-10 and 2026-11-11. JLCPCB may have renamed them since.
+'''
+cannot = '''
+I did not open JLCPCB's order pages, so there is no picture of them here.
+'''
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "o-layers"
+group = "order"
+title = "The four copper layers in the right order"
+source = "Layout review, section 11, \"Job file, L12\""
+findings = ["L12"]
+minutes = 4
+check = '''
+In JLCPCB's Gerber viewer, confirm that the two inner layers are in the right order: the ground
+plane directly under the top side, the 3.3 V plane directly above the bottom side.
+'''
+why = '''
+The USB pair, the display bus and the keep-alive net run on the bottom layer over the 3.3 V plane.
+The buck converter sits on the top layer over the ground plane. If the fab swaps the two inner
+layers, every via still connects and the board passes electrical test, but the planes are on the
+wrong side of the signals they serve.
+'''
+good = '''
+- **Inner layer 1,** the one next to the top, is `zoneflow-a-In1_Cu.gbr`. It is one sheet of copper
+  with holes in it and no track.
+- **Inner layer 2** is `zoneflow-a-In2_Cu.gbr`. It has the large plane on top and, towards the
+  terminals, a separate rectangle and nine stepped lanes.
+'''
+bad = '''
+- **The layer with the nine lanes shown as inner layer 1.**
+- **Only two copper layers recognised.**
+'''
+how = '''
+The file names carry KiCad's layer names. If the viewer lists the layers, check that the order is
+F_Cu, In1_Cu, In2_Cu, B_Cu. If it asks you to assign them, assign them so.
+'''
+cannot = '''
+I cannot show JLCPCB's viewer. The two pictures are the two inner layers drawn from the board file,
+so that you can tell them apart in any viewer.
+'''
+
+[[step.figure]]
+id = "in1"
+alt = "Inner layer 1, the ground plane"
+caption = "In1.Cu, the layer next to the top side: one ground plane, no track."
+box = [-2, -4, 116, 114]
+layers = ["In1.Cu", "Edge.Cuts"]
+minimap = "none"
+width = 900
+
+[[step.figure]]
+id = "in2"
+alt = "Inner layer 2, the 3.3 V plane with the shunt plane and the valve lanes"
+caption = "In2.Cu, the layer next to the bottom side: the 3.3 V plane, the shunt plane under the triacs and the copies of the nine valve lanes."
+box = [-2, -4, 116, 114]
+layers = ["In2.Cu", "Edge.Cuts"]
+minimap = "none"
+width = 900
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "o-assembly"
+group = "order"
+title = "Assembly options: top side only, rails on the two long sides"
+source = "Layout review, section 17, item 3. Finding L20"
+findings = ["L20"]
+minutes = 5
+check = '''
+Select assembly for the top side only, and ask JLCPCB to add process edges with tooling holes and
+fiducial marks on the left and right sides.
+'''
+why = '''
+The board has no fiducial mark of its own, so the placement machine has nothing to align to. The
+module hangs 6.0 mm over the top edge and the headers and the USB socket over the bottom edge, so
+a rail cannot go there. Parts stand 0.6 to 0.9 mm from the right edge, where a conveyor would hold
+a bare board.
+'''
+good = '''
+- **Assembly side:** top.
+- **JLCPCB's panel drawing** shows a rail along each of the two 110 mm sides, with fiducials and
+  tooling holes on the rails, and no rail along the top or the bottom edge.
+'''
+bad = '''
+- **A rail along the top edge.** The module cannot be placed over it.
+- **No fiducials anywhere** in the drawing JLCPCB sends back.
+'''
+how = '''
+On the assembly page, look for the option that adds edge rails or process edges. JLCPCB's
+engineers confirm the panel by e-mail or in the order's file review. Read their drawing before you
+approve it.
+'''
+cannot = '''
+I did not open JLCPCB's order pages. The picture shows what overhangs which edge.
+'''
+
+[[step.figure]]
+id = "edges"
+alt = "The whole top side with the parts that overhang the board edges"
+caption = "Top side with part outlines. The module overhangs the top edge, the headers and the USB socket the bottom edge. The rails go on the left and right sides."
+box = [-9, -6, 123, 122]
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+text = false
+minimap = "none"
+callouts = [
+  { at = [103.0, 113.5], text = "module: 6.0 mm over the top edge", dx = -30, dy = 3.5 },
+  { at = [41.5, -1.5], text = "headers: 2.0 mm over the bottom edge", dx = 0, dy = -3.2 },
+  { at = [0.0, 62.0], text = "rail here", dx = -4.2, dy = 0 },
+  { at = [114.0, 62.0], text = "rail here", dx = 4.2, dy = 0 },
+]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "o-bom"
+group = "order"
+title = "Take six lines out of the assembly"
+source = "Layout review, section 17, item 4. Finding L13"
+findings = ["L13"]
+minutes = 5
+check = '''
+In JLCPCB's BOM step, deselect the six lines that are fitted by hand. Then check the two counts.
+'''
+why = '''
+The BOM lists seven parts that are not in the placement file, and nothing in the files marks them.
+If you leave them selected, JLCPCB finds BOM lines with no placement and the order waits for your
+answer. C1 and K1 go in from the bottom side, J1 to J4 from the top, and the display plugs in
+at final assembly.
+'''
+good = '''
+Deselected:
+
+| Part | LCSC number |
+|---|---|
+| C1, bulk capacitor | C2940725 |
+| K1, relay | C48746 |
+| J1, 2-way header | C441182 |
+| J2 and J4, 7-way headers | C441187 |
+| J3, 4-way header | C441184 |
+| DS1, display panel | C5329582 |
+
+- **8-zone build:** 89 lines remain, and the placement count is 312.
+- **4-zone build,** which has no J3: 89 lines remain, and the count is 267.
+- **No substitution.** If JLCPCB proposes another part for a line that is short, compare it with
+  the [BOM](doc:hardware/bom.md) before you accept. The display has no confirmed second source.
+'''
+bad = '''
+- **Another count.** A line was dropped or added on the way. Find it before you go on.
+- **A line marked "no stock"** for a part with nine or more on the board: the triac, the opto-triac
+  or the TVS diode.
+'''
+how = '''
+Upload `zoneflow-a-bom-jlcpcb.csv` and `zoneflow-a-cpl-jlcpcb.csv`, or the two `-4-zone` files. You
+still need the six part types for hand assembly: order them from LCSC, or leave them selected in a
+separate parts order.
+'''
+cannot = '''
+I did not open JLCPCB's order pages. The picture shows where the hand-fitted parts are.
+'''
+
+[[step.figure]]
+id = "hand"
+alt = "The parts fitted by hand marked on the board"
+caption = "Seen from above. Marked: the headers J1 to J4 on the top side, and C1 and K1, which are on the bottom side under the lower left of the board."
+box = [-4, -6, 118, 46]
+layers = ["B.Fab", "F.Fab", "Edge.Cuts"]
+minimap = "none"
+marks = [{ refs = ["J1", "J2", "J3", "J4", "C1", "K1"], label = "fitted by hand" }]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "o-prev-d25"
+group = "order"
+title = "Placement preview: D25, cathode bar at the left"
+source = "Layout review, section 17, item 5, and section 16"
+findings = ["L23", "L1"]
+minutes = 3
+check = '''
+In JLCPCB's placement preview, find D25 at (12.9, 36.8). The cathode bar of the part must point
+left, towards the board edge.
+'''
+why = '''
+This is the one part whose direction no program could check, because JLCPCB's library does not name
+its pads. A reversed D25 shorts the 5 V rail through a forward diode and the board never starts.
+See the D25 step in the datasheet group for what the maker's sheet says.
+'''
+good = '''
+The drawing of the part in the preview has its bar, or its pad 1 mark, at the left end, over the
+pad that the picture shows in yellow.
+'''
+bad = '''
+- **The bar at the right.** Rotate the part by 180 degrees in the preview, and write down that you
+  did, because the correction table then needs a row for this part number.
+- **The preview shows a part with no polarity mark.** Then JLCPCB's drawing cannot answer the
+  question. Ask their support which end of C83270 is the cathode in their tape, or accept the risk
+  and note it.
+'''
+how = '''
+The preview is on the assembly page after BOM matching. D25 is at the left of the board, a third of
+the way up, right of the inductor L1.
+'''
+cannot = '''
+I cannot show JLCPCB's preview. Nobody has seen it for this board. The picture shows how the part
+must lie on the board.
+'''
+
+[[step.figure]]
+id = "d25"
+alt = "D25 on the board with its cathode pad marked"
+caption = "D25 on F.Cu with silkscreen and outline. Yellow is V_BUCK. The cathode is the left pad."
+around = ["D25"]
+margin = 3.2
+layers = ["F.Cu", "F.Silkscreen", "F.Fab", "Edge.Cuts"]
+marks = [{ nets = ["V_BUCK"], refs = ["D25"], label = "V_BUCK, and D25" }]
+pad_labels = ["D25"]
+callouts = [{ pad = "D25.1", text = "bar at this end", dx = -1.8, dy = 3.9 }]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "o-prev-leds"
+group = "order"
+title = "Placement preview: the eleven LEDs, cathode at the left"
+source = "Layout review, section 17, item 5"
+findings = ["L1"]
+minutes = 4
+check = '''
+Find the ten LEDs along y = 42 and the fault LED D8 at (9.9, 79.2). On each, the cathode mark must
+be at the left.
+'''
+why = '''
+An LED the wrong way round stays dark. The ten in the row are the status light and the nine output
+indicators. Each output LED has its own resistor and is not in series with the opto-triac, so a
+dark one does not stop a valve. But the installer tests zones by these lights. The two LED types number their pads
+differently in JLCPCB's library, which is the kind of difference that turns one type round.
+'''
+good = '''
+- **The row:** D6, D902, D102, D202, D302, D402, D502, D602, D702, D802 from left to right. Each
+  has its cathode mark at the left.
+- **D8,** the red one, above and left of U7: cathode at the left.
+'''
+bad = '''
+One type is right and the other is turned round. D8 is the only LED of its type, so look at it
+on its own.
+'''
+how = '''
+The review's checklist says "the eleven LEDs along y = 42 and D8". The board has ten in the row,
+and D8 makes eleven. In KiCad's `LED_0603` footprint pad 1 is the cathode.
+'''
+fact = '''
+**Lite-On LTST-C190KGKT** data sheet, the copy LCSC serves for [C125094](https://www.lcsc.com/datasheet/C125094.pdf),
+section 2, "Package Dimensions": the drawing marks the cathode end of the part. **KENTO KT-0603R**,
+the copy for [C2286](https://www.lcsc.com/datasheet/C2286.pdf), section 2: the drawing marks one end
+in green and gives the diode symbol beside it. I looked at both drawings and did not check either
+against a part.
+'''
+cannot = '''
+I cannot show JLCPCB's preview. The picture shows three of the row and how they must lie.
+'''
+kicad = { find = ["D6", "D902", "D102", "D8"], layers = ["F.Cu", "F.Silkscreen", "F.Fab"], at = [12.0, 42.0] }
+
+[[step.figure]]
+id = "row"
+alt = "The first three LEDs of the row with their pad numbers"
+caption = "D6, D902 and D102, the first three of the row, on F.Cu with silkscreen. Pad 1, the cathode, is the left pad of each."
+box = [9.0, 38.6, 38.0, 45.4]
+layers = ["F.Cu", "F.Silkscreen", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["D6", "D902", "D102"]
+pad_label_mode = "number"
+marks = [{ refs = ["D6", "D902", "D102"], label = "LEDs" }]
+
+[[step.figure]]
+id = "d8"
+alt = "The fault LED D8 with its pad numbers"
+caption = "D8, the red fault LED, on F.Cu with silkscreen."
+around = ["D8"]
+margin = 2.2
+layers = ["F.Cu", "F.Silkscreen", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["D8"]
+marks = [{ refs = ["D8"], label = "D8" }]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "o-prev-triacs"
+group = "order"
+title = "Placement preview: the nine triacs, tab towards the terminals"
+source = "Layout review, section 17, item 5. Finding L1"
+findings = ["L1"]
+minutes = 3
+check = '''
+Find the nine triacs Q901, Q101 to Q801 in a row at y = 30. On each, the large tab must point down,
+towards the terminals, and the two leads up, towards the LEDs.
+'''
+why = '''
+The placement file as first committed had all nine a quarter turn off and 1.3 mm from their lands.
+If the triacs are turned, every valve output is dead. Turning nine DPAK parts by hand on lands with
+heat copper under them is slow and risks the lands. The correction is in the files now, and this
+look confirms that JLCPCB reads them the same way.
+'''
+good = '''
+Each of the nine sits on its three lands: the tab on the large land at the bottom, the two leads on
+the two small lands at the top. All nine look the same.
+'''
+bad = '''
+- **A part lying across its lands.**
+- **Tab up.** The leads would sit on the tab land.
+'''
+how = '''
+The row is in the lower half of the board, above the resettable fuses. Pad 1, at the upper right of
+each, is A1 on net `ISNS`. Pad 3, at the upper left, is the gate.
+'''
+fact = '''
+**ST DocID7472 rev 12**, T810, front page drawing, as the reviewer read it: with the tab away and
+the leads towards you, the leads are A1, A2, gate from the left, and the tab is A2. I opened the
+copy LCSC serves for [C155588](https://www.lcsc.com/datasheet/C155588.pdf) and did not read the DPAK
+drawing myself.
+'''
+cannot = '''
+I cannot show JLCPCB's preview. The picture shows two of the nine and how they must lie.
+'''
+kicad = { find = ["Q901", "Q101"], layers = ["F.Cu", "F.Silkscreen", "F.Fab"], at = [49.95, 30.44] }
+ibom = { ref = "Q101" }
+
+[[step.figure]]
+id = "two"
+alt = "Two triacs with pad numbers and nets"
+caption = "Q901 and Q101, the first two of the row, on F.Cu with silkscreen and outline. Tab down, leads up."
+box = [38.5, 24.5, 54.5, 38.0]
+layers = ["F.Cu", "F.Silkscreen", "F.Fab", "Edge.Cuts"]
+pad_labels = ["Q901", "Q101"]
+marks = [{ refs = ["Q901", "Q101"], label = "triacs" }]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "o-prev-optos"
+group = "order"
+title = "Placement preview: the nine opto-triacs, pin 1 at the lower left"
+source = "Layout review, section 17, item 5. Finding L1"
+findings = ["L1"]
+minutes = 3
+check = '''
+Find the nine opto-triacs U901, U101 to U801 in a row at y = 50.8. On each, the notch or the dot
+that marks pin 1 must be at the lower left.
+'''
+why = '''
+These were also a quarter turn off in the first placement file. A quarter turn shows, because the
+part then lies across its lands. A half turn does not: the part fits its lands, its LED sits on a
+gate pad and an unused pad, and that output never turns on. Nothing on the board tells you why.
+'''
+good = '''
+Each part has three leads at the bottom and three at the top. The pin 1 mark is at the bottom row,
+left end. The bottom row is the LED side: pad 1 `OLA`, pad 2 the drive line from the expander.
+'''
+bad = '''
+- **The mark at the upper right.** The part is turned half round. This fits the lands, so look at
+  the mark and not at the fit.
+- **Leads at the left and right.** A quarter turn.
+'''
+how = '''
+The row is just above the LED row. In JLCPCB's preview pin 1 is usually a dot on the body or a
+coloured pad.
+'''
+fact = '''
+**onsemi MOC3023M/D**, [data sheet](https://www.onsemi.com/download/data-sheet/pdf/moc3023m-d.pdf),
+figure 1, "Schematic": 1 anode, 2 cathode, 3 no connection, 4 main terminal, 5 no connection, 6
+main terminal.
+'''
+cannot = '''
+I cannot show JLCPCB's preview. The picture shows two of the nine and how they must lie.
+'''
+kicad = { find = ["U901", "U101"], layers = ["F.Cu", "F.Silkscreen", "F.Fab"], at = [35.5, 50.8] }
+ibom = { ref = "U101" }
+
+[[step.figure]]
+id = "two"
+alt = "Two opto-triacs with pad numbers and nets"
+caption = "U901 and U101, the first two of the row, on F.Cu with silkscreen and outline. Pad 1 is at the lower left of each."
+box = [20.5, 44.0, 41.0, 57.6]
+layers = ["F.Cu", "F.Silkscreen", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["U901", "U101"]
+callouts = [{ pad = "U901.1", text = "pin 1", dx = -2.0, dy = -1.2 }, { pad = "U101.1", text = "pin 1", dx = -2.0, dy = -1.2 }]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "o-prev-big3"
+group = "order"
+title = "Placement preview: the module, the display connector and the cell holder"
+source = "Layout review, section 17, item 5. Finding L1"
+findings = ["L1"]
+minutes = 4
+check = '''
+Three large parts. U4: the antenna end beyond the top edge. J7: the mouth towards the right. BT1:
+the + mark at the left.
+'''
+why = '''
+The first placement file put the module 3.6 mm from its lands and the display connector a quarter
+turn off and 1.6 mm from its lands. The cell holder has two lands and fits both ways, so only its
+mark tells you.
+'''
+good = '''
+- **U4.** The metal can is on the board and the bare antenna end reaches over the top edge. Pin 1
+  is at the upper left corner of the can.
+- **J7.** The row of twelve fine leads at the left, the opening at the right.
+- **BT1.** If the preview draws a + or a pad 1 mark, it is at the left land.
+'''
+bad = '''
+- **The antenna end of U4 points down into the board.**
+- **J7's fine leads at the right.**
+- **Any of the three visibly beside its lands.**
+'''
+how = '''
+U4 is at the top right, J7 in the upper middle, BT1 at the right edge, half way up.
+'''
+cannot = '''
+I cannot show JLCPCB's preview. The pictures show how each part must lie.
+'''
+kicad = { find = ["U4", "J7", "BT1"], layers = ["F.Cu", "F.Fab"], at = [103.0, 103.25] }
+
+[[step.figure]]
+id = "u4"
+alt = "The module U4 on its lands, reaching beyond the top edge"
+caption = "U4 on F.Cu with its outline. The pale line is the board edge. The part of the outline above it is the antenna end."
+box = [90.0, 87.0, 117.0, 118.5]
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+callouts = [
+  { pad = "U4.1", text = "pin 1", dx = -2.8, dy = 2.2 },
+  { at = [103.0, 113.0], text = "antenna end, beyond the edge", dx = 0, dy = 3.6 },
+]
+minimap = "bl"
+
+[[step.figure]]
+id = "j7"
+alt = "The display connector J7"
+caption = "J7: fine lands at the left, mouth at the right."
+around = ["J7"]
+margin = 1.6
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+callouts = [{ at = [63.0, 88.43], text = "mouth", dx = 2.6, dy = 2.6 }]
+
+[[step.figure]]
+id = "bt1"
+alt = "The cell holder BT1"
+caption = "BT1: pad 1, the + land, at the left."
+box = [77.0, 54.5, 113.0, 76.0]
+layers = ["F.Cu", "F.Silkscreen", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["BT1"]
+minimap = "bl"
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "o-prev-rest"
+group = "order"
+title = "Placement preview: every other polarised part against the pin 1 table"
+source = "Layout review, section 17, item 5, and section 5, \"What this does not prove\""
+findings = ["L1", "L23"]
+minutes = 12
+check = '''
+With the pin 1 table beside the preview, go through the remaining polarised parts: the other
+diodes, the ICs, the three resistor arrays and the two small connectors. Then scroll once over the
+whole board for any part beside its lands.
+'''
+why = '''
+The placement check proves that the files agree with the footprints in JLCPCB's library. It cannot
+prove that the library draws each part the way it lies in its tape. JLCPCB's preview is drawn from
+the same library, so it shares that limit. What it adds is JLCPCB's own reading of your files, and
+their engineers look at the same picture. For the 26 part types where direction matters, the
+library names its pins or numbers them as the maker does. D25 is the exception.
+'''
+good = '''
+- **Each part in the table** has its pad 1 where the table's last column says: "left", "upper
+  left" and so on, seen from above.
+- **Diodes:** pad 1 is the cathode.
+- **The six BAT54S** are judged by their pads, not by the symbol JLCPCB shows.
+- **No part** lies beside its lands or across them.
+'''
+bad = '''
+- **A part whose mark disagrees with the table.** Note the designator. Do not correct it in the
+  preview only: the correction belongs in `hardware/rules/jlcpcb-cpl-rotations.csv`, so that the
+  next order is right too.
+'''
+how = '''
+The table is [`zoneflow-a-pin1.csv`](out:zoneflow-a-pin1.csv), 85 parts. The
+[bench sheet](doc:hardware/review/bench-sheet.md) prints it. Parts already covered by the steps
+before this one: D25, the LEDs, the triacs, the opto-triacs, U4, J7 and BT1.
+'''
+cannot = '''
+**Tape orientation cannot be shown or checked from files.** How a part lies in its tape is a
+property of the reel JLCPCB loads. No picture here and no preview there shows it. The first
+assembled board does: before you power it, compare every polarised part on it with the top
+assembly drawing. The bring-up plan begins with an inspection before power. Do it then.
+'''
+
+[[step.figure]]
+id = "top"
+alt = "The whole top side as part outlines with designators"
+caption = "The top assembly drawing, for finding parts by designator while you go through the table. Click to enlarge."
+asset = "assembly-top.svg"
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "o-ask"
+group = "order"
+title = "Two questions for JLCPCB that nobody has asked"
+source = "Layout review, section 17, closing paragraph. Layout document, section 14, items 2 and 8"
+findings = ["L6"]
+minutes = 5
+check = '''
+Ask JLCPCB's support two things before you pay, and record the answers in the note.
+'''
+why = '''
+- **Who solders C1 and K1.** They are through-hole parts inserted from the bottom side and soldered
+  from the top. Whether JLCPCB hand-solders parts on the side opposite the SMT has not been asked.
+  If not, you solder them, and the order is the same.
+- **Hole plating.** The short-circuit calculation for the output vias uses 18 um, which JLCPCB
+  publishes as its average. The reviewer found no minimum. With four vias per output the margin is
+  wide: 33 K of heating in the worst case.
+'''
+good = '''
+- **You have an answer on C1 and K1,** yes or no, and know who fits them.
+- **You have a plating figure,** or JLCPCB's statement that it gives none. Either way you know
+  what the 33 K rests on.
+'''
+bad = '''
+- **JLCPCB will fit C1 and K1 only from the top side.** Do not accept that: neither part fits
+  under the display.
+'''
+how = '''
+Use the chat or the remark field of the order. For C1 and K1, send the picture below or the bottom
+assembly drawing. The soldering access is a rule the build checks: no part taller than 1.5 mm
+within 2.5 mm of their top-side pads.
+'''
+cannot = '''
+The answers are JLCPCB's to give.
+'''
+kicad = { find = ["C1", "K1"], layers = ["F.Cu", "F.Fab", "B.Fab"], at = [20.0, 28.0] }
+
+[[step.figure]]
+id = "access"
+alt = "The top side round the solder pads of C1 and K1"
+caption = "Seen from above. Marked: C1 and K1, which hang under the board. Their pads are soldered from this side, between the parts drawn in grey."
+box = [-2.0, 14.5, 42.0, 41.5]
+layers = ["F.Cu", "B.Fab", "F.Fab", "Edge.Cuts"]
+zones = false
+marks = [{ refs = ["C1", "K1"], label = "C1 and K1, on the bottom side" }]
+pad_labels = ["C1", "K1"]
+pad_label_mode = "number"

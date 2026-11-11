@@ -17,4 +17,6 @@ INNER_LAYERS := In1.Cu In2.Cu
 POS_FLAGS := --smd-only
 # On two routing layers the autorouter needs about 70 s for a pass of this board and 30 passes.
 ROUTE_LIMITS := --timeout 7200 --passes 30
+# The pre-order review walkthrough of the documentation is about this board.
+REVIEW := 1
 include ../flow.mk

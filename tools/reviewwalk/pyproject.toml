@@ -1,0 +1,36 @@
+[project]
+name = "reviewwalk"
+version = "0.1.0"
+description = "The pre-order review walkthrough of the ZoneFlow rev A board: content checks, pictures from the board file, page builder"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.11"
+# The drawing half (render.py, png.py, spec.py, check.py, the command line) runs under the system
+# interpreter that carries KiCad's pcbnew module and may use the standard library only. Markdown is
+# for page.py, which the documentation build and the tests import.
+dependencies = ["markdown>=3.5"]
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["reviewwalk"]
+
+[tool.ruff]
+line-length = 150
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B"]
+ignore = ["B905"]
+
+[tool.ruff.lint.per-file-ignores]
+# Paragraphs of the page are written as they read, one sentence run per line of HTML.
+"reviewwalk/page.py" = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
