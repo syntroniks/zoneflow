@@ -3407,7 +3407,7 @@
 	)
 	(rectangle
 		(start 264.16 124.46)
-		(end 405.13 228.6)
+		(end 405.13 243.84)
 		(stroke
 			(width 0)
 			(type dash)
@@ -3439,17 +3439,6 @@
 		)
 		(uuid "0c444da9-0253-5af3-943e-3ca2c380055f")
 	)
-	(text "FAIL-SAFE GATE (hardware design section 8) and OVER-CURRENT LATCH (section 9).\n\nDetector A. Firmware toggles KA (GPIO38) every 5 ms; an edge at least every 20 ms is needed.\nEach rising edge pushes charge through C22 and D7 into C23. R30 and R91 (two, so that one open\nresistor only doubles the hold-up) drain it. U6A switches on at 1.55 V on KA_N2 and off at 0.94 V\n(R31, R32 hysteresis; reference 1.32 V from R34, R35). KA_OK is high 14 to 41 ms after the first\nedge and low 0.45 to 0.9 s after the last, 1.2 s if the pin stops high. A steady level, high or\nlow, never enables it. R33 holds KA low while the ESP32 is in reset.\n\nDRV_EN = KA_OK AND NOT FAULT. Low does three things: Q3 removes V_DRV from every opto LED, the\nexpander is held in reset, and the expander bit that drives relay transistor Q1 is released.\nDRV_EN_RB (through R92) lets firmware time detector A on GPIO42.\n\nOver-current. U6B pulls OC_TRIP_N low above VH (1.425 V), U6C below VL (0.188 V): 4.6 A peak in\neither polarity, 4.0 to 5.4 A over tolerance, about 70 us after a short begins (R52, C33: 47 us).\nU7A and U7B latch it. D8 lights while FAULT is set. Only KA_OK going low clears the latch.\nR87 stops GPIO40 from overdriving the latch node if it is ever left as an output.\n\nU7 is a 74HC132: Schmitt inputs for the slow edges of the open-collector comparators."
-		(exclude_from_sim no)
-		(at 149.86 210.82 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left top)
-		)
-		(uuid "690365f8-92c2-5751-8ba7-a24f1ac929e6")
-	)
 	(text "Latch and drive enable"
 		(exclude_from_sim no)
 		(at 265.43 127.66 0)
@@ -3471,6 +3460,17 @@
 			(justify left bottom)
 		)
 		(uuid "c2e3d99d-1f21-5cc1-8ea6-10956cabc603")
+	)
+	(text "FAIL-SAFE GATE (hardware design section 8) and OVER-CURRENT LATCH (section 9).\n\nDetector A. Firmware toggles KA (GPIO17) every 5 ms. It needs an edge at least every 20 ms\nand no phase shorter than 2.5 ms (the second is for detector B on the expander sheet).\nEach rising edge pushes charge through C22 and D7 into C23. R30 and R91 (two, so that one open\nresistor only doubles the hold-up) drain it. U6A switches on at 1.55 V on KA_N2 and off at 0.94 V\n(R31, R32 hysteresis; reference 1.32 V from R34, R35). With 5 ms edges V_DRV is on 13 to 22 ms\nafter the first edge and off 0.21 to 0.83 s after the last, 1.25 s if the pin stops high\n(simulated corners of review A2). A steady level, high or low, never enables it.\nR33 holds KA low while the ESP32 is in reset. It is 2.2k so that a net behind a 10k pull-up\ncannot run the detectors through a solder bridge.\n\nDRV_EN = KA_OK AND NOT FAULT. Low does three things: Q3 removes V_DRV from every opto LED, the\nexpander is held in reset, and the expander bit that drives relay transistor Q1 is released.\nV_DRV_RB (through R92) is V_DRV, behind Q3, read on GPIO42: firmware times detector A with it\nand sees a shorted Q3 as drive that is on with no keep-alive.\n\nOver-current. U6B pulls OC_TRIP_N low above VH (1.425 V), U6C below VL (0.188 V): 4.6 A peak in\neither polarity, 4.0 to 5.4 A over tolerance, about 70 us after a short begins (R52, C33: 47 us).\nU7A and U7B latch it. D8 lights while FAULT is set. Only KA_OK going low clears the latch.\nR87 stops GPIO40 from overdriving the latch node if it is ever left as an output.\n\nU7 is a 74HC132: Schmitt inputs for the slow edges of the open-collector comparators."
+		(exclude_from_sim no)
+		(at 149.86 210.82 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left top)
+		)
+		(uuid "ca30cc6c-6c6c-51c4-a12d-35e1d4154e4c")
 	)
 	(junction
 		(at 185.42 116.84)
@@ -3497,10 +3497,10 @@
 		(uuid "3fb3a28f-f0be-5be4-a853-f5aa9ae9fa67")
 	)
 	(junction
-		(at 391.16 208.28)
+		(at 375.92 208.28)
 		(diameter 0)
 		(color 0 0 0 0)
-		(uuid "4a426c77-8de8-5b0c-b870-19582e45747f")
+		(uuid "49960730-a816-5ab2-8a45-fab9a20a5dc1")
 	)
 	(junction
 		(at 149.86 91.44)
@@ -3527,6 +3527,12 @@
 		(uuid "5f97546a-8896-530c-b37a-0c50c97947a1")
 	)
 	(junction
+		(at 389.89 208.28)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "62f1a240-a89d-57f8-a886-cf74aac59eb4")
+	)
+	(junction
 		(at 142.24 172.72)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -3551,16 +3557,16 @@
 		(uuid "89bcf73d-1043-5478-ab21-cc2f20c82eb4")
 	)
 	(junction
+		(at 384.81 208.28)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "93bc6ead-af71-5ce6-b135-9424962046bb")
+	)
+	(junction
 		(at 124.46 91.44)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "9803ef1d-64b1-5dad-93c8-c958797d78bd")
-	)
-	(junction
-		(at 386.08 137.16)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "a1756ebc-65e3-5b46-984b-3c61235141e6")
 	)
 	(junction
 		(at 137.16 91.44)
@@ -3617,12 +3623,6 @@
 		(uuid "d1c53d6f-5123-5b8a-8f3b-9953c96ae748")
 	)
 	(junction
-		(at 386.08 208.28)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "e63d2387-dd48-53b2-93a3-1aa7f6e03276")
-	)
-	(junction
 		(at 190.5 91.44)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -3653,6 +3653,16 @@
 			(type default)
 		)
 		(uuid "0133c514-1b4b-53c5-91b1-3605716d3688")
+	)
+	(wire
+		(pts
+			(xy 384.81 208.28) (xy 384.81 210.82)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "031e95bc-0131-550d-a9c2-9aececbf2127")
 	)
 	(wire
 		(pts
@@ -3703,16 +3713,6 @@
 			(type default)
 		)
 		(uuid "05f0818c-9a6c-5b22-875d-3df6e28eb1a6")
-	)
-	(wire
-		(pts
-			(xy 386.08 149.86) (xy 386.08 157.48)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "07bc35be-8890-52c2-9ea2-8c0542001cb5")
 	)
 	(wire
 		(pts
@@ -3856,6 +3856,16 @@
 	)
 	(wire
 		(pts
+			(xy 375.92 208.28) (xy 381 208.28)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "245447e1-87c8-5955-96b2-3abc13a7c2b9")
+	)
+	(wire
+		(pts
 			(xy 320.04 170.18) (xy 330.2 170.18)
 		)
 		(stroke
@@ -3873,6 +3883,26 @@
 			(type default)
 		)
 		(uuid "2cc53d0e-33f4-5204-8ada-699080535703")
+	)
+	(wire
+		(pts
+			(xy 384.81 218.44) (xy 384.81 220.98)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2edb120c-f480-5685-af52-6018d61d8f7a")
+	)
+	(wire
+		(pts
+			(xy 373.38 208.28) (xy 375.92 208.28)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "30676c15-36a0-5918-ad12-4ec25c6cfb07")
 	)
 	(wire
 		(pts
@@ -3936,16 +3966,6 @@
 	)
 	(wire
 		(pts
-			(xy 381 208.28) (xy 386.08 208.28)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "39331883-ebaf-5cc3-839d-a3118ef55e9c")
-	)
-	(wire
-		(pts
 			(xy 50.8 233.68) (xy 50.8 231.14)
 		)
 		(stroke
@@ -3976,13 +3996,13 @@
 	)
 	(wire
 		(pts
-			(xy 381 218.44) (xy 381 220.98)
+			(xy 384.81 208.28) (xy 389.89 208.28)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "43a9c79f-a0f0-578a-84db-85c792a09ea1")
+		(uuid "470b144b-5066-5b43-9988-25d2cf34cb20")
 	)
 	(wire
 		(pts
@@ -3993,16 +4013,6 @@
 			(type default)
 		)
 		(uuid "472f778e-377e-50d3-a9e2-ac7a6c0d7f93")
-	)
-	(wire
-		(pts
-			(xy 386.08 157.48) (xy 378.46 157.48)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "48ab5c5a-82c9-5a1f-9a16-237b5b1be53d")
 	)
 	(wire
 		(pts
@@ -4066,13 +4076,13 @@
 	)
 	(wire
 		(pts
-			(xy 386.08 208.28) (xy 391.16 208.28)
+			(xy 381 208.28) (xy 384.81 208.28)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "4cede87c-ef34-5913-bd7e-f39bf8729b19")
+		(uuid "4e6a3293-f66d-5cbe-a1e2-516cc2dc4734")
 	)
 	(wire
 		(pts
@@ -4083,16 +4093,6 @@
 			(type default)
 		)
 		(uuid "4efeb001-997c-5e49-8d55-f55a7327e887")
-	)
-	(wire
-		(pts
-			(xy 386.08 137.16) (xy 391.16 137.16)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5006905a-7feb-514f-9ae3-19b65fe7c688")
 	)
 	(wire
 		(pts
@@ -4276,16 +4276,6 @@
 	)
 	(wire
 		(pts
-			(xy 383.54 137.16) (xy 386.08 137.16)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "811ab584-080b-5a30-a219-36e1d085a0dc")
-	)
-	(wire
-		(pts
 			(xy 185.42 116.84) (xy 198.12 116.84)
 		)
 		(stroke
@@ -4306,13 +4296,13 @@
 	)
 	(wire
 		(pts
-			(xy 391.16 218.44) (xy 391.16 220.98)
+			(xy 389.89 208.28) (xy 394.97 208.28)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "880476a6-c663-5931-a5b5-6ea24e00f0cb")
+		(uuid "83fae66b-060e-50e5-be6d-a3f148cbfa0d")
 	)
 	(wire
 		(pts
@@ -4356,6 +4346,16 @@
 	)
 	(wire
 		(pts
+			(xy 394.97 218.44) (xy 394.97 226.06)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "91cb6f2f-52d4-5f63-81d6-87fc2c54b49b")
+	)
+	(wire
+		(pts
 			(xy 137.16 237.49) (xy 137.16 234.95)
 		)
 		(stroke
@@ -4396,6 +4396,16 @@
 	)
 	(wire
 		(pts
+			(xy 383.54 137.16) (xy 391.16 137.16)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "99926cf9-002e-5283-bb13-283b60d65234")
+	)
+	(wire
+		(pts
 			(xy 330.2 134.62) (xy 335.28 134.62)
 		)
 		(stroke
@@ -4403,6 +4413,16 @@
 			(type default)
 		)
 		(uuid "9fed1f5e-f14e-59da-bf1b-2871de2af400")
+	)
+	(wire
+		(pts
+			(xy 375.92 208.28) (xy 375.92 210.82)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a0e0fa83-2fc8-5be6-9c6c-13cc4416921f")
 	)
 	(wire
 		(pts
@@ -4446,26 +4466,6 @@
 	)
 	(wire
 		(pts
-			(xy 386.08 137.16) (xy 386.08 142.24)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a98e24d6-cd97-5bc0-a7c9-acdc06debbf9")
-	)
-	(wire
-		(pts
-			(xy 373.38 208.28) (xy 381 208.28)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ad1a1fb4-0ab5-551a-8eb7-910cd6748f0e")
-	)
-	(wire
-		(pts
 			(xy 109.22 228.6) (xy 109.22 226.06)
 		)
 		(stroke
@@ -4483,6 +4483,26 @@
 			(type default)
 		)
 		(uuid "b418addf-2c01-54e8-ae30-1eef68e17314")
+	)
+	(wire
+		(pts
+			(xy 394.97 208.28) (xy 394.97 210.82)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b9108f78-29f5-5fe9-9e89-8c1eaacb6825")
+	)
+	(wire
+		(pts
+			(xy 375.92 218.44) (xy 375.92 220.98)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b9ed2b63-9212-5c2b-bb40-db6a2e26a7a2")
 	)
 	(wire
 		(pts
@@ -4526,16 +4546,6 @@
 	)
 	(wire
 		(pts
-			(xy 391.16 208.28) (xy 398.78 208.28)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c55a0a8b-d11b-5e6c-be02-f4681983c4c0")
-	)
-	(wire
-		(pts
 			(xy 233.68 86.36) (xy 233.68 83.82)
 		)
 		(stroke
@@ -4543,26 +4553,6 @@
 			(type default)
 		)
 		(uuid "c596624f-48ff-5b17-bd43-3ce246c1d602")
-	)
-	(wire
-		(pts
-			(xy 391.16 208.28) (xy 391.16 210.82)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c83e4315-98db-505d-9187-54df77349e59")
-	)
-	(wire
-		(pts
-			(xy 381 208.28) (xy 381 210.82)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c888f67d-ebcc-5fab-b3c9-a40e2e6c46d0")
 	)
 	(wire
 		(pts
@@ -4854,16 +4844,6 @@
 		)
 		(uuid "35dfad7c-74bb-5972-958e-01ad2b8e998a")
 	)
-	(label "DRV_EN_N"
-		(at 355.6 165.1 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "44b63d06-3275-5cfe-a613-ed68bb4a50d7")
-	)
 	(label "KA_N1"
 		(at 88.9 86.36 0)
 		(effects
@@ -4903,6 +4883,16 @@
 			(justify left bottom)
 		)
 		(uuid "a497cb65-3eb9-5e1d-adce-c136187488a1")
+	)
+	(label "DRV_EN_N"
+		(at 355.6 165.1 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "ef33f616-3420-5790-8630-76eb86a0334a")
 	)
 	(hierarchical_label "ISENSE_LO"
 		(shape input)
@@ -4970,16 +4960,16 @@
 		)
 		(uuid "6cce452e-b089-5170-bc6f-9ca13eb1f279")
 	)
-	(hierarchical_label "DRV_EN_RB"
+	(hierarchical_label "V_DRV_RB"
 		(shape output)
-		(at 378.46 157.48 180)
+		(at 394.97 226.06 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
 			(justify right)
 		)
-		(uuid "6dd05e34-c11c-527c-bcfa-aaa28910f4f3")
+		(uuid "9b16287f-dbfa-59d4-84b4-33d47beb7843")
 	)
 	(hierarchical_label "KA"
 		(shape input)
@@ -5152,7 +5142,7 @@
 	)
 	(symbol
 		(lib_id "Device:C")
-		(at 391.16 214.63 0)
+		(at 384.81 214.63 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -5162,7 +5152,7 @@
 		(dnp no)
 		(uuid "07535f6a-c90b-5478-8deb-4b85f266aa3c")
 		(property "Reference" "C21"
-			(at 394.462 213.36 0)
+			(at 388.112 213.36 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -5173,7 +5163,7 @@
 			)
 		)
 		(property "Value" "100n"
-			(at 394.462 215.9 0)
+			(at 388.112 215.9 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -5184,7 +5174,7 @@
 			)
 		)
 		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
-			(at 391.16 214.63 0)
+			(at 384.81 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5195,7 +5185,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 391.16 214.63 0)
+			(at 384.81 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5206,7 +5196,7 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
-			(at 391.16 214.63 0)
+			(at 384.81 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5217,7 +5207,7 @@
 			)
 		)
 		(property "Spec" "100 nF 50 V X7R"
-			(at 391.16 214.63 0)
+			(at 384.81 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5228,7 +5218,7 @@
 			)
 		)
 		(property "MPN" "CC0603KRX7R9BB104"
-			(at 391.16 214.63 0)
+			(at 384.81 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5239,7 +5229,7 @@
 			)
 		)
 		(property "Manufacturer" "YAGEO"
-			(at 391.16 214.63 0)
+			(at 384.81 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5250,7 +5240,7 @@
 			)
 		)
 		(property "LCSC" "C14663"
-			(at 391.16 214.63 0)
+			(at 384.81 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5409,7 +5399,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "090e33d9-f51a-53a9-a800-de61d4aab78a")
-		(property "Reference" "#PWR0069"
+		(property "Reference" "#PWR0070"
 			(at 111.252 223.52 0)
 			(hide yes)
 			(show_name no)
@@ -5470,87 +5460,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0069")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:PWR_FLAG")
-		(at 386.08 208.28 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "16dec45d-9085-5bf7-b6e1-a351d11c436b")
-		(property "Reference" "#FLG6"
-			(at 388.366 205.74 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "PWR_FLAG"
-			(at 388.366 208.28 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" ""
-			(at 386.08 208.28 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 386.08 208.28 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Special symbol for telling ERC where power comes from"
-			(at 386.08 208.28 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "5936547e-f114-5bee-9241-cb08b42bf405")
-		)
-		(instances
-			(project "zoneflow-a"
-				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#FLG6")
+					(reference "#PWR0070")
 					(unit 1)
 				)
 			)
@@ -5851,7 +5761,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "2b9e187d-33a8-570c-931e-458d3b25ca4d")
-		(property "Reference" "#PWR0054"
+		(property "Reference" "#PWR0055"
 			(at 177.8 104.14 0)
 			(hide yes)
 			(show_name no)
@@ -5912,7 +5822,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0054")
+					(reference "#PWR0055")
 					(unit 1)
 				)
 			)
@@ -6052,7 +5962,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "2fa88722-a1e7-520e-9417-629c0cc270a7")
-		(property "Reference" "#PWR0072"
+		(property "Reference" "#PWR0073"
 			(at 93.98 91.44 0)
 			(hide yes)
 			(show_name no)
@@ -6113,7 +6023,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0072")
+					(reference "#PWR0073")
 					(unit 1)
 				)
 			)
@@ -6130,7 +6040,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "2fcb1d18-1c1b-5092-8ee5-99836ed956fd")
-		(property "Reference" "#PWR0066"
+		(property "Reference" "#PWR0067"
 			(at 80.772 232.41 0)
 			(hide yes)
 			(show_name no)
@@ -6191,7 +6101,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0066")
+					(reference "#PWR0067")
 					(unit 1)
 				)
 			)
@@ -6360,7 +6270,7 @@
 	)
 	(symbol
 		(lib_id "Device:R")
-		(at 386.08 146.05 0)
+		(at 394.97 214.63 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -6370,7 +6280,7 @@
 		(dnp no)
 		(uuid "37f260e3-609d-5cc4-a616-690e50871f2b")
 		(property "Reference" "R92"
-			(at 388.366 144.78 0)
+			(at 397.256 213.36 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6380,8 +6290,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "10k"
-			(at 388.366 147.32 0)
+		(property "Value" "4.7k"
+			(at 397.256 215.9 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6392,7 +6302,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
-			(at 386.08 146.05 0)
+			(at 394.97 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6403,7 +6313,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 386.08 146.05 0)
+			(at 394.97 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6414,7 +6324,7 @@
 			)
 		)
 		(property "Description" "Resistor"
-			(at 386.08 146.05 0)
+			(at 394.97 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6424,8 +6334,8 @@
 				)
 			)
 		)
-		(property "Spec" "10k 1%"
-			(at 386.08 146.05 0)
+		(property "Spec" "4.7k 1%"
+			(at 394.97 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6435,8 +6345,8 @@
 				)
 			)
 		)
-		(property "MPN" "0603WAF1002T5E"
-			(at 386.08 146.05 0)
+		(property "MPN" "0603WAF4701T5E"
+			(at 394.97 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6447,7 +6357,7 @@
 			)
 		)
 		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
-			(at 386.08 146.05 0)
+			(at 394.97 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6457,8 +6367,8 @@
 				)
 			)
 		)
-		(property "LCSC" "C25804"
-			(at 386.08 146.05 0)
+		(property "LCSC" "C23162"
+			(at 394.97 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6806,84 +6716,6 @@
 		)
 	)
 	(symbol
-		(lib_id "ZoneFlow:V_DRV")
-		(at 398.78 208.28 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "3f6235a9-31dc-5d42-893a-c83a7cdf5b65")
-		(property "Reference" "#PWR0074"
-			(at 400.812 205.74 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "V_DRV"
-			(at 398.78 204.47 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 398.78 208.28 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 398.78 208.28 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Opto LED supply, on only while the fail-safe circuit allows drive"
-			(at 398.78 208.28 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "e0408f54-0984-5558-a097-a8fcc8575394")
-		)
-		(instances
-			(project "zoneflow-a"
-				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0074")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Diode:BAT54S")
 		(at 104.14 91.44 0)
 		(mirror x)
@@ -7023,7 +6855,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "4b660ce8-e364-5a36-8d44-6abecd6e7841")
-		(property "Reference" "#PWR0070"
+		(property "Reference" "#PWR0071"
 			(at 139.192 232.41 0)
 			(hide yes)
 			(show_name no)
@@ -7084,7 +6916,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0070")
+					(reference "#PWR0071")
 					(unit 1)
 				)
 			)
@@ -7101,7 +6933,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "4dbdbddb-d9dc-5cef-97f4-c2d7aae9c45f")
-		(property "Reference" "#PWR0059"
+		(property "Reference" "#PWR0060"
 			(at 159.512 160.02 0)
 			(hide yes)
 			(show_name no)
@@ -7162,7 +6994,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0059")
+					(reference "#PWR0060")
 					(unit 1)
 				)
 			)
@@ -7669,6 +7501,84 @@
 		)
 	)
 	(symbol
+		(lib_id "ZoneFlow:V_DRV")
+		(at 389.89 208.28 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "55861a83-9a9d-5ae2-bfcd-7bcccfd00ea8")
+		(property "Reference" "#PWR0075"
+			(at 391.922 205.74 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "V_DRV"
+			(at 389.89 204.47 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 389.89 208.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 389.89 208.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Opto LED supply, on only while the fail-safe circuit allows drive"
+			(at 389.89 208.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "ea172e10-672f-5de1-8c34-8761faa4f2b3")
+		)
+		(instances
+			(project "zoneflow-a"
+				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
+					(reference "#PWR0075")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "Device:C")
 		(at 82.55 86.36 90)
 		(unit 1)
@@ -7802,7 +7712,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "68934f13-215d-5afe-9c33-b02be3772ce9")
-		(property "Reference" "#PWR0061"
+		(property "Reference" "#PWR0062"
 			(at 347.472 182.88 0)
 			(hide yes)
 			(show_name no)
@@ -7863,7 +7773,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0061")
+					(reference "#PWR0062")
 					(unit 1)
 				)
 			)
@@ -8577,7 +8487,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "87313f64-2b67-5868-925f-bbaa5698771c")
-		(property "Reference" "#PWR0073"
+		(property "Reference" "#PWR0074"
 			(at 347.98 170.18 0)
 			(hide yes)
 			(show_name no)
@@ -8638,7 +8548,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0073")
+					(reference "#PWR0074")
 					(unit 1)
 				)
 			)
@@ -8655,7 +8565,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "886141e4-993a-5538-80c8-426ffb813e45")
-		(property "Reference" "#PWR0071"
+		(property "Reference" "#PWR0072"
 			(at 139.7 247.65 0)
 			(hide yes)
 			(show_name no)
@@ -8716,7 +8626,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0071")
+					(reference "#PWR0072")
 					(unit 1)
 				)
 			)
@@ -9135,7 +9045,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 391.16 220.98 0)
+		(at 384.81 220.98 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -9144,8 +9054,8 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "94b8d805-8136-5a60-9a37-0989a1d8ff8d")
-		(property "Reference" "#PWR0063"
-			(at 393.7 220.98 0)
+		(property "Reference" "#PWR0064"
+			(at 387.35 220.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9157,7 +9067,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 391.16 224.79 0)
+			(at 384.81 224.79 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -9167,7 +9077,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 391.16 220.98 0)
+			(at 384.81 220.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9178,7 +9088,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 391.16 220.98 0)
+			(at 384.81 220.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9189,7 +9099,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 391.16 220.98 0)
+			(at 384.81 220.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9205,7 +9115,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0063")
+					(reference "#PWR0064")
 					(unit 1)
 				)
 			)
@@ -9508,7 +9418,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "9f5d9ede-4527-5b6a-80d1-4f10db090736")
-		(property "Reference" "#PWR0064"
+		(property "Reference" "#PWR0065"
 			(at 52.832 228.6 0)
 			(hide yes)
 			(show_name no)
@@ -9569,7 +9479,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0064")
+					(reference "#PWR0065")
 					(unit 1)
 				)
 			)
@@ -9597,7 +9507,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "10k"
+		(property "Value" "2.2k"
 			(at 50.546 93.98 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9641,7 +9551,7 @@
 				)
 			)
 		)
-		(property "Spec" "10k 1%"
+		(property "Spec" "2.2k 1%"
 			(at 48.26 92.71 0)
 			(hide yes)
 			(show_name no)
@@ -9652,7 +9562,7 @@
 				)
 			)
 		)
-		(property "MPN" "0603WAF1002T5E"
+		(property "MPN" "0603WAF2201T5E"
 			(at 48.26 92.71 0)
 			(hide yes)
 			(show_name no)
@@ -9674,7 +9584,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C25804"
+		(property "LCSC" "C4190"
 			(at 48.26 92.71 0)
 			(hide yes)
 			(show_name no)
@@ -9711,7 +9621,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "a4760fb1-30be-51ac-98d1-476df8e742d1")
-		(property "Reference" "#PWR0067"
+		(property "Reference" "#PWR0068"
 			(at 81.28 247.65 0)
 			(hide yes)
 			(show_name no)
@@ -9772,7 +9682,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0067")
+					(reference "#PWR0068")
 					(unit 1)
 				)
 			)
@@ -9789,7 +9699,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "a6e62af3-d23c-5358-b847-a3002440647b")
-		(property "Reference" "#PWR0055"
+		(property "Reference" "#PWR0056"
 			(at 187.452 101.6 0)
 			(hide yes)
 			(show_name no)
@@ -9850,7 +9760,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0055")
+					(reference "#PWR0056")
 					(unit 1)
 				)
 			)
@@ -9867,7 +9777,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "a7f77072-8b15-5e86-9a91-dd041324aa19")
-		(property "Reference" "#PWR0060"
+		(property "Reference" "#PWR0061"
 			(at 375.412 185.42 0)
 			(hide yes)
 			(show_name no)
@@ -9928,7 +9838,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0060")
+					(reference "#PWR0061")
 					(unit 1)
 				)
 			)
@@ -9945,7 +9855,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "a932e3c2-5509-5cd3-8621-54bb0e77a1f7")
-		(property "Reference" "#PWR0052"
+		(property "Reference" "#PWR0053"
 			(at 139.7 104.14 0)
 			(hide yes)
 			(show_name no)
@@ -10006,7 +9916,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0052")
+					(reference "#PWR0053")
 					(unit 1)
 				)
 			)
@@ -10023,7 +9933,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "aa1d89ef-7dcc-5fed-9f6a-080e02d25ffd")
-		(property "Reference" "#PWR0050"
+		(property "Reference" "#PWR0051"
 			(at 50.8 99.06 0)
 			(hide yes)
 			(show_name no)
@@ -10084,7 +9994,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0050")
+					(reference "#PWR0051")
 					(unit 1)
 				)
 			)
@@ -10101,7 +10011,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "adfb93ab-ae2b-5906-b16b-c9a8413bf11e")
-		(property "Reference" "#PWR0057"
+		(property "Reference" "#PWR0058"
 			(at 235.712 81.28 0)
 			(hide yes)
 			(show_name no)
@@ -10162,7 +10072,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0057")
+					(reference "#PWR0058")
 					(unit 1)
 				)
 			)
@@ -10170,7 +10080,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 381 220.98 0)
+		(at 375.92 220.98 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -10179,8 +10089,8 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "ae973397-055c-53de-9b9a-b3d23deaa2c4")
-		(property "Reference" "#PWR0062"
-			(at 383.54 220.98 0)
+		(property "Reference" "#PWR0063"
+			(at 378.46 220.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10192,7 +10102,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 381 224.79 0)
+			(at 375.92 224.79 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10202,7 +10112,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 381 220.98 0)
+			(at 375.92 220.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10213,7 +10123,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 381 220.98 0)
+			(at 375.92 220.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10224,7 +10134,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 381 220.98 0)
+			(at 375.92 220.98 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10240,7 +10150,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0062")
+					(reference "#PWR0063")
 					(unit 1)
 				)
 			)
@@ -10257,7 +10167,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "b634281b-f330-53cf-bab8-60a2ef0cd566")
-		(property "Reference" "#PWR0056"
+		(property "Reference" "#PWR0057"
 			(at 187.96 129.54 0)
 			(hide yes)
 			(show_name no)
@@ -10318,7 +10228,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0056")
+					(reference "#PWR0057")
 					(unit 1)
 				)
 			)
@@ -10574,7 +10484,7 @@
 	)
 	(symbol
 		(lib_id "Device:R")
-		(at 381 214.63 0)
+		(at 375.92 214.63 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -10584,7 +10494,7 @@
 		(dnp no)
 		(uuid "c761e573-6750-5aa4-bf40-5e766a255484")
 		(property "Reference" "R26"
-			(at 383.286 213.36 0)
+			(at 378.206 213.36 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10595,7 +10505,7 @@
 			)
 		)
 		(property "Value" "10k"
-			(at 383.286 215.9 0)
+			(at 378.206 215.9 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -10606,7 +10516,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
-			(at 381 214.63 0)
+			(at 375.92 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10617,7 +10527,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 381 214.63 0)
+			(at 375.92 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10628,7 +10538,7 @@
 			)
 		)
 		(property "Description" "Resistor"
-			(at 381 214.63 0)
+			(at 375.92 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10639,7 +10549,7 @@
 			)
 		)
 		(property "Spec" "10k 1%"
-			(at 381 214.63 0)
+			(at 375.92 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10650,7 +10560,7 @@
 			)
 		)
 		(property "MPN" "0603WAF1002T5E"
-			(at 381 214.63 0)
+			(at 375.92 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10661,7 +10571,7 @@
 			)
 		)
 		(property "Manufacturer" "UNI-ROYAL(Uniroyal Elec)"
-			(at 381 214.63 0)
+			(at 375.92 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10672,7 +10582,7 @@
 			)
 		)
 		(property "LCSC" "C25804"
-			(at 381 214.63 0)
+			(at 375.92 214.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10833,7 +10743,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "d2b70a55-7cdb-581f-bc43-d57173d4e8db")
-		(property "Reference" "#PWR0065"
+		(property "Reference" "#PWR0066"
 			(at 53.34 251.46 0)
 			(hide yes)
 			(show_name no)
@@ -10894,7 +10804,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0065")
+					(reference "#PWR0066")
 					(unit 1)
 				)
 			)
@@ -10911,7 +10821,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "d5d611ca-76a7-583b-8875-69cab558648f")
-		(property "Reference" "#PWR0068"
+		(property "Reference" "#PWR0069"
 			(at 111.76 256.54 0)
 			(hide yes)
 			(show_name no)
@@ -10972,7 +10882,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0068")
+					(reference "#PWR0069")
 					(unit 1)
 				)
 			)
@@ -11275,7 +11185,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "e56d5be9-e500-5ef6-afd2-806fac2f2755")
-		(property "Reference" "#PWR0058"
+		(property "Reference" "#PWR0059"
 			(at 73.66 185.42 0)
 			(hide yes)
 			(show_name no)
@@ -11336,7 +11246,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0058")
+					(reference "#PWR0059")
 					(unit 1)
 				)
 			)
@@ -11353,7 +11263,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "e759d29c-e002-5fb1-8688-5cda446f265f")
-		(property "Reference" "#PWR0051"
+		(property "Reference" "#PWR0052"
 			(at 127 104.14 0)
 			(hide yes)
 			(show_name no)
@@ -11414,7 +11324,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0051")
+					(reference "#PWR0052")
 					(unit 1)
 				)
 			)
@@ -11431,7 +11341,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "ec84ae88-6f05-5f48-867c-22c8b3a26466")
-		(property "Reference" "#PWR0053"
+		(property "Reference" "#PWR0054"
 			(at 152.4 104.14 0)
 			(hide yes)
 			(show_name no)
@@ -11492,7 +11402,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
-					(reference "#PWR0053")
+					(reference "#PWR0054")
 					(unit 1)
 				)
 			)
@@ -11618,6 +11528,86 @@
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
 					(reference "R53")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:PWR_FLAG")
+		(at 381 208.28 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "f2a92fee-e350-511c-8b11-2a8cfea9e4a0")
+		(property "Reference" "#FLG7"
+			(at 383.286 205.74 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "PWR_FLAG"
+			(at 383.286 208.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 381 208.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 381 208.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Special symbol for telling ERC where power comes from"
+			(at 381 208.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "e4392c96-24d2-5c70-9af2-58d609dbc7b4")
+		)
+		(instances
+			(project "zoneflow-a"
+				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/c8090421-e4d9-51bd-b806-aa951cb2172e"
+					(reference "#FLG7")
 					(unit 1)
 				)
 			)

@@ -3295,7 +3295,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "0bb43a0d-f2ea-587d-9b63-836c3096edd2")
-		(property "Reference" "#PWR0029"
+		(property "Reference" "#PWR0030"
 			(at 96.012 48.26 0)
 			(hide yes)
 			(show_name no)
@@ -3356,7 +3356,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
-					(reference "#PWR0029")
+					(reference "#PWR0030")
 					(unit 1)
 				)
 			)
@@ -3527,6 +3527,86 @@
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
 					(reference "J5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:PWR_FLAG")
+		(at 213.36 50.8 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "12425e8a-dcb8-5d91-8459-6c8db2691c44")
+		(property "Reference" "#FLG6"
+			(at 215.646 48.26 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "PWR_FLAG"
+			(at 215.646 50.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 213.36 50.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 213.36 50.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Special symbol for telling ERC where power comes from"
+			(at 213.36 50.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "7ee55060-27f7-5922-8d83-7cd13a6bbf0c")
+		)
+		(instances
+			(project "zoneflow-a"
+				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
+					(reference "#FLG6")
 					(unit 1)
 				)
 			)
@@ -4001,7 +4081,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "3e85de74-d687-5fc3-941c-10043105db90")
-		(property "Reference" "#PWR0021"
+		(property "Reference" "#PWR0022"
 			(at 139.7 109.22 0)
 			(hide yes)
 			(show_name no)
@@ -4062,7 +4142,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
-					(reference "#PWR0021")
+					(reference "#PWR0022")
 					(unit 1)
 				)
 			)
@@ -4207,7 +4287,7 @@
 	)
 	(symbol
 		(lib_id "power:PWR_FLAG")
-		(at 213.36 50.8 0)
+		(at 109.22 50.8 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -4217,7 +4297,7 @@
 		(dnp no)
 		(uuid "4a453a07-3373-5901-b349-301820c82724")
 		(property "Reference" "#FLG5"
-			(at 215.646 48.26 0)
+			(at 111.506 48.26 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4229,7 +4309,7 @@
 			)
 		)
 		(property "Value" "PWR_FLAG"
-			(at 215.646 50.8 0)
+			(at 111.506 50.8 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4241,7 +4321,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 213.36 50.8 0)
+			(at 109.22 50.8 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4252,7 +4332,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 213.36 50.8 0)
+			(at 109.22 50.8 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4263,7 +4343,7 @@
 			)
 		)
 		(property "Description" "Special symbol for telling ERC where power comes from"
-			(at 213.36 50.8 0)
+			(at 109.22 50.8 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4296,7 +4376,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "5365cb6c-810b-5025-b7d5-e648b15a4f87")
-		(property "Reference" "#PWR0033"
+		(property "Reference" "#PWR0034"
 			(at 281.432 48.26 0)
 			(hide yes)
 			(show_name no)
@@ -4357,7 +4437,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
-					(reference "#PWR0033")
+					(reference "#PWR0034")
 					(unit 1)
 				)
 			)
@@ -4499,7 +4579,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "60ffa30b-1bd6-555e-a53b-d2aa649777a9")
-		(property "Reference" "#PWR0018"
+		(property "Reference" "#PWR0019"
 			(at 104.14 83.82 0)
 			(hide yes)
 			(show_name no)
@@ -4560,7 +4640,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
-					(reference "#PWR0018")
+					(reference "#PWR0019")
 					(unit 1)
 				)
 			)
@@ -4700,7 +4780,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "7b8305d3-9930-5084-b892-e1ff1c2425f7")
-		(property "Reference" "#PWR0022"
+		(property "Reference" "#PWR0023"
 			(at 81.28 99.06 0)
 			(hide yes)
 			(show_name no)
@@ -4761,7 +4841,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
-					(reference "#PWR0022")
+					(reference "#PWR0023")
 					(unit 1)
 				)
 			)
@@ -4778,7 +4858,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "7dfadfb3-9a2f-5b02-8deb-63dce0f4875e")
-		(property "Reference" "#PWR0032"
+		(property "Reference" "#PWR0033"
 			(at 207.772 48.26 0)
 			(hide yes)
 			(show_name no)
@@ -4839,7 +4919,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
-					(reference "#PWR0032")
+					(reference "#PWR0033")
 					(unit 1)
 				)
 			)
@@ -4856,7 +4936,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "89e6860a-b382-50d1-9429-f54533e1c2d3")
-		(property "Reference" "#PWR0017"
+		(property "Reference" "#PWR0018"
 			(at 83.82 63.5 0)
 			(hide yes)
 			(show_name no)
@@ -4917,7 +4997,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
-					(reference "#PWR0017")
+					(reference "#PWR0018")
 					(unit 1)
 				)
 			)
@@ -4934,7 +5014,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "8e2c3020-8cfd-5d16-bdc4-d9fa69da82d8")
-		(property "Reference" "#PWR0031"
+		(property "Reference" "#PWR0032"
 			(at 179.832 27.94 0)
 			(hide yes)
 			(show_name no)
@@ -4995,7 +5075,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
-					(reference "#PWR0031")
+					(reference "#PWR0032")
 					(unit 1)
 				)
 			)
@@ -5012,7 +5092,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "a41b9d9b-bc3a-5dba-adb2-36a7afce3382")
-		(property "Reference" "#PWR0020"
+		(property "Reference" "#PWR0021"
 			(at 139.7 86.36 0)
 			(hide yes)
 			(show_name no)
@@ -5073,7 +5153,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
-					(reference "#PWR0020")
+					(reference "#PWR0021")
 					(unit 1)
 				)
 			)
@@ -5090,7 +5170,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "a5d23c02-7a05-537c-bdbb-37fcfd181126")
-		(property "Reference" "#PWR0023"
+		(property "Reference" "#PWR0024"
 			(at 93.98 101.6 0)
 			(hide yes)
 			(show_name no)
@@ -5151,7 +5231,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
-					(reference "#PWR0023")
+					(reference "#PWR0024")
 					(unit 1)
 				)
 			)
@@ -5168,7 +5248,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "aab15922-0da9-5a50-90f2-71cb29ea4969")
-		(property "Reference" "#PWR0025"
+		(property "Reference" "#PWR0026"
 			(at 246.38 60.96 0)
 			(hide yes)
 			(show_name no)
@@ -5229,7 +5309,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
-					(reference "#PWR0025")
+					(reference "#PWR0026")
 					(unit 1)
 				)
 			)
@@ -5371,7 +5451,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "b059218d-82ca-57f9-adbe-d870f9fe4b7d")
-		(property "Reference" "#PWR0030"
+		(property "Reference" "#PWR0031"
 			(at 50.8 114.3 0)
 			(hide yes)
 			(show_name no)
@@ -5432,7 +5512,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
-					(reference "#PWR0030")
+					(reference "#PWR0031")
 					(unit 1)
 				)
 			)
@@ -5945,7 +6025,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "d1015db3-5087-58f8-84ee-1e5fa13e3e22")
-		(property "Reference" "#PWR0019"
+		(property "Reference" "#PWR0020"
 			(at 103.632 63.5 0)
 			(hide yes)
 			(show_name no)
@@ -6006,7 +6086,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
-					(reference "#PWR0019")
+					(reference "#PWR0020")
 					(unit 1)
 				)
 			)
@@ -6023,7 +6103,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "d57e6b8e-eb90-5354-9fc6-ebb11d3f422f")
-		(property "Reference" "#PWR0026"
+		(property "Reference" "#PWR0027"
 			(at 226.06 63.5 0)
 			(hide yes)
 			(show_name no)
@@ -6084,7 +6164,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
-					(reference "#PWR0026")
+					(reference "#PWR0027")
 					(unit 1)
 				)
 			)
@@ -6226,7 +6306,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "db4893d6-7af9-5948-a472-7eec76199e41")
-		(property "Reference" "#PWR0028"
+		(property "Reference" "#PWR0029"
 			(at 274.32 63.5 0)
 			(hide yes)
 			(show_name no)
@@ -6287,7 +6367,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
-					(reference "#PWR0028")
+					(reference "#PWR0029")
 					(unit 1)
 				)
 			)
@@ -6304,7 +6384,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "dcb42fa2-f81f-5efd-afdc-4683a2d8bfa8")
-		(property "Reference" "#PWR0027"
+		(property "Reference" "#PWR0028"
 			(at 264.16 63.5 0)
 			(hide yes)
 			(show_name no)
@@ -6365,7 +6445,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
-					(reference "#PWR0027")
+					(reference "#PWR0028")
 					(unit 1)
 				)
 			)
@@ -6382,7 +6462,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "e040e2dd-9fb4-5080-9b14-db752836d948")
-		(property "Reference" "#PWR0024"
+		(property "Reference" "#PWR0025"
 			(at 60.96 127 0)
 			(hide yes)
 			(show_name no)
@@ -6443,7 +6523,7 @@
 		(instances
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
-					(reference "#PWR0024")
+					(reference "#PWR0025")
 					(unit 1)
 				)
 			)
@@ -6569,86 +6649,6 @@
 			(project "zoneflow-a"
 				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
 					(reference "R17")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:PWR_FLAG")
-		(at 109.22 50.8 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "effe0230-e608-52c6-bf22-e952e520651e")
-		(property "Reference" "#FLG4"
-			(at 111.506 48.26 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "PWR_FLAG"
-			(at 111.506 50.8 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" ""
-			(at 109.22 50.8 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 109.22 50.8 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Special symbol for telling ERC where power comes from"
-			(at 109.22 50.8 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "a0acbf5e-686b-53cc-be32-088f5b7c39d2")
-		)
-		(instances
-			(project "zoneflow-a"
-				(path "/7e8f8ceb-2613-57b8-8b7b-f202c85f6145/43a123b4-034e-5ed2-a7cf-2b5383df89e9"
-					(reference "#FLG4")
 					(unit 1)
 				)
 			)
