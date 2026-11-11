@@ -107,6 +107,10 @@ std::string faults_text(const Supervisor &s, uint8_t zone_count,
     add(title_of(zf::FaultCode::MainsSignal));
   if (g & kCondNotCommissioned)
     add(title_of(zf::FaultCode::NotCommissioned));
+  if (g & kCondSupplyLow)
+    add(title_of(zf::FaultCode::SupplyLow));
+  if (g & kCondSupplyHigh)
+    add(title_of(zf::FaultCode::SupplyHigh));
   for (uint8_t z = 0; z < zone_count && z < zf::kMaxZones; ++z) {
     const std::string label =
         labels[z] != nullptr && labels[z][0] != '\0' ? std::string(labels[z]) : "Zone " + std::to_string(z + 1);
@@ -238,6 +242,8 @@ void Supervisor::tick(const SupervisorInputs &in) {
   st.idleThresholdMa = cfg_.idle_threshold_ma;
   st.sensorSupplyOn = in.sensor_supply_on;
   st.keepAlivePinPlain = in.keepalive_pin_plain;
+  st.dieTempKnown = in.die_temp_known;
+  st.dieTempC = in.die_temp_c;
   stage_.tick(st);
   handle_stage(now);
 
@@ -249,7 +255,14 @@ void Supervisor::tick(const SupervisorInputs &in) {
     set_flag(kCondNoAc, true);  // absent since boot
   set_flag(kCondMainsSignal, ac_.present() && in.mains_milli_hz != 0 &&
                                  (in.mains_milli_hz < kMinMainsMilliHz || in.mains_milli_hz > kMaxMainsMilliHz));
-  set_flag(kCondCurrentSenseUnavailable, cfg_.current_enabled && !in.current_sense_available);
+  // Hardware design rule 19: the output stage also counts the measurement as
+  // lost when a step waited for a window in vain or a channel rests outside
+  // its limits; steps 5, 5b and 6 are skipped meanwhile and this says so.
+  set_flag(kCondCurrentSenseUnavailable,
+           cfg_.current_enabled &&
+               (!in.current_sense_available || stage_status_.currentLost != zf::CurrentLoss::None));
+  set_flag(kCondSupplyLow, stage_status_.supplyLow);
+  set_flag(kCondSupplyHigh, stage_status_.supplyHigh);
   if (stage_status_.sensorSupplyKnown)
     set_flag(kCondSensorSupply, in.sensor_supply_on && stage_status_.sensorSupplyFault);
   // 19.7, the limits of step 9: a board with no stored release times says so.
@@ -269,6 +282,7 @@ void Supervisor::tick(const SupervisorInputs &in) {
   }
   if (fresh && in.window.seq != 0)
     handle_dc(reading_, now);
+  handle_rise(now);
 
   // The stage withdrew power because 24 VAC went away: say so, before the
   // driver finds power gone and reports a plain fault.
@@ -339,9 +353,11 @@ void Supervisor::handle_current(const zf::CurrentVerdict &v) {
         record_master_fault();
       break;
     case zf::CurrentFault::OpenCircuit:
+      // zf/diag/zone_fault_policy.hpp: stopped and reported, not locked out;
+      // the next run inside the zone's window clears the report.
       if (zone != zf::kNoZone) {
         driver_.stop(zone, zf::StopReason::Fault);
-        driver_.setLockout(zone, true);
+        driver_.setLockout(zone, zf::zoneFaultPolicy(zf::CurrentFault::OpenCircuit).lockOut);
         zone_fault_[zone] = ZoneFault::OpenCircuit;
       } else {
         driver_.stopAll(zf::StopReason::Fault);
@@ -354,8 +370,31 @@ void Supervisor::handle_current(const zf::CurrentVerdict &v) {
       // checks the output stage.
       set_flag(kFaultCurrentWhileIdle, true);
       break;
+    case zf::CurrentFault::CurrentRose:
+      // Every output off at once: the output stage checks rule 6 with every
+      // valve off within one window; handle_rise() blames the zone if it
+      // finds nothing (zf/diag/zone_fault_policy.hpp).
+      driver_.stopAll(zf::StopReason::Fault);
+      rise_check_.begin(v.outputBit, clock_.monoMs());
+      break;
   }
   changed();
+}
+
+void Supervisor::handle_rise(zf::MonoMs now) {
+  if (!rise_check_.active())
+    return;
+  if (stage_status_.fault == zf::HwCheck::OutputShorted || (general_ & kFaultCurrentWhileIdle) != 0) {
+    rise_check_.idleCurrentFound();  // a failed-short output device: the stage opened the relay
+    return;
+  }
+  const uint8_t bit = rise_check_.poll(now);
+  if (bit != 0xFF) {
+    zf::CurrentVerdict v;
+    v.fault = zf::CurrentFault::OverCurrent;  // the extra current went through the zone itself
+    v.outputBit = bit;
+    handle_current(v);
+  }
 }
 
 void Supervisor::handle_dc(const zf::CurrentReading &r, zf::MonoMs now) {
@@ -373,7 +412,7 @@ void Supervisor::handle_dc(const zf::CurrentReading &r, zf::MonoMs now) {
   const uint8_t bit = driver_.lastOpenedBit();
   if (bit < zf::kMaxZones && (mask & (1u << bit)) != 0) {
     driver_.stop(bit, zf::StopReason::Fault);
-    driver_.setLockout(bit, true);
+    driver_.setLockout(bit, zf::kDcComponentPolicy.lockOut);  // a half-dead output on the board
     zone_fault_[bit] = ZoneFault::DcCurrent;
   } else {
     driver_.stopAll(zf::StopReason::Fault);
@@ -562,6 +601,10 @@ void Supervisor::onZoneChanged(zf::ZoneIndex zone, zf::ValveState state, zf::Sto
     const uint16_t ma = monitor_.runMeanMa(zone);
     if (ma != 0)
       last_run_ma_[zone] = ma;
+    // An open circuit clears itself once the zone ran inside its window.
+    if (ma != 0 && zone_fault_[zone] == ZoneFault::OpenCircuit &&
+        zf::zoneFaultPolicy(zf::CurrentFault::OpenCircuit).clearsOnGoodRun)
+      zone_fault_[zone] = ZoneFault::None;
   }
   changed();
 }

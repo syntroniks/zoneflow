@@ -9,9 +9,14 @@
 //  - the self-test and run sequence of 19.7, steps 0 to 9 with the float
 //    test (2b) and the gate bleed check (5b) of review A2, at start-up,
 //    before and after every run;
-//  - the limits of step 9: absolute limits, and a band of 0.5 to 1.5 times
-//    this board's own release times, learned at commissioning and kept in
-//    non-volatile memory (IDetectorReferenceStore);
+//  - the limits of step 9: absolute limits, and a band of 0.40 to 1.70 times
+//    this board's own release times, learned at commissioning (only while
+//    the die temperature reads 25 to 50 C) and kept in non-volatile memory
+//    (IDetectorReferenceStore);
+//  - the supply monitor and the rest levels of the current channels
+//    (19.10): step 0 waits for VIN_MON in its range, a missing rectified
+//    supply is a fault, both rest levels high is the over-voltage of rule
+//    18, one outside its limits is a lost current measurement (rule 19);
 //  - the register sequence, a read-back after every write and a scrub of
 //    every register on every control tick, never more valve bits low than
 //    the board allows;
@@ -20,9 +25,11 @@
 //  - the weld check (step 5) and the shorted-output check (step 6, rule 6);
 //  - the polling cycle between runs (19.6);
 //  - the over-current latch: read, hold the keep-alive low to clear it,
-//    check it cleared (19.8);
-//  - the fault state: keep-alive low, every expander pin back to input
-//    while the expander still answers, nothing runs until acknowledged.
+//    check it cleared (19.8); a trip with no valve bit low is not counted
+//    against an output, and a second one is a held set input (U13);
+//  - the fault state: keep-alive low, every output off and every expander
+//    pin back to input while the expander still answers, nothing runs
+//    until acknowledged.
 //
 // It owns the keep-alive request of OutputEnableGuard. The guard's timer
 // interrupt still decides every edge from the control-loop heartbeat, and
@@ -78,7 +85,24 @@ public:
     // After Timeout or BusError: clock a stuck slave free and reset the
     // controller.
     virtual void recover() = 0;
+    // `reg` and the other register of its pair (0 and 1, 2 and 3, ...) in
+    // one transaction: address, command byte `reg`, `v0`, `v1`. TI SCPS202C
+    // figure 31: each port takes its byte at that byte's acknowledge, so
+    // port 1 follows port 0 by nine SCL periods, 22.5 us at 400 kHz, plus
+    // the output valid time of at most 0.2 us. The default is two
+    // transactions, for buses that cannot send two data bytes.
+    virtual BusStatus writePair(uint8_t reg, uint8_t v0, uint8_t v1)
+    {
+        const BusStatus st = write(reg, v0);
+        return st != BusStatus::Ok ? st : write(static_cast<uint8_t>(reg + 1u), v1);
+    }
 };
+
+// Hardware design 19.1 rule 3 and section 22 of the firmware architecture:
+// the fault path switches every output off with one pair write, so that
+// zones 5 to 8 follow zones 1 to 4, the master and the relay by at most this
+// long (nine SCL periods at 400 kHz, rounded up, plus t_pv).
+inline constexpr uint32_t kPairWriteSkewNs = 9u * 2500u + 200u;
 
 struct BitRef {
     uint8_t port = 0;
@@ -136,26 +160,37 @@ struct OutputStageConfig {
     uint32_t lingerMs = 2000;
     // Polling cycle between runs, hardware design 19.6.
     uint32_t pollIntervalMs = 10u * 60u * 1000u;
-    // Step 2 before every run (19.7 says "better"); otherwise at start-up
-    // and at least once every 24 h.
+    // Step 2 before every run (the default of 19.7); otherwise at start-up
+    // and at least once every 24 h. Step 2b (the float test) runs at
+    // start-up and before every run whatever this says (19.7, note to
+    // step 2).
     bool pinHighTestEveryRun = true;
     // Control period: the start limit of step 3 is checked on a tick, so it
     // allows one period of slack for the acknowledge poll.
     uint32_t tickMs = 50;
-    // Commissioning cycles (steps 0, 1, 3, 4a, 9) one boot may run back to
-    // back while it has no stored reference; then it stops trying until the
-    // next start and keeps reporting that it is not commissioned.
+    // Commissioning cycles (steps 0, 1, 3, 4a, 9) one attempt may run back
+    // to back while there is no stored reference (19.7 item 4: ten at
+    // most). An attempt that stores nothing is followed by another one
+    // `commissionRetryMs` later, for as long as nothing is stored (item 1).
     uint8_t maxCommissionCycles = 10;
+    uint32_t commissionRetryMs = 10u * 60u * 1000u;
 };
 
 class OutputStage final : public IOutputHal {
 public:
     // Hardware design 19.4 and 19.7, as review A2 left them.
     static constexpr uint32_t kKeepAliveLowBeforeStartMs = 2500; // step 0
-    static constexpr uint32_t kPinHighHoldMs = 1000;             // step 2
-    static constexpr uint32_t kPinHighReleaseMs = 100;           // step 2
-    static constexpr uint32_t kFloatTestMs = 500;                // step 2b
-    static constexpr uint32_t kFloatReleaseMs = 100;             // step 2b
+    // Step 2: 2.0 s since the hardware answers (was 1.0 s). The one rising
+    // edge turns on a Q2 with a low threshold for up to 1.33 s at 70 C
+    // (hardware/sim/failsafe/sequence.py, 19.7 note to step 2).
+    static constexpr uint32_t kPinHighHoldMs = 2000;
+    static constexpr uint32_t kPinHighReleaseMs = 100; // step 2
+    static constexpr uint32_t kFloatTestMs = 500;      // step 2b
+    static constexpr uint32_t kFloatReleaseMs = 100;   // step 2b
+    // Step 2b: the load runs from 100 ms before the pin floats (19.7, note
+    // to step 2b). After step 2 that is its 100 ms low; without step 2 the
+    // stage waits this long with the load on.
+    static constexpr uint32_t kFloatLoadLeadMs = 100;
     // Step 2b reads the pin every 1 ms. Fewer reads than this in the 0.5 s
     // means the test did not run as written, and it counts as failed.
     static constexpr uint32_t kFloatMinReads = 400;
@@ -174,29 +209,39 @@ public:
     static constexpr uint32_t kDriveReleaseMaxMs = 1000;
     static constexpr uint32_t kRelayReleaseMinMs = 50; // tB
     static constexpr uint32_t kRelayReleaseMaxMs = 1600;
-    static constexpr uint32_t kBandLowPercent = 50; // of the stored value
-    static constexpr uint32_t kBandHighPercent = 150;
-    // Commissioning (19.7, the limits of step 9, item 1): the median of five
-    // stop tests. Firmware choices, not from section 19, so that a board with
-    // a fault cannot store the fault as its normal:
-    //  - only start-up and commissioning cycles count, back to back in one
-    //    boot, not stop tests after runs;
-    //  - each time must lie inside the range a healthy board gives near room
-    //    temperature. Review A2 4.5: over -20 to 70 C a board's tA moves
-    //    between 0.56 and 1.03 times its value at 27 C, tB between 0.55 and
-    //    1.38 times, and the grid at 5 ms edges gives tA 0.21 to 0.83 s and
-    //    tB 0.10 to 1.45 s. Dividing gives 0.375 to 0.81 s and 0.18 to
-    //    1.05 s at 27 C; the limits below add about 10 %. An open R30 or R91
-    //    (tA 1.56 s) and an open R14 or R90 on a typical board (tB 1.20 s)
-    //    fall outside;
-    //  - the five values must agree: the longest at most 1.25 times the
-    //    shortest, as one board at one temperature should.
+    // The band, 0.40 to 1.70 times the stored value (19.7, from
+    // hardware/sim/failsafe/commission.py: no healthy stop test from -20 to
+    // 70 C falls outside it; 0.5 to 1.5 failed 8).
+    static constexpr uint32_t kBandLowPercent = 40;
+    static constexpr uint32_t kBandHighPercent = 170;
+    // Commissioning (19.7, "Commissioning", items 1 to 7): the medians of
+    // five start-up or commissioning cycles in a row, never of the stop test
+    // of a run or a polling cycle, each time inside the learning limits
+    // below, the longest of the five at most 1.25 times the shortest, and
+    // only while the die temperature reads 25 to 50 C. The learning limits
+    // are the healthy boards between 10 and 40 C with a few percent of
+    // room: they refuse every board with an open bleed resistor on
+    // detector A and about a quarter of those with one on detector B. No
+    // ratio of tB to tA: it does not separate the two (commission.py).
     static constexpr uint8_t kCommissionSamples = 5;
-    static constexpr uint32_t kLearnDriveMinMs = 340;
-    static constexpr uint32_t kLearnDriveMaxMs = 900;
-    static constexpr uint32_t kLearnRelayMinMs = 160;
-    static constexpr uint32_t kLearnRelayMaxMs = 1100;
+    static constexpr uint32_t kLearnDriveMinMs = 330;
+    static constexpr uint32_t kLearnDriveMaxMs = 850;
+    static constexpr uint32_t kLearnRelayMinMs = 120;
+    static constexpr uint32_t kLearnRelayMaxMs = 1250;
     static constexpr uint32_t kLearnMaxSpreadPercent = 125;
+    static constexpr float kCommissionTempMinC = 25.0f;
+    static constexpr float kCommissionTempMaxC = 50.0f;
+    // Supply monitor, 19.10: window means of VIN_MON.
+    static constexpr int32_t kVinAbsentMv = 100; // below: no rectified supply
+    static constexpr int32_t kVinMinMv = 600;    // step 0 needs at least this
+    static constexpr int32_t kVinMaxMv = 1500;   // and at most this
+    static constexpr uint32_t kRectifierFaultMs = 2000;
+    // Rest levels of the current channels with the keep-alive stopped, 19.10.
+    static constexpr int32_t kRestLoMinMv = 700;
+    static constexpr int32_t kRestLoMaxMv = 880;
+    static constexpr int32_t kRestHiMinMv = 680;
+    static constexpr int32_t kRestHiMaxMv = 900;
+    static constexpr int32_t kRestOverVoltageMv = 900; // both above: 3V3 above about 3.6 V, rule 18
     // Review A2 4.6 question 7: GPIO7 between 0.3 and 1.5 V at rest is Q2
     // shorted gate to drain.
     static constexpr int32_t kRelayGateDrainMinMv = 300;
@@ -243,6 +288,10 @@ public:
     uint8_t shadowOutput(uint8_t port) const { return outShadow_[port & 1u]; }
     uint8_t shadowConfig(uint8_t port) const { return cfgShadow_[port & 1u]; }
     uint8_t valveBitsLow() const;
+    // The fault path's all-off write (doFault): every output off in one pair
+    // write, then every pin an input in a second one. `recoverBus`: clock a
+    // stuck bus free if the probe times out (the fault state's every tick).
+    void releaseAll(bool recoverBus = false);
     // How long the keep-alive toggled before the latest stop test, ms.
     uint32_t toggledBeforeLastStopMs() const { return toggledBeforeStopMs_; }
 
@@ -254,6 +303,7 @@ private:
         IdleTest,       // 1
         PinHigh,        // 2, pin held high
         PinHighRelease, // 2, pin low again
+        FloatLead,      // 2b without step 2: the load on, pin low, 100 ms
         Float,          // 2b, pin an input
         FloatRelease,   // 2b, pin low again
         Start,          // 3
@@ -284,6 +334,7 @@ private:
     void doIdleTest(const KeepAliveReadbacks &rb);
     void doPinHigh(const KeepAliveReadbacks &rb);
     void doPinHighRelease(const KeepAliveReadbacks &rb);
+    void doFloatLead(const KeepAliveReadbacks &rb);
     void doFloat(const KeepAliveReadbacks &rb);
     void doFloatRelease(const KeepAliveReadbacks &rb);
     void doStart(const KeepAliveReadbacks &rb);
@@ -299,6 +350,9 @@ private:
     {
         return rb.applied == KeepAliveRequest::Run && rb.nowMs - rb.appliedSinceMs >= kMinToggleBeforeStopMs;
     }
+    // Rule 19: steps 5, 5b and 6 and rule 6 need current windows, and a
+    // channel resting inside its limits.
+    bool currentUsable() const { return in_.currentSenseAvailable && !windowLost_ && !restLost_; }
     void beginStopTest(const KeepAliveReadbacks &rb);
     void doStopTest(const KeepAliveReadbacks &rb);
     // Step 9 passed its absolute limits: the band, or a commissioning sample.
@@ -308,6 +362,13 @@ private:
     void forgetReference();
     bool restReadbackGateDrain() const;
     void doFault();
+    // 19.10 and rules 18, 19: the supply monitor and the rest levels, from
+    // every new window. False when it raised a fault.
+    bool watchSupply(MonoMs now);
+    bool restWindow(const CurrentReading &w) const;
+    bool supplyInRange() const;
+    bool dieTempForCommissioning() const;
+    void noteSkippedChecks();
 
     // Bus helpers: false on any error, after handling it (fault or trip).
     bool write(uint8_t r, uint8_t v, HwCheck onError);
@@ -377,6 +438,27 @@ private:
     std::array<uint16_t, kCommissionSamples> sampleRelay_{};
     uint8_t samples_ = 0;
     uint8_t commissionCycles_ = 0; // this boot
+
+    // Commissioning attempts (19.7 items 1 and 2).
+    MonoMs nextCommissionMs_ = 0;
+
+    // Supply monitor and rest levels (19.10).
+    uint32_t lastWindowSeq_ = 0;
+    int32_t vinMv_ = -1;
+    bool vinAbsent_ = false;
+    MonoMs vinAbsentSinceMs_ = 0;
+    bool acSteady_ = false;
+    MonoMs acSinceMs_ = 0;
+    int32_t restLoMv_ = -1;
+    int32_t restHiMv_ = -1;
+    bool restLost_ = false;
+    bool windowLost_ = false; // a step waited for a window in vain
+    uint32_t checksSkipped_ = 0;
+    bool skipNoted_ = false; // this start's skip is counted
+
+    // 19.8: trips with no valve bit low, not counted against an output.
+    uint32_t idleTrips_ = 0;
+    uint8_t idleTripsInRow_ = 0;
 
     std::atomic<bool> emergency_{false};
 };

@@ -36,6 +36,13 @@ struct CurrentMonitorConfig {
     uint16_t shortCircuitMa = 3000;
     // Consecutive samples needed before a fault is declared.
     uint8_t confirmSamples = 3;
+    // Current that rises while no output switches (a failed-short output
+    // device adding its valve, firmware architecture section 22 gap 2): the
+    // run's level is the mean of the first kRiseBaselineSamples settled
+    // samples after the last output change; a sample above it by more than
+    // riseMinMa and riseFraction of it counts. 0 disables.
+    uint16_t riseMinMa = 40;
+    float riseFraction = 0.2f;
     std::array<CurrentWindow, kMaxZones> zone{};
     CurrentWindow master{};
 };
@@ -46,6 +53,7 @@ enum class CurrentFault : uint8_t {
     OverCurrent,      // above the expected window: shorted coil, wrong valve
     ShortCircuit,     // above the absolute limit
     CurrentWhileIdle, // current with every output off: output stuck on
+    CurrentRose,      // current rose with no output switched: another output may have failed short
 };
 
 const char *toString(CurrentFault f);
@@ -58,6 +66,7 @@ struct CurrentVerdict {
 class CurrentMonitor {
 public:
     static constexpr uint8_t kMasterBit = kMaxZones;
+    static constexpr uint8_t kRiseBaselineSamples = 2;
 
     void configure(const CurrentMonitorConfig &cfg);
 
@@ -102,6 +111,9 @@ private:
     CurrentFault pending_ = CurrentFault::None;
     uint8_t count_ = 0;
     CurrentFault reported_ = CurrentFault::None; // condition reported for lastMask_
+    // The run's level since the last output change (CurrentRose).
+    uint32_t baseSum_ = 0;
+    uint8_t baseCount_ = 0;
     std::array<uint16_t, kMaxZones + 1> observed_{};
     std::array<uint32_t, kMaxZones + 1> runSum_{};
     std::array<uint32_t, kMaxZones + 1> runCount_{};

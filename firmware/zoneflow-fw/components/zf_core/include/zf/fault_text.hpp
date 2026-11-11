@@ -50,7 +50,12 @@
     X(MainsSignal, "mains_signal", "Mains signal wrong", "")                                                           \
     X(KeepAliveBridged, "keepalive_bridged", "Safety signal disturbed", "")                                            \
     X(RelayGateBleed, "relay_gate_bleed", "Valve relay driver faulty", "")                                             \
-    X(NotCommissioned, "not_commissioned", "Safety timing not learned", "")
+    X(NotCommissioned, "not_commissioned", "Safety timing not learned", "")                                            \
+    X(SupplyLow, "supply_low", "24 V AC supply too low", "")                                                           \
+    X(SupplyHigh, "supply_high", "24 V AC supply too high", "")                                                        \
+    X(RectifierFault, "rectifier_fault", "Power input circuit failed", "")                                             \
+    X(SupplyOverVoltage, "supply_over_voltage", "Logic supply too high", "")                                           \
+    X(LatchInputHeld, "latch_input_held", "Protection held on", "")
 
 namespace zf {
 

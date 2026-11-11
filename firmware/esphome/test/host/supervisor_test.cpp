@@ -27,7 +27,8 @@ struct Rig {
   zf::test::FakeReferenceStore reference = zf::test::StageRig::storeWith(true);
   Supervisor sup;
   float flow_lpm = -1.0f;
-  bool ticking = true;  // false: the ESPHome main loop is stalled
+  bool ticking = true;       // false: the ESPHome main loop is stalled
+  bool raw_windows = false;  // feed raw ADC windows, as the device does, instead of readings
 
   static SupervisorConfig defaults() {
     SupervisorConfig c;
@@ -46,10 +47,15 @@ struct Rig {
     zfe::SupervisorInputs in;
     in.ac_present = board.acPresent;
     in.mains_milli_hz = 50000;
-    in.reading = board.window();
+    if (raw_windows)
+      in.window = board.windowStats();
+    else
+      in.reading = board.window();
     in.current_sense_available = true;
     in.sensor_supply_on = true;
     in.flow_lpm = flow_lpm;
+    in.die_temp_known = true;  // room temperature: commissioning allowed (19.7 item 2)
+    in.die_temp_c = 35.0f;
     return in;
   }
   // 5 ms keep-alive interrupt periods, a control tick every 50 ms.
@@ -161,7 +167,7 @@ TEST(Supervisor, BackToBackRunsShareOneBudget) {
   EXPECT_LE(second.acceptedSec, 21u);  // 60 s per zone, not per run
 }
 
-TEST(Supervisor, OpenValveIsStoppedAndLockedOutUntilCleared) {
+TEST(Supervisor, OpenValveIsStoppedAndReportedButNotLockedOut) {
   // Without a master valve. With one, the board measures master plus zone
   // (one shunt), so a 250 mA master alone already fills the summed window of
   // 160 to 1400 mA: an open zone is then found only with its min_current set
@@ -175,19 +181,27 @@ TEST(Supervisor, OpenValveIsStoppedAndLockedOutUntilCleared) {
   ASSERT_TRUE(r.run_until([&] { return r.sup.zone_fault(2) != ZoneFault::None; }, 15000));
   EXPECT_EQ(r.sup.zone_fault(2), ZoneFault::OpenCircuit);
   EXPECT_EQ(r.sup.zone_state(2), ValveState::Off);
-  EXPECT_TRUE(r.sup.zone_locked_out(2));
   EXPECT_FALSE(r.zone_driven(2));
-  EXPECT_EQ(r.sup.start_zone(2, 60).error, StartError::LockedOut);
+  // zf/diag/zone_fault_policy.hpp, the same in both firmwares: an open wire
+  // is not locked out. The next start tries again; nobody has to visit the
+  // controller once the wire is fixed.
+  EXPECT_FALSE(r.sup.zone_locked_out(2));
+  EXPECT_FALSE(r.sup.any_latched_fault());
   // The Faults text sensor uses the words of the display and the web UI
   // (zf/fault_text.hpp), with the zone's name when it has one.
   std::array<const char *, zf::kMaxZones> names{};
   EXPECT_EQ(zfe::faults_text(r.sup, 8, names), "Zone 3: no current");
   names[2] = "Roses";
   EXPECT_EQ(zfe::faults_text(r.sup, 8, names), "Roses: no current");
-  r.sup.clear_faults();
+  // Someone fixes the wire; the next run draws its current and the report
+  // clears itself.
+  r.board.valveMa[2] = 300;
+  ASSERT_TRUE(r.run_until([&] { return r.idle(); }, 15000));
+  ASSERT_TRUE(r.sup.start_zone(2, 3).ok());
+  ASSERT_TRUE(r.run_until([&] { return r.zone_driven(2); }, 12000));
+  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_state(2) == ValveState::Off; }, 6000));
+  EXPECT_EQ(r.sup.zone_fault(2), ZoneFault::None);
   EXPECT_EQ(zfe::faults_text(r.sup, 8, names), "No faults");
-  EXPECT_FALSE(r.sup.zone_locked_out(2));
-  EXPECT_TRUE(r.sup.start_zone(2, 60).ok());
 }
 
 TEST(Supervisor, FaultTextComesFromTheSharedTable) {
@@ -433,3 +447,60 @@ TEST(Supervisor, RunBudgetAndLatchedFaultSurviveASoftwareRestart) {
 }
 
 }  // namespace
+
+// zf/diag/zone_fault_policy.hpp: the same table as the standalone firmware
+// (test/host/soak_gaps_test.cpp there). A DC component is a half-dead output
+// on the board: locked out until cleared.
+TEST(Supervisor, DcComponentLocksTheZoneOutAsInTheStandaloneFirmware) {
+  SupervisorConfig c = Rig::defaults();
+  c.master_enabled = false;
+  Rig r(c);
+  r.raw_windows = true;
+  r.board.halfWaveOutput = 1;
+  ASSERT_TRUE(r.run_until([&] { return r.idle(); }, 12000));
+  ASSERT_TRUE(r.sup.start_zone(1, 120).ok());
+  ASSERT_TRUE(r.run_until([&] { return r.sup.zone_fault(1) != ZoneFault::None; }, 15000));
+  EXPECT_EQ(r.sup.zone_fault(1), ZoneFault::DcCurrent);
+  EXPECT_TRUE(r.sup.zone_locked_out(1));
+  EXPECT_EQ(r.sup.start_zone(1, 60).error, StartError::LockedOut);
+  EXPECT_TRUE(zf::kDcComponentPolicy.lockOut);
+  EXPECT_FALSE(zf::zoneFaultPolicy(zf::CurrentFault::OpenCircuit).lockOut);
+}
+
+// Firmware architecture section 22, gap 2: a triac that fails short during
+// another zone's run is found by the rise in current, and rule 6 opens the
+// relay within a second.
+TEST(Supervisor, FailedShortOutputDuringAnotherZonesRunIsFoundAtOnce) {
+  SupervisorConfig c = Rig::defaults();
+  c.master_enabled = false;
+  Rig r(c);
+  ASSERT_TRUE(r.run_until([&] { return r.idle(); }, 12000));
+  ASSERT_TRUE(r.sup.start_zone(0, 300).ok());
+  ASSERT_TRUE(r.run_until([&] { return r.zone_driven(0); }, 12000));
+  r.run(3000);
+  r.board.shortedOutputMa = 250;
+  const uint64_t at = r.clock.mono;
+  ASSERT_TRUE(r.run_until([&] { return !r.board.relayClosed(); }, 3000));
+  EXPECT_LE(r.clock.mono - at, 1000u);
+  r.run(200);
+  EXPECT_TRUE(r.sup.hardware_fault());
+  EXPECT_EQ(r.sup.stage().fault, zf::HwCheck::OutputShorted);
+  EXPECT_EQ(r.sup.zone_fault(0), ZoneFault::None);
+}
+
+// Hardware design 19.10 and rule 19 through the ESPHome glue.
+TEST(Supervisor, SupplyLowAndALostMeasurementAreConditions) {
+  Rig r;
+  r.raw_windows = true;
+  ASSERT_TRUE(r.run_until([&] { return r.idle(); }, 12000));
+  r.board.vinMonMv = 500;
+  r.run(300);
+  EXPECT_NE(r.sup.general_faults() & zfe::kCondSupplyLow, 0u);
+  std::array<const char *, zf::kMaxZones> names{};
+  EXPECT_NE(zfe::faults_text(r.sup, 8, names).find("24 V AC supply too low"), std::string::npos);
+  r.board.vinMonMv = 960;
+  r.board.restLoOffsetMv = 120;
+  r.run(300);
+  EXPECT_EQ(r.sup.general_faults() & zfe::kCondSupplyLow, 0u);
+  EXPECT_NE(r.sup.general_faults() & zfe::kCondCurrentSenseUnavailable, 0u);
+}

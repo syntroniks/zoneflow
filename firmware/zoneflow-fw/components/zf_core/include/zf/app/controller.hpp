@@ -16,6 +16,7 @@
 #include "zf/diag/current_monitor.hpp"
 #include "zf/diag/current_sense.hpp"
 #include "zf/diag/sensors.hpp"
+#include "zf/diag/zone_fault_policy.hpp"
 #include "zf/events/command.hpp"
 #include "zf/events/event_bus.hpp"
 #include "zf/events/state.hpp"
@@ -123,6 +124,7 @@ private:
     void applyConfig(const Config &cfg);
     void updateInhibit();
     void handleCurrent(const CurrentVerdict &v);
+    void handleRise(MonoMs now);
     void handleTrip(bool tripped, MonoMs now);
     void onTrip(MonoMs now);
     bool recordTrip(uint8_t bit, MonoMs now); // true: limit reached
@@ -166,6 +168,9 @@ private:
     // fault resets the count.
     uint8_t masterFaults_ = 0;
     bool masterFaultInSession_ = false;
+    bool masterOpenCircuit_ = false; // the master drew no current: ZoneOpenCircuit stays until cleared
+    // Current rose with no output switched: an output device, or the zone?
+    ShortedOutputCheck riseCheck_;
     MonoMs masterOnSinceMs_ = 0;
     // Hardware over-current latch.
     bool tripSeen_ = false;

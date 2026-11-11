@@ -50,13 +50,15 @@ constexpr uint32_t faultBit(FaultCode c) { return 1u << static_cast<unsigned>(c)
 // latches until ClearFaults.
 constexpr uint32_t kSelfClearing = faultBit(FaultCode::AcLost) | faultBit(FaultCode::TimeInvalid) |
                                    faultBit(FaultCode::CurrentSenseUnavailable) | faultBit(FaultCode::SensorSupply) |
-                                   faultBit(FaultCode::MainsSignal) | faultBit(FaultCode::NotCommissioned);
+                                   faultBit(FaultCode::MainsSignal) | faultBit(FaultCode::NotCommissioned) |
+                                   faultBit(FaultCode::SupplyLow) | faultBit(FaultCode::SupplyHigh);
 
 // Output-stage faults: they clear when the stage accepts the acknowledgement.
 constexpr uint32_t kStageFaults = faultBit(FaultCode::KeepAliveDetector) | faultBit(FaultCode::OutputExpander) |
                                   faultBit(FaultCode::RelayWelded) | faultBit(FaultCode::OutputShorted) |
                                   faultBit(FaultCode::TripLatchStuck) | faultBit(FaultCode::KeepAliveBridged) |
-                                  faultBit(FaultCode::RelayGateBleed);
+                                  faultBit(FaultCode::RelayGateBleed) | faultBit(FaultCode::RectifierFault) |
+                                  faultBit(FaultCode::SupplyOverVoltage) | faultBit(FaultCode::LatchInputHeld);
 
 constexpr int64_t kNoTrip = INT64_MIN;
 
@@ -269,6 +271,8 @@ void Controller::tick()
     in.idleThresholdMa = config_.diag.idleMaxMa;
     in.sensorSupplyOn = s.sensorSupplyOn;
     in.keepAlivePinPlain = s.keepAlivePinPlain;
+    in.dieTempKnown = s.dieTempKnown;
+    in.dieTempC = s.dieTempC;
     deps_.outputs.tick(in);
     handleStage(now);
     if (!deps_.outputs.ownsKeepAlive()) {
@@ -333,7 +337,12 @@ void Controller::tick()
     // No current sense: report it, keep watering (policy in
     // firmware-architecture.md, sensors and diagnostics). Short-circuit
     // protection then rests on the hardware trip and the output protection.
-    const bool senseLost = config_.diag.currentEnabled && !s.currentSenseAvailable;
+    // Hardware design rule 19: the output stage also counts the measurement
+    // as lost when a step waited for a window in vain or a channel rests
+    // outside its limits; it skips steps 5, 5b and 6 meanwhile, and this
+    // condition says so for as long as it lasts.
+    const bool stageLost = stage_.phase != StagePhase::None && stage_.currentLost != CurrentLoss::None;
+    const bool senseLost = config_.diag.currentEnabled && (!s.currentSenseAvailable || stageLost);
     const bool senseFault = (activeFaults_ & faultBit(FaultCode::CurrentSenseUnavailable)) != 0;
     if (senseLost && !senseFault) {
         raiseFault(FaultCode::CurrentSenseUnavailable, kNoZone);
@@ -350,6 +359,7 @@ void Controller::tick()
     if (ac_.present() && freshCurrent && !stageJudges) {
         handleCurrent(current_.evaluate(currentMa, mask, driver_.lastOpenedBit(), driver_.lastOutputChangeMs(), now));
     }
+    handleRise(now);
     if (freshCurrent && s.currentWindow.seq != 0) {
         handleDc(reading_);
     }
@@ -423,6 +433,9 @@ void Controller::handleStage(MonoMs now)
     // 19.7, the limits of step 9: a board with no stored release times
     // reports that it is not commissioned.
     checkCondition(FaultCode::NotCommissioned, !st.commissioned);
+    // 19.10: step 0 waits while VIN_MON is outside 0.60 to 1.50 V.
+    checkCondition(FaultCode::SupplyLow, st.supplyLow);
+    checkCondition(FaultCode::SupplyHigh, st.supplyHigh);
 }
 
 void Controller::handleDc(const CurrentReading &r)
@@ -442,7 +455,9 @@ void Controller::handleDc(const CurrentReading &r)
     dcWindows_ = 0;
     const uint8_t bit = driver_.lastOpenedBit();
     if (bit < kMaxZones && (mask & (1u << bit)) != 0) {
+        // zone_fault_policy.hpp: a half-dead output on the board, locked out.
         driver_.stop(bit, StopReason::Fault);
+        driver_.setLockout(bit, kDcComponentPolicy.lockOut);
         zoneFault_[bit] = FaultCode::ZoneDcCurrent;
         raiseFault(FaultCode::ZoneDcCurrent, bit);
     } else {
@@ -490,6 +505,7 @@ void Controller::handleCurrent(const CurrentVerdict &v)
         return;
     case CurrentFault::ShortCircuit:
     case CurrentFault::OverCurrent: {
+        static_assert(zoneFaultPolicy(CurrentFault::OverCurrent).lockOut, "zone_fault_policy.hpp");
         if (v.outputBit == ZoneDriver::kMasterBit) {
             masterFaultInSession_ = true; // before stopAll: closing the master must not count as clean
         }
@@ -509,20 +525,51 @@ void Controller::handleCurrent(const CurrentVerdict &v)
         return;
     }
     case CurrentFault::OpenCircuit:
+        // zone_fault_policy.hpp: stopped and reported, not locked out; the
+        // next run inside the zone's window clears the report.
+        static_assert(!zoneFaultPolicy(CurrentFault::OpenCircuit).lockOut, "zone_fault_policy.hpp");
         if (zone != kNoZone) {
             driver_.stop(zone, StopReason::Fault);
             zoneFault_[zone] = FaultCode::ZoneOpenCircuit;
         } else {
             driver_.stopAll(StopReason::Fault);
             scheduler_.stop();
+            masterOpenCircuit_ = true;
         }
         raiseFault(FaultCode::ZoneOpenCircuit, zone);
+        return;
+    case CurrentFault::CurrentRose:
+        // zone_fault_policy.hpp: every output off at once. The output stage
+        // checks rule 6 with every valve off within one window; handleRise()
+        // blames the zone if it finds nothing.
+        driver_.stopAll(StopReason::Fault);
+        scheduler_.stop();
+        riseCheck_.begin(v.outputBit, deps_.clock.monoMs());
+        stateDirty_ = true;
         return;
     case CurrentFault::CurrentWhileIdle:
         // Firmware already has every output off; report so a human checks
         // the output stage.
         raiseFault(FaultCode::CurrentWhileIdle, kNoZone);
         return;
+    }
+}
+
+void Controller::handleRise(MonoMs now)
+{
+    if (!riseCheck_.active()) {
+        return;
+    }
+    if ((activeFaults_ & (faultBit(FaultCode::OutputShorted) | faultBit(FaultCode::CurrentWhileIdle))) != 0) {
+        riseCheck_.idleCurrentFound(); // a failed-short output device: the stage opened the relay
+        return;
+    }
+    const uint8_t bit = riseCheck_.poll(now);
+    if (bit != 0xFF) {
+        CurrentVerdict v;
+        v.fault = CurrentFault::OverCurrent; // the extra current went through the zone itself
+        v.outputBit = bit;
+        handleCurrent(v);
     }
 }
 
@@ -649,6 +696,7 @@ void Controller::clearFaults()
     current_.rearm(); // a current fault that is still present is raised again
     zoneFault_.fill(FaultCode::None);
     masterFaults_ = 0;
+    masterOpenCircuit_ = false;
     for (auto &t : tripAtMs_) {
         t.fill(kNoTrip); // a cleared output gets its three trips again
     }
@@ -887,6 +935,18 @@ void Controller::trackRun(ZoneIndex zone, ValveState state, StopReason reason)
     d.plannedSec = r.plannedSec;
     d.actualSec = static_cast<uint16_t>(std::min<MonoMs>((now - r.openedMs + 500u) / 1000u, 0xFFFFu));
     d.currentMa = current_.runMeanMa(static_cast<uint8_t>(zone));
+    // zone_fault_policy.hpp: an open circuit clears itself once the zone has
+    // run with its current inside its window (the wire was fixed).
+    if (zoneFault_[zone] == FaultCode::ZoneOpenCircuit && d.currentMa > 0 &&
+        zoneFaultPolicy(CurrentFault::OpenCircuit).clearsOnGoodRun) {
+        zoneFault_[zone] = FaultCode::None;
+        const bool another = std::any_of(zoneFault_.begin(), zoneFault_.end(),
+                                         [](FaultCode c) { return c == FaultCode::ZoneOpenCircuit; });
+        if (!another && !masterOpenCircuit_) {
+            clearCondition(FaultCode::ZoneOpenCircuit);
+        }
+        stateDirty_ = true;
+    }
     // Two zones open together share the volume measured meanwhile.
     d.centilitres =
         config_.flow.enabled ? static_cast<int32_t>(std::min(flow_.litresSince(r.startPulses) * 100.0f, 2.0e9f)) : -1;

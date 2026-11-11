@@ -108,8 +108,29 @@ const char *toString(HwCheck c)
         return "stop_relay_band";
     case HwCheck::KeepAlivePinRouted:
         return "keepalive_pin_routed";
+    case HwCheck::RectifierFault:
+        return "rectifier_fault";
+    case HwCheck::SupplyOverVoltage:
+        return "supply_over_voltage";
+    case HwCheck::LatchInputHeld:
+        return "latch_input_held";
     case HwCheck::Count:
         break;
+    }
+    return "?";
+}
+
+const char *toString(CurrentLoss l)
+{
+    switch (l) {
+    case CurrentLoss::None:
+        return "none";
+    case CurrentLoss::Unavailable:
+        return "unavailable";
+    case CurrentLoss::NoWindow:
+        return "no_window";
+    case CurrentLoss::RestLevel:
+        return "rest_level";
     }
     return "?";
 }
@@ -117,11 +138,14 @@ const char *toString(HwCheck c)
 const char *hwCheckStep(HwCheck c)
 {
     switch (c) {
+    case HwCheck::RectifierFault:
+        return "0";
     case HwCheck::IdleDriveEnabled:
     case HwCheck::IdleRelayOn:
     case HwCheck::IdleExpanderAnswers:
     case HwCheck::IdleDriveSupplyOn:
     case HwCheck::IdleRelayGateDrain:
+    case HwCheck::SupplyOverVoltage:
         return "1";
     case HwCheck::PinHighDriveEnabled:
     case HwCheck::PinHighRelayOn:
@@ -133,6 +157,7 @@ const char *hwCheckStep(HwCheck c)
     case HwCheck::StartDriveTimeout:
     case HwCheck::StartRelayTimeout:
     case HwCheck::StartNoAcknowledge:
+    case HwCheck::LatchInputHeld:
         return "3";
     case HwCheck::ExpanderInputs:
         return "4a";
@@ -173,6 +198,12 @@ const char *hwCheckStep(HwCheck c)
 
 bool hwCheckNeedsRepair(HwCheck c)
 {
+    // 19.7, the fault state: steps 1, 2, 2b, 5b and 9, the rectifier fault of
+    // 19.10, the over-voltage of rule 18 (a step 1 check) and a held set
+    // input of the latch (19.8).
+    if (c == HwCheck::RectifierFault || c == HwCheck::LatchInputHeld) {
+        return true;
+    }
     const std::string_view step = hwCheckStep(c);
     return step == "1" || step == "2" || step == "2b" || step == "5b" || step == "9";
 }
@@ -258,6 +289,7 @@ void OutputStage::begin(Proc p)
 {
     proc_ = p;
     pinHighThisProc_ = false;
+    skipNoted_ = false;
     enter(Step::Precheck);
 }
 
@@ -307,12 +339,48 @@ void OutputStage::fail(HwCheck check)
     proc_ = Proc::None;
     lastActiveEndMs_ = clock_.monoMs();
     enter(Step::Fault);
+    // Every output off now, not a tick later (firmware architecture section
+    // 22, gap 6). The keep-alive is already low, so the hardware follows
+    // within the detectors' hold-up whatever this write does.
+    releaseAll();
+}
+
+void OutputStage::releaseAll(bool recoverBus)
+{
+    // One pair write switches every valve and the relay off: port 1 (zones 5
+    // to 8) follows port 0 (zones 1 to 4, the master, RLY_ON) by at most
+    // kPairWriteSkewNs. Then every pin an input. Errors are ignored: the
+    // keep-alive is stopped, so the expander goes into reset regardless.
+    const BusStatus st = bus_.probe();
+    if (st == BusStatus::Ok) {
+        if (bus_.writePair(reg::kOutput0, layout_.outputsOff(0), layout_.outputsOff(1)) == BusStatus::Ok) {
+            (void)bus_.writePair(reg::kConfig0, 0xFF, 0xFF);
+        }
+    } else if (st != BusStatus::Nack && recoverBus) {
+        bus_.recover();
+    }
 }
 
 void OutputStage::onTrip()
 {
+    // 19.8: a trip with no valve bit low was not caused by load current. It
+    // is not counted against an output; the keep-alive is held low for 1.5 s
+    // and the sequence tries once more. A second one in a row means the set
+    // input of the latch is held low: 3V3 above 4 V (U13 acting), U13 or its
+    // divider, U6B, U6C or the chain R48 to R51.
+    const bool load = valveBitsLow() > 0 || weldBitOn_;
     guard_.setRequest(KeepAliveRequest::Off);
-    ++tripSeq_;
+    if (!load) {
+        ++idleTrips_;
+        if (++idleTripsInRow_ >= 2) {
+            idleTripsInRow_ = 0;
+            fail(HwCheck::LatchInputHeld);
+            return;
+        }
+    } else {
+        ++tripSeq_;
+        idleTripsInRow_ = 0;
+    }
     relayClosed_ = false;
     weldBitOn_ = false;
     outShadow_ = {0xFF, 0xFF};
@@ -419,10 +487,23 @@ OutputStageStatus OutputStage::status() const
     s.selfTestsPassed = passed_;
     // From the 100 ms before the pin floats to 100 ms after it is driven
     // again, so that the load is on for the whole 0.5 s (rule 17).
-    s.floatTest = step_ == Step::PinHighRelease || step_ == Step::Float || step_ == Step::FloatRelease;
+    s.floatTest = step_ == Step::PinHighRelease || step_ == Step::FloatLead || step_ == Step::Float ||
+                  step_ == Step::FloatRelease;
     s.commissioned = reference_.valid();
     s.reference = reference_;
     s.commissionSamples = samples_;
+    s.commissionWaitingForTemperature = !reference_.valid() && !dieTempForCommissioning();
+    s.vinMonMv = vinMv_;
+    s.supplyLow = vinMv_ >= kVinAbsentMv && vinMv_ < kVinMinMv;
+    s.supplyHigh = vinMv_ > kVinMaxMv;
+    s.currentLost = !in_.currentSenseAvailable ? CurrentLoss::Unavailable
+                    : windowLost_               ? CurrentLoss::NoWindow
+                    : restLost_                 ? CurrentLoss::RestLevel
+                                                : CurrentLoss::None;
+    s.checksSkipped = checksSkipped_;
+    s.restLoMv = restLoMv_;
+    s.restHiMv = restHiMv_;
+    s.idleTrips = idleTrips_;
     return s;
 }
 
@@ -585,6 +666,10 @@ void OutputStage::tick(const StageTickInput &in)
     if (!refLoaded_) {
         loadReference();
     }
+    // 19.10, rules 18 and 19: the supply monitor and the rest levels.
+    if (!watchSupply(now)) {
+        return;
+    }
     // Rule 16 and contract 19.4: no peripheral may drive the keep-alive pin.
     if (!in.keepAlivePinPlain && step_ != Step::Fault) {
         fail(HwCheck::KeepAlivePinRouted);
@@ -635,9 +720,18 @@ void OutputStage::tick(const StageTickInput &in)
             fail(HwCheck::LatchStuck); // 19.8: latch or detector A faulty
         } else if (wanted_) {
             begin(Proc::Run);
-        } else if (!reference_.valid() && commissionCycles_ < cfg_.maxCommissionCycles) {
-            ++commissionCycles_;
-            begin(Proc::Commission); // 19.7: steps 3 and 9 until five stop tests agree
+        } else if (!reference_.valid() && now >= nextCommissionMs_) {
+            // 19.7 items 1 and 2: commission while nothing is stored, only
+            // while the die reads 25 to 50 C; an attempt is ten cycles at
+            // most, and the next one follows 10 minutes later.
+            if (!dieTempForCommissioning() || commissionCycles_ >= cfg_.maxCommissionCycles) {
+                commissionCycles_ = 0;
+                samples_ = 0;
+                nextCommissionMs_ = now + cfg_.commissionRetryMs;
+            } else {
+                ++commissionCycles_;
+                begin(Proc::Commission); // steps 0, 1, 3, 4a and 9 until five stop tests agree
+            }
         } else if (in.sensorSupplyOn && (pollRequested_ || now - lastActiveEndMs_ >= cfg_.pollIntervalMs ||
                                          (pinHighDone_ && now - lastPinHighMs_ >= kPinHighMaxAgeMs))) {
             pollRequested_ = false;
@@ -655,6 +749,9 @@ void OutputStage::tick(const StageTickInput &in)
         break;
     case Step::PinHighRelease:
         doPinHighRelease(rb);
+        break;
+    case Step::FloatLead:
+        doFloatLead(rb);
         break;
     case Step::Float:
         doFloat(rb);
@@ -725,10 +822,7 @@ void OutputStage::doPrecheck(const KeepAliveReadbacks &rb)
         // keep-alive net bridged to a net that toggles by itself (review A2
         // appendix A) they never do. Every pin back to input now rather
         // than after the 2.5 s below; step 1 then judges the board.
-        if (bus_.probe() == BusStatus::Ok) {
-            (void)bus_.write(reg::kConfig0, 0xFF);
-            (void)bus_.write(reg::kConfig1, 0xFF);
-        }
+        releaseAll();
     }
     if (rb.overCurrentLatched) {
         onTrip();
@@ -737,6 +831,22 @@ void OutputStage::doPrecheck(const KeepAliveReadbacks &rb)
     if (rb.applied != KeepAliveRequest::Off ||
         since(rb.nowMs, rb.nowMs, rb.appliedSinceMs) < kKeepAliveLowBeforeStartMs) {
         return; // wait
+    }
+    if (proc_ == Proc::Run && !wanted_) {
+        proc_ = Proc::None;
+        enter(Step::Idle);
+        return;
+    }
+    // 19.10: VIN_MON 0.60 to 1.50 V. Below, a brown-out leaves U1 off and
+    // B_RB low, which step 1 would take for a relay fault; above, the supply
+    // is beyond what the board allows. Wait in both cases; status() reports
+    // supply low or supply high, which clear themselves.
+    if (!supplyInRange()) {
+        if (proc_ == Proc::Commission || proc_ == Proc::Poll) {
+            proc_ = Proc::None; // tried again later
+            enter(Step::Idle);
+        }
+        return;
     }
     if (proc_ == Proc::Run && !wanted_) {
         proc_ = Proc::None;
@@ -795,12 +905,24 @@ void OutputStage::doIdleTest(const KeepAliveReadbacks &rb)
         fail(HwCheck::IdleExpanderAnswers);
         return;
     }
+    // Rule 18: both channels resting above 0.90 V means 3V3 is above about
+    // 3.6 V. (watchSupply() acts on the window as it arrives; this is the
+    // check as step 1 states it.)
+    if (restLoMv_ > kRestOverVoltageMv && restHiMv_ > kRestOverVoltageMv) {
+        fail(HwCheck::SupplyOverVoltage);
+        return;
+    }
     const MonoMs now = clock_.monoMs();
     const bool pinHighDue = !pinHighDone_ || now - lastPinHighMs_ >= kPinHighMaxAgeMs;
     if (proc_ == Proc::Startup || (proc_ == Proc::Run && cfg_.pinHighTestEveryRun) || pinHighDue) {
         pinHighThisProc_ = true;
         guard_.setRequest(KeepAliveRequest::HoldHigh);
         enter(Step::PinHigh);
+    } else if (proc_ == Proc::Run) {
+        // Step 2b at start-up and before every run, however often step 2
+        // runs (19.7, note to step 2): the load first, then the float.
+        guard_.setRequest(KeepAliveRequest::Off);
+        enter(Step::FloatLead);
     } else {
         guard_.setRequest(KeepAliveRequest::Run);
         enter(Step::Start);
@@ -833,6 +955,18 @@ void OutputStage::doPinHighRelease(const KeepAliveReadbacks &rb)
     // is already set, so the display, the backlight PWM and the PSRAM are
     // busy before the pin floats (rule 17).
     if (rb.applied != KeepAliveRequest::Off || since(rb.nowMs, rb.nowMs, rb.appliedSinceMs) < kPinHighReleaseMs) {
+        return;
+    }
+    guard_.setRequest(KeepAliveRequest::Float);
+    enter(Step::Float);
+}
+
+void OutputStage::doFloatLead(const KeepAliveReadbacks &rb)
+{
+    // Step 2b without step 2 before it: the pin stays low while the load
+    // (status().floatTest) runs for 100 ms, then it floats.
+    (void)rb;
+    if (clock_.monoMs() - stepSinceMs_ < kFloatLoadLeadMs) {
         return;
     }
     guard_.setRequest(KeepAliveRequest::Float);
@@ -949,6 +1083,7 @@ void OutputStage::doSetup()
         fail(HwCheck::ExpanderInputs); // a strap does not change
         return;
     }
+    idleTripsInRow_ = 0; // steps 3 and 4a passed: the latch's set input is free
     if (proc_ == Proc::Poll || proc_ == Proc::Commission) {
         enter(Step::PollRead);
         return;
@@ -1033,10 +1168,14 @@ void OutputStage::doWeld()
     const uint8_t port = b.port & 1u;
     const auto m = static_cast<uint8_t>(1u << b.bit);
     if (stepFirstTick_ && !weldBitOn_) {
-        if (!have || !in_.currentSenseAvailable) {
+        if (!have || !currentUsable()) {
             // Nothing to test with: no known first output, or no current
-            // readings (zones still run without them; firmware architecture
-            // section 3, current sense unavailable). Step 5b needs the same.
+            // readings. Rule 19: zones still run without them, and the
+            // condition is reported for as long as it lasts (status()
+            // currentLost, counted in checksSkipped). Step 5b needs the same.
+            if (!currentUsable()) {
+                noteSkippedChecks();
+            }
             enter(Step::Relay);
             doRelay();
             return;
@@ -1076,6 +1215,15 @@ void OutputStage::doWeld()
     lastValveOffMs_ = now;
     if (got && r.ma > in_.idleThresholdMa) {
         fail(HwCheck::RelayWelded);
+        return;
+    }
+    if (!got) {
+        // No window in 0.5 s: the current measurement is lost (rule 19).
+        // Step 5 is not passed, it is skipped, and that is reported.
+        windowLost_ = true;
+        noteSkippedChecks();
+        enter(Step::Relay);
+        doRelay();
         return;
     }
     bleedPhase_ = 0;
@@ -1169,6 +1317,10 @@ void OutputStage::doGateBleed()
         fail(HwCheck::GateBleed);
         return;
     }
+    if (!got) {
+        windowLost_ = true; // rule 19, as in step 5
+        noteSkippedChecks();
+    }
     enter(Step::Relay);
     doRelay();
 }
@@ -1200,17 +1352,21 @@ void OutputStage::doRelay()
     if (now - relayClosedMs_ < kRelaySettleMs) {
         return;
     }
-    if (in_.currentSenseAvailable) {
+    if (currentUsable()) {
         CurrentReading r;
         const MonoMs from = relayClosedMs_ + kRelaySettleMs;
         if (!windowSince(from, r)) {
             if (now - from <= kWindowWaitMs) {
                 return;
             }
+            windowLost_ = true; // rule 19: skipped, and reported
+            noteSkippedChecks();
         } else if (r.ma > in_.idleThresholdMa) {
             fail(HwCheck::OutputShorted);
             return;
         }
+    } else {
+        noteSkippedChecks();
     }
     enter(Step::Ready);
 }
@@ -1252,7 +1408,7 @@ void OutputStage::doReady(const KeepAliveReadbacks &rb)
     // off and the relay settled count.
     const MonoMs now = clock_.monoMs();
     CurrentReading r;
-    if (valveBitsLow() == 0 && in_.currentSenseAvailable &&
+    if (valveBitsLow() == 0 && currentUsable() &&
         windowSince(std::max(lastValveOffMs_ + kAfterOffSettleMs, relayClosedMs_ + kRelaySettleMs), r) &&
         r.ma > in_.idleThresholdMa) {
         fail(HwCheck::OutputShorted);
@@ -1393,6 +1549,13 @@ bool OutputStage::judgeAgainstReference(uint32_t tA, uint32_t tB)
 
 void OutputStage::learn(uint32_t tA, uint32_t tB)
 {
+    // 19.7 item 2: a sample only while the die reads 25 to 50 C (the board
+    // then 10 to 40 C, the range the simulation covers). The five are in a
+    // row: one taken outside the window starts the count again.
+    if (!dieTempForCommissioning()) {
+        samples_ = 0;
+        return;
+    }
     const bool plausible =
         tA >= kLearnDriveMinMs && tA <= kLearnDriveMaxMs && tB >= kLearnRelayMinMs && tB <= kLearnRelayMaxMs;
     if (!plausible) {
@@ -1448,15 +1611,86 @@ void OutputStage::forgetReference()
 void OutputStage::doFault()
 {
     // Keep-alive low. If the expander still answers (detector A stuck on),
-    // every pin back to input, on every tick.
+    // every output off and every pin back to input, on every tick.
     guard_.setRequest(KeepAliveRequest::Off);
-    const BusStatus st = bus_.probe();
-    if (st == BusStatus::Ok) {
-        (void)bus_.write(reg::kConfig0, 0xFF);
-        (void)bus_.write(reg::kConfig1, 0xFF);
-    } else if (st != BusStatus::Nack) {
-        bus_.recover();
+    releaseAll(true);
+}
+
+bool OutputStage::dieTempForCommissioning() const
+{
+    return in_.dieTempKnown && in_.dieTempC >= kCommissionTempMinC && in_.dieTempC <= kCommissionTempMaxC;
+}
+
+bool OutputStage::supplyInRange() const
+{
+    // No VIN_MON reading (the ADC path failed): rule 19 reports the lost
+    // measurement and step 0 goes on without the supply check, as zones
+    // still run without current readings.
+    return vinMv_ < 0 || (vinMv_ >= kVinMinMv && vinMv_ <= kVinMaxMv);
+}
+
+void OutputStage::noteSkippedChecks()
+{
+    if (!skipNoted_ && proc_ == Proc::Run) {
+        skipNoted_ = true;
+        ++checksSkipped_;
     }
+}
+
+bool OutputStage::restWindow(const CurrentReading &w) const
+{
+    // A window taken wholly with the keep-alive stopped: the amplifiers rest
+    // at VB, 0.2385 times 3V3 (19.10).
+    if (w.meanLoMv < 0 || w.meanHiMv < 0 || w.startMs < lastActiveEndMs_) {
+        return false;
+    }
+    return step_ == Step::Idle || step_ == Step::NoAc || step_ == Step::Precheck || step_ == Step::IdleTest;
+}
+
+bool OutputStage::watchSupply(MonoMs now)
+{
+    const CurrentReading &w = in_.current;
+    if (w.seq != 0 && w.seq != lastWindowSeq_) {
+        lastWindowSeq_ = w.seq;
+        windowLost_ = false; // a window arrived
+        vinMv_ = w.vinMonMv;
+        if (restWindow(w)) {
+            restLoMv_ = w.meanLoMv;
+            restHiMv_ = w.meanHiMv;
+            if (restLoMv_ > kRestOverVoltageMv && restHiMv_ > kRestOverVoltageMv) {
+                // Rule 18: 3V3 above about 3.6 V. U13 removes drive by
+                // hardware above 4.0 V; firmware stops the keep-alive and
+                // refuses runs until a person confirms the repair.
+                if (fault_ == HwCheck::None) {
+                    fail(HwCheck::SupplyOverVoltage);
+                    return false;
+                }
+            }
+            restLost_ = restLoMv_ < kRestLoMinMv || restLoMv_ > kRestLoMaxMv || restHiMv_ < kRestHiMinMv ||
+                        restHiMv_ > kRestHiMaxMv;
+        }
+    }
+    // 19.10: no rectified supply while mains makes edges on AC_ZC for 2 s
+    // or more is D2, R1 or C1. Without edges it is USB power alone.
+    if (in_.acPresent) {
+        if (!acSteady_) {
+            acSteady_ = true;
+            acSinceMs_ = now;
+        }
+    } else {
+        acSteady_ = false;
+    }
+    const bool absent = vinMv_ >= 0 && vinMv_ < kVinAbsentMv;
+    if (absent && !vinAbsent_) {
+        vinAbsentSinceMs_ = now;
+    }
+    vinAbsent_ = absent;
+    if (absent && acSteady_ && now - std::max(acSinceMs_, vinAbsentSinceMs_) >= kRectifierFaultMs &&
+        fault_ == HwCheck::None) {
+        fail(HwCheck::RectifierFault);
+        return false;
+    }
+    return true;
 }
 
 } // namespace zf::hw

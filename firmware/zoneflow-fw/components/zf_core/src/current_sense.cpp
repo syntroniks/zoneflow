@@ -34,11 +34,16 @@ CurrentReading CurrentSense::process(const CurrentWindowStats &w, bool relayOpen
     r.seq = w.seq;
     r.startMs = w.startMs;
     r.endMs = w.endMs;
+    // Window means first: the supply monitor and the rest levels (19.10) are
+    // wanted even from a window whose current cannot be computed.
+    const auto mean = [](const ChannelStats &c) { return c.n > 0 ? static_cast<int32_t>(std::lround(c.meanMv())) : -1; };
+    r.relayReadbackMv = mean(w.relayRb);
+    r.vinMonMv = mean(w.vinMon);
+    r.meanLoMv = mean(w.lo);
+    r.meanHiMv = mean(w.hi);
     if (w.hi.n < cfg_.minSamples) {
         return r;
     }
-    r.meanHiMv = static_cast<int32_t>(std::lround(w.hi.meanMv()));
-    r.relayReadbackMv = w.relayRb.n > 0 ? static_cast<int32_t>(std::lround(w.relayRb.meanMv())) : -1;
     r.hiClipped = w.hi.minMv < cfg_.hiMinMv || w.hi.maxMv > cfg_.hiMaxMv;
     const bool useLo = r.hiClipped;
     if (useLo && w.lo.n < cfg_.minSamples) {

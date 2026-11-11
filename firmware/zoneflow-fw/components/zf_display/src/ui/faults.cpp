@@ -22,7 +22,8 @@ bool stageFault(FaultCode c)
 {
     return c == FaultCode::KeepAliveDetector || c == FaultCode::OutputExpander || c == FaultCode::RelayWelded ||
            c == FaultCode::OutputShorted || c == FaultCode::TripLatchStuck || c == FaultCode::KeepAliveBridged ||
-           c == FaultCode::RelayGateBleed;
+           c == FaultCode::RelayGateBleed || c == FaultCode::RectifierFault || c == FaultCode::SupplyOverVoltage ||
+           c == FaultCode::LatchInputHeld;
 }
 
 } // namespace
@@ -107,6 +108,16 @@ std::string faultTitle(const FaultItem &item)
         return tr(Str::FaultGateBleedTitle);
     case FaultCode::NotCommissioned:
         return tr(Str::FaultLearnTitle);
+    case FaultCode::SupplyLow:
+        return tr(Str::FaultSupplyLowTitle);
+    case FaultCode::SupplyHigh:
+        return tr(Str::FaultSupplyHighTitle);
+    case FaultCode::RectifierFault:
+        return tr(Str::FaultRectifierTitle);
+    case FaultCode::SupplyOverVoltage:
+        return tr(Str::FaultOverVoltageTitle);
+    case FaultCode::LatchInputHeld:
+        return tr(Str::FaultLatchHeldTitle);
     case FaultCode::None:
     case FaultCode::Count:
         break;
@@ -163,6 +174,16 @@ Str faultBody(FaultCode code)
         return Str::FaultGateBleedBody;
     case FaultCode::NotCommissioned:
         return Str::FaultLearnBody;
+    case FaultCode::SupplyLow:
+        return Str::FaultSupplyLowBody;
+    case FaultCode::SupplyHigh:
+        return Str::FaultSupplyHighBody;
+    case FaultCode::RectifierFault:
+        return Str::FaultRectifierBody;
+    case FaultCode::SupplyOverVoltage:
+        return Str::FaultOverVoltageBody;
+    case FaultCode::LatchInputHeld:
+        return Str::FaultLatchHeldBody;
     case FaultCode::None:
     case FaultCode::Count:
         break;
@@ -173,7 +194,8 @@ Str faultBody(FaultCode code)
 bool faultClearsItself(FaultCode code)
 {
     return code == FaultCode::AcLost || code == FaultCode::TimeInvalid || code == FaultCode::CurrentSenseUnavailable ||
-           code == FaultCode::SensorSupply || code == FaultCode::MainsSignal || code == FaultCode::NotCommissioned;
+           code == FaultCode::SensorSupply || code == FaultCode::MainsSignal || code == FaultCode::NotCommissioned ||
+           code == FaultCode::SupplyLow || code == FaultCode::SupplyHigh;
 }
 
 Tone faultTone(FaultCode code)

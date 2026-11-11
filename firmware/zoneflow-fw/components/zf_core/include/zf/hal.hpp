@@ -66,9 +66,13 @@ enum class HwCheck : uint8_t {
     FloatRelayOn,       // 2b: B_RB low after the float test
     WeldNoReadback,     // 5: the valve pin does not read low when its bit is driven low
     GateBleed,          // 5b: current with RLY_ON released undriven: R12 open
-    StopDriveBand,      // 9: tA outside 0.5 to 1.5 times this board's stored value
-    StopRelayBand,      // 9: tB outside 0.5 to 1.5 times this board's stored value
+    StopDriveBand,      // 9: tA outside 0.40 to 1.70 times this board's stored value
+    StopRelayBand,      // 9: tB outside 0.40 to 1.70 times this board's stored value
     KeepAlivePinRouted, // rule 16, 19.4: the keep-alive pin is not a plain GPIO (a peripheral drives it)
+    // Added with the hardware answers to section 19 (issue #41).
+    RectifierFault,    // 0, 19.10: VIN_MON under 0.10 V with mains edges for 2 s: D2, R1 or C1 failed
+    SupplyOverVoltage, // 1, rule 18: both current channels rest above 0.90 V: 3V3 above about 3.6 V (U3)
+    LatchInputHeld,    // 3, 19.8: OC low twice with no valve bit low: the latch's set input is held low
     Count,
 };
 
@@ -80,12 +84,24 @@ const char *toString(HwCheck c);
 const char *hwCheckStep(HwCheck c);
 // Steps 1, 2, 2b, 5b and 9 mean one of the layers can no longer be relied on:
 // the board needs repair, and acknowledging must be a deliberate second
-// action (hardware design 19.7, the fault state).
+// action (hardware design 19.7, the fault state). So do the rectifier fault
+// of 19.10, the over-voltage of rule 18 and a held latch input (19.8).
 bool hwCheckNeedsRepair(HwCheck c);
+
+// Why the current measurement counts as lost (hardware design 19.1 rule 19,
+// 19.10). Steps 5, 5b and 6 and rule 6 are skipped meanwhile, zones still
+// run, and the condition is reported for as long as it lasts.
+enum class CurrentLoss : uint8_t {
+    None,
+    Unavailable, // the ADC path did not start, or reports no readings
+    NoWindow,    // a step waited for a current window and none arrived
+    RestLevel,   // a current channel rests outside its limits (19.10)
+};
+const char *toString(CurrentLoss l);
 
 // Detector release times this board gave at commissioning (hardware design
 // 19.7, the limits of step 9). Step 9 then also requires each time to lie
-// within 0.5 to 1.5 times its stored value.
+// within 0.40 to 1.70 times its stored value.
 struct DetectorReference {
     uint16_t driveMs = 0; // tA, median of the commissioning stop tests
     uint16_t relayMs = 0; // tB
@@ -128,6 +144,23 @@ struct OutputStageStatus {
     bool commissioned = false;
     DetectorReference reference{};
     uint8_t commissionSamples = 0; // stop tests collected towards the reference
+    // Commissioning waits for the die temperature (19.7 item 2): true while
+    // nothing is stored and the latest reading is outside 25 to 50 C or
+    // missing.
+    bool commissionWaitingForTemperature = false;
+    // Supply monitor (19.10): the latest VIN_MON window mean, mV; -1 if none.
+    int32_t vinMonMv = -1;
+    bool supplyLow = false;  // 0.10 to 0.60 V: step 0 waits; clears itself
+    bool supplyHigh = false; // above 1.50 V: step 0 waits; clears itself
+    // Rule 19: the current measurement is lost; steps 5, 5b and 6 and rule 6
+    // are skipped while it lasts. Reported, never silent.
+    CurrentLoss currentLost = CurrentLoss::None;
+    uint32_t checksSkipped = 0; // starts that skipped steps 5, 5b and 6 for it
+    // Rest levels of the current channels, mV, from the latest window with
+    // the keep-alive stopped (19.10); -1 if none yet.
+    int32_t restLoMv = -1;
+    int32_t restHiMv = -1;
+    uint32_t idleTrips = 0; // 19.8: OC low with no valve bit low, not counted against an output
 };
 
 // What the controller hands the output stage every tick.
@@ -141,6 +174,10 @@ struct StageTickInput {
     // peripheral signal routed to it. The device reads the pin's IO_MUX and
     // GPIO matrix setting every tick.
     bool keepAlivePinPlain = true;
+    // ESP32-S3 die temperature, C, for commissioning (19.7 item 2); a
+    // commissioning sample is taken only while it reads 25 to 50 C.
+    bool dieTempKnown = false;
+    float dieTempC = 0.0f;
 };
 
 // Valve output drivers. Active level, pin numbers and drive details are the
@@ -219,6 +256,9 @@ struct SensorSample {
     // Rev A: the keep-alive pin is a plain GPIO with no peripheral routed to
     // it (hardware design 19.1 rule 16, 19.4).
     bool keepAlivePinPlain = true;
+    // Rev A: the ESP32-S3 die temperature (19.7 commissioning).
+    bool dieTempKnown = false;
+    float dieTempC = 0.0f;
 };
 
 class ISensorHal {
