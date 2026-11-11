@@ -116,6 +116,7 @@ nav:
       - Bill of materials: hardware/bom.md
       - The 4-zone build: hardware/four-zone.md
       - Ordering boards: hardware/ordering.md
+      - What a controller costs: hardware/cost.md
       - Design notes: hardware/design-notes.md
   - Enclosure:
       - enclosure/index.md

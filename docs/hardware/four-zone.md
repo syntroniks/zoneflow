@@ -21,14 +21,16 @@ zones 1 to 4 only. Both firmwares do this.
 
 ## Cost
 
-From the [BOM estimate](../design/hardware-design.md#18-bill-of-materials-and-cost-estimate),
-parts only, without PCB, assembly, extended-part fees, shipping, the coin
-cell and the enclosure, at prices checked on 2026-11-10:
+Landed cost per controller with the enclosure, from the
+[cost estimate](cost.md) at prices checked on 2026-11-11:
 
-| Build | 10 boards | 100 boards |
-|---|---|---|
-| 8-zone | 40.77 USD | 31.84 USD |
-| 4-zone | 34.48 USD | 27.04 USD |
+| Build | 5 units | 25 units | 100 units |
+|---|---|---|---|
+| 8-zone | 134.23 USD | 73.25 USD | 54.37 USD |
+| 4-zone | 126.98 USD | 66.62 USD | 48.62 USD |
+
+The 4-zone build drops 45 parts but no part type, so it pays the same
+per-order fees and the same board: it saves 5.75 to 7.25 USD.
 
 ## Firmware
 
