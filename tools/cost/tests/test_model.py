@@ -89,7 +89,22 @@ def test_every_priced_line_is_in_the_snapshot(inp):
 def test_extended_type_count(inp):
     smt = {ln.lcsc for ln in inp.lines if ln.kind == "smt" and ln.qty["8-zone"]}
     assert len(smt) == 89
-    assert sum(1 for c in smt if inp.parts[c].fee_extended) == 40
+    assert sum(1 for c in smt if inp.parts[c].fee_extended) == 35
+    assert m.fee_types(inp, "8-zone") == m.fee_types(inp, "4-zone") == 35
+
+
+def test_before_consolidation_is_the_board_as_it_was_published(inp):
+    was = m.before_consolidation(inp)
+    assert m.fee_types(was, "8-zone") == 40
+    # The totals of docs/hardware/cost.md before the five part numbers changed.
+    assert m.batch_cost(5, "8-zone", was).total == pytest.approx(627.30, abs=0.005)
+    assert m.batch_cost(100, "4-zone", was).total == pytest.approx(4800.02, abs=0.005)
+    saved = m.batch_cost(5, "8-zone", was).extended_fee - m.batch_cost(5, "8-zone", inp).extended_fee
+    assert saved == pytest.approx(5 * inp.sourced["assembly"]["economic_feeder_extended"])
+    # Every replaced number is gone from the BOM and its replacement is on it.
+    on_bom = {ln.lcsc for ln in inp.lines}
+    for new, old in m.load_replaced().items():
+        assert new in on_bom and old.lcsc not in on_bom
 
 
 # --- Whole-batch arithmetic, redone by hand from the parts of the result ---
@@ -105,9 +120,9 @@ def test_economic_fees_by_hand(inp):
     a = inp.sourced["assembly"]
     c = m.batch_cost(10, "8-zone", inp)
     expect = a["economic_setup"] + a["economic_stencil"] + a["confirm_placement"]
-    expect += 850 * 10 * a["economic_joint"] + 40 * a["economic_feeder_extended"]
+    expect += 850 * 10 * a["economic_joint"] + 35 * a["economic_feeder_extended"]
     assert c.assembly == pytest.approx(expect)
-    assert c.extended_fee == pytest.approx(40 * 3.07)
+    assert c.extended_fee == pytest.approx(35 * 3.07)
 
 
 def test_duty_is_rate_times_goods(inp):

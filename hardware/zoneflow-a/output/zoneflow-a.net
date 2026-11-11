@@ -4425,11 +4425,11 @@
 				(field
 					(name "Spec") "2.2 nF 50 V X7R")
 				(field
-					(name "MPN") "CL10B222KB8NNNC")
+					(name "MPN") "0603B222K500NT")
 				(field
-					(name "Manufacturer") "Samsung Electro-Mechanics")
+					(name "Manufacturer") "FH (Guangdong Fenghua Advanced Tech)")
 				(field
-					(name "LCSC") "C16033")
+					(name "LCSC") "C1604")
 				(field
 					(name "Footprint") "Capacitor_SMD:C_0603_1608Metric")
 				(field
@@ -4449,15 +4449,15 @@
 			)
 			(property
 				(name "MPN")
-				(value "CL10B222KB8NNNC")
+				(value "0603B222K500NT")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Samsung Electro-Mechanics")
+				(value "FH (Guangdong Fenghua Advanced Tech)")
 			)
 			(property
 				(name "LCSC")
-				(value "C16033")
+				(value "C1604")
 			)
 			(property
 				(name "Sheetname")
@@ -8303,11 +8303,11 @@
 				(field
 					(name "Spec") "BAT54S dual Schottky, series")
 				(field
-					(name "MPN") "BAT54S,215")
+					(name "MPN") "BAT54S")
 				(field
-					(name "Manufacturer") "Nexperia")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C47546")
+					(name "LCSC") "C7420333")
 				(field
 					(name "Footprint") "Package_TO_SOT_SMD:SOT-23")
 				(field
@@ -8326,15 +8326,15 @@
 			)
 			(property
 				(name "MPN")
-				(value "BAT54S,215")
+				(value "BAT54S")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Nexperia")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C47546")
+				(value "C7420333")
 			)
 			(property
 				(name "Sheetname")
@@ -8384,11 +8384,11 @@
 				(field
 					(name "Spec") "BAT54S dual Schottky, series")
 				(field
-					(name "MPN") "BAT54S,215")
+					(name "MPN") "BAT54S")
 				(field
-					(name "Manufacturer") "Nexperia")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C47546")
+					(name "LCSC") "C7420333")
 				(field
 					(name "Footprint") "Package_TO_SOT_SMD:SOT-23")
 				(field
@@ -8407,15 +8407,15 @@
 			)
 			(property
 				(name "MPN")
-				(value "BAT54S,215")
+				(value "BAT54S")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Nexperia")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C47546")
+				(value "C7420333")
 			)
 			(property
 				(name "Sheetname")
@@ -8465,11 +8465,11 @@
 				(field
 					(name "Spec") "BAT54S dual Schottky, series")
 				(field
-					(name "MPN") "BAT54S,215")
+					(name "MPN") "BAT54S")
 				(field
-					(name "Manufacturer") "Nexperia")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C47546")
+					(name "LCSC") "C7420333")
 				(field
 					(name "Footprint") "Package_TO_SOT_SMD:SOT-23")
 				(field
@@ -8488,15 +8488,15 @@
 			)
 			(property
 				(name "MPN")
-				(value "BAT54S,215")
+				(value "BAT54S")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Nexperia")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C47546")
+				(value "C7420333")
 			)
 			(property
 				(name "Sheetname")
@@ -14293,11 +14293,11 @@
 				(field
 					(name "Spec") "10 nF 50 V X7R")
 				(field
-					(name "MPN") "CL10B103KB8NNNC")
+					(name "MPN") "0603B103K500NT")
 				(field
-					(name "Manufacturer") "Samsung Electro-Mechanics")
+					(name "Manufacturer") "FH (Guangdong Fenghua Advanced Tech)")
 				(field
-					(name "LCSC") "C1589")
+					(name "LCSC") "C57112")
 				(field
 					(name "Footprint") "Capacitor_SMD:C_0603_1608Metric")
 				(field
@@ -14317,15 +14317,15 @@
 			)
 			(property
 				(name "MPN")
-				(value "CL10B103KB8NNNC")
+				(value "0603B103K500NT")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Samsung Electro-Mechanics")
+				(value "FH (Guangdong Fenghua Advanced Tech)")
 			)
 			(property
 				(name "LCSC")
-				(value "C1589")
+				(value "C57112")
 			)
 			(property
 				(name "Sheetname")
@@ -14371,11 +14371,11 @@
 				(field
 					(name "Spec") "4.7 nF 50 V X7R")
 				(field
-					(name "MPN") "CL10B472KB8NNNC")
+					(name "MPN") "0603B472K500NT")
 				(field
-					(name "Manufacturer") "Samsung Electro-Mechanics")
+					(name "Manufacturer") "FH (Guangdong Fenghua Advanced Tech)")
 				(field
-					(name "LCSC") "C1621")
+					(name "LCSC") "C53987")
 				(field
 					(name "Footprint") "Capacitor_SMD:C_0603_1608Metric")
 				(field
@@ -14395,15 +14395,15 @@
 			)
 			(property
 				(name "MPN")
-				(value "CL10B472KB8NNNC")
+				(value "0603B472K500NT")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Samsung Electro-Mechanics")
+				(value "FH (Guangdong Fenghua Advanced Tech)")
 			)
 			(property
 				(name "LCSC")
-				(value "C1621")
+				(value "C53987")
 			)
 			(property
 				(name "Sheetname")
@@ -14449,11 +14449,11 @@
 				(field
 					(name "Spec") "10 nF 50 V X7R")
 				(field
-					(name "MPN") "CL10B103KB8NNNC")
+					(name "MPN") "0603B103K500NT")
 				(field
-					(name "Manufacturer") "Samsung Electro-Mechanics")
+					(name "Manufacturer") "FH (Guangdong Fenghua Advanced Tech)")
 				(field
-					(name "LCSC") "C1589")
+					(name "LCSC") "C57112")
 				(field
 					(name "Footprint") "Capacitor_SMD:C_0603_1608Metric")
 				(field
@@ -14473,15 +14473,15 @@
 			)
 			(property
 				(name "MPN")
-				(value "CL10B103KB8NNNC")
+				(value "0603B103K500NT")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Samsung Electro-Mechanics")
+				(value "FH (Guangdong Fenghua Advanced Tech)")
 			)
 			(property
 				(name "LCSC")
-				(value "C1589")
+				(value "C57112")
 			)
 			(property
 				(name "Sheetname")
@@ -14606,11 +14606,11 @@
 				(field
 					(name "Spec") "BAT54S dual Schottky, series")
 				(field
-					(name "MPN") "BAT54S,215")
+					(name "MPN") "BAT54S")
 				(field
-					(name "Manufacturer") "Nexperia")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C47546")
+					(name "LCSC") "C7420333")
 				(field
 					(name "Footprint") "Package_TO_SOT_SMD:SOT-23")
 				(field
@@ -14629,15 +14629,15 @@
 			)
 			(property
 				(name "MPN")
-				(value "BAT54S,215")
+				(value "BAT54S")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Nexperia")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C47546")
+				(value "C7420333")
 			)
 			(property
 				(name "Sheetname")
@@ -16810,18 +16810,18 @@
 		)
 		(comp
 			(ref "C28")
-			(value "220p C0G")
+			(value "330p C0G")
 			(footprint "Capacitor_SMD:C_0603_1608Metric")
 			(description "Unpolarized capacitor")
 			(fields
 				(field
-					(name "Spec") "220 pF 50 V C0G")
+					(name "Spec") "330 pF 50 V C0G")
 				(field
-					(name "MPN") "CL10C221JB8NNNC")
+					(name "MPN") "CL10C331JB8NNNC")
 				(field
 					(name "Manufacturer") "Samsung Electro-Mechanics")
 				(field
-					(name "LCSC") "C27675")
+					(name "LCSC") "C1664")
 				(field
 					(name "Footprint") "Capacitor_SMD:C_0603_1608Metric")
 				(field
@@ -16837,11 +16837,11 @@
 			)
 			(property
 				(name "Spec")
-				(value "220 pF 50 V C0G")
+				(value "330 pF 50 V C0G")
 			)
 			(property
 				(name "MPN")
-				(value "CL10C221JB8NNNC")
+				(value "CL10C331JB8NNNC")
 			)
 			(property
 				(name "Manufacturer")
@@ -16849,7 +16849,7 @@
 			)
 			(property
 				(name "LCSC")
-				(value "C27675")
+				(value "C1664")
 			)
 			(property
 				(name "Sheetname")
@@ -16888,18 +16888,18 @@
 		)
 		(comp
 			(ref "C29")
-			(value "220p C0G")
+			(value "330p C0G")
 			(footprint "Capacitor_SMD:C_0603_1608Metric")
 			(description "Unpolarized capacitor")
 			(fields
 				(field
-					(name "Spec") "220 pF 50 V C0G")
+					(name "Spec") "330 pF 50 V C0G")
 				(field
-					(name "MPN") "CL10C221JB8NNNC")
+					(name "MPN") "CL10C331JB8NNNC")
 				(field
 					(name "Manufacturer") "Samsung Electro-Mechanics")
 				(field
-					(name "LCSC") "C27675")
+					(name "LCSC") "C1664")
 				(field
 					(name "Footprint") "Capacitor_SMD:C_0603_1608Metric")
 				(field
@@ -16915,11 +16915,11 @@
 			)
 			(property
 				(name "Spec")
-				(value "220 pF 50 V C0G")
+				(value "330 pF 50 V C0G")
 			)
 			(property
 				(name "MPN")
-				(value "CL10C221JB8NNNC")
+				(value "CL10C331JB8NNNC")
 			)
 			(property
 				(name "Manufacturer")
@@ -16927,7 +16927,7 @@
 			)
 			(property
 				(name "LCSC")
-				(value "C27675")
+				(value "C1664")
 			)
 			(property
 				(name "Sheetname")
@@ -17207,11 +17207,11 @@
 				(field
 					(name "Spec") "10 nF 50 V X7R")
 				(field
-					(name "MPN") "CL10B103KB8NNNC")
+					(name "MPN") "0603B103K500NT")
 				(field
-					(name "Manufacturer") "Samsung Electro-Mechanics")
+					(name "Manufacturer") "FH (Guangdong Fenghua Advanced Tech)")
 				(field
-					(name "LCSC") "C1589")
+					(name "LCSC") "C57112")
 				(field
 					(name "Footprint") "Capacitor_SMD:C_0603_1608Metric")
 				(field
@@ -17231,15 +17231,15 @@
 			)
 			(property
 				(name "MPN")
-				(value "CL10B103KB8NNNC")
+				(value "0603B103K500NT")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Samsung Electro-Mechanics")
+				(value "FH (Guangdong Fenghua Advanced Tech)")
 			)
 			(property
 				(name "LCSC")
-				(value "C1589")
+				(value "C57112")
 			)
 			(property
 				(name "Sheetname")
@@ -17286,11 +17286,11 @@
 				(field
 					(name "Spec") "BAT54S dual Schottky, series")
 				(field
-					(name "MPN") "BAT54S,215")
+					(name "MPN") "BAT54S")
 				(field
-					(name "Manufacturer") "Nexperia")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C47546")
+					(name "LCSC") "C7420333")
 				(field
 					(name "Footprint") "Package_TO_SOT_SMD:SOT-23")
 				(field
@@ -17309,15 +17309,15 @@
 			)
 			(property
 				(name "MPN")
-				(value "BAT54S,215")
+				(value "BAT54S")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Nexperia")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C47546")
+				(value "C7420333")
 			)
 			(property
 				(name "Sheetname")
@@ -19345,11 +19345,11 @@
 				(field
 					(name "Spec") "BAT54S dual Schottky, series")
 				(field
-					(name "MPN") "BAT54S,215")
+					(name "MPN") "BAT54S")
 				(field
-					(name "Manufacturer") "Nexperia")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C47546")
+					(name "LCSC") "C7420333")
 				(field
 					(name "Footprint") "Package_TO_SOT_SMD:SOT-23")
 				(field
@@ -19368,15 +19368,15 @@
 			)
 			(property
 				(name "MPN")
-				(value "BAT54S,215")
+				(value "BAT54S")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Nexperia")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C47546")
+				(value "C7420333")
 			)
 			(property
 				(name "Sheetname")

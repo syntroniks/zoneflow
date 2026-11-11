@@ -7548,7 +7548,7 @@
 				)
 			)
 		)
-		(property "MPN" "BAT54S,215"
+		(property "MPN" "BAT54S"
 			(at 104.14 91.44 0)
 			(hide yes)
 			(show_name no)
@@ -7559,7 +7559,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Nexperia"
+		(property "Manufacturer" "hongjiacheng"
 			(at 104.14 91.44 0)
 			(hide yes)
 			(show_name no)
@@ -7570,7 +7570,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C47546"
+		(property "LCSC" "C7420333"
 			(at 104.14 91.44 0)
 			(hide yes)
 			(show_name no)
@@ -8670,7 +8670,7 @@
 				)
 			)
 		)
-		(property "MPN" "CL10B103KB8NNNC"
+		(property "MPN" "0603B103K500NT"
 			(at 320.04 62.23 0)
 			(hide yes)
 			(show_name no)
@@ -8681,7 +8681,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Samsung Electro-Mechanics"
+		(property "Manufacturer" "FH (Guangdong Fenghua Advanced Tech)"
 			(at 320.04 62.23 0)
 			(hide yes)
 			(show_name no)
@@ -8692,7 +8692,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C1589"
+		(property "LCSC" "C57112"
 			(at 320.04 62.23 0)
 			(hide yes)
 			(show_name no)
@@ -12263,7 +12263,7 @@
 				)
 			)
 		)
-		(property "MPN" "CL10B103KB8NNNC"
+		(property "MPN" "0603B103K500NT"
 			(at 175.26 97.79 0)
 			(hide yes)
 			(show_name no)
@@ -12274,7 +12274,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Samsung Electro-Mechanics"
+		(property "Manufacturer" "FH (Guangdong Fenghua Advanced Tech)"
 			(at 175.26 97.79 0)
 			(hide yes)
 			(show_name no)
@@ -12285,7 +12285,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C1589"
+		(property "LCSC" "C57112"
 			(at 175.26 97.79 0)
 			(hide yes)
 			(show_name no)
@@ -13347,7 +13347,7 @@
 				)
 			)
 		)
-		(property "MPN" "CL10B472KB8NNNC"
+		(property "MPN" "0603B472K500NT"
 			(at 71.12 179.07 0)
 			(hide yes)
 			(show_name no)
@@ -13358,7 +13358,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Samsung Electro-Mechanics"
+		(property "Manufacturer" "FH (Guangdong Fenghua Advanced Tech)"
 			(at 71.12 179.07 0)
 			(hide yes)
 			(show_name no)
@@ -13369,7 +13369,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C1621"
+		(property "LCSC" "C53987"
 			(at 71.12 179.07 0)
 			(hide yes)
 			(show_name no)

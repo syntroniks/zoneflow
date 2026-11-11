@@ -31,7 +31,8 @@ run showed.
 Section 24 lists what changed after review A1 and where I did something
 other than what the reviewer proposed. Section 25 lists what review A2
 changed. Section 26 lists what the answers to the firmware's questions
-changed: one part of the circuit and most of section 19.
+changed: one part of the circuit and most of section 19. Section 27 lists
+the five part numbers that the BOM consolidation replaced.
 
 ## 1. The design in brief
 
@@ -137,7 +138,7 @@ input of the LM5164 buck U1, which makes `V_BUCK`, 5.28 V. D25 clamps
 | C2 | 2.2 uF 100 V X7R | 1210 | C55151 | `VIN_U1` to `GND` | At U1 pins |
 | C3 | 2.2 uF 100 V X7R | 1210 | C55151 | `VIN_U1` to `GND` | At U1 pins |
 | U1 | LM5164DDAR 100 V 1 A synchronous buck | SO-8 PowerPAD | C477928 | 1 GND `GND`, 2 VIN `VIN_U1`, 3 EN/UVLO `UVLO`, 4 RON `RON`, 5 FB `FB`, 6 PGOOD `PGOOD`, 7 BST `BST`, 8 SW `SW`, EP `GND` |  |
-| C4 | 2.2 nF 50 V X7R | 0603 | C16033 | `BST` to `SW` | Bootstrap, value fixed by the datasheet |
+| C4 | 2.2 nF 50 V X7R | 0603 | C1604 | `BST` to `SW` | Bootstrap, value fixed by the datasheet |
 | L1 | 47 uH, Isat 2.0 A, 0.2R | 6x6x4.5 mm | C5151734 | `SW` to `V_BUCK` |  |
 | C5 | 22 uF 25 V X5R | 1206 | C12891 | `V_BUCK` to `GND` |  |
 | C6 | 22 uF 25 V X5R | 1206 | C12891 | `V_BUCK` to `GND` |  |
@@ -1124,7 +1125,7 @@ analysis.
 | Q2 | AO3400A N-MOSFET 30 V | SOT-23 | C20917 | G `RLY_G2`, S `GND`, D `RLY_B` | On while the relay detector sees keep-alive edges |
 | R89 | 1k 1% | 0603 | C21190 | `KA` to `KB_N0` | Series resistor of the relay detector pump |
 | C51 | 4.7 uF 25 V X5R | 0805 | C1779 | `KB_N0` to `KB_N1` | Pump capacitor. The gate of Q2 has no other path from the pin |
-| D22 | BAT54S dual Schottky, series | SOT-23 | C47546 | 1 A `GND`, 2 K `RLY_G2`, 3 common `KB_N1` | Its own package, not shared with D7 |
+| D22 | BAT54S dual Schottky, series | SOT-23 | C7420333 | 1 A `GND`, 2 K `RLY_G2`, 3 common `KB_N1` | Its own package, not shared with D7 |
 | R14 | 100k 1% | 0603 | C25803 | `RLY_G2` to `GND` | Bleed, with R90. Sets the relay hold-up |
 | R90 | 100k 1% | 0603 | C25803 | `RLY_G2` to `GND` | Second bleed: one open resistor doubles the hold-up and no more |
 | C50 | 10 uF 25 V X5R | 0805 | C15850 | `RLY_G2` to `GND` | Reservoir |
@@ -1381,13 +1382,13 @@ the next run like any other.
 | R33 | 2.2k 1% | 0603 | C4190 | `KA` to `GND` | Pull-down. Low enough that a net behind a 10 kohm pull-up cannot run the detectors through a bridge |
 | R29 | 220R 1% | 0603 | C22962 | `KA` to `KA_N0` |  |
 | C22 | 4.7 uF 25 V X5R | 0805 | C1779 | `KA_N0` to `KA_N1` | Pump capacitor |
-| D7 | BAT54S dual Schottky, series | SOT-23 | C47546 | 1 A `GND`, 2 K `KA_N2`, 3 common `KA_N1` |  |
+| D7 | BAT54S dual Schottky, series | SOT-23 | C7420333 | 1 A `GND`, 2 K `KA_N2`, 3 common `KA_N1` |  |
 | C23 | 10 uF 25 V X5R | 0805 | C15850 | `KA_N2` to `GND` | Reservoir |
 | R30 | 110k 1% | 0603 | C25805 | `KA_N2` to `GND` | Bleed, with R91. Sets the hold-up time |
 | R91 | 110k 1% | 0603 | C25805 | `KA_N2` to `GND` | Second bleed: one open resistor doubles the hold-up and no more |
 | R31 | 100k 1% | 0603 | C25803 | `KA_N2` to `KA_INP` |  |
 | R32 | 510k 1% | 0603 | C23192 | `KA_INP` to `KA_OK` | Hysteresis |
-| C24 | 10 nF 50 V X7R | 0603 | C1589 | `KA_INP` to `GND` |  |
+| C24 | 10 nF 50 V X7R | 0603 | C57112 | `KA_INP` to `GND` |  |
 | R34 | 15k 1% | 0603 | C22809 | `3V3` to `KA_REF` |  |
 | R35 | 10k 1% | 0603 | C25804 | `KA_REF` to `GND` |  |
 | R36 | 10k 1% | 0603 | C25804 | `3V3` to `KA_OK` | Pull-up |
@@ -2116,10 +2117,10 @@ U7, whose pin 1 it drives. No rule of section 8.5 changes.
 | C27 | 1 nF 50 V X7R | 0603 | C1588 | `SA_P` to `VB` |  |
 | R42 | 7.5k 1% | 0603 | C23234 | `ISNS` to `SB_N` | From the shunt high pad |
 | R43 | 49.9k 1% | 0603 | C23184 | `SB_N` to `ISENSE_HI` |  |
-| C28 | 220 pF 50 V C0G | 0603 | C27675 | `SB_N` to `ISENSE_HI` |  |
+| C28 | 330 pF 50 V C0G | 0603 | C1664 | `SB_N` to `ISENSE_HI` |  |
 | R44 | 7.5k 1% | 0603 | C23234 | `GND` to `SB_P` | From the shunt ground pad |
 | R45 | 49.9k 1% | 0603 | C23184 | `SB_P` to `VB` |  |
-| C29 | 220 pF 50 V C0G | 0603 | C27675 | `SB_P` to `VB` |  |
+| C29 | 330 pF 50 V C0G | 0603 | C1664 | `SB_P` to `VB` |  |
 | R46 | 1k 1% | 0603 | C21190 | `ISENSE_LO` to `ADC_LO` |  |
 | C30 | 100 nF 50 V X7R | 0603 | C14663 | `ADC_LO` to `GND` | At the module pin |
 | R47 | 1k 1% | 0603 | C21190 | `ISENSE_HI` to `ADC_HI` |  |
@@ -2130,7 +2131,7 @@ U7, whose pin 1 it drives. No rule of section 8.5 changes.
 | R51 | 100R 1% | 0603 | C22775 | `VL` to `GND` |  |
 | C32 | 1 uF 50 V X5R | 0603 | C15849 | `VB` to `GND` |  |
 | R52 | 10k 1% | 0603 | C25804 | `ISENSE_LO` to `OC_CMP` |  |
-| C33 | 4.7 nF 50 V X7R | 0603 | C1621 | `OC_CMP` to `GND` |  |
+| C33 | 4.7 nF 50 V X7R | 0603 | C53987 | `OC_CMP` to `GND` |  |
 | R53 | 10k 1% | 0603 | C25804 | `3V3` to `OC_TRIP_N` | Pull-up |
 | R54 | 1k 1% | 0603 | C21190 | `FAULT` to `LED_FLT` |  |
 | D8 | LED red | 0603 | C2286 | A `LED_FLT`, K `GND` | Lit while the over-current latch is set |
@@ -2138,7 +2139,7 @@ U7, whose pin 1 it drives. No rule of section 8.5 changes.
 | U13 | TPS3701DDCR window voltage detector, 0.4 V thresholds, open-drain outputs | SOT-23-6 thin | C132788 | 1 OUTA NC, 2 GND `GND`, 3 INA `GND`, 4 INB `OV_DIV`, 5 VDD `3V3`, 6 OUTB `OC_TRIP_N` | Holds the set input of the latch low while 3V3 is above 4.0 V, so that a shorted U3 leaves no drive. Section 9.5 |
 | R13 | 1M 1% | 0603 | C22935 | `3V3` to `OV_DIV` | Over-voltage divider, 1/10.09: 0.4 V at the pin with 3V3 at 4.04 V |
 | R100 | 110k 1% | 0603 | C25805 | `OV_DIV` to `GND` |  |
-| C55 | 10 nF 50 V X7R | 0603 | C1589 | `OV_DIV` to `GND` | With the divider, 1 ms: a spike on 3V3 does not set the latch |
+| C55 | 10 nF 50 V X7R | 0603 | C57112 | `OV_DIV` to `GND` | With the divider, 1 ms: a spike on 3V3 does not set the latch |
 | C56 | 100 nF 50 V X7R | 0603 | C14663 | `3V3` to `GND` | At U13 |
 
 <!-- designsync:end -->
@@ -2173,7 +2174,11 @@ pads, a voltage between the shunt's ground pad and the amplifier's ground does
 not appear as signal. The simulation applies 20 mV peak of ground shift and
 finds 0.9 mV peak to peak at each output.
 
-C26 to C29 set a low-pass at about 15 kHz. R46 with C30, and R47 with C31, are the
+C26 and C27 set a low-pass at 15.9 kHz on the low-gain amplifier, the one the
+over-current comparators read. C28 and C29 set 9.7 kHz on the high-gain
+amplifier, whose output goes only to the ADC. They were 220 pF, 14.5 kHz,
+until the BOM consolidation, section 27: 330 pF is the nearest C0G value in
+JLCPCB's basic library. R46 with C30, and R47 with C31, are the
 1.6 kHz filters at the ADC pins. They attenuate 60 Hz by 0.07 %.
 
 **Input protection.** The inputs connect to `ISNS` through 7.5 kohm. The
@@ -2237,8 +2242,8 @@ valve at 0 mA against 200 mA, or a short at 3 A against 0.3 A, is far outside
 |---|---|---|---|---|---|
 | R55 | 100k 1% 200 V 0.25 W | 1206 | C17900 | `AC_L` to `ZC_CLAMP` |  |
 | R56 | 10k 1% | 0603 | C25804 | `ZC_DIV` to `GND` |  |
-| C34 | 10 nF 50 V X7R | 0603 | C1589 | `ZC_DIV` to `GND` |  |
-| D9 | BAT54S dual Schottky, series | SOT-23 | C47546 | 1 A `GND`, 2 K `3V3`, 3 common `ZC_CLAMP` | Clamp |
+| C34 | 10 nF 50 V X7R | 0603 | C57112 | `ZC_DIV` to `GND` |  |
+| D9 | BAT54S dual Schottky, series | SOT-23 | C7420333 | 1 A `GND`, 2 K `3V3`, 3 common `ZC_CLAMP` | Clamp |
 | R88 | 10k 1% | 0603 | C25804 | `ZC_CLAMP` to `ZC_DIV` | Halves the clamped level at the comparator pin |
 | R57 | 1M 1% | 0603 | C22935 | `ZC_DIV` to `AC_ZC` | Hysteresis |
 | R58 | 10k 1% | 0603 | C25804 | `3V3` to `AC_ZC` | Pull-up |
@@ -2457,19 +2462,19 @@ Three identical inputs: `T_RAIN`, `T_FLOW` and `T_AUX` at the terminals.
 | D12 | TVS 48 V bidirectional 600 W | SMB | C151264 | `T_RAIN` to `GND` | Terminal clamp |
 | R74 | 10k 1% 200 V 0.25 W | 1206 | C17902 | `V5` to `T_RAIN` | Pull-up |
 | R75 | 10k 1% 200 V 0.25 W | 1206 | C17902 | `T_RAIN` to `N_RAIN` | Series |
-| D15 | BAT54S dual Schottky, series | SOT-23 | C47546 | 1 A `GND`, 2 K `3V3`, 3 common `N_RAIN` | Clamp to the rails |
+| D15 | BAT54S dual Schottky, series | SOT-23 | C7420333 | 1 A `GND`, 2 K `3V3`, 3 common `N_RAIN` | Clamp to the rails |
 | C44 | 22 nF 50 V X7R | 0603 | C21122 | `N_RAIN` to `GND` |  |
 | R76 | 1k 1% | 0603 | C21190 | `N_RAIN` to `SENS_RAIN` |  |
 | D13 | TVS 48 V bidirectional 600 W | SMB | C151264 | `T_FLOW` to `GND` | Terminal clamp |
 | R77 | 10k 1% 200 V 0.25 W | 1206 | C17902 | `V5` to `T_FLOW` | Pull-up |
 | R78 | 10k 1% 200 V 0.25 W | 1206 | C17902 | `T_FLOW` to `N_FLOW` | Series |
-| D16 | BAT54S dual Schottky, series | SOT-23 | C47546 | 1 A `GND`, 2 K `3V3`, 3 common `N_FLOW` | Clamp to the rails |
+| D16 | BAT54S dual Schottky, series | SOT-23 | C7420333 | 1 A `GND`, 2 K `3V3`, 3 common `N_FLOW` | Clamp to the rails |
 | C45 | 22 nF 50 V X7R | 0603 | C21122 | `N_FLOW` to `GND` |  |
 | R79 | 1k 1% | 0603 | C21190 | `N_FLOW` to `SENS_FLOW` |  |
 | D14 | TVS 48 V bidirectional 600 W | SMB | C151264 | `T_AUX` to `GND` | Terminal clamp |
 | R80 | 10k 1% 200 V 0.25 W | 1206 | C17902 | `V5` to `T_AUX` | Pull-up |
 | R81 | 10k 1% 200 V 0.25 W | 1206 | C17902 | `T_AUX` to `N_AUX` | Series |
-| D17 | BAT54S dual Schottky, series | SOT-23 | C47546 | 1 A `GND`, 2 K `3V3`, 3 common `N_AUX` | Clamp to the rails |
+| D17 | BAT54S dual Schottky, series | SOT-23 | C7420333 | 1 A `GND`, 2 K `3V3`, 3 common `N_AUX` | Clamp to the rails |
 | C46 | 22 nF 50 V X7R | 0603 | C21122 | `N_AUX` to `GND` |  |
 | R82 | 1k 1% | 0603 | C21190 | `N_AUX` to `SENS_AUX` |  |
 | U11 | TPS2553DBVR current-limited switch | SOT-23-6 | C55266 | 1 IN `V_BUCK`, 2 GND `GND`, 3 EN `SENS_PWR_EN`, 4 FAULT `SENS_FLT_N`, 5 ILIM `SP_ILIM`, 6 OUT `SP_OUT` |  |
@@ -3000,12 +3005,12 @@ part type, shipping, duty, the coin cell and the enclosure.
 
 <!-- designsync:begin cost -->
 
-`hardware/bom-preliminary.csv` has 99 lines: 46 basic parts, 52 extended parts and 1 that JLCPCB does not fit.
+`hardware/bom-preliminary.csv` has 99 lines: 50 basic parts, 48 extended parts and 1 that JLCPCB does not fit.
 
 | Build | 10 boards | 100 boards |
 |---|---|---|
-| 8-zone | 41.32 USD | 32.25 USD |
-| 4-zone | 35.03 USD | 27.45 USD |
+| 8-zone | 41.28 USD | 32.21 USD |
+| 4-zone | 35.00 USD | 27.41 USD |
 
 Not in the totals, because the line has no price: CR2032 lithium coin cell, 3 V.
 
@@ -3038,7 +3043,7 @@ Lines with the least stock against a 100-board order of the 8-zone build:
 This section prices parts only. The landed cost of a finished controller,
 with the board, assembly fees, freight, US duty and the enclosure, re-priced
 on 2026-11-11, is on [what a controller costs](../hardware/cost.md): about
-125 USD each for 5 eight-zone controllers and 54 USD for 100.
+121 USD each for 5 eight-zone controllers and 54 USD for 100.
 
 **What the review changes cost.** By this method the BOM as it stood before
 the changes comes to 38.90 and 30.35 USD for the 8-zone board at 10 and 100
@@ -3670,7 +3675,7 @@ Still open:
 - **Generic capacitors, the tactile switches, the JST connector and the coin-cell holder.** Ratings are from the listing. The switch and JST files are drawings without extractable text and were not read in detail. LCSC has no data sheet for the holder.
 - **Second sources.** PCA9539PW for the expander is named in the BOM note and its datasheet is not read. For the output PTC the BHFUSE part is now the primary and the Littelfuse part the alternative; both data sheets are read.
 - **AO3400A threshold over temperature.** The data sheet gives 0.65 to 1.45 V at 25 °C. The -3 mV/K used in section 7.3 is an assumption.
-- **BAT54S leakage when hot.** The Nexperia data sheet limits it at 25 °C only. It does give typical curves at 85 and 125 °C, figure 2: about 20 uA and 200 uA at a few volts. Review A2 found that the model in the simulations reproduces those curves, and ran its corners at three times typical as well. No maximum above 25 °C exists. Risk 10 measures it.
+- **BAT54S leakage when hot.** The Nexperia data sheet limits it at 25 °C only. It does give typical curves at 85 and 125 °C, figure 2: about 20 uA and 200 uA at a few volts. Review A2 found that the model in the simulations reproduces those curves, and ran its corners at three times typical as well. No maximum above 25 °C exists. Risk 10 measures it. The part fitted since section 27 is Hongjiacheng's. Its sheet has the same limit at 25 °C and typical curves at 25 and 100 °C that lie at or under the Nexperia ones, and no maximum when hot either. The item stands for that maker's part.
 - **PTC trip time above 8 A.** One data sheet point, scaled. Section 6.6.
 - **Bulk capacitor ripple rating at 50 and 60 Hz, and Rubycon's rules for forming leads.** Section 4.5.
 - **Resistor array pin pairs.** The UNI-ROYAL data sheet shows the circuit as a picture. Pairs 1-8, 2-7, 3-6 and 4-5 are assumed from the usual numbering.
@@ -3719,10 +3724,12 @@ is LCSC's copy of the maker's PDF for that LCSC number.
 | HS20HS072RX | Hansheng datasheet v1.0, 2020-11-04 | <https://www.lcsc.com/datasheet/C5329582.pdf> |
 | EC11J1525402 | ALPS product sheet | <https://www.lcsc.com/datasheet/C209762.pdf> |
 | G5NB-1A-E | Omron G5NB, Chinese edition; English edition read in review A1 | <https://www.lcsc.com/datasheet/C48746.pdf>, <https://omronfs.omron.com/en_US/ecb/products/pdf/en-g5nb.pdf> |
-| AO3401A, SS34, SS210, M7, BAT54S, USBLC6-2SC6 | Maker datasheets, key ratings only | LCSC pages for C15127, C8678, C14996, C95872, C47546, C7519 |
+| AO3401A, SS34, SS210, M7, BAT54S (the Nexperia part of the first BOM), USBLC6-2SC6 | Maker datasheets, key ratings only | LCSC pages for C15127, C8678, C14996, C95872, C47546, C7519 |
 | SMBJ6.0A | Littelfuse SMBJ series, revised 2025 (review A2) | <https://www.lcsc.com/datasheet/C83270.pdf> |
 | 0451.500MRL | Littelfuse 451/453 series, revised 2015 (review A2) | <https://www.lcsc.com/datasheet/C142836.pdf> |
 | BAT54S, figures 1 and 2 | Nexperia product data sheet, 1 July 2022 (review A2) | <https://www.lcsc.com/datasheet/C47546.pdf> |
+| BAT54S as fitted since section 27 | Zhuhai Hongjiacheng, "BAT54 thru BAT54S", rev 2.0: ratings, electrical table, figures 1 and 2, function diagram | <https://www.lcsc.com/datasheet/C7420333.pdf> |
+| 0603 X7R capacitors as fitted since section 27 | Fenghua, general specification of multilayer chip capacitors: tolerance codes, temperature characteristic, insulation resistance | <https://www.lcsc.com/datasheet/C57112.pdf> |
 | ESP32-S3 hardware design | Espressif hardware design guidelines, release of 2026-11-10 (review A1) | <https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32s3/> |
 | ST7789V | Sitronix datasheet v1.3 (review A1) | <https://dl.espressif.com/dl/schematics/LCD_ST7789.pdf> |
 | W25Q128JV | Winbond datasheet rev C (review A1) | <https://www.pjrc.com/teensy/W25Q128JV.pdf> |
@@ -3906,3 +3913,55 @@ netlist it ran.
 - **An open bleed resistor of detector B on a new board.** Firmware cannot find it. Bring-up step 1 can.
 - **The firmware.** It implements section 19 as review A2 left it. The list of changes is in the answers document and in [issue #41](https://github.com/syntroniks/zoneflow/issues/41).
 
+## 27. What changed with the BOM consolidation
+
+JLCPCB's Economic assembly charges a fee per order for every extended part
+type that is not "preferred". Revision A had 40 such types. The owner asked
+for fewer, with no change to what the circuit does, no footprint change and
+no new layout ([issue #31](https://github.com/syntroniks/zoneflow/issues/31)).
+[What a controller costs](../hardware/cost.md#fewer-extended-part-types) has
+the whole record: every swap with its evidence, every candidate that was
+rejected and why, and the saving. This section records what changed here.
+
+**Part numbers.** Five, on 13 parts. 35 fee-carrying types are left.
+
+| Parts | Was | Is now |
+|---|---|---|
+| C4 | Samsung CL10B222KB8NNNC, C16033 | Fenghua 0603B222K500NT, C1604, basic |
+| C24, C34, C55 | Samsung CL10B103KB8NNNC, C1589 | Fenghua 0603B103K500NT, C57112, basic |
+| C33 | Samsung CL10B472KB8NNNC, C1621 | Fenghua 0603B472K500NT, C53987, basic |
+| C28, C29 | Samsung CL10C221JB8NNNC, 220 pF C0G, C27675 | Samsung CL10C331JB8NNNC, 330 pF C0G, C1664, basic |
+| D7, D9, D15, D16, D17, D22 | Nexperia BAT54S,215, C47546 | Hongjiacheng BAT54S, C7420333, preferred extended |
+
+**Circuit.** One value: C28 and C29 are 330 pF where they were 220 pF,
+section 10.3. No connection changed. The three X7R types keep their value,
+dielectric, tolerance, voltage and package.
+
+**The fail-safe circuits.** C24 and D7 are in detector A, D22 is in
+detector B, C33 is ahead of the over-current comparators and C55 is on the
+3V3 over-voltage detector. For these the consolidation had one rule: a swap
+only with the simulations run again and no result worse.
+
+- **The capacitors** enter the simulations as a capacitance, which is the same. Both makers give 10 Gohm of insulation resistance at least, which is 0.33 nA at 3.3 V against the tens to hundreds of nanoamps of input bias current on those nodes.
+- **The diode** enters as a saturation current between 1.5e-8 A, which fits the maximum forward voltages of the data sheet, and 6.6e-7 A, three times the typical leakage. The Hongjiacheng sheet has the same maximum forward voltages up to 30 mA and the same 2 uA at 25 V. Its typical leakage is about 0.1 to 0.3 uA at 25 °C and 25 to 55 uA at 100 °C, from 0 to 10 V; the model at 2.2e-7 A gives 0.22 uA at 27 °C and 48 uA at 100 °C. So the range the corners ran covers this part.
+- **The runs.** `hardware/sim/failsafe/` builds its decks from the netlist. Built from the netlist before and after, all 1,440 corner decks and the four scenario decks are identical. `failsafe.py corners` was run on the new netlist all the same, 2,104 runs. No run changed its verdict and the summary in `results/corners.md` has the same figures. 197 rows differ from the files that were committed, by one unit in the last printed digit; the committed files were made before U13 was added (section 26), and three of those rows run on that older netlist, on the netlist before the swap and on the one after show that the difference is U13's: the last two agree to every digit. The result files of `corners` are now those of the present netlist. So every figure of sections 7.3, 8.4 and 8.5 and of review A2 stands as it is.
+- **What it does not show.** That a part from this maker meets its own sheet. Leakage when hot is a bench item for either maker, section 22.
+
+**Not changed, on purpose.** The fuses, PTCs, triacs, opto-triacs and
+clamps; the 100 kohm arrays RN1 to RN3, where a 10 kohm array is basic and
+would let a single fault push 0.2 to 0.33 mA into a valve pin where 100 kohm
+allows 33 uA; the 3.3 kohm pull-ups of the controls, which are in the bridge
+analysis of the keep-alive pin; the colour of the LEDs.
+
+**Tooling.** The routing is stored with the hash of the Specctra file it
+was made from, and that file carries the value text of every part. A new
+value on C28 and C29 therefore looked like a new board to route. The build
+now keeps a second hash, of the Specctra file without the value text, and
+reuses the stored routing when only that text differs:
+[toolchain](hardware-toolchain.md), section 13.8. The copper of the board is
+the copper that the layout review checked.
+
+**Checks.** `make -C hardware design-check`; `make` in
+`hardware/zoneflow-a/` with the autorouter forbidden; `make cpl-check` for
+both builds; the simulations named above and `hardware/sim/isense.cir`. No
+board exists.

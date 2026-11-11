@@ -65,7 +65,11 @@ extra charges on 2026-11-10 and 2026-11-11.
 4. Run `make cpl-check` in the board directory; it must end with "0 do not
    fit". Then compare the assembler's placement preview with
    `zoneflow-a-pin1.csv` for every polarised part before you confirm. Nobody
-   has checked the placement files against a real order.
+   has checked the placement files against a real order. For the six BAT54S
+   (D7, D9, D15, D16, D17, D22) go by the pads: JLCPCB's library symbol for
+   this part number names the pins as a common-anode pair, which the maker's
+   data sheet does not draw; the footprint numbers the pads as every SOT-23
+   does ([cost page](cost.md#fewer-extended-part-types)).
 5. The board has no fiducial marks and the module overhangs the top edge:
    ask for process edges with fiducials on the two 110 mm sides.
 6. Check any part the assembler proposes to substitute against the
