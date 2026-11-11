@@ -76,7 +76,7 @@ csrf = login.json.csrf;
 
 const run = request('POST', '/zones/1/run', { duration_s: 120 });
 assert.equal(run.status, 202, JSON.stringify(run.json));
-m._zf_step(200); // 10 s: the fail-safe self-test of the output stage comes first
+m._zf_step(400); // 20 s: the start-up self-test, then the one before the run (step 2 holds 2 s)
 let w = world();
 assert.ok(w.zones[0].led && w.zones[0].water, 'zone 1 is watering');
 assert.ok(w.relay, 'the valve-common relay is closed');
