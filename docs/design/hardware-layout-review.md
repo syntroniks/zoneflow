@@ -78,7 +78,7 @@ is a check with no defect, or a risk I leave open with a reason.
 | L25 | Minor | Nine PTC fuses, y = 20.9 | Each PTC shares its upper land with the triac tab through a 5 mm wide link, so it is heated by the triac. The hardware design derates it for 70 °C air: 0.64 A hold. The maker's chart gives 0.50 A at 85 °C, which is the full load | Section 9, heat | Not changed. Bench item with a number to look for |
 | L26 | Note | Test and bring-up | Every step of the bring-up plan against the pads on the board | Section 14 | No defect. `VBUS` and `VIN_MON` have no pad of their own, and there is no ground post |
 | L27 | Minor | Patched nets, logic area | On two layers the autorouter left 17 connections open. A maze router closed twelve and I closed five with it. Some are long and change layer often: `N_RAIN` 156 mm and 13 vias, `SENS_PWR_EN` 126 mm and 12, `STATUS_LED` 161 mm and 7, `RLY_A` 71 mm and 10, `ZD_Z8_N` 87 mm and 9, `I2C0_SDA` 58 mm and 8 | `routing.md`, section 9 | Not fixed. All are static or slow. Each is listed for the person who looks at the board. Lay them by hand at the next routing |
-| L28 | Minor | 3.3 V plane, In2.Cu | Eleven of those connections pass under an obstacle on In2.Cu: 114 mm of track in all, each a slot in the plane, the longest 21 mm. Six cross under the display bus or the ADC lines | Section 9, table | Accepted. The plane stays one piece. The first routing had 2356 mm in 51 nets there |
+| L28 | Minor | 3.3 V plane, In2.Cu | Eleven of those connections pass under an obstacle on In2.Cu: 114 mm of track in all, each a slot in the plane, the longest 21 mm. Five of the nets cross under the display lines or the ADC lines | Section 9, table | Accepted. The plane stays one piece. The first routing had 2356 mm in 51 nets there |
 | L29 | Major | Patch router | It did not know the rectangles that keep the autorouter out, nor a rule area inside a footprint. On this routing it laid the 5 V sensor supply 2.26 mm from the centre of hole D, under the screw head, and two nets across a stretch of the keep-alive net that the board closes. A first set of patches also ran the rain input for 17 mm within 2 mm of the keep-alive on the layer next to it | Section 10 | **Fixed** in the tool, and the patches made again. No track of another net on In2.Cu is now within 3 mm of the keep-alive |
 | L30 | Note | Hole B, (75, 106) | Five autorouted nets pass under the plastic leg of the display carrier, the nearest 0.47 mm from the wall of the hole | Script | Left. The leg is plastic and the copper is under solder mask. The contract's keep-out there is for parts and bare copper |
 
@@ -87,7 +87,7 @@ is a check with no defect, or a risk I leave open with a reason.
 Every change is in a text source and has its own commit with the evidence
 in the message. The generated board was rebuilt from them.
 
-**Placement.** Five moves and five new parts. Nothing the mechanical contract
+**Placement.** Four moves and five new parts. Nothing the mechanical contract
 places has moved.
 
 | Part | Change | Why |
@@ -606,8 +606,9 @@ lines apart on F.Cu, 24 and 30 mm, through the ESD array, with no via. That
 is poor form and harmless at 12 Mbit/s.
 
 **Display bus and ADC lines.** Both run on B.Cu under the same plane. One
-slot crosses the display bus and five cross the ADC lines, where 6 and 20
-autorouted tracks did before. The table above has them.
+slot crosses the display bus and one more its backlight line. Three nets
+cross the ADC lines, at four places. Before, 6 and 20 autorouted tracks did.
+The table above has them.
 
 **Crystal.** Y1 is 3.5 mm from pins 1 and 2 of the clock chip U10. The two
 tracks are 9.3 and 8.3 mm on F.Cu with no via, the ground plane 0.2 mm
@@ -833,10 +834,10 @@ module's right side, 1.5 mm from the board edge, and the module covers
 everything left of them. The capacitors are at the nearest place a part can
 stand. For what they are there to do, a 1.6 kHz filter and a reservoir for
 the sampling capacitor, 19 mm of track is 9 nH and 56 milliohm and changes
-nothing. With In2.Cu a plane, four patched tracks cross the two lines where
-twenty autorouted nets did. What the distance does cost is radio-frequency pick-up at the pin itself, which a
-capacitor at the pin would shunt and one a third of a wavelength away does
-not. I cannot put a number on that. Measure ADC noise with WiFi transmitting.
+nothing. With In2.Cu a plane, three patched nets cross the two lines, at four
+places, where twenty autorouted nets did. What the distance does cost is
+radio-frequency pick-up at the pin itself, which a capacitor at the pin would
+shunt and one a third of a wavelength away does not. I cannot put a number on that. Measure ADC noise with WiFi transmitting.
 If it shows, the cure is in the pin map: GPIO4 to 7 on the left side have
 room for a capacitor at the pin.
 

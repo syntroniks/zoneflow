@@ -454,8 +454,8 @@ round:
   capacitors C30 and C31 sit on the way, 23 mm of track before the pins. The
   hardware design, section 12.5, wants them at the pins. There is no room
   beside pins 38 and 39: the board edge is 1.5 mm away. The layer above the
-  two lines is the 3.3 V plane since the review. Four patched tracks cross
-  them on In2.Cu, at five places, where twenty autorouted nets did.
+  two lines is the 3.3 V plane since the review. Three patched nets cross
+  them on In2.Cu, at four places, where twenty autorouted nets did.
 - **`SENS_FLOW`.** The clamp and filter of the flow input (D16, C45, R79) are
   at the right edge, above the sensor series resistors. From R79 the line
   goes up the right edge on B.Cu, round the top of the ADC lines under the
@@ -1015,7 +1015,7 @@ say what the review did about each item.
    pair, 6 under the display bus and 20 under the ADC lines, and the ground
    plane is 1 mm further away.
    *Review: the lengths stand. All three now run under one 3.3 V plane. One
-   slot crosses under the display bus and five under the ADC lines, where 6
+   slot crosses under the display bus and four under the ADC lines, where 6
    and 20 autorouted tracks did, and none under the USB pair. The review
    argues the display bus and the ADC capacitors with numbers (its section
    13).*
