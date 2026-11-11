@@ -4,6 +4,12 @@
 # Source: https://jlcpcb.com/capabilities/Capabilities, read 2026-11-10,
 # 1 oz outer copper. The numeric board-wide minimums are in jlcpcb.toml.
 
+# A hole under 0.30 mm is charged extra (jlcpcb.toml has the sources). The
+# board-wide minimum says the same; this rule names the reason in the report
+# and also covers a hole that a footprint brings with it.
+(rule "JLCPCB hole below the no-surcharge size"
+	(constraint hole_size (min 0.3mm)))
+
 # "PTH annular ring >=0.20mm"; 2-layer 1 oz: "absolute minimum 0.18 mm",
 # multilayer 1 oz: "absolute minimum 0.15 mm". 0.18 covers both.
 (rule "JLCPCB PTH pad annular ring"
