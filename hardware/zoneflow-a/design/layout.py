@@ -757,6 +757,11 @@ hand = [
     track(["D4.1", "D3.1", [3.0, 52.6], "TP3.1"], width=1.0),
     track(["D3.1", [3.0, 52.3], [4.4, 53.7], [6.6, 53.7], "C10.1"], width=0.8),
     track(["C10.1", [7.25, 53.4], [7.75, 52.9], [9.3, 52.9], [9.75, 52.45], [9.75, 48.3], [10.25, 47.8], "U3.3"], width=0.7),
+    track(["U3.2", [17.65, 50.1]], width=2.0,
+          comment="3V3 at the regulator: pin 2 and the tab are one net. A bar under the body joins them, and five vias\n"
+                  "(the [[via]] list) take it into the 3.3 V plane: the whole 3.3 V load and the heat of U3 go this way.\n"
+                  "The plane-via placer had given pin 2 one via and joined the tab to the via of C12, 3.8 mm away,\n"
+                  "by a 0.3 mm stub: it uses a via of the same net again when one is within reach."),
     "# VBUS: the two pads of the USB connector joined on B.Cu under it, the capacitor C13, and on B.Cu\n"
     "# round the mounting hole, past the relay pins and up at x = 9.6 to two vias below the anode of D4.\n"
     "# The ESD array U2 takes it from a via on the way.",
@@ -1167,11 +1172,38 @@ skip = ["U4.41", "U1.9", "R40.1", "R44.1", "J7.1", "J7.12", "J5.A12", "J5.B1", "
 
 [[plane]]
 net = "3V3"
-skip = ["J7.8", "J7.9", "U5.24"]     # J7: joined to C38 by a track. U5: its own via
+skip = ["J7.8", "J7.9", "U5.24", "U3.2"]     # J7: joined to C38 by a track. U5: its own via. U3: five vias by hand
 # where the 3.3 V pour on In2.Cu is
 within = [[0.9, 45.7, 113.1, 109.1], [104.4, 5.4, 113.1, 45.7], [0.9, 16.4, 9.1, 45.7]]
 
 @COPPER@
+
+# Five vias in the bar between pin 2 and the tab of U3, into the 3.3 V plane. Staggered, 1.4 mm apart,
+# so that their clearance holes leave the ground plane whole. Clear of the Kelvin pair at x = 18.4 on B.Cu.
+[[via]]
+net = "3V3"
+at = [12.75, 50.1]
+size = [0.6, 0.3]
+
+[[via]]
+net = "3V3"
+at = [14.0, 50.7]
+size = [0.6, 0.3]
+
+[[via]]
+net = "3V3"
+at = [14.8, 49.5]
+size = [0.6, 0.3]
+
+[[via]]
+net = "3V3"
+at = [15.6, 50.7]
+size = [0.6, 0.3]
+
+[[via]]
+net = "3V3"
+at = [16.4, 49.5]
+size = [0.6, 0.3]
 
 # Six vias under the exposed pad of U1, 1.3 x 1.2 mm apart, into the ground plane and the ground
 # pour on B.Cu (LM5164 data sheet, 7.4.1, item 10; TI's example has six of 0.33 mm).
