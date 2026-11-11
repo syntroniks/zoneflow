@@ -960,7 +960,7 @@ def cmd_finish(args) -> int:
         if not pcbnew.ImportSpecctraSES(board, str(args.session)):
             raise BoardError("Specctra session import failed")
     after = len(list(board.GetTracks()))
-    unrouted, patched = 0, 0
+    unrouted, patched, widened = 0, 0, {}
     if args.design_dir:
         # [[unroute]] and [[patch]] of board.toml: what the autorouter left open or did badly is
         # taken out and written by hand. This happens after the import, so the stored session
@@ -997,6 +997,10 @@ def cmd_finish(args) -> int:
             for t in gone:
                 board.Delete(t)
             del gone
+        if b.cfg.get("route", {}).get("widen", False):
+            # Before the patches: they were routed round the tracks as this leaves them.
+            from . import widen as widen_mod
+            widened = widen_mod.widen(board, pcb_path, project_dir / "build" / "widen", log=print)
         patches = b.cfg.get("patch", [])
         if patches and not args.no_patch:
             stamp = project_dir / "route" / f"{model['name']}.dsn.sha256"
@@ -1025,6 +1029,7 @@ def cmd_finish(args) -> int:
         "dangling_stubs_removed": removed,
         "autorouted_items_taken_out": unrouted,
         "patch_segments": patched,
+        "width_pass": widened,
         "unused_escape_items_removed": pruned,
         "track_segments": sum(1 for t in tracks if t.Type() != pcbnew.PCB_VIA_T),
         "vias": sum(1 for t in tracks if t.Type() == pcbnew.PCB_VIA_T),
@@ -1040,6 +1045,10 @@ def cmd_finish(args) -> int:
     print(f"board: {stats['track_segments']} track segments, {stats['vias']} vias "
           f"({before} items were pre-routed, {removed} dangling stubs removed, {unrouted} items taken out, "
           f"{patched} segments patched, {pruned} unused escape vias and stubs removed)")
+    if widened:
+        print(f"track widths: the autorouter laid {widened['narrow_segments']} segments, {widened['narrow_mm']} mm, "
+              f"narrower than their net class; {widened['kept_narrow_segments']} segments, "
+              f"{widened['kept_narrow_mm']} mm, have no room for more and stay narrow")
     return 0
 
 
