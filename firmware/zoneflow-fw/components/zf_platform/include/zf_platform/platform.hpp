@@ -94,6 +94,8 @@ public:
     hw::BusStatus read(uint8_t reg, uint8_t &value) override;
     hw::BusStatus probe() override;
     void recover() override;
+    // Both registers of a pair in one transaction (TI SCPS202C figure 31).
+    hw::BusStatus writePair(uint8_t reg, uint8_t v0, uint8_t v1) override;
 
 private:
     i2c_master_bus_handle_t bus_ = nullptr;
@@ -143,9 +145,11 @@ private:
     void *caliHi_ = nullptr; // adc_cali_handle_t
     void *caliLo_ = nullptr;
     void *caliRb_ = nullptr;
+    void *caliVin_ = nullptr;
     int chHi_ = -1;
     int chLo_ = -1;
     int chRb_ = -1;
+    int chVin_ = -1;
     mutable portMUX_TYPE lock_ = portMUX_INITIALIZER_UNLOCKED;
     CurrentWindowStats latest_{};
     std::atomic<bool> running_{false};
@@ -167,6 +171,12 @@ private:
     CurrentSampler *current_ = nullptr;
     void *pcnt_ = nullptr; // pcnt_unit_handle_t
     bool supplyOn_ = false;
+    // The die temperature for commissioning (hardware design 19.7 item 2),
+    // read every 10 s.
+    void *temp_ = nullptr; // temperature_sensor_handle_t
+    bool tempKnown_ = false;
+    float tempC_ = 0.0f;
+    int64_t tempReadUs_ = 0;
 };
 
 // ---- state kept over a software restart ----------------------------------------------------

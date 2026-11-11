@@ -25,6 +25,11 @@ esp_err_t lcdInit(lv_display_t **out);
 // Backlight PWM. percent 0..100 as the UI means it (perceived brightness).
 esp_err_t backlightInit();
 void backlightSet(uint8_t percent);
+// Hardware design 19.7, note to step 2b: while the float test runs, the
+// backlight PWM at 50 % duty (not the user's level, and not the square law
+// of backlightSet) and at kFloatTestBacklightHz; off restores the normal
+// frequency, and the next backlightSet() the user's level.
+void backlightFloatTest(bool on);
 
 // Encoder (PCNT) and buttons, sampled every 5 ms from an esp_timer and
 // decoded with zf_ui/input.hpp. Decoded events go to `queue`

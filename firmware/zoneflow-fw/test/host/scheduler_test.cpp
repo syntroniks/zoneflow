@@ -906,3 +906,47 @@ TEST_F(SchedulerTest, ResumeBeforeTimeoutKeepsRunning)
     EXPECT_EQ(rec.pauseExpired, 0);
     EXPECT_TRUE(out.zone[0]);
 }
+
+// Soak gap 4 (firmware architecture section 22): after the clock is put back
+// by less than a day, the starts it passes again that keys set while it was
+// ahead cover are reported missed (policy 8), never run a second time and
+// never skipped in silence.
+TEST_F(SchedulerTest, ClockPutBackLessThanADayReportsCoveredStartsMissed)
+{
+    addProgram(makeProgram(1, {at(6, 0), at(7, 0)}, {{0, 60}}));
+    apply();
+    begin(utcOf(2026, 6, 1, 5, 30));
+    step();
+    clock.utc = utcOf(2026, 6, 1, 7, 30); // someone sets it two hours ahead
+    runFor(5);
+    ASSERT_EQ(rec.started.size(), 1u);    // 07:00 runs late
+    ASSERT_EQ(rec.missed.size(), 1u);     // 06:00 reported missed
+    clock.utc = utcOf(2026, 6, 1, 5, 45); // put right
+    runUntil(utcOf(2026, 6, 1, 7, 30));
+    EXPECT_EQ(rec.started.size(), 1u) << "no start runs twice";
+    ASSERT_EQ(rec.missed.size(), 3u) << "06:00 and 07:00 reported missed when the clock passed them again";
+    EXPECT_EQ(rec.missed[1].second, utcOf(2026, 6, 1, 6, 0));
+    EXPECT_EQ(rec.missed[2].second, utcOf(2026, 6, 1, 7, 0));
+    // The next day runs as usual.
+    runUntil(utcOf(2026, 6, 2, 6, 0, 2));
+    EXPECT_EQ(rec.started.size(), 2u);
+    EXPECT_EQ(rec.missed.size(), 3u);
+}
+
+TEST_F(SchedulerTest, EditWhileTheClockIsAheadThenPutBackReportsTheStartMissed)
+{
+    addProgram(makeProgram(1, {at(9, 0)}, {{0, 60}}));
+    apply();
+    begin(utcOf(2026, 6, 1, 6, 0));
+    step();
+    clock.utc = utcOf(2026, 6, 1, 7, 0); // ahead by an hour
+    runFor(5);
+    cfg.schedule.programs[0].startMinutes[1] = at(6, 30); // an edit then adds 06:30
+    cfg.schedule.programs[0].startCount = 2;
+    apply();                             // policy 6: the edit consumes everything up to 07:00
+    clock.utc = utcOf(2026, 6, 1, 6, 5); // put right
+    runUntil(utcOf(2026, 6, 1, 6, 40));
+    EXPECT_TRUE(rec.started.empty());
+    ASSERT_EQ(rec.missed.size(), 1u);
+    EXPECT_EQ(rec.missed[0].second, utcOf(2026, 6, 1, 6, 30));
+}

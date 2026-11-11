@@ -213,6 +213,9 @@ public:
                 sensors.sample.valveCurrentMa = board->currentMa();
                 sensors.sample.acPresent = board->acPresent;
                 sensors.sample.sensorSupplyOn = true;
+                // Room temperature: commissioning allowed (hardware design 19.7 item 2).
+                sensors.sample.dieTempKnown = true;
+                sensors.sample.dieTempC = 35.0f;
             }
             ctrl->setTimeStatus(time.status());
             ctrl->tick();

@@ -306,6 +306,8 @@ Config randomConfig(Rng &r, Mode mode)
     c.driver.maxConcurrent = static_cast<uint8_t>(r.range(1, 2));
     c.driver.interZoneDelayMs = static_cast<uint32_t>(r.chance(0.5) ? 2000 : r.range(0, 5000));
     c.driver.minRestSec = static_cast<uint32_t>(r.chance(0.7) ? 1800 : r.range(60, 3600));
+    // Zero-cross switching (README, "not covered" until gap 7 was closed).
+    c.driver.zeroCrossSwitching = r.chance(0.3);
     c.rain.enabled = r.chance(0.5);
     c.rain.contact = r.chance(0.5) ? ContactType::NormallyOpen : ContactType::NormallyClosed;
     c.rain.debounceMs = static_cast<uint32_t>(r.chance(0.7) ? 2000 : r.range(0, 10000));

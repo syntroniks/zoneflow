@@ -23,6 +23,8 @@
 
 #include "driver/gpio.h"
 #include "driver/gptimer.h"
+#include "driver/temperature_sensor.h"
+#include "driver/uart.h"
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
 #include "esp_adc/adc_continuous.h"
@@ -114,8 +116,9 @@ IRAM_ATTR bool on_timer(gptimer_handle_t, const gptimer_alarm_event_data_t *, vo
 constexpr uint32_t kSampleHzPerChannel = 5000;
 constexpr uint32_t kWindowMs = 100;
 constexpr uint32_t kSamplesPerWindow = kSampleHzPerChannel * kWindowMs / 1000;  // 500
-// ISENSE_HI, ISENSE_LO and GPIO7, the relay read-back (review A2 4.6 question 7).
-constexpr uint32_t kChannels = 3;
+// ISENSE_HI, ISENSE_LO, GPIO7, the relay read-back (review A2 4.6 question 7),
+// and VIN_MON (hardware design 19.10). 20 kS/s in all.
+constexpr uint32_t kChannels = 4;
 constexpr uint32_t kConvPerFrame = kChannels * kSamplesPerWindow / 10;  // 10 ms frames
 constexpr uint32_t kFrameBytes = kConvPerFrame * SOC_ADC_DIGI_RESULT_BYTES;
 constexpr uint32_t kMaxWindowMs = kWindowMs + 20;  // longer: samples were lost, drop it
@@ -174,27 +177,73 @@ volatile uint32_t *s_load_buf = nullptr;
 StaticTask_t s_load_tcb;
 StackType_t s_load_stack[2048];
 
+// U0TXD: 0x55 at the console baud rate, a square wave at half of it.
+constexpr uart_port_t kUart = UART_NUM_0;
+constexpr int kUartBaud = 115200;
+bool s_uart_ok = false;
+
 void load_task(void *) {
   uint32_t sum = 0;
+  static const uint8_t kPattern[64] = {
+      0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+      0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+      0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
+      0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55};
   for (;;) {
     if (!s_load.load(std::memory_order_relaxed)) {
       vTaskDelay(pdMS_TO_TICKS(10));
       continue;
     }
-    for (std::size_t i = 0; i < kLoadBytes / sizeof(uint32_t); i += 8) {
-      sum += s_load_buf[i];
-      s_load_buf[i] = sum;
+    // Keep the UART FIFO full: 64 bytes last 5.6 ms at 115200 baud, so a
+    // pass of the PSRAM loop never lets the line go idle.
+    if (s_uart_ok)
+      uart_write_bytes(kUart, kPattern, sizeof kPattern);
+    if (s_load_buf != nullptr) {
+      for (std::size_t i = 0; i < kLoadBytes / sizeof(uint32_t); i += 8) {
+        sum += s_load_buf[i];
+        s_load_buf[i] = sum;
+      }
     }
     vTaskDelay(1);
   }
 }
+
+temperature_sensor_handle_t s_temp = nullptr;
+bool s_temp_tried = false;
 }  // namespace
+
+bool die_temperature(float &celsius) {
+  if (!s_temp_tried) {
+    s_temp_tried = true;
+    // The range whose error is smallest around 25 to 50 C (ESP-IDF v5.5,
+    // temperature sensor: -10 to 80 C, under 1 C).
+    temperature_sensor_config_t cfg = TEMPERATURE_SENSOR_CONFIG_DEFAULT(-10, 80);
+    if (temperature_sensor_install(&cfg, &s_temp) != ESP_OK || temperature_sensor_enable(s_temp) != ESP_OK) {
+      ESP_LOGW(TAG, "die temperature sensor not available: the board does not commission (19.7)");
+      s_temp = nullptr;
+    }
+  }
+  return s_temp != nullptr && temperature_sensor_get_celsius(s_temp, &celsius) == ESP_OK;
+}
 
 bool start_float_test_load() {
   s_load_buf = static_cast<volatile uint32_t *>(heap_caps_calloc(1, kLoadBytes, MALLOC_CAP_SPIRAM));
-  if (s_load_buf == nullptr) {
+  if (s_load_buf == nullptr)
     ESP_LOGW(TAG, "no PSRAM buffer: the float test runs without PSRAM traffic");
-    return false;
+  // The logger is on USB_SERIAL_JTAG (base.yaml), so UART0 is free. A
+  // configuration that opens UART0 itself keeps it: the float test then runs
+  // without the U0TXD load, and the log says so.
+  if (uart_is_driver_installed(kUart)) {
+    ESP_LOGW(TAG, "UART0 in use: the float test runs without the 0x55 load on U0TXD");
+  } else {
+    uart_config_t u = {};
+    u.baud_rate = kUartBaud;
+    u.data_bits = UART_DATA_8_BITS;
+    u.parity = UART_PARITY_DISABLE;
+    u.stop_bits = UART_STOP_BITS_1;
+    u.flow_ctrl = UART_HW_FLOWCTRL_DISABLE;
+    u.source_clk = UART_SCLK_DEFAULT;
+    s_uart_ok = uart_driver_install(kUart, 256, 0, 0, nullptr, 0) == ESP_OK && uart_param_config(kUart, &u) == ESP_OK;
   }
   return xTaskCreateStaticPinnedToCore(&load_task, "zf_float", sizeof s_load_stack, nullptr, 2, s_load_stack,
                                        &s_load_tcb, 0) != nullptr;
@@ -281,18 +330,23 @@ bool CurrentSampler::start(const BoardPins &p) {
   adc_channel_t hi = ADC_CHANNEL_0;
   adc_channel_t lo = ADC_CHANNEL_0;
   adc_channel_t rb = ADC_CHANNEL_0;
+  adc_channel_t vin = ADC_CHANNEL_0;
   esp_err_t err = adc_continuous_io_to_channel(p.current_high, &unit, &hi);
   if (err == ESP_OK && unit == ADC_UNIT_1)
     err = adc_continuous_io_to_channel(p.current_low, &unit, &lo);
   if (err == ESP_OK && unit == ADC_UNIT_1)
     err = adc_continuous_io_to_channel(p.relay_readback, &unit, &rb);
+  // Without VIN_MON the fourth slot samples GPIO7 again and is not used.
+  if (err == ESP_OK && unit == ADC_UNIT_1)
+    err = adc_continuous_io_to_channel(p.vin_monitor >= 0 ? p.vin_monitor : p.relay_readback, &unit, &vin);
   if (err != ESP_OK || unit != ADC_UNIT_1) {
-    ESP_LOGE(TAG, "current sense and relay read-back pins are not on ADC1");
+    ESP_LOGE(TAG, "current sense, relay read-back and VIN_MON pins are not on ADC1");
     return false;
   }
   ch_hi_ = static_cast<int>(hi);
   ch_lo_ = static_cast<int>(lo);
   ch_rb_ = static_cast<int>(rb);
+  ch_vin_ = p.vin_monitor >= 0 ? static_cast<int>(vin) : -1;
 
   adc_continuous_handle_cfg_t handle_cfg = {};
   handle_cfg.max_store_buf_size = kFrameBytes * 8;
@@ -304,7 +358,7 @@ bool CurrentSampler::start(const BoardPins &p) {
     ESP_LOGE(TAG, "ADC continuous mode: %s", esp_err_to_name(err));
     return false;
   }
-  const adc_channel_t chans[kChannels] = {hi, lo, rb};
+  const adc_channel_t chans[kChannels] = {hi, lo, rb, vin};
   adc_digi_pattern_config_t pattern[kChannels] = {};
   for (uint32_t i = 0; i < kChannels; ++i) {
     pattern[i].atten = ADC_ATTEN_DB_6;  // pin map: 6 dB, 0 to 1600 mV
@@ -325,7 +379,7 @@ bool CurrentSampler::start(const BoardPins &p) {
   // fails on the safe side. A bench item.
   if (err == ESP_OK)
     err = gpio_input_enable(static_cast<gpio_num_t>(p.relay_readback));
-  void **cali[kChannels] = {&cali_hi_, &cali_lo_, &cali_rb_};
+  void **cali[kChannels] = {&cali_hi_, &cali_lo_, &cali_rb_, &cali_vin_};
   for (uint32_t i = 0; err == ESP_OK && i < kChannels; ++i) {
     adc_cali_curve_fitting_config_t c = {};
     c.unit_id = ADC_UNIT_1;
@@ -365,8 +419,12 @@ void CurrentSampler::run() {
       if (!parsed[i].valid || parsed[i].unit != ADC_UNIT_1)
         continue;
       const int ch = static_cast<int>(parsed[i].channel);
-      zf::ChannelStats *stats = ch == ch_hi_ ? &w.hi : ch == ch_lo_ ? &w.lo : ch == ch_rb_ ? &w.relayRb : nullptr;
-      void *calib = ch == ch_hi_ ? cali_hi_ : ch == ch_lo_ ? cali_lo_ : cali_rb_;
+      zf::ChannelStats *stats = ch == ch_hi_    ? &w.hi
+                                : ch == ch_lo_  ? &w.lo
+                                : ch == ch_rb_  ? &w.relayRb
+                                : ch == ch_vin_ ? &w.vinMon
+                                                : nullptr;
+      void *calib = ch == ch_hi_ ? cali_hi_ : ch == ch_lo_ ? cali_lo_ : ch == ch_rb_ ? cali_rb_ : cali_vin_;
       if (stats == nullptr)
         continue;
       int mv = 0;
@@ -390,6 +448,7 @@ void CurrentSampler::run() {
       w.hi.reset();
       w.lo.reset();
       w.relayRb.reset();
+      w.vinMon.reset();
       window_start = now;
     }
   }
@@ -414,6 +473,11 @@ zf::CurrentWindowStats CurrentSampler::latest() const {
 
 zf::hw::BusStatus ExpanderBus::write(uint8_t reg, uint8_t value) {
   return map_error(dev_->write_register(reg, &value, 1));
+}
+
+zf::hw::BusStatus ExpanderBus::writePair(uint8_t reg, uint8_t v0, uint8_t v1) {
+  const uint8_t data[2] = {v0, v1};
+  return map_error(dev_->write_register(reg, data, 2));
 }
 
 zf::hw::BusStatus ExpanderBus::read(uint8_t reg, uint8_t &value) {

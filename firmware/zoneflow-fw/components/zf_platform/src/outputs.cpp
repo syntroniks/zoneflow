@@ -248,6 +248,17 @@ hw::BusStatus Tca9539Bus::write(uint8_t reg, uint8_t value)
     return mapI2c(i2c_master_transmit(dev_, buf, sizeof buf, kI2cTimeoutMs));
 }
 
+hw::BusStatus Tca9539Bus::writePair(uint8_t reg, uint8_t v0, uint8_t v1)
+{
+    if (dev_ == nullptr) {
+        return hw::BusStatus::BusError;
+    }
+    // Address, command byte, port 0, port 1: one transaction, the second
+    // port nine SCL periods after the first.
+    const uint8_t buf[3] = {reg, v0, v1};
+    return mapI2c(i2c_master_transmit(dev_, buf, sizeof buf, kI2cTimeoutMs));
+}
+
 hw::BusStatus Tca9539Bus::read(uint8_t reg, uint8_t &value)
 {
     if (dev_ == nullptr) {

@@ -81,6 +81,19 @@ struct HardwareStatus {
     CurrentChannel currentChannel = CurrentChannel::None;
     int32_t currentDcMa = 0;        // DC component of the latest window
     int32_t lastTripCurrentMa = -1; // current window before the last over-current trip
+    // Hardware design 19.10: the latest VIN_MON window mean and the rest
+    // levels of the two current channels, mV; -1 when not read.
+    int32_t vinMonMv = -1;
+    int32_t restLoMv = -1;
+    int32_t restHiMv = -1;
+    // Rule 19: why the current measurement counts as lost, and how many
+    // starts skipped steps 5, 5b and 6 for it.
+    CurrentLoss currentLost = CurrentLoss::None;
+    uint32_t checksSkipped = 0;
+    // 19.8: trips with no valve bit low, not counted against an output.
+    uint32_t idleTrips = 0;
+    // 19.7 item 2: commissioning waits for the die temperature (25 to 50 C).
+    bool commissionWaitingForTemperature = false;
 };
 
 struct SystemState {

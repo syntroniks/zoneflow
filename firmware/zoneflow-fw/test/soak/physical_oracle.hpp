@@ -44,6 +44,9 @@ struct FirmwareView {
     uint8_t maxConcurrent = 2;
     std::array<uint64_t, kMaxZones> maxRunMs{};
     uint64_t minRestMs = 1800000;
+    // The output stage counts its current measurement as usable (rule 19):
+    // windows arrive and both channels rest inside their limits.
+    bool currentUsable = true;
 };
 
 class PhysicalOracle {
@@ -66,6 +69,12 @@ public:
     // A zone runs at most this much past its budget: one control tick and
     // one interrupt period.
     static constexpr uint64_t kBudgetSlackMs = 120;
+    // A failed-short output device that waters during another output's run
+    // is found by the rise in current with no output switched (zone fault
+    // policy, firmware architecture section 22 gap 2): within the run's
+    // settle time and two windows of an output change the rise is part of
+    // the run's level and is found only when the run ends (counted).
+    static constexpr uint64_t kRiseBlindMs = 1500;
 
     std::function<void(const char *, const std::string &)> violation;
 
@@ -78,6 +87,11 @@ public:
 
 private:
     std::array<uint64_t, kOutputs> uncommandedSince_{};
+    uint64_t shortedSince_ = 0; // the shorted output watering during another run, since
+    bool shortedBlind_ = false; // that began inside kRiseBlindMs of an output change
+    bool shortedReported_ = false;
+    std::array<bool, kOutputs> lastCommanded_{};
+    uint64_t lastChangeMs_ = 0;
     std::array<bool, kOutputs> uncommandedReported_{};
     struct Budget {
         uint64_t burstMs = 0;

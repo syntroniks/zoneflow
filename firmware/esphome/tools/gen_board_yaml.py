@@ -32,6 +32,7 @@ HEADER_GEN = REPO / "firmware" / "zoneflow-fw" / "tools" / "gen_board_header.py"
 GPIO_SUBS = {
     "ISENSE_LO": "zf_pin_isense_lo",
     "ISENSE_HI": "zf_pin_isense_hi",
+    "VIN_MON": "zf_pin_vin_monitor",
     "SENS_RAIN": "zf_pin_rain",
     "SENS_FLOW": "zf_pin_flow",
     "SENS_AUX": "zf_pin_aux",

@@ -38,8 +38,6 @@ constexpr UBaseType_t kInputQueueDepth = 32;
 constexpr UBaseType_t kEventQueueDepth = 16;
 // Longest sleep between loop passes; the state is polled this often.
 constexpr uint32_t kMaxSleepMs = 20;
-// Rule 17: a duty well away from 0 and 100 %, so that the PWM net toggles.
-constexpr uint8_t kFloatTestBacklightPercent = 50;
 
 class EspSystemPort final : public ISystemPort {
 public:
@@ -84,6 +82,7 @@ void uiTask(void *arg)
 
     uint32_t shown = 0;
     bool drawn = false;
+    bool floatShown = false;
     for (;;) {
         const MonoMs now = nowMs();
         ui::InputEvent input;
@@ -116,7 +115,13 @@ void uiTask(void *arg)
             lv_obj_invalidate(lv_screen_active());
         }
         const uint32_t next = lv_timer_handler();
-        port::backlightSet(floatLoad ? kFloatTestBacklightPercent : drawn ? ui.backlightPercent() : 0);
+        if (floatLoad != floatShown) {
+            floatShown = floatLoad;
+            port::backlightFloatTest(floatLoad); // 50 % at 4.7 kHz, then the user's level again
+        }
+        if (!floatLoad) {
+            port::backlightSet(drawn ? ui.backlightPercent() : 0);
+        }
 
         // Sleep until LVGL needs to run again, at most kMaxSleepMs, and wake
         // at once when a control is used.

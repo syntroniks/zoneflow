@@ -431,6 +431,9 @@ instants.
   clock set back by days and put right by SNTP reported the day's starts as
   missed and ran the newest one again (system soak simulation, section 22).
   A restart in between loses the kept keys.
+- **Clock put back by less than a day:** the keys stay, and every start the
+  clock passes again that a key set while it was ahead covers is reported
+  missed when the clock reaches it (missed-start policy 8 below).
 - **No valid clock.** If the RTC is missing or reports lost time and SNTP has
   not synced, no scheduled start runs. Manual runs still work.
 - **Time zone change.** The stored keys are local (day, minute) values. On
@@ -458,6 +461,25 @@ window can contain starts that did not run on time.
 5. A program with no stored key (never ran on this device, or runtime state
    lost) gets no catch-up and no missed reports.
 6. Editing the configuration never triggers a start whose time has passed.
+7. The runtime record (the keys and the rain delay) is kept in two copies,
+   `runtime` and `runtime_b`, written alternately, each with a sequence
+   number and its own CRC-32 (`zf/app/persist.hpp`). A copy that fails its
+   check is never used. When the newest copy may be the damaged one (one
+   copy valid, the other present and damaged), the older copy is restored
+   and the catch-up after boot runs nothing: every start in the window is
+   reported missed. One of them may have run already, and a start reported
+   missed that ran is the lesser harm than one that runs twice. Both copies
+   damaged is policy 5. (System soak simulation, section 22 gap 9.)
+8. After the clock is put back by less than a day, each start the clock
+   passes again whose key is already consumed (it ran, was reported missed,
+   or an edit passed it while the clock was ahead) is reported missed when
+   the clock reaches it, once, and never run again. The record of which
+   starts these are is in RAM; a restart in between skips them without a
+   report. (Section 22 gap 4.)
+
+This list is the policy for every case in which a start does not run at
+its time; the clock bullets above and the scheduler's comments refer to
+it.
 
 Example: a program at 06:00 with the default grace. Power fails at 05:30 and
 returns at 06:20: the 06:00 start runs at 06:20. Power returns at 07:30
@@ -566,9 +588,48 @@ the REST and backup format. Abbreviated example:
   either polarity came within 25 ms (hardware design 19.9). Loss declared
   after a further 60 ms, return after 500 ms. With no AC (USB-only power)
   the current checks are suspended and the output stage tests nothing.
-- **Current sense unavailable.** `SensorSample::currentSenseAvailable` is
-  false when the ADC or its calibration could not be set up, or a tick gave
-  no reading. Policy in section 3.
+- **Current sense unavailable** (`current_sense_unavailable`, hardware
+  design rule 19). `SensorSample::currentSenseAvailable` is false when the
+  ADC or its calibration could not be set up, or a tick gave no reading.
+  The output stage also counts the measurement as lost when a self-test
+  step waited 0.5 s for a window in vain, or a current channel rests
+  outside its limits (section 20). Steps 5, 5b and 6 and rule 6 are then
+  skipped, zones still run, and the condition is raised for as long as it
+  lasts: skipping is never silent. Policy in section 3.
+- **Zone fault policy** (`zf/diag/zone_fault_policy.hpp`, the same table in
+  both firmwares since the soak found them differing, section 22 gap 7):
+
+  | Fault | Stops | Locked out | Clears |
+  |---|---|---|---|
+  | Open circuit | the zone | no | itself, when the zone next runs inside its window; or by a person |
+  | Over-current, short circuit | every output | yes | by a person |
+  | DC component | the zone | yes | by a person |
+  | Current rose with no output switched | every output | decided below | |
+
+  Why: an open valve wire is a fault in the field, draws no current and
+  harms nothing when retried; whoever fixes the wire should not have to
+  visit the controller. A DC component means one polarity of the output's
+  triac or gate drive conducts and the other does not: a half-dead output
+  on the board, which needs a repair. Over-current and shorts put fault
+  current through the output at every retry.
+- **A failed-short output device during another zone's run** (section 22
+  gap 2). Its valve's current adds to the run's. `CurrentMonitor` takes the
+  run's level as the mean of the first two settled windows after the last
+  output change, and a window more than a fifth (at least 40 mA) above it,
+  for `confirm_samples` windows, is `current_rose`. Every output goes off at
+  once; the output stage keeps the relay closed for its linger and checks
+  rule 6 on the next window that starts 20 ms after the valves went off.
+  Current there is `output_shorted`: the relay opens and nothing runs.
+  Without it within 1.5 s (`ShortedOutputCheck`) the extra current went
+  through the zone itself, which is reported and locked out as an
+  over-current. Detection time from the failure to the relay opening: the
+  first full window after it ends within 200 ms, three windows confirm it
+  (300 ms), a control tick (50 ms), the rule 6 window (at most 220 ms) and
+  a tick: about 0.8 s at most, 0.45 s on the simulated board. The relay
+  opens within 10 ms of its control going (hardware design 9.2). Before,
+  the device watered until that run ended. Not covered: a device that fails
+  within the settle time and two windows of an output change (the rise is
+  then part of the run's level) is found when the run ends, as before.
 - **Hardware over-current trip.** GPIO40, low while the latch is set,
   sampled by the keep-alive interrupt every 5 ms and read every tick. There
   is no release pin: the output stage clears the latch by holding the
@@ -1405,10 +1466,11 @@ expander) or an expander fault.
 
 | Section 19.7 | What the firmware does |
 |---|---|
-| Step 0 | Waits for 24 VAC (an AC_ZC edge within 25 ms), the keep-alive low for 2.5 s and the latch clear. Without 24 VAC nothing is tested or run. On the first step 0 after start-up, an expander that still acknowledges gets every pin back to input at once: after a restart with a valve on it can still hold its outputs, for up to 0.83 s on a healthy board and indefinitely with the keep-alive net bridged to a net that toggles by itself (section 22). |
-| Step 1 | `A_RB` low, `B_RB` high, the expander does not acknowledge. `A_RB` reads `V_DRV` since review A2: high with an acknowledge is `idle_drive_enabled` (detector A or the latch), high without one `idle_drive_supply_on` (Q3), an acknowledge with `A_RB` low `idle_expander_answers` (`DRV_EN`). The window mean of GPIO7 between 0.3 and 1.5 V, from the ADC, is `idle_relay_gate_drain` (review A2 4.6 question 7), whatever the digital read says. |
-| Step 2 | Pin held high for 1.0 s, both read-backs unchanged, 100 ms low. At start-up, before every run (the "better" option, 1.1 s) and in a polling cycle when the last one is 24 h old. |
-| Step 2b | With step 2. The guard's request `Float`: the interrupt turns the pin's output driver off (no pull) for 0.5 s and reads the pin every 1 ms; any high read fails at once (`float_pin_high`), then `A_RB` must be low (`float_drive_enabled`) and `B_RB` high (`float_relay_on`). Fewer than 400 reads also fails: the test did not run as written. Then 100 ms driven low. `OutputStageStatus::floatTest` is set from the 100 ms before to the 100 ms after, for rule 17. |
+| Step 0 | Waits for 24 VAC (an AC_ZC edge within 25 ms), the keep-alive low for 2.5 s, the latch clear and, since the hardware answers (issue #41, 19.10), the latest `VIN_MON` window mean between 0.60 and 1.50 V. Below: `supply_low`, above: `supply_high`, both conditions that clear themselves while step 0 waits; a cycle that is not a run gives way and is tried later. `VIN_MON` under 0.10 V for 2 s with AC_ZC edges throughout is `rectifier_fault` (D2, R1 or C1), which needs a confirmed repair. Without a `VIN_MON` reading (the ADC lost) the supply check is skipped, as the current checks are, and the lost measurement is reported. Without 24 VAC nothing is tested or run. On the first step 0 after start-up, an expander that still acknowledges gets every pin back to input at once: after a restart with a valve on it can still hold its outputs, for up to 0.83 s on a healthy board and indefinitely with the keep-alive net bridged to a net that toggles by itself (section 22). |
+| Step 1 | `A_RB` low, `B_RB` high, the expander does not acknowledge. `A_RB` reads `V_DRV` since review A2: high with an acknowledge is `idle_drive_enabled` (detector A or the latch), high without one `idle_drive_supply_on` (Q3), an acknowledge with `A_RB` low `idle_expander_answers` (`DRV_EN`). The window mean of GPIO7 between 0.3 and 1.5 V, from the ADC, is `idle_relay_gate_drain` (review A2 4.6 question 7), whatever the digital read says. The rest levels of the current channels (every window taken with the keep-alive stopped, 19.10): both above 0.90 V is `supply_over_voltage` (rule 18, 3V3 above about 3.6 V), which needs a confirmed repair; one outside 0.70 to 0.88 V (`ISENSE_LO`) or 0.68 to 0.90 V (`ISENSE_HI`) is a lost current measurement (rule 19), reported, and the sequence goes on. |
+| Step 2 | Pin held high for 2.0 s (was 1.0 s: the one rising edge keeps a low-threshold Q2 on for up to 1.33 s at 70 C, `hardware/sim/failsafe/sequence.py`), both read-backs unchanged, 100 ms low. At start-up, before every run (the default, 2.1 s; `pinHighTestEveryRun`, ESPHome `self_test_before_every_run`) and in a polling cycle when the last one is 24 h old. |
+| Step 2b | At start-up and before every run, whatever step 2 does (19.7, note to step 2): after step 2's 100 ms low, or, when step 2 does not run, after 100 ms low with the load on (`FloatLead`). The guard's request `Float`: the interrupt turns the pin's output driver off (no pull) for 0.5 s and reads the pin every 1 ms; any high read fails at once (`float_pin_high`), then `A_RB` must be low (`float_drive_enabled`) and `B_RB` high (`float_relay_on`). Fewer than 400 reads also fails: the test did not run as written. Then 100 ms driven low. `OutputStageStatus::floatTest` is set from the 100 ms before to the 100 ms after, for rule 17. |
+| Step 3, `OC` | `OC` low while no valve bit is low (in step 3 or 4 of any procedure) is not an over-current (19.8): not counted against an output (`tripSeq` unchanged, `idle_trips` counted), keep-alive low for 1.5 s, one more try. The second in a row is `latch_input_held`, which needs a confirmed repair: 3V3 above 4 V with U13 acting, U13 or its divider, U6B, U6C or R48 to R51. A start that passes step 4a resets the count. |
 | Step 3 | Toggle; `A_RB` high and `B_RB` low within 150 ms of the first edge (timed by the interrupt), and the expander acknowledges. |
 | Step 4a | Input ports: 0x1F on port 0; port 1 0x2F on an 8-zone board, 0x3F on a 4-zone board. The variant bit is read once (start-up) and must not change later; the sensor-fault bit is reported, not a stop. |
 | Step 4b, 4c | Output ports 0xDF and 0xFF, then configuration 0xC0 and 0xF0 (0xFF on a 4-zone board), all read back; polarity 0x00. The values are computed from the pin map's bits; a host test checks them against the literals of 19.7. |
@@ -1417,13 +1479,14 @@ expander) or an expander fault.
 | Step 6 | Relay bit set and read back, 20 ms, one window with every valve off: current above the idle threshold is `output_shorted`. Then outputs may switch. |
 | Step 7 | Every write read back (output and input port). Every tick all six registers are read and compared with the shadow copy and the valve inputs with the valve outputs; `A_RB` high, `B_RB` low, `OC` high. Never more than three valve bits low after any write. |
 | Step 8 | Valve bits set, 40 ms, relay bit cleared, configuration 0xFF. |
-| Step 9 | Keep-alive low; `A_RB` released 0.15 to 1.0 s and `B_RB` 0.05 to 1.6 s after the stop (3 s timeout; `stop_drive_release`, `stop_relay_release`); the expander does not acknowledge. Once commissioned, each time also within 0.5 to 1.5 times the board's stored value (`stop_drive_band`, `stop_relay_band`). |
-| Fault state | Keep-alive low; while the expander still acknowledges, configuration 0xFF on every tick. Nothing starts until a person acknowledges. |
+| Step 9 | Keep-alive low; `A_RB` released 0.15 to 1.0 s and `B_RB` 0.05 to 1.6 s after the stop (3 s timeout; `stop_drive_release`, `stop_relay_release`); the expander does not acknowledge. Once commissioned, each time also within 0.40 to 1.70 times the board's stored value (`stop_drive_band`, `stop_relay_band`; was 0.5 to 1.5, which failed 8 healthy stop tests in `commission.py`). |
+| Fault state | Keep-alive low. In the same tick, while the expander still answers, every output off in one pair write (output ports 0xDF and 0xFF, TI SCPS202C figure 31: zones 5 to 8 follow zones 1 to 4, the master and `RLY_ON` by nine SCL periods, 22.5 us at 400 kHz, plus at most 0.2 us of output valid time), then configuration 0xFF and 0xFF in a second pair write; repeated every tick. Section 22 gap 6: before, port 0 (with the relay) went a write ahead of port 1, and only on the next tick. Nothing starts until a person acknowledges. |
 | 19.6 polling | Every 10 minutes while the sensor supply is on, and when flow starts with every valve shut or stops with one open (at most once a minute): steps 0, 1, 3, 4a, a read of port 1, step 9. No output or configuration register is written. |
-| Commissioning | A board with no stored release times runs, after the start-up test and while nothing else is asked for, up to ten cycles like the polling cycle (steps 0, 1, 3, 4a, 9) back to back, and stores the medians once five agree. A run request goes first. Details below. |
-| Rule 15 | No separate check: see the decisions below. |
+| Commissioning | A board with no stored release times runs, after the start-up test and while nothing else is asked for, up to ten cycles like the polling cycle (steps 0, 1, 3, 4a, 9) back to back, and stores the medians once five agree. A sample counts only while the die temperature reads 25 to 50 C (19.7 item 2); outside that, or after ten cycles that stored nothing, it tries again every 10 minutes for as long as nothing is stored. A run request goes first. Details below. |
+| Rule 15 | No separate check, as the hardware answers decided: `idle_relay_on` names both causes, and the troubleshooting guide gives the test a person can do (unplug USB: with a failed regulator the controller is dark on 24 VAC alone). |
 | Rule 16 | `esp_console` on UART1 with its default pins fails the build; every tick the device reads the keep-alive pin's IO_MUX function and GPIO matrix output selection, and anything but a plain GPIO is `keepalive_pin_routed`. ESPHome refuses `logger: hardware_uart: UART1`. |
-| Rule 17 | While `floatTest` is set: standalone, the display task runs the backlight PWM at 50 % and redraws the whole screen continuously, and a task on core 0 streams through 256 kB of PSRAM; ESPHome, the same PSRAM task, and `display.yaml` runs the backlight at half level and updates the display every 20 ms from the component's `on_float_test` trigger. |
+| Rule 17 | While `floatTest` is set: standalone, the display task runs the backlight PWM at 50 % duty (raw duty, not the square law of the user's level, which made "50 %" a quarter until this change) and at 4.7 kHz instead of 5 kHz (19.7 note to step 2b: 5 kHz and a read every 1 ms lock together), and redraws the whole screen continuously; a task on core 0 streams through 256 kB of PSRAM and sends 0x55 on UART0 at 115 200 baud without pause (the console is on USB serial/JTAG; a terminal on J8 shows a line of U). ESPHome: the same task, and `display.yaml` sets the backlight to 4.7 kHz and half level and updates the display every 20 ms from the component's `on_float_test` trigger. |
+| Rule 19 | `OutputStageStatus::currentLost`: unavailable (the ADC), no window (a step waited 0.5 s in vain), rest level. While it is set, steps 5, 5b and 6 and rule 6 are skipped (`checks_skipped` counts the starts) and `current_sense_unavailable` is raised for as long as it lasts. |
 | Phase rule (19.4) | `keepalive::periodMeetsContract()`: a period of 2.5 to 20 ms. Both firmwares assert it for their timer configuration at compile time. The pin changes level only at a keep-alive period, so the period is the shortest phase. A host test runs every procedure on the simulated board and finds no phase under 5 ms. |
 | 19.8 latch | Read every tick (sampled every 5 ms). On a trip: keep-alive low, 1.5 s, the latch must be clear by 3 s or `trip_latch_stuck`. The next run starts from step 0. |
 
@@ -1452,24 +1515,29 @@ Decisions where section 19 leaves room:
   test, while nothing else is asked for, up to ten commissioning cycles in
   one boot; the start-up test and each cycle give one sample; the medians of
   five agreeing samples are stored. What a sample must satisfy, so that a
-  board with a fault cannot store the fault as its normal: tA 0.34 to 0.9 s
-  and tB 0.16 to 1.1 s (review A2 4.5: the grid range at 5 ms edges divided
-  by the temperature factors of one board, plus about 10 %), and the five
-  within a factor of 1.25. An open R30 or R91 (tA 1.56 s) is refused, and
-  so is an open R14 or R90 on a typical board (tB 1.20 s). A value loaded
-  from storage outside the same range is ignored. Stop tests after runs and
+  board with a fault cannot store the fault as its normal: tA 0.33 to
+  0.85 s and tB 0.12 to 1.25 s (the hardware answers, from
+  `failsafe/commission.py`; were 0.34 to 0.9 s and 0.16 to 1.1 s, derived
+  by hand), the five within a factor of 1.25, and the die temperature at 25
+  to 50 C. Every board with an open R30 or R91 is refused; an open R14 or
+  R90 is refused on about a quarter of boards and needs an ohmmeter on the
+  rest (risk 34). No ratio of tB to tA: it does not separate the two. A
+  value loaded from storage outside the same range is ignored. Stop tests after runs and
   polling cycles never teach. Re-learning: confirming the repair of a fault
   of steps 1, 2, 2b, 5b or 9 clears the stored value, and the board learns
   it again at once. Until a value is stored, step 9 applies the absolute
   limits only and the condition `not_commissioned` is active (19.7 item 3).
 - **Rule 15.** It cannot be told apart from step 1 with what firmware can
   read: `V_BUCK` missing and Q2 stuck on both put 0 V on GPIO7 at rest with
-  24 VAC present, and section 19 offers no other reading of `V_BUCK`. Review
-  A2's own table finds "`V_BUCK` falls to 0 V with USB attached" by "1 idle:
-  relay read-back not high". So the firmware reports it as `idle_relay_on`,
-  which needs a confirmed repair and refuses runs, and the troubleshooting
-  guide names U1, F5 and D25 with Q2. `VIN_MON` is still not read. A question
-  for the hardware author below.
+  24 VAC present. The hardware answers made that the rule: `idle_relay_on`
+  with both causes named, and a person unplugs USB to tell them apart.
+  `VIN_MON` is read since (step 0), which takes a brown-out out of step 1:
+  on USB power it was reported as a relay fault that needs a repair.
+- **The die temperature.** ESP-IDF's temperature sensor driver, range -10
+  to 80 C, read every 10 s (standalone `SensorInputs`, ESPHome
+  `die_temperature()`), into `StageTickInput::dieTempC`. Without the sensor
+  the board does not commission and keeps reporting `not_commissioned`;
+  the absolute limits of step 9 still apply.
 - **GPIO7 as an analogue input.** The relay read-back is a third channel of
   the ADC1 continuous-mode pattern, at 5 kS/s and 6 dB like the current
   channels, and its window mean comes with every current window. 6 dB
@@ -1488,14 +1556,23 @@ Decisions where section 19 leaves room:
 - **Stagger.** The zone driver never switches two outputs on within
   100 ms (rule 10), master included: a zone waits at least 100 ms after the
   master even with `pre_open_ms` 0.
-- **Without current readings** (ADC failed) the weld and shorted-output
-  checks are skipped and zones still run, the policy of section 3.
+- **Without current readings** (ADC failed, a window that does not come, a
+  rest level outside its limits) the weld, gate bleed and shorted-output
+  checks are skipped and zones still run, the policy of section 3 and
+  rule 19, and `current_sense_unavailable` says so for as long as it lasts.
+- **`VIN_MON` in the ADC pattern.** A fourth channel of the continuous-mode
+  pattern, GPIO3 at 6 dB and 5 kS/s like the others: 20 kS/s in all.
+  `CurrentWindowStats::vinMon`; only the window mean is used.
 
 ### Faults and who may clear them
 
 | Fault | Checks | Clear |
 |---|---|---|
 | `keepalive_detector` | Steps 1 and 2, steps 3 and 9 detector timing and band, `A_RB` or `B_RB` wrong while running | Steps 1, 2 and 9 (a detector can no longer be relied on): only `AcknowledgeRepair`, a second deliberate action. Others: `ClearFaults`. |
+| `rectifier_fault` | Step 0, 19.10: no rectified supply with mains present for 2 s | Only `AcknowledgeRepair` |
+| `supply_over_voltage` | Rule 18: both rest levels above 0.90 V | Only `AcknowledgeRepair` |
+| `latch_input_held` | 19.8: the latch set twice with no valve bit low | Only `AcknowledgeRepair` |
+| `supply_low`, `supply_high` | Step 0, 19.10: `VIN_MON` under 0.60 V or above 1.50 V | Clear themselves |
 | `keepalive_bridged` | Step 2b; rule 16 (`keepalive_pin_routed`) | Step 2b: only `AcknowledgeRepair`. Rule 16: `ClearFaults`, found again at the next tick while it lasts. |
 | `relay_gate_bleed` | Step 5b | Only `AcknowledgeRepair` |
 | `not_commissioned` | No stored detector release times | Clears itself when they are stored |
@@ -1508,7 +1585,9 @@ Decisions where section 19 leaves room:
 | `mains_signal` | AC_ZC outside 45 to 66 Hz (100 Hz: bridged to the keep-alive) | Clears itself |
 
 `AcknowledgeRepair` is a command with a confirmation flag. Since review A2
-it acknowledges any fault of steps 1, 2, 2b, 5b and 9, and it clears the
+it acknowledges any fault of steps 1, 2, 2b, 5b and 9, and since the
+hardware answers also `rectifier_fault`, `supply_over_voltage` and
+`latch_input_held`, and it clears the
 board's stored release times so that it learns them again. The display
 offers it as **Repaired** on the fault's detail screen, then asks again with
 Cancel first; the REST API as `POST /faults/acknowledge-repair` with
@@ -1543,7 +1622,7 @@ current flows is a DC component. The idle threshold default is now 30 mA
 a clipped 1.5 A load, a bias drift, noise and a half-wave current through
 the same code.
 
-### Run budget over a software restart
+### Run budget over a restart and a power cut
 
 Firmware security residual risk 10: a restart reset each zone's on-time and
 rest. Every control tick the controller now writes a `RetainedRecord` to
@@ -1553,8 +1632,24 @@ the ages of the last three over-current trips per output. A magic number,
 version, size, CRC-32 and the CRC's complement guard it; power-on garbage
 and a half-written record are rejected and the budget starts empty. On
 start-up the driver takes the budgets back; the restart itself counts as no
-rest, so a restart can lengthen a zone's rest but not shorten it. A power
-cycle or brownout loses the record, as it loses RAM.
+rest, so a restart can lengthen a zone's rest but not shorten it.
+
+A power cycle or brownout loses RTC memory, and a reset during its write
+tears it. Since the soak found that (section 22 gap 3) the budget has a
+copy in flash too (`zf/app/budget.hpp`): two records, `budget_a` and
+`budget_b`, written alternately, each with a sequence number and a CRC-32.
+`BudgetPoster` posts one when a zone opens or closes, when a zone finishes
+its rest, and every 30 s while a zone is open, never more than once a
+second; the standalone firmware's persist task writes it, the ESPHome
+component writes ESPHome preferences and syncs them. Nothing is written
+while nothing runs. When the RTC copy is not intact, the controller takes
+the newest valid flash copy and charges what the last write may have
+missed: a zone open at the write 32 s more, every other zone 2 s; one copy
+damaged (the newest may be lost) another 32 s and no rest credit; both
+copies unreadable, every zone has used its whole budget and must rest the
+minimum rest time (the worst case); no copy at all (a new board), an empty
+budget. The time the controller was off never counts as rest. Wear: a
+one-hour run writes about 120 records of 84 bytes.
 
 ### Other items of section 19.1
 
@@ -1607,6 +1702,29 @@ Not checked, because it needs a board: whether the float test sees a real
 bridge, whether the ADC and the digital read of GPIO7 work together, the
 release times and the learning limits, the interrupt load at 1 kHz.
 
+### Verification after the hardware answers and the soak gaps
+
+No board exists. The checks run on the change that follows the hardware
+answers (issue #41) and closes the soak's firmware gaps (section 22):
+
+| Check | Result |
+|---|---|
+| `test/host/run.sh` (ASan, UBSan) | 859 tests pass, 44 of them new: `HardwareAnswers` (28: the hold of step 2 and the 1.33 s single-edge pulse of the hot corner, step 2b before every run with step 2 daily, the band at both edges, commissioning temperature and its retry, `VIN_MON` low, high, absent, a brown-out on USB, both rest levels high, one out, windows that stop, a held latch input, U3 shorted with U13, the pair write of the fault path and its bound, the controller's conditions), `ZoneFaultPolicy` (3), `ShortedOutput` (3), `BudgetOverPowerCut` (6), `RuntimeRecord` (2), `SchedulerTest` (2 for policy 8), `SelfTestA2` (1, an open bleed resistor on detector B that commissions); appendix A has one row fewer (D22 open is inside the wider band now, tested with the band). Each fix was reverted once to see its test fail. |
+| ESPHome host tests | 45 pass, 4 new (the open-circuit policy rewritten, the DC lockout, a failed-short output, the supply and lost-measurement conditions, the budget from flash). |
+| `idf.py build`, ESP-IDF v5.5.6 | No warnings. `zoneflow-fw.bin` 2,099,824 bytes, 50.1 % of the 4,194,304-byte OTA slot. |
+| `esphome config` and `esphome compile` | Pass for the 8-zone and 4-zone examples and `factory.yaml`; the 8-zone application is 1,394,359 bytes, static RAM 166,935 of 341,760 bytes. `ruff check` passes. |
+| Release dry run | `zfrelease package`, `package-prebuilt`, `assemble`, `verify` (every check), the installer page test (5 of 5), `zfflash fetch` and `stage-site` pass. |
+| Display simulator | 75 scenes, byte-identical to the committed pictures (the changed texts are on screens no scene shows). |
+| Web UI | `check:api` (types regenerated from `openapi.json`), type check, 188 unit tests. |
+| clang-format 23.1.4 | Clean on every file of `firmware/zoneflow-fw`. |
+| Soak CI subset (`--ci`, ASan, UBSan) | No violation, about 3 minutes locally (before the S9 change of the final commit; CI runs it on the head). |
+
+Not checked, because it needs a board: four ADC channels at 20 kS/s, the
+real `VIN_MON` and rest levels, the die temperature against the board's
+(risk 30), whether the float test with its new load finds a real bridge
+(risk 27), U13 at a real 5 V rail, and the wear of the budget record over
+years.
+
 ### Questions for the hardware author
 
 Review A2 section 4.6 answered questions 1, 2, 3, 5 and 7. The answers and
@@ -1651,7 +1769,10 @@ list.
 ### Questions after review A2
 
 The revised section 19 left these open, or contradicts itself here. The
-firmware's choice for each is above.
+firmware's choice for each is above. All twelve are answered in
+[hardware answers A2](hardware-answers-a2.md) (issue #38, pull request #42),
+and the firmware follows the answers since issue #41: the table of the
+output stage above, and the verification below.
 
 1. **Rule 15 cannot be told from step 1.** With 24 VAC present, GPIO7 reads
    0 V at rest both when `V_BUCK` is missing and when Q2 is on. Step 0 puts
@@ -1777,6 +1898,7 @@ are stepped one second at a time.
 | Long run (`run_long.sh`), 2 h 32 min | before finding 7 | chaos: 2,000 seeds × 14 days (28,000 simulated days, 4.67 × 10⁹ control ticks, 37,034 boots); liveness: 32 seeds × 365 days (11,680 days); halt: 1,080 scenarios (38,880 halts, 30,199 with a valve on); ESPHome: 160 seeds × 5 days (800 days) | Finding 7 (every liveness seed). Chaos: three seeds ran a start twice from a runtime record the flash model had damaged (gap 9); seed 1842 and halt seed 834 led to the S2 and S4 refinements. ESPHome: no violation |
 | Final verification | final (this pull request's head) | chaos: seeds 1 to 400 × 14 days (5,600 days); liveness: 32 seeds × 365 days (11,680 days); halt: 1,080 scenarios; ESPHome: 64 seeds × 5 days (320 days) | Chaos: one violation, seed 392 again (gap 9, a start run twice from a runtime record the flash model damaged beyond NVS's guarantee). Liveness: 31 seeds clean; seed 12 skipped a program the harness had generated with no zone, fixed in the generator and clean on its rerun. Halt and ESPHome: no violation |
 | CI subset (`--ci`), on every firmware change | ASan, UBSan | chaos 24 × 2 days, liveness 2 × 45 days, 54 halt scenarios, ESPHome 4 × 1 day | No violation; 3 min 49 s on GitHub's runner |
+| Follow-up run (issue #41's pull request), 14 processes, 47 min | the gaps closed, the new invariants (S1-shorted-output, S4-budget-power-cycle, S6-fault-path-split, S8 policies 7 and 8, M1, Z1, E8) | chaos: seeds 1 to 400 × 14 days (5,600 days, 1.04 × 10⁹ ticks); liveness: 32 × 365 days (11,680 days); halt: 1,080 scenarios; ESPHome: 64 × 5 days (320 days) | No violation. A first chaos pass found S9-boot-stuck in 5 seeds: a sag to 17 VAC holds step 0 (`VIN_MON` 598 mV), as 19.10 asks; S9 now counts its minute from the supply being in range, and those seeds are clean. Counted: 62 starts reported missed after the clock was put back, 21 boots with an uncertain runtime record, 11 with an uncertain budget record; a failed-short output watered at most 450 ms in a measured run, and 3.7 h in all over 5,600 days within the settle time of an output change or without a usable measurement (`gap.shorted_output_in_settle_or_unmeasured_ms`); 2.23 s from a halt's last heartbeat to safe (gap 10, issue #45) |
 
 What the chaos part of the long run did, from its counters: 538,039 REST
 calls and 434,661 MQTT messages (7,012 floods), 11,771 power cuts, 11,717
@@ -1842,7 +1964,14 @@ frame is a few hundred bytes. A stack high-water mark on a board settles it.
 
 ### Requirement gaps
 
-Found by the soak, not fixed here, each counted in its runs:
+Found by the soak in pull request #43. The follow-up change (issue #41's
+pull request) closed the ones that are firmware's, each with a regression
+test in `test/host` (`soak_gaps_test.cpp`, `scheduler_test.cpp`,
+`hardware_answers_test.cpp`, the ESPHome `supervisor_test.cpp`) and an
+invariant in the soak that fails the CI subset; the status of each is in
+brackets. Gaps 1 and 10 are the hardware author's, in
+[issue #45](https://github.com/syntroniks/zoneflow/issues/45) with the soak
+evidence.
 
 1. **The keep-alive net bridged to a net that toggles by itself** (review
    A2 appendix A, a single fault) keeps both detectors on. If the processor
@@ -1851,36 +1980,51 @@ Found by the soak, not fixed here, each counted in its runs:
    fault ... may leave a valve on after the keep-alive stops") does not hold
    for this fault while the firmware is halted. Step 2b finds the bridge
    before the next run, and fix 4 switches the valve off at the restart.
-   A hardware decision.
+   A hardware decision. [Hardware; issue #45.]
 2. **A failed-short triac waters during every other zone's run.** Its
    current hides inside the run's window; rule 6 only promises that the
    relay opens after the run, when step 6 or the linger check finds it
-   (`gap.shorted_output_watering_ms`).
+   (`gap.shorted_output_watering_ms`). [Closed: a current that rises with
+   no output switched stops every output, and rule 6 opens the relay within
+   about 0.8 s (section 7). Invariant `S1-shorted-output`; left counted: a
+   device that fails within 1.5 s of an output change, or with no usable
+   current measurement.]
 3. **The run budget is lost over a power cycle, a brownout or a torn
    retained record** (section 20 says so for the first two). The record is
    one copy, so a reset during its write (5 % of resets in the model)
    loses it too; a zone can then run past its maximum
    (`gap.budget_lost_over_power_cycle`). Two alternating copies would close
-   the torn case.
+   the torn case. [Closed: two copies in flash with a sequence number and a
+   CRC, what the last write missed charged, both unreadable the worst case
+   (section 20). Invariant `S4-budget-power-cycle`.]
 4. **After the clock is put back by less than a day,** starts covered by
    keys set while it was ahead (a start, or any configuration edit then)
    are skipped without a missed report
    (`gap.start_skipped_after_clock_put_back`). The scheduler keeps one key
    per program and cannot tell a start it ran from one it only passed.
+   [Closed: reported missed when the clock passes them again, missed-start
+   policy 8 (section 5). Invariants `S8-lost`, `S8-rerun-after-clock-put-back`.]
 5. **A start cut by a restart before any valve opened runs again** after
    the restart, inside the writer's 250 ms poll and the flash write that
    remain after fix 2 (`gap.rerun_of_start_cut_before_watering`); it waters
-   once, which is the better outcome.
+   once, which is the better outcome. [Unchanged, counted.]
 6. **The fault state releases the relay** in the same write as zones 1 to 4
    and before zones 5 to 8 (`doFault()` writes port 0 first). Rule 4's 40 ms
    applies to the run sequence; with the keep-alive already stopped the
-   hardware's own release order is not controlled either.
+   hardware's own release order is not controlled either. [Closed: every
+   output off in one pair write in the tick of the fault, zones 5 to 8 at
+   most 22.7 us after the relay and zones 1 to 4 (section 20), asserted in
+   `HardwareAnswers.FaultPathSwitchesBothPortsOffInOnePairWrite`.
+   Invariant `S6-fault-path-split`.]
 7. **The two firmwares differ on a zone fault:** the ESPHome supervisor
    locks a zone out on an open circuit and on a DC component; the
    standalone controller stops it, and the next start runs it again. The
-   specification does not say which is wanted.
+   specification does not say which is wanted. [Closed: one policy in
+   `zf/diag/zone_fault_policy.hpp` for both (section 7): an open circuit is
+   not locked out and clears at the next good run; a DC component is.]
 8. **The keys kept after a large backward jump (fix 1) are in RAM only;** a
    restart between the wrong setting and its correction still repeats.
+   [Unchanged.]
 9. **The runtime record (`runtime`) has no integrity check of its own.**
    The configuration is validated, the history chunks and the detector
    reference carry a CRC; the runtime record relies on NVS's entry CRC.
@@ -1890,6 +2034,10 @@ Found by the soak, not fixed here, each counted in its runs:
    the long run (chaos 392, after flipped bits) ran a start a second time
    (`S8-duplicate-damaged-record`). A CRC in the record would close it;
    it changes the stored format, so it is left to a separate change.
+   [Closed: its own CRC and a second copy; when the newest copy may be the
+   damaged one, the catch-up reports missed instead of running, missed-start
+   policy 7 (section 5). The old plain-JSON record is still read.
+   `S8-duplicate-damaged-record` fails the run.]
 10. **A reset after a freeze with the keep-alive pin high** pulls the pin
     low: one more edge after the last one the firmware made. In the
     simulated board an edge re-arms a detector's hold-up, so the time from
@@ -1898,7 +2046,7 @@ Found by the soak, not fixed here, each counted in its runs:
     longest seen in the halt runs was 2.23 s. Whether one falling
     edge recharges the real detectors is a question for the hardware
     author; the interrupt watchdog (300 ms by default) keeps the freeze
-    short.
+    short. [Hardware; issue #45.]
 11. **Commissioning writes `ka_ref` from the control task** (documented in
    section 20). The soak checks that it never happens with a valve
    energised; it did not.
@@ -1916,11 +2064,13 @@ Found by the soak, not fixed here, each counted in its runs:
 - Real timing and electrical behaviour: the board is the table-level model
   of `fake_board.hpp`, the current windows are computed from a model
   waveform, the comparator is a threshold on the peak current.
-- Zero-cross switching (`driver.zero_cross_switching`): no zero-cross
-  input is attached in the rig.
-- The ESPHome package outside its supervisor: the sprinkler and schedule
-  components and the YAML are played by a timer that starts and stops
-  zones.
+- Covered since the follow-up: zero-cross switching (on in 30 % of the
+  random configurations, on a modelled AC_ZC; invariant Z1), the ESPHome
+  schedule component's logic (two random programs per run; invariant E8),
+  and the MQTT inbox of 8 messages under floods (invariant M1).
+- The ESPHome package outside its supervisor and its schedule logic: the
+  sprinkler component and the YAML are played by a timer that starts and
+  stops zones.
 - Stack depth, interrupt load and tick time on the ESP32-S3. The slowest
   host tick was 120 ms on a loaded host in the final chaos run; host time
   says little about the device.

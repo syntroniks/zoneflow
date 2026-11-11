@@ -4,6 +4,7 @@
 substitutions:
   zf_pin_isense_lo: "GPIO1"  # ISENSE_LO
   zf_pin_isense_hi: "GPIO2"  # ISENSE_HI
+  zf_pin_vin_monitor: "GPIO3"  # VIN_MON
   zf_pin_rain: "GPIO4"  # SENS_RAIN
   zf_pin_flow: "GPIO5"  # SENS_FLOW
   zf_pin_aux: "GPIO6"  # SENS_AUX

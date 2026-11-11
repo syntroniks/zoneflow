@@ -14,7 +14,7 @@ using namespace zf::test;
 
 namespace {
 
-constexpr uint64_t kStartupMs = 9000; // 2.5 s low, 1.1 s pin high, 0.6 s float, 1 s toggling, stop test: about 6 s
+constexpr uint64_t kStartupMs = 10000; // 2.5 s low, 2.1 s pin high, 0.6 s float, 1 s toggling, stop test: about 7 s
 
 bool contains(const std::vector<std::string> &log, std::initializer_list<const char *> seq)
 {
@@ -45,7 +45,7 @@ void startUp(StageRig &r)
 void powerUp(StageRig &r, uint8_t firstBit = 0)
 {
     r.stage.requestPower(true, firstBit);
-    ASSERT_TRUE(r.runUntil([&] { return r.stage.powerReady(); }, 5000)) << toString(r.fault());
+    ASSERT_TRUE(r.runUntil([&] { return r.stage.powerReady(); }, 8000)) << toString(r.fault());
 }
 
 // What a single fault can still hold on after the keep-alive stopped.
@@ -118,7 +118,7 @@ TEST(OutputStage, NoSelfTestAndNoRunWithout24Vac)
     EXPECT_FALSE(r.stage.powerReady());
     r.board.acPresent = true;
     startUp(r);
-    EXPECT_TRUE(r.runUntil([&] { return r.stage.powerReady(); }, 5000));
+    EXPECT_TRUE(r.runUntil([&] { return r.stage.powerReady(); }, 8000));
 }
 
 TEST(OutputStage, KeepAliveLowTwoSecondsBeforeAnyTest)
@@ -247,7 +247,7 @@ TEST_P(SelfTestFailure, EndsInTheFaultStateWithOutputsOff)
         c.inject(r.board);
         r.stage.requestPower(true, 0);
         if (c.endRun) {
-            ASSERT_TRUE(r.runUntil([&] { return r.stage.powerReady(); }, 6000));
+            ASSERT_TRUE(r.runUntil([&] { return r.stage.powerReady(); }, 8000));
             r.stage.requestPower(false, 0xFF);
         }
     } else {
@@ -431,7 +431,7 @@ TEST(OutputStage, TripHoldsTheKeepAliveLowUntilTheLatchClears)
     EXPECT_TRUE(r.runUntil([&] { return r.phase() != StagePhase::TripClear; }, 1000));
     EXPECT_FALSE(r.board.latched);
     // The next run starts from step 0, self-test included.
-    EXPECT_TRUE(r.runUntil([&] { return r.stage.powerReady(); }, 6000));
+    EXPECT_TRUE(r.runUntil([&] { return r.stage.powerReady(); }, 8000));
 }
 
 TEST(OutputStage, LatchThatDoesNotClearIsAFault)
@@ -520,7 +520,7 @@ TEST(OutputStage, ExpanderFaultTakesOnePress)
     ASSERT_EQ(r.fault(), HwCheck::RunReadback);
     EXPECT_FALSE(hwCheckNeedsRepair(r.fault()));
     EXPECT_TRUE(r.stage.acknowledgeFault(false));
-    EXPECT_TRUE(r.runUntil([&] { return r.stage.powerReady(); }, 6000));
+    EXPECT_TRUE(r.runUntil([&] { return r.stage.powerReady(); }, 8000));
 }
 
 TEST(OutputStage, FaultFromBeforeARestartIsRestored)

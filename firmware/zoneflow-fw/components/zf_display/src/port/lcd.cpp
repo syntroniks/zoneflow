@@ -174,13 +174,26 @@ esp_err_t backlightInit()
     return ledc_channel_config(&channel);
 }
 
+namespace {
+int sShownPercent = -1;
+} // namespace
+
+void backlightFloatTest(bool on)
+{
+    ledc_set_freq(kLedcMode, kLedcTimer, on ? board::kFloatTestBacklightHz : board::kLcdBacklightPwmHz);
+    if (on) {
+        ledc_set_duty(kLedcMode, kLedcChannel, 1u << (kLedcBits - 1)); // 50 % duty
+        ledc_update_duty(kLedcMode, kLedcChannel);
+    }
+    sShownPercent = -1; // the next backlightSet() applies the user's level again
+}
+
 void backlightSet(uint8_t percent)
 {
-    static int shown = -1;
-    if (percent == shown) {
+    if (percent == sShownPercent) {
         return;
     }
-    shown = percent;
+    sShownPercent = percent;
     // The eye is not linear: duty follows the square of the setting, so
     // "50 %" looks about half as bright and the dim level (a fifth of the
     // setting) is clearly dim. 100 % -> 1023, 80 % -> 655, 16 % -> 26.

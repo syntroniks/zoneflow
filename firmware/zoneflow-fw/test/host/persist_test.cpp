@@ -141,7 +141,8 @@ TEST(PersistMailbox, WriterReportsFailureOnce)
     EXPECT_TRUE(persistWriteOnce(box, mem));
     EXPECT_FALSE(box.takeFailure());
     SchedulerPersist back;
-    ASSERT_TRUE(persistFromJson(mem.data["runtime"], back));
+    uint32_t seqRead = 0;
+    ASSERT_TRUE(loadRuntime(mem, back, seqRead) == RecordLoad::Certain);
     EXPECT_EQ(back.rainDelayUntil, 42);
 }
 
@@ -171,7 +172,8 @@ TEST(PersistHandOff, ControllerPostsAndWriterStores)
     EXPECT_EQ(storage.writes, writesBefore); // nothing written on the control path
     EXPECT_TRUE(persistWriteOnce(ctrl.persistMailbox(), storage));
     SchedulerPersist p;
-    ASSERT_TRUE(persistFromJson(storage.data["runtime"], p));
+    uint32_t seqRead = 0;
+    ASSERT_TRUE(loadRuntime(storage, p, seqRead) == RecordLoad::Certain);
     ASSERT_EQ(p.count, 1);
     EXPECT_EQ(p.fired[0].key, Scheduler::makeKey(civil::daysFromCivil(2026, 6, 1), 360));
 }
@@ -204,7 +206,8 @@ TEST(PersistHandOff, ConsumedStartIsPostedOnTheSameTick)
     // The writer's next poll stores it; a power cut after that cannot repeat it.
     ASSERT_TRUE(persistWriteOnce(ctrl.persistMailbox(), storage));
     SchedulerPersist p;
-    ASSERT_TRUE(persistFromJson(storage.data["runtime"], p));
+    uint32_t seqRead = 0;
+    ASSERT_TRUE(loadRuntime(storage, p, seqRead) == RecordLoad::Certain);
     ASSERT_EQ(p.count, 1);
     EXPECT_EQ(p.fired[0].key, Scheduler::makeKey(civil::daysFromCivil(2026, 6, 1), 360));
 }
@@ -302,6 +305,7 @@ TEST(PersistHandOff, StalledFlashWriteDoesNotStallTheControlLoop)
     writer.join();
     persistWriteOnce(ctrl.persistMailbox(), storage); // the last posted copy
     SchedulerPersist p;
-    ASSERT_TRUE(persistFromJson(storage.mem.data["runtime"], p));
+    uint32_t seqRead = 0;
+    ASSERT_TRUE(loadRuntime(storage.mem, p, seqRead) == RecordLoad::Certain);
     EXPECT_EQ(p.rainDelayUntil, utcOf(2026, 5, 1) + 1140);
 }

@@ -43,7 +43,12 @@ void ZoneFlowComponent::setup() {
   zf::RetainedRecord rec;
   std::memcpy(&rec, s_retained, sizeof rec);
   const bool restored = zf::intact(rec);
-  this->sup_->begin(restored ? &rec : nullptr);
+  // Without the RTC copy (a power cut, a torn record) the run budget comes
+  // from flash (zf/app/budget.hpp).
+  this->budget_store_.init();
+  zf::BudgetRecord budget;
+  const zf::RecordLoad budget_load = this->budget_store_.load(budget);
+  this->sup_->begin(restored ? &rec : nullptr, budget_load, &budget);
 
   this->timer_ok_ = start_keepalive_timer(this->pins_);
   if (!this->timer_ok_) {
@@ -59,7 +64,8 @@ void ZoneFlowComponent::setup() {
 #ifdef USE_OTA_STATE_LISTENER
   ota::get_global_ota_callback()->add_global_state_listener(this);
 #endif
-  ESP_LOGI(TAG, "Output stage ready to self-test; run budget %s", restored ? "restored" : "empty");
+  ESP_LOGI(TAG, "Output stage ready to self-test; run budget %s",
+           restored ? "restored from RTC memory" : zf::toString(budget_load));
 }
 
 void ZoneFlowComponent::dump_config() {
@@ -98,6 +104,13 @@ void ZoneFlowComponent::loop() {
     in.window = this->sampler_.latest();
   in.sensor_supply_on = this->sensor_supply_on_;
   in.keepalive_pin_plain = keepalive_pin_plain();
+  // Hardware design 19.7 item 2: commissioning only at 25 to 50 C on the die.
+  if (now - this->die_temp_ms_ >= 10000 || this->die_temp_ms_ == 0) {
+    this->die_temp_ms_ = now == 0 ? 1 : now;
+    this->die_temp_known_ = die_temperature(this->die_temp_c_);
+  }
+  in.die_temp_known = this->die_temp_known_;
+  in.die_temp_c = this->die_temp_c_;
 #ifdef USE_SENSOR
   if (this->flow_rate_ != nullptr && this->flow_rate_->has_state() && !std::isnan(this->flow_rate_->state))
     in.flow_lpm = this->flow_rate_->state;
@@ -115,6 +128,10 @@ void ZoneFlowComponent::loop() {
   zf::RetainedRecord rec;
   this->sup_->save_retained(rec);
   std::memcpy(s_retained, &rec, sizeof rec);
+  // The run budget in flash: a few writes per run, none while nothing runs.
+  zf::BudgetRecord budget;
+  if (this->sup_->budget_due(budget) && !this->budget_store_.save(budget))
+    ESP_LOGW(TAG, "run budget not written to flash");
 
   this->notify_faults_();
   const bool periodic = now - this->last_publish_ms_ >= 1000;

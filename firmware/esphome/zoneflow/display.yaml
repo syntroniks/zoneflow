@@ -22,16 +22,21 @@ globals:
     initial_value: "0"  # 0 full, 1 dimmed, 2 off
 
 # Hardware design 19.1 rule 17: while the keep-alive pin floats for the
-# float test (19.7 step 2b), the backlight PWM runs at a mid duty and the
+# float test (19.7 step 2b), the backlight PWM runs at 50 % duty and the
 # display is redrawn, so that a bridge from either net to the keep-alive net
-# shows. The component keeps the PSRAM busy itself. Afterwards the backlight
-# goes back to what the light says.
+# shows. The PWM runs at 4.7 kHz meanwhile, not a whole multiple of 1 kHz:
+# at 5 kHz every 1 ms read of the pin can fall on the low part of the period
+# (19.7, note to step 2b). The component keeps the PSRAM busy and sends 0x55
+# on UART0 itself. Afterwards the backlight goes back to 5 kHz and to what
+# the light says.
 zoneflow:
   on_float_test:
     - lambda: |-
         if (x) {
+          id(zf_backlight_pwm).update_frequency(4700.0f);
           id(zf_backlight_pwm).set_level(0.5f);
         } else {
+          id(zf_backlight_pwm).update_frequency(5000.0f);
           id(zf_backlight).get_output()->write_state(id(zf_backlight));
         }
     - if:

@@ -18,6 +18,8 @@ const char *toString(CurrentFault f)
         return "short_circuit";
     case CurrentFault::CurrentWhileIdle:
         return "current_while_idle";
+    case CurrentFault::CurrentRose:
+        return "current_rose";
     }
     return "?";
 }
@@ -49,6 +51,8 @@ CurrentVerdict CurrentMonitor::evaluate(int32_t measuredMa, uint16_t outputMask,
         pending_ = CurrentFault::None;
         count_ = 0;
         reported_ = CurrentFault::None;
+        baseSum_ = 0;
+        baseCount_ = 0;
     }
     if (!cfg_.enabled || measuredMa < 0) {
         pending_ = CurrentFault::None;
@@ -81,8 +85,21 @@ CurrentVerdict CurrentMonitor::evaluate(int32_t measuredMa, uint16_t outputMask,
             cond = CurrentFault::OpenCircuit;
         } else if (maxKnown && static_cast<uint32_t>(measuredMa) > maxSum) {
             cond = CurrentFault::OverCurrent;
-        } else {
+        } else if (baseCount_ < kRiseBaselineSamples) {
+            baseSum_ += static_cast<uint32_t>(measuredMa);
+            ++baseCount_;
             learn(measuredMa, outputMask);
+        } else {
+            // The outputs have not switched since the level was taken: a
+            // rise is another load joining, such as an output device that
+            // failed short and adds its valve's current.
+            const uint32_t base = baseSum_ / baseCount_;
+            const auto rise = static_cast<uint32_t>(std::max<float>(cfg_.riseMinMa, cfg_.riseFraction * base));
+            if (cfg_.riseMinMa != 0 && static_cast<uint32_t>(measuredMa) > base + rise) {
+                cond = CurrentFault::CurrentRose;
+            } else {
+                learn(measuredMa, outputMask);
+            }
         }
     }
 

@@ -30,10 +30,12 @@
 #include <cstdint>
 #include <string>
 
+#include "zf/app/budget.hpp"
 #include "zf/app/retained.hpp"
 #include "zf/diag/current_monitor.hpp"
 #include "zf/diag/current_sense.hpp"
 #include "zf/diag/sensors.hpp"
+#include "zf/diag/zone_fault_policy.hpp"
 #include "zf/events/event.hpp"
 #include "zf/hw/output_stage.hpp"
 #include "zf/zone/zone_driver.hpp"
@@ -68,6 +70,8 @@ enum GeneralFault : uint32_t {
   kCondSensorSupply = 1u << 18,
   kCondMainsSignal = 1u << 19,
   kCondNotCommissioned = 1u << 20,  // no stored detector release times (hardware design 19.7, step 9)
+  kCondSupplyLow = 1u << 21,        // VIN_MON 0.10 to 0.60 V: nothing starts (hardware design 19.10)
+  kCondSupplyHigh = 1u << 22,       // VIN_MON above 1.50 V: nothing starts (hardware design 19.10)
 };
 inline constexpr uint32_t kConditionMask = 0xFFFF0000u;
 
@@ -112,6 +116,9 @@ struct SupervisorInputs {
   float flow_lpm = -1.0f;  // < 0: no flow meter
   // Rule 16 and contract 19.4: no peripheral signal routed to the keep-alive pin.
   bool keepalive_pin_plain = true;
+  // ESP32-S3 die temperature: commissioning only at 25 to 50 C (hardware design 19.7 item 2).
+  bool die_temp_known = false;
+  float die_temp_c = 0.0f;
 };
 
 class Supervisor final : private zf::IZoneDriverListener {
@@ -130,8 +137,14 @@ class Supervisor final : private zf::IZoneDriverListener {
              zf::IDetectorReferenceStore *reference = nullptr);
 
   // Before the first tick. `retained` is the record kept in RTC memory over
-  // a software restart, or nullptr.
-  void begin(const zf::RetainedRecord *retained);
+  // a software restart, or nullptr. Without it (a power cut, a torn record)
+  // the run budget comes from the copy in flash, read as `budget_load`
+  // (zf/app/budget.hpp: what may have been lost is charged, both copies
+  // unreadable is the worst case).
+  void begin(const zf::RetainedRecord *retained, zf::RecordLoad budget_load = zf::RecordLoad::None,
+             const zf::BudgetRecord *flash_budget = nullptr);
+  // Every tick: true when the run budget should be written to flash now.
+  bool budget_due(zf::BudgetRecord &out) { return this->budget_poster_.due(this->driver_, this->clock_.monoMs(), out); }
   // Every control tick (50 ms). Output stage first, then diagnostics, then
   // the zone driver, which beats the keep-alive heartbeat.
   void tick(const SupervisorInputs &in);
@@ -200,6 +213,7 @@ class Supervisor final : private zf::IZoneDriverListener {
   zf::ZoneDriverConfig driver_config() const;
   void handle_stage(zf::MonoMs now);
   void handle_current(const zf::CurrentVerdict &v);
+  void handle_rise(zf::MonoMs now);
   void handle_dc(const zf::CurrentReading &r, zf::MonoMs now);
   void on_trip(zf::MonoMs now);
   bool record_trip(uint8_t bit, zf::MonoMs now);
@@ -232,6 +246,8 @@ class Supervisor final : private zf::IZoneDriverListener {
   std::array<std::array<int64_t, zf::kTripsKept>, zf::kMaxZones + 1> trip_at_ms_{};
   uint8_t master_faults_ = 0;
   ZoneFault master_fault_ = ZoneFault::None;
+  zf::ShortedOutputCheck rise_check_;  // current rose with no output switched
+  zf::BudgetPoster budget_poster_;
   bool master_fault_in_session_ = false;
   zf::MonoMs master_on_since_ms_ = 0;
 
