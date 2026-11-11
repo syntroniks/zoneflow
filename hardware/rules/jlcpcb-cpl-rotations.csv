@@ -9,8 +9,24 @@
 # https://github.com/bennymeg/Fabrication-Toolkit
 # They have NOT been checked against JLCPCB's placement preview for the parts
 # in this repository. Check the preview when ordering and correct this file.
+#
+# Read again on 2026-11-10 for the revision A board, which uses more package
+# families: the rows for TSSOP and convex resistor arrays are from the same
+# file. The row for TI_SO-PowerPAD-8 is NOT in that file: it is an SOIC-8 body
+# with an exposed pad and is given the SOIC rotation by analogy.
+#
+# Package families on the revision A board with no row, placed with KiCad's
+# own rotation: two-pin parts (chip resistors and capacitors, LEDs, SMA, SMB,
+# SMC and SOD-123 diodes, fuses, the inductor, the crystal), TO-252, SMDIP-6,
+# the module, the USB-C, FPC and JST connectors, the switches, the encoder and
+# the cell holder. Whether JLCPCB's library agrees with KiCad for each of them
+# is not known. hardware/zoneflow-a/output/zoneflow-a-pin1.csv says where pin 1
+# of each polarised part is on the board, to compare with the preview.
 footprint_regex,rotation,dx,dy
 ^SOT-223,180,0,0
 ^SOT-23,180,0,0
 ^SOIC-,270,0,0
+^TI_SO-PowerPAD-8,270,0,0
+^TSSOP-,270,0,0
+^R_Array_Convex_,90,0,0
 ^QFN-,90,0,0

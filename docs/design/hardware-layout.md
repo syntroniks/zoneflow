@@ -288,6 +288,10 @@ pads, with a ground sense that is its own trace and not the plane.
   In1.Cu. A rule area there keeps the plane off it. So the ground sense meets
   ground at one place only, the via at the shunt pad.
 - R40 and R44, the two resistors on the ground sense, get no plane via.
+- **The pair passes under the buck converter**: on B.Cu, between the board
+  and the can of C1, with the pins of U1 and the switch node 1.6 mm above on
+  F.Cu and the ground plane between them. It is a pair into a difference
+  amplifier, and I did not estimate what couples into it.
 
 ### 7.6 Buck converter, fuse F5 and clamp D25
 
@@ -344,7 +348,7 @@ See section 9 for the rules. The route:
 
 - From module pin 10 a 2 mm stub on F.Cu under the module to a via.
 - On B.Cu down the inside of the module's left pin row to the via between R33
-  and R29, at the corner of the module. R33 is 10 mm of track from the pin.
+  and R29, at the corner of the module. R33 is 12 mm of track from the pin.
 - On B.Cu under the right edge of the encoder and left along y = 78.6 to R89
   at detector B. @@KA_LEN@@ in all.
 - `[[guard]]` in `board.toml` lays a rule area on each side of every `KA`
@@ -468,7 +472,7 @@ every build; the numbers below are from
 | From pin 10 to R33, R29 and R89 | Section 7.9 | Netlist parity |
 | Ground on both sides | A 1 mm strip each side where nothing but the ground pour may be | Rule areas `guard /KA` in the board; DRC |
 | 1 mm from any other signal | No track or via of any net but ground within 1 mm of a `KA` track or via on the same layer. Smallest found: @@KA_SAME@@ | `[[keepaway]]`, scope "layer" |
-| R33 at the module pin | R33 is at the corner of the module, 10 mm of track from the pin. **Not at the pin**: see below | |
+| R33 at the module pin | R33 is at the corner of the module, 12 mm of track from the pin. **Not at the pin**: see below | |
 | Away from the listed nets on every layer | No copper of a listed net, on any layer, within 1 mm of `KA` copper in plan view. Not even a crossing on another layer. Smallest found: @@KA_PLAN@@ | `[[keepaway]]`, scope "plan" |
 
 The list, and where each net ends up:
@@ -568,7 +572,7 @@ module.
 | `KA` never next to `TFT_BL`, `AC_ZC`, `U0TXD` or the buck converter | Schematic note, MCU sheet | The table of rule 1 |
 | No test pad on `RLY_G2`, `KB_N1` or `KB_N0` | Schematic note, expander sheet | Rule 2 |
 | Kelvin connections at R37 | Schematic note, current-sense sheet | Section 7.5 |
-| Current-sense block away from L1, the display clock and the antenna | The same | 40 mm from L1, 30 mm from the bus, 60 mm from the antenna |
+| Current-sense block away from L1, the display clock and the antenna | The same | The amplifier is 39 mm from L1, 43 mm from the display clock and 80 mm from the antenna. **The Kelvin pair is not away from the buck converter**: section 13 |
 
 ## 10. What the autorouter did
 
@@ -658,14 +662,18 @@ What is weak, most serious first:
    C1 and K1 are soldered from the top
    between other parts; the check keeps parts over 1.5 mm tall 2.5 mm from
    their pads, which is my number.
-6. **The buck output.** C5 hangs on a 0.5 mm track. The feedback divider
+6. **The Kelvin sense pair runs under the buck converter** (section 7.5),
+   shielded by the ground plane and by nothing else. The other way round
+   crosses the eighteen gate lines. If the low current range reads noise at
+   the switching frequency, this is where to look.
+7. **The buck output.** C5 hangs on a 0.5 mm track. The feedback divider
    senses at the inductor pad, where C6 and D25 are. I would move C5 if the
    block had another 3 mm.
-7. **Silkscreen.** @@SILK_WEAK@@
-8. **The autorouted nets** (section 10) were inspected by reading tables and
+8. **Silkscreen.** @@SILK_WEAK@@
+9. **The autorouted nets** (section 10) were inspected by reading tables and
    pictures, not by a second person.
-9. **The 0.5 mm clearance of the 24 VAC nets** is a choice, not a standard.
-10. **The fan-out passes 0.5 mm above the pins of the sensor terminal block**
+10. **The 0.5 mm clearance of the 24 VAC nets** is a choice, not a standard.
+11. **The fan-out passes 0.5 mm above the pins of the sensor terminal block**
     on the bottom side, and the flow input runs 0.6 mm from the right board
     edge. Both are within the rules; both are where a slipped screwdriver or a
     scored board edge would reach.

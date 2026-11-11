@@ -392,9 +392,12 @@ again before an order.
 - **`silk_edge_clearance` is ignored on the test board** because the antenna,
   USB-C and terminal outlines cross the edge on purpose. That also hides
   reference text that hangs over the edge. Look at the render.
-- **JLCPCB rotation corrections are unverified.** The table has four rows
-  copied from the Fabrication-Toolkit project. None was checked against
-  JLCPCB's placement preview. `output/<name>-pin1.csv` lists where pin 1 of
+- **JLCPCB rotation corrections are unverified.** The table has seven rows:
+  six copied from the Fabrication-Toolkit project and one, for the SO-8 with
+  an exposed pad, given the SOIC rotation by analogy. Most package families of
+  the revision A board have no row and are placed with KiCad's rotation; the
+  table's header lists them. None was checked against JLCPCB's placement
+  preview. `output/<name>-pin1.csv` lists where pin 1 of
   every polarised part is, to compare the preview with.
 - **The CPL lists through-hole parts** such as terminal blocks, unless the
   board Makefile sets `POS_FLAGS := --smd-only`.

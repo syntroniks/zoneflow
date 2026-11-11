@@ -181,6 +181,29 @@ class Builder:
         if mask is not None:
             ds.m_SolderMaskMinWidth = mm(mask)
         ds.SetAuxOrigin(pcbnew.VECTOR2I(mm(self.ox), mm(self.oy + self.h)))
+        self._title_block()
+
+    def _title_block(self) -> None:
+        """Give the board the title block of the root schematic sheet.
+
+        Tools that read a board take its date from here, and fall back to the
+        file's modification time when it is empty, which changes on every build.
+        """
+        sch = self.project_dir / f"{self.name}.kicad_sch"
+        if not sch.exists():
+            return
+        import re
+        m = re.search(r"\(title_block\b(.*?)\n\t\)", sch.read_text(encoding="utf-8"), flags=re.S)
+        if not m:
+            return
+        fields = dict(re.findall(r'\((title|date|rev|company) "([^"]*)"\)', m.group(1)))
+        tb = self.board.GetTitleBlock()
+        tb.SetTitle(fields.get("title", ""))
+        tb.SetDate(fields.get("date", ""))
+        tb.SetRevision(fields.get("rev", ""))
+        tb.SetCompany(fields.get("company", ""))
+        for n, text in re.findall(r'\(comment (\d) "([^"]*)"\)', m.group(1)):
+            tb.SetComment(int(n) - 1, text)
 
     def _edge(self, shape) -> None:
         shape.SetLayer(pcbnew.Edge_Cuts)
