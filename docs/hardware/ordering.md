@@ -13,7 +13,7 @@
 | Review of the layout | The circuit was reviewed twice (reviews A1 and A2). The layout and the schematic as captured need an independent review before money is spent. The layout document ends with [a list for that reviewer](../design/hardware-layout.md#14-what-a-person-must-look-at). | [Issue #11](https://github.com/syntroniks/zoneflow/issues/11) |
 | A prototype and bench tests | Revision A is an engineering prototype until it has been bench-tested. Thermal, short-circuit, surge and fail-safe behaviour are unmeasured. See [status](../status.md#what-only-a-prototype-can-answer). | [Progress log, issue #1](https://github.com/syntroniks/zoneflow/issues/1) |
 | An answer on hand-soldered parts | The relay K1 and the bulk capacitor C1 are through-hole parts on the bottom side. Whether JLCPCB will solder them, or the builder does, has not been asked. | [Mechanical design section 12](../design/mechanical.md) |
-| A checked placement preview | The rotation corrections in the placement files were compared with the board file, not with an assembler's preview. | [Layout document, section 12](../design/hardware-layout.md#12-fabrication-outputs) |
+| A checked placement preview | Pad 1 of every polarised part was compared with KiCad's 3D model of the part, and not with an assembler's preview. The rotation corrections in the placement files are unverified. | [Layout document, section 12](../design/hardware-layout.md#12-fabrication-outputs) |
 | A quote | Nobody has uploaded these files to a fab. The options below are read from JLCPCB's published limits. | |
 
 ## The files
@@ -43,7 +43,7 @@ which were read from JLCPCB's capabilities page on 2026-11-10.
 | Outer copper | 1 oz (35 um) | The valve paths are calculated for it |
 | Inner copper | 0.5 oz, the default | Nothing depends on thicker inner copper |
 | Smallest hole | 0.2 mm, twelve of them | The thermal vias in the module's ground pad. Every other hole is 0.3 mm or larger |
-| Smallest track and gap | 0.2 mm and 0.2 mm | |
+| Smallest track and gap | 0.12 mm and 0.2 mm | Four pieces of track under 0.3 mm long are 0.12 mm wide, where the autorouter left a pin; a few more are 0.15 mm. Everything else is 0.2 mm or wider. The limit in the rules file is 0.10 mm |
 | Smallest text | 1.0 mm high, 0.15 mm line | |
 | Surface finish | Not decided | The display connector J7 has 0.3 mm lands at 0.5 mm pitch and the USB-C receptacle 0.3 mm lands. A flat finish (ENIG) is the usual choice for such lands; lead-free HASL is cheaper. This is for the reviewer and the first order to settle |
 | Via covering | Tented | The vias in the triac tab lands are in pads and stay open; see the [layout document](../design/hardware-layout.md#72-one-output-column) |
@@ -58,8 +58,8 @@ which were read from JLCPCB's capabilities page on 2026-11-10.
 3. Fit by hand, or ask the assembler: C1 and K1 from the bottom side,
    soldered from the top; J1 to J4 from the top.
 4. Compare the assembler's placement preview with `zoneflow-a-pin1.csv` for
-   every polarised part before you confirm. The rotation table has never met
-   a real order.
+   every polarised part before you confirm. Nobody has checked the rotation
+   table against a real order.
 5. Check any part the assembler proposes to substitute against the
    [BOM](bom.md). The display panel has no confirmed second source.
 6. The display panel DS1 plugs into J7 at final assembly, and the CR2032 cell

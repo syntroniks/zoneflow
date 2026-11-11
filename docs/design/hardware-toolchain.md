@@ -714,7 +714,13 @@ layout itself is described in [hardware layout](hardware-layout.md).
 | `[[guard]] net, distance` | A rule area along each side of the hand-routed tracks of a net, where no other track or via may be |
 | `[[rule_area]]` | A region of some layers with no pour, no tracks or no vias |
 | `[route] layers` | The copper layers the autorouter may route on. Its vias still pass through the others |
-| `[route] exclude` | Nets the autorouter must leave alone, by pattern. Their pins are taken out of the Specctra file; their pads stay as obstacles and their pre-routed copper stays as fixed copper |
+| `[[via]] net, at, size` | A via on its own, to tie a pour to a plane |
+| `[route] exclude` | Nets the autorouter must leave alone, by pattern (13.9). Their pads and their pre-routed copper stay as fixed copper with the clearance of their class |
+| `[[route.plane]] layer, net` | A layer the autorouter must not route on, because it is a plane of that net (13.9) |
+| `[route] clearance_margin` | Millimetres added to every clearance in the Specctra file. Freerouting works in its own units and came 2 um under a 0.2 mm clearance; 0.01 mm ends that |
+| `[route] prune = true` | After the import, remove a hand-placed escape via or stub that nothing came to use (13.10) |
+| `[route] widen = true` | After the import, give every autorouted track the width of its net class where DRC allows (13.11) |
+| `[[unroute]]`, `[[patch]]`, `[patches]` | Changes to the routed board that do not disturb the stored routing (13.10) |
 | `[[route.keepout]]` | Rectangles of one layer where the autorouter may put neither track nor via: the planes and islands that are added as zones after the Specctra file is written |
 | `[route.layer_cost]` | A cost factor for a layer, to make the autorouter use it less |
 | `[[text]] angle, justify, optional` | A turned or left- or right-aligned text, and a text the builder may drop if it collides (13.6) |
@@ -794,7 +800,10 @@ The same settings file carries what the Specctra file cannot:
 
 - `router.fanout.enabled = false`. The fan-out stage puts a via at every
   surface-mount pin before routing. On this board that took the room the
-  router needed.
+  router needed. It is off for a board whose `board.toml` has a `[route]`
+  table, unless that says `fanout = true`. The test board has no such table
+  and keeps the autorouter's own settings, with which its stored routing was
+  made.
 - `router.layers[n]`: the cost of a layer. An `autoroute_settings` block in
   the Specctra file makes 2.5.0 load an empty board without an error message.
   A `.rules` file given with `-dr` was read but its `(fanout off)` was not
@@ -837,8 +846,10 @@ three passes. What made it tractable:
 3. A third routing layer for the logic nets, In2.Cu, which they share with
    the 3.3 V pour.
 4. No fan-out stage.
-5. A way to finish by hand what the autorouter leaves open without routing
-   again: `[[unroute]]` and `[[patch]]` (13.10).
+5. An escape, a short stub and a via, written out for every pin of the one
+   fine-pitch part whose pins the router boxed in with its own vias.
+6. A way to finish what the autorouter leaves open without routing again: a
+   small maze router and the `[[unroute]]` and `[[patch]]` tables (13.10).
 
 
 ### 13.6 A silkscreen that passes DRC
@@ -855,9 +866,9 @@ runs `kicad-cli pcb drc`, and for every silkscreen finding
 - deletes a `[[text]]` marked `optional`, and fails the build for one that is
   not.
 
-It repeats until DRC has no silkscreen finding. One round takes about a
-second on this board and it needs about sixteen. `build/silk.json` says what
-was removed, moved and hidden.
+It repeats until DRC has no silkscreen finding. One round takes about two
+seconds on this board and it needs 23. `build/silk.json` says what was
+removed, moved and hidden.
 
 The price: a footprint with a stroke removed no longer equals its library
 copy, and DRC says so (`lib_footprint_mismatch`). `board.toml` sets that one
@@ -895,9 +906,34 @@ The board build needs KiCad's Python module, which the `kicad/kicad` image has,
 and the autorouter, which CI does not run. The job regenerates the placed and
 pre-routed board from the sources, checks that the Specctra file it writes has
 the hash stored beside the committed session in `route/`, imports that
-session, and runs `make board-check`: DRC with schematic parity, the
-mechanical contract, the layout rules. It makes no renders and needs no
-display.
+session with its patches (13.10), and runs `make board-check`: DRC with
+schematic parity, the mechanical contract, the layout rules. It makes no
+renders and needs no display. `ROUTE_FLAGS=--stored-only` makes the route step
+fail, instead of starting the autorouter, when the stored session does not
+belong to the sources.
+
+I could not run the container on the build machine, which has neither Docker
+nor Podman. The job was run by GitHub for the first time on the pull request
+that added it. On the build machine the same command, with the same KiCad
+release, passes and writes the committed board file again byte for byte.
+
+**What the schematic job needed.** It runs `make schematic` alone and fails
+if a committed file under the board directory then differs. Two things broke
+that once a board was built:
+
+- KiCad rewrites `<name>.kicad_pro` with all its defaults whenever a board is
+  saved. The committed file is the short one the schematic step writes.
+  `hwflow project` writes it again, and the DRC, output and interactive BOM
+  steps call it last.
+- The step that keeps unchanged schematic plots moved every PDF of `output/`
+  aside and brought back only the schematic's. It now leaves the board's PDFs
+  alone.
+
+`hwflow.stable` takes the export time out of the Gerber, drill, DRC and STEP
+headers as well. Three outputs still differ in their bytes from one run to
+the next and show as changed after every `make`: the STEP file, whose
+entities are numbered in a different order, and the two renders. CI does not
+compare them.
 
 ### 13.9 Telling the autorouter what is not its business
 
@@ -924,16 +960,79 @@ for it. It will be treated as a signal layer." With both it routes nothing on
 the layer and still passes vias through it. `pcbbuild finish` fails if the
 imported session has a track on such a layer.
 
-### 13.10 Finishing by hand after the autorouter
+### 13.10 Finishing after the autorouter
 
 The autorouter does not give the same result twice, and a change to the
 placement or to the hand-routed copper changes the Specctra file and so
-discards the stored session. To close the last connections without that,
-`board.toml` has two tables that act after the session is imported:
+discards the stored session. On the revision A board Freerouting also ends
+with connections open: fifteen in the stored run, after 28 passes. To close
+them without routing again, `board.toml` has tables that act after the
+session is imported, in `pcbbuild finish`:
 
 - `[[unroute]] nets = [...]` deletes the autorouted copper of the nets named.
+  `net` with `box = [x0, y0, x1, y1]` deletes the autorouted copper of one net
+  inside a rectangle. `vias = [[x, y], ...]` deletes a via by its place,
+  whoever laid it. Use it for a via that is right in the Specctra file and
+  wrong on the board.
 - `[[patch]]` is a `[[track]]` laid after the import.
+- `[patches] session` is the hash of the routing the patches were made for.
+  `finish` refuses them for any other.
+- `[route] prune = true` then removes what was laid as an offer and not taken:
+  a locked via of a net without a pour that joins fewer than two layers, and a
+  locked stub with a free end.
 
-They belong to the stored session. If the board is routed again they will no
-longer fit, and DRC will say so.
+**The patch router.** `hwflow/patchroute.py` writes the `[[patch]]` tracks. It
+reads from a DRC report which pairs of items are unconnected and searches a
+path for each on a 0.05 mm grid, with A* over eight directions and the
+routing layers and a via costing as much as 3 mm of track. Every other net's copper is an
+obstacle grown by its clearance, half the new track's width and 0.03 mm; a net
+with a `[[guard]]` or a `[[keepaway]]` rule gets the distance of that rule. A
+hole keeps 0.3 mm from every other hole, and no via goes into a surface-mount
+pad. It tries the width of the net class first, then 0.25 and 0.2 mm, in a
+window 9 mm round the two ends and then 22.5 mm. A found path is then
+straightened. From each corner it goes to the farthest cell of the path that
+one 45 degree bend reaches over free cells. Twelve tests in `tests/test_patchroute.py` run it
+on made-up boards.
 
+`make patches` runs it in passes. The first is on the board without patches.
+A patch of one net can cut the pour of another in two, so the board is then
+built with the patches and DRC is asked again; a pass with `--add` routes what
+that opened and adds it to the file, up to three times. The result is
+`design/patches.toml`, which `design/layout.py` copies into `board.toml`.
+
+It does not rip up, it does not optimise, and it knows nothing of signal
+quality. A long net it closes hops between layers wherever that is
+shortest. `output/reports/routing.md` lists every net it touched, so that a
+person looks at each.
+
+After the board is routed again, run `make patches` and then `make`.
+
+### 13.11 The autorouter narrows tracks and does not say so
+
+Freerouting 2.5.0 lays a connection narrower than its net class asks when it
+cannot get through at that width: at three quarters of the class width, at
+60 per cent, at half. The Specctra file gives one width per class and the
+session comes back with others. The help text describes a neck-down "at
+pins"; on this board whole connections came back narrow, the longest piece
+43 mm. Of the stored routing of revision A, 312 segments in 61 nets, 356 mm,
+were narrower than their class, among them pieces of `V_BUCK`, `V5` and
+`VBUS`. DRC does not object, because a net class width is a default and not
+a minimum and every one of those tracks is wider than the fab's limit.
+
+I found it late, by listing the widths of the autorouted tracks, which the
+routing report does on every build. I did not find it by looking at the
+board.
+
+`hwflow/widen.py`, switched on by `[route] widen = true`, undoes it where
+there is room. In `pcbbuild finish`, after the session is imported and before
+the patches are laid, it sets every autorouted track that is narrower than
+its class to the class width, runs `kicad-cli pcb drc` on a copy, and puts
+back every such track that a clearance finding names. It repeats until no
+finding names one, which took three rounds on this board. The centre lines do
+not move,
+so the stored session stays valid. `output/reports/routing.md` lists what
+stays narrow, with its length.
+
+The settings file of 2.5.0 has `router.automatic_neckdown` and
+`router.neck_width_um`. I did not try them. A new routing run does not give
+the same board, and the width pass makes the result independent of them.

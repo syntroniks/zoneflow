@@ -506,7 +506,7 @@ positions:
   nearest module pad (hardware layout, section 13). An earlier version of
   this line gave the 0.25 mm as the land-to-pad distance, which it is not.
 - Nothing can stand beside module pins 38 and 39, so the ADC filter capacitors
-  are 18 mm of track from them (hardware layout, section 7.11).
+  are 23 mm of track from them (hardware layout, section 7.11).
 
 ## 13. How the files fit together
 

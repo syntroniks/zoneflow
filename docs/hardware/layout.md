@@ -14,8 +14,9 @@ Open `zoneflow-a.kicad_pro` in KiCad 10 to look at it, or use the files here.
 
 [![Bottom side of the board, rendered](zoneflow-a/zoneflow-a-bottom.png)](zoneflow-a/zoneflow-a-bottom.png)
 
-The renders come from KiCad's 3D viewer. Four project footprints use a
-stand-in model and four have none, so some parts show as lands only.
+The renders come from KiCad's 3D viewer. KiCad has no model for the fuse
+holders and fuses, the USB-C connector, the buttons, the encoder, the display
+connector and the cell holder, so those show as lands only.
 
 ## Look at it
 
@@ -60,6 +61,41 @@ fails. The results of the committed board are in
 These are checks on files. The [layout document](../design/hardware-layout.md)
 says what each found, what was routed by hand and why, the current
 calculation for the valve paths, and what its author thinks is weak.
+
+## How it was routed
+
+Half of the 199 nets are written out by hand in the source: the 24 VAC
+paths, the valve outputs, the shunt return, the buck converter, the USB pair,
+the display bus and everything the fail-safe analysis has a rule for. An
+autorouter laid the rest. Its result needed four corrections, which the build
+now makes on every run:
+
+- **Ground plane.** Nothing may be routed on it, and the build fails if
+  something is.
+- **Track widths.** The autorouter narrowed 354 mm of track below the width
+  its net class asks for. The build widens every piece that has room; 17 mm
+  stay narrow.
+- **A guarded node.** It laid a supply rail 0.86 mm from a node of the
+  fail-safe circuit that must keep 1 mm from every rail. That copper is taken
+  out and laid again.
+- **Open connections.** A second, small router closes the 18 connections
+  that were left open.
+
+## What its author thinks is weak
+
+The full list is in the
+[layout document, section 13](../design/hardware-layout.md#13-my-own-review).
+The first few:
+
+- **Nothing has been built.** Every result on this page is a check on files.
+- **Short-circuit path.** Each output passes through two small vias whose
+  plating thickness is assumed.
+- **3.3 V distribution.** It has no solid plane. Two pours in pieces are
+  joined by vias and by ten tracks.
+- **5 V path.** The autorouter laid it on 0.4 mm tracks. The calculation says
+  that is enough; a hand-drawn path would be wider and shorter.
+- **Placement rotations.** They are unverified until someone compares the
+  assembler's preview with the pin 1 table.
 
 ## The terminal labels
 
