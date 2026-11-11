@@ -1990,6 +1990,14 @@ void Runner::setupScenario()
                     p.durationSec[z] = d;
                 }
             }
+            if (std::all_of(p.durationSec.begin(), p.durationSec.end(), [](uint32_t d) { return d == 0; })) {
+                // Every pick was over the cap: the least used zone, briefly
+                // (a program with no zone is skipped as nothing to run).
+                const auto z = static_cast<std::size_t>(
+                    std::min_element(perZone.begin(), perZone.begin() + c.zoneCount) - perZone.begin());
+                perZone[z] += 120;
+                p.durationSec[z] = 60;
+            }
             c.schedule.programs[i] = p;
         }
     }
