@@ -214,10 +214,13 @@ outputs: drc mech rules sch-outputs
 		--generate-map --map-format pdf -o $(OUT)/gerbers/ $(PCB) $(LOG)
 	$(KICAD_CLI) pcb export pos --format csv --units mm --side both --exclude-dnp --use-drill-file-origin \
 		$(POS_FLAGS) -o build/$(NAME)-pos.csv $(PCB) $(LOG)
-	$(KICAD_PY) -m hwflow.fab cpl build/$(NAME)-pos.csv $(OUT)/$(NAME)-cpl-jlcpcb.csv --rotations $(ROTATIONS)
+	# A correction row may name one LCSC number: the BOM says which part has which.
+	$(KICAD_PY) -m hwflow.fab cpl build/$(NAME)-pos.csv $(OUT)/$(NAME)-cpl-jlcpcb.csv --rotations $(ROTATIONS) \
+		--bom $(OUT)/$(NAME)-bom-jlcpcb.csv
 	# One placement file per build variant: the base file without the parts that variant leaves out.
 	$(foreach v,$(VARIANTS),$(KICAD_PY) -m hwflow.fab cpl build/$(NAME)-pos.csv \
-		$(OUT)/$(NAME)-cpl-jlcpcb-$(v).csv --rotations $(ROTATIONS) --model build/model.json --variant $(v) &&) true
+		$(OUT)/$(NAME)-cpl-jlcpcb-$(v).csv --rotations $(ROTATIONS) --bom $(OUT)/$(NAME)-bom-jlcpcb.csv \
+		--model build/model.json --variant $(v) &&) true
 	# Where pin 1 of every polarised part is: what to compare the assembler's placement preview with.
 	$(KICAD_PY) -m hwflow.fab polarity build/placement.json $(OUT)/$(NAME)-pin1.csv
 	# Assembly drawings: part outlines and every reference designator, one page per side.
