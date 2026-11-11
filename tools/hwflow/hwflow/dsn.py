@@ -174,7 +174,13 @@ def router_settings(board_layers: list[str], route: dict, ignore: list[str] | No
     the others. The fan-out stage is off unless ``[route] fanout = true``: on a
     dense board it spends the space the router needs.
     ``ignore`` are the net classes of ``fix_nets``.
+
+    A board whose ``board.toml`` has no ``[route]`` table gets no settings at
+    all and so the autorouter's own: the routing stored for such a board was
+    made that way, and its hash is that of the Specctra file alone.
     """
+    if not route and not ignore:
+        return {}
     settings: dict = {"fanout": {"enabled": bool(route.get("fanout", False))}}
     if ignore:
         settings["autorouter"] = {"ignore_net_classes": sorted(ignore)}

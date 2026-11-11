@@ -142,8 +142,11 @@ def test_router_settings_name_the_layers_the_autorouter_may_use():
     assert "preferred_direction_trace_cost" not in s["layers"][0]
     assert [layer["preferred_direction_horizontal"] for layer in s["layers"]] == [True, False, True, False]
     # With no layer list the autorouter keeps its own choice of layers; fan-out is still off.
-    assert dsn.router_settings(["F.Cu", "B.Cu"], {}) == {"fanout": {"enabled": False}}
+    assert dsn.router_settings(["F.Cu", "B.Cu"], {"exclude": ["GND"]}) == {"fanout": {"enabled": False}}
     assert dsn.router_settings(["F.Cu", "B.Cu"], {"fanout": True})["fanout"] == {"enabled": True}
+    # A board that says nothing about routing gets the autorouter's own settings: a routing stored
+    # for it before this function existed stays the routing of its sources.
+    assert dsn.router_settings(["F.Cu", "B.Cu"], {}) == {}
 
 
 def test_the_autorouter_settings_file_turns_usage_reporting_off(tmp_path):
