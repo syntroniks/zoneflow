@@ -15,6 +15,7 @@ from model import SCOPE, Prim, a_readback, pin_id, scope_refs
 
 # Pins next to each other on one side of the package.
 SOIC14 = [(i, i + 1) for i in range(1, 7)] + [(i, i + 1) for i in range(8, 14)]
+SOT23_6 = [(1, 2), (2, 3), (4, 5), (5, 6)]
 TSSOP24 = [(i, i + 1) for i in range(1, 12)] + [(i, i + 1) for i in range(13, 24)]
 MODULE_SIDES = (range(1, 15), range(15, 27), range(27, 41))
 
@@ -23,6 +24,7 @@ MODULE_SIDES = (range(1, 15), range(15, 27), range(27, 41))
 HIGH_Z = {
     "U7": ["1", "2", "4", "5", "9", "10", "12", "13"],
     "U5": ["3"],
+    "U13": ["4"],
     "Q1": ["G"], "Q2": ["G"], "Q3": ["G"],
 }
 IC_OUTPUT_FAULTS = {
@@ -33,6 +35,7 @@ IC_OUTPUT_FAULTS = {
     "U7": [(f"y{k}_{lvl}", f"output {k} ({net}) stuck {lvl}") for k, net in ((1, "FAULT"), (2, "FAULT_N"), (3, "DRV_EN_N"), (4, "DRV_EN")) for lvl in ("high", "low")],
     "U5": [("reset_ignored", "RESET input ignored, bits kept"), ("z1_low", "pin P00 (Z1) stuck low"), ("z1_high", "pin P00 (Z1) stuck high"),
            ("mv_low", "pin P04 (MV) stuck low"), ("rly_high", "pin P05 (RLY_ON) stuck high"), ("rly_low", "pin P05 (RLY_ON) stuck low")],
+    "U13": [("outb_low", "output B (OC_TRIP_N) shorted low"), ("outb_off", "output B never pulls low")],
 }
 
 
@@ -61,7 +64,9 @@ REMARKS = {
     "U7.5-6.bridge": "As pins 2 and 3: the same two nets.",
     "U7.8-9.bridge": "A gate output tied to its own input: the model oscillates and the runs did not finish. Judged by hand in review A2, section 3.4: drive cannot stay enabled.",
     "R55.short": "Puts 24 VAC on 3V3 through the clamp diode D9. Every logic part is then outside its ratings and the row means nothing. A 1206 resistor rated 200 V does not fail short; a solder bridge across it would do this.",
-    "rail.3V3.high": "Both detectors let go at 4.95 V, if the keep-alive stops. The processor is outside its ratings and whether it stops is not known: finding M5.",
+    "rail.3V3.high": "U13 holds the set input of the latch low above 4.04 V, so drive is removed whatever the keep-alive does. Without U13 both detectors let go only if the keep-alive stops, which a processor outside its ratings may not do: finding M5 of review A2, design section 9.5, and the run `ldo`.",
+    "U13.2.open": "As simulated. A real TPS3701 without ground is not defined. It can only pull the latch input low, which removes drive.",
+    "U13.5-6.bridge": "The set input of the latch is tied to the rail: neither U13 nor the over-current comparators can set the latch. The same as R53 shorted.",
     "R93.open": "The read-back loses its pull-up and reads low for good: a false alarm on the safe side. Q2 itself works.",
     "Q1.S-D.short": "Q1 conducts whatever its gate does. K1 then follows Q2 alone.",
     "D5.open": "Nothing in the model. On the board Q1 or Q2 would avalanche at every release, 0.16 mJ by the design document's estimate, and one of them may fail short in time. That fault has its own row.",
@@ -99,7 +104,7 @@ def open_faults(ref: str, pin: str, label: str, group: str, net: str) -> list[Fa
 
 def component_faults(comps: dict) -> list[Fault]:
     out: list[Fault] = []
-    for ref in scope_refs():
+    for ref in scope_refs(comps):
         if ref == "U4":
             continue
         c, group, pins = comps[ref], group_of(ref), pins_of(comps, ref)
@@ -130,16 +135,16 @@ def component_faults(comps: dict) -> list[Fault]:
                 for b in names[i + 1:]:
                     out.append(Fault(f"{ref}.{a}-{b}.short", group, ref, f"{ref} pins {keys[a]} and {keys[b]} bridged ({pins[a]} to {pins[b]})",
                                      [Prim("short", (ref, a, b))], ac_nets(pins[a], pins[b])))
-        elif value.startswith(("LM2901", "74HC132", "TCA9539")):
+        elif value.startswith(("LM2901", "74HC132", "TCA9539", "TPS3701")):
             modelled = set(pins) if ref != "U5" else {"3", "4", "8", "9", "12", "24"}
             for pin in sorted(modelled, key=int):
                 out += open_faults(ref, pin, label(pin), group, pins[pin])
-            pairs = SOIC14 if ref != "U5" else TSSOP24
+            pairs = TSSOP24 if ref == "U5" else (SOT23_6 if value.startswith("TPS3701") else SOIC14)
             skipped = []
             for a, b in pairs:
                 a, b = str(a), str(b)
-                if pins.get(a) == pins.get(b):
-                    continue
+                if a not in pins or b not in pins or pins[a] == pins[b]:
+                    continue   # a pin with nothing on it, or two pins of one net
                 if ref == "U5" and not ({a, b} <= modelled | {"2"}):
                     skipped.append(f"{keys[a]}-{keys[b]}")
                     continue
@@ -223,7 +228,7 @@ def board_faults(comps: dict) -> list[Fault]:
                          [Prim("bridge", ("KA", "x_bl", ohms))], ext={"x_bl": EXT_SOURCES["x_bl"]}))
     out.append(Fault("KA~U0TXD", g, "KA", "KA bridged to U0TXD (ROM boot log, prints in a reset loop)", [Prim("bridge", ("KA", "x_txd", 0.01))], ext={"x_txd": EXT_SOURCES["x_txd"]}))
     # every net of the scope stuck at ground or at the logic rail
-    nets = sorted({net for ref in scope_refs() if ref != "U4" for net in pins_of(comps, ref).values()} - {"GND", "3V3", "V5", "V_BUCK", "AC_L", "COM"})
+    nets = sorted({net for ref in scope_refs(comps) if ref != "U4" for net in pins_of(comps, ref).values()} - {"GND", "3V3", "V5", "V_BUCK", "AC_L", "COM"})
     modelled = set(nets) - {"ZD_Z2_N", "ZD_Z3_N", "ZD_Z4_N", "EXP_INT_N", "I2C0_SCL", "I2C0_SDA", "G_Z1", "OGT_Z1", "G_MV", "OGT_MV", "P06", "P07"}
     modelled -= {n for n in nets if re.fullmatch(r"(ZD_Z[5-8]_N|P1\d|VARIANT_N|SENS_FLT_N)", n)}
     for net in sorted(modelled):

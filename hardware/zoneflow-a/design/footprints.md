@@ -255,7 +255,7 @@ Parts that carry mains-side current, heat or a connector position.
 ## 3. Stock footprints for standard packages
 
 Chip resistors and capacitors (0603, 0805, 1206, 1210, 2512), the 4 x 0603
-resistor array, 0603 LEDs, SOD-123, SMA, SOT-23, SOT-23-6, SOT-223, SOIC-8,
+resistor array, 0603 LEDs, SOD-123, SMA, SOT-23, SOT-23-6, TSOT-23-6, SOT-223, SOIC-8,
 SOIC-14, TSSOP-24 and the 3.2 x 1.5 mm crystal use KiCad's footprints for the
 package named in the maker's datasheet. Their land dimensions were **not**
 compared one by one with each maker's drawing. What was checked for these is
@@ -279,6 +279,15 @@ the pin numbering:
 - BAT54S: pin 1 anode, pin 2 cathode, pin 3 the common node, from the
   Nexperia sheet, table 2.
 - LDL1117S33R in SOT-223: 1 GND, 2 OUT, 3 IN, tab OUT, from the ST datasheet.
+- TPS3701DDCR (U13, C132788) in TI's DDC package, which TI calls SOT-23-thin
+  and refers to JEDEC MO-193: `Package_TO_SOT_SMD:TSOT-23-6`. This one was
+  compared, against TI drawing 4214841/E in data sheet SBVS240C. Pitch 0.95
+  and land width 0.6, equal. TI draws lands 1.1 long on row centres 2.7
+  apart, 3.8 over the lands and 1.6 between the rows. KiCad's are 1.325 long
+  on 2.275 centres, 3.6 over and 0.95 between. The part is 2.75 to 3.05 over
+  its leads with feet of 0.3 to 0.6, so the stock lands reach 0.275 mm or
+  more past the lead tips and under the whole foot. Kept the stock lands.
+  Pins from the same sheet: 1 OUTA, 2 GND, 3 INA, 4 INB, 5 VDD, 6 OUTB.
 
 ## 4. Parts with no footprint
 

@@ -14441,6 +14441,162 @@
 			)
 		)
 		(comp
+			(ref "C55")
+			(value "10n")
+			(footprint "Capacitor_SMD:C_0603_1608Metric")
+			(description "Unpolarized capacitor")
+			(fields
+				(field
+					(name "Spec") "10 nF 50 V X7R")
+				(field
+					(name "MPN") "CL10B103KB8NNNC")
+				(field
+					(name "Manufacturer") "Samsung Electro-Mechanics")
+				(field
+					(name "LCSC") "C1589")
+				(field
+					(name "Footprint") "Capacitor_SMD:C_0603_1608Metric")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Unpolarized capacitor")
+			)
+			(libsource
+				(lib "Device")
+				(part "C")
+				(description "Unpolarized capacitor")
+			)
+			(property
+				(name "Spec")
+				(value "10 nF 50 V X7R")
+			)
+			(property
+				(name "MPN")
+				(value "CL10B103KB8NNNC")
+			)
+			(property
+				(name "Manufacturer")
+				(value "Samsung Electro-Mechanics")
+			)
+			(property
+				(name "LCSC")
+				(value "C1589")
+			)
+			(property
+				(name "Sheetname")
+				(value "Failsafe")
+			)
+			(property
+				(name "Sheetfile")
+				(value "failsafe.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "cap capacitor")
+			)
+			(property
+				(name "ki_fp_filters")
+				(value "C_*")
+			)
+			(sheetpath
+				(names "/Failsafe/")
+				(tstamps "/c8090421-e4d9-51bd-b806-aa951cb2172e/")
+			)
+			(tstamps "63661d76-6678-5630-b591-06ddfa3ec526")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "C56")
+			(value "100n")
+			(footprint "Capacitor_SMD:C_0603_1608Metric")
+			(description "Unpolarized capacitor")
+			(fields
+				(field
+					(name "Spec") "100 nF 50 V X7R")
+				(field
+					(name "MPN") "CC0603KRX7R9BB104")
+				(field
+					(name "Manufacturer") "YAGEO")
+				(field
+					(name "LCSC") "C14663")
+				(field
+					(name "Footprint") "Capacitor_SMD:C_0603_1608Metric")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Unpolarized capacitor")
+			)
+			(libsource
+				(lib "Device")
+				(part "C")
+				(description "Unpolarized capacitor")
+			)
+			(property
+				(name "Spec")
+				(value "100 nF 50 V X7R")
+			)
+			(property
+				(name "MPN")
+				(value "CC0603KRX7R9BB104")
+			)
+			(property
+				(name "Manufacturer")
+				(value "YAGEO")
+			)
+			(property
+				(name "LCSC")
+				(value "C14663")
+			)
+			(property
+				(name "Sheetname")
+				(value "Failsafe")
+			)
+			(property
+				(name "Sheetfile")
+				(value "failsafe.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "cap capacitor")
+			)
+			(property
+				(name "ki_fp_filters")
+				(value "C_*")
+			)
+			(sheetpath
+				(names "/Failsafe/")
+				(tstamps "/c8090421-e4d9-51bd-b806-aa951cb2172e/")
+			)
+			(tstamps "2aea70a8-4792-59ea-9d7d-36e4fd3067ef")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
 			(ref "D7")
 			(value "BAT54S")
 			(footprint "Package_TO_SOT_SMD:SOT-23")
@@ -14672,6 +14828,84 @@
 						)
 						(pin
 							(num "3")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "R13")
+			(value "1M")
+			(footprint "Resistor_SMD:R_0603_1608Metric")
+			(description "Resistor")
+			(fields
+				(field
+					(name "Spec") "1M 1%")
+				(field
+					(name "MPN") "0603WAF1004T5E")
+				(field
+					(name "Manufacturer") "UNI-ROYAL(Uniroyal Elec)")
+				(field
+					(name "LCSC") "C22935")
+				(field
+					(name "Footprint") "Resistor_SMD:R_0603_1608Metric")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Resistor")
+			)
+			(libsource
+				(lib "Device")
+				(part "R")
+				(description "Resistor")
+			)
+			(property
+				(name "Spec")
+				(value "1M 1%")
+			)
+			(property
+				(name "MPN")
+				(value "0603WAF1004T5E")
+			)
+			(property
+				(name "Manufacturer")
+				(value "UNI-ROYAL(Uniroyal Elec)")
+			)
+			(property
+				(name "LCSC")
+				(value "C22935")
+			)
+			(property
+				(name "Sheetname")
+				(value "Failsafe")
+			)
+			(property
+				(name "Sheetfile")
+				(value "failsafe.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "R res resistor")
+			)
+			(property
+				(name "ki_fp_filters")
+				(value "R_*")
+			)
+			(sheetpath
+				(names "/Failsafe/")
+				(tstamps "/c8090421-e4d9-51bd-b806-aa951cb2172e/")
+			)
+			(tstamps "85f66f2e-a835-5d2e-96af-14c9af222807")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
 						)
 						(pin
 							(num "2")
@@ -15929,6 +16163,84 @@
 			)
 		)
 		(comp
+			(ref "R100")
+			(value "110k")
+			(footprint "Resistor_SMD:R_0603_1608Metric")
+			(description "Resistor")
+			(fields
+				(field
+					(name "Spec") "110k 1%")
+				(field
+					(name "MPN") "0603WAF1103T5E")
+				(field
+					(name "Manufacturer") "UNI-ROYAL(Uniroyal Elec)")
+				(field
+					(name "LCSC") "C25805")
+				(field
+					(name "Footprint") "Resistor_SMD:R_0603_1608Metric")
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description") "Resistor")
+			)
+			(libsource
+				(lib "Device")
+				(part "R")
+				(description "Resistor")
+			)
+			(property
+				(name "Spec")
+				(value "110k 1%")
+			)
+			(property
+				(name "MPN")
+				(value "0603WAF1103T5E")
+			)
+			(property
+				(name "Manufacturer")
+				(value "UNI-ROYAL(Uniroyal Elec)")
+			)
+			(property
+				(name "LCSC")
+				(value "C25805")
+			)
+			(property
+				(name "Sheetname")
+				(value "Failsafe")
+			)
+			(property
+				(name "Sheetfile")
+				(value "failsafe.kicad_sch")
+			)
+			(property
+				(name "ki_keywords")
+				(value "R res resistor")
+			)
+			(property
+				(name "ki_fp_filters")
+				(value "R_*")
+			)
+			(sheetpath
+				(names "/Failsafe/")
+				(tstamps "/c8090421-e4d9-51bd-b806-aa951cb2172e/")
+			)
+			(tstamps "b6ffd9ac-e74c-54b0-affc-3bb70c732abf")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
 			(ref "U6")
 			(value "LM2901DR")
 			(footprint "Package_SO:SOIC-14_3.9x8.7mm_P1.27mm")
@@ -16175,6 +16487,88 @@
 						)
 						(pin
 							(num "7")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "U13")
+			(value "TPS3701DDCR")
+			(footprint "Package_TO_SOT_SMD:TSOT-23-6")
+			(datasheet "https://www.ti.com/lit/ds/symlink/tps3701.pdf")
+			(description "Window voltage detector, 0.4 V thresholds, open-drain outputs, SOT-23-thin-6")
+			(fields
+				(field
+					(name "Spec") "TPS3701DDCR window voltage detector, 0.4 V thresholds, open-drain outputs")
+				(field
+					(name "MPN") "TPS3701DDCR")
+				(field
+					(name "Manufacturer") "Texas Instruments")
+				(field
+					(name "LCSC") "C132788")
+				(field
+					(name "Footprint") "Package_TO_SOT_SMD:TSOT-23-6")
+				(field
+					(name "Datasheet") "https://www.ti.com/lit/ds/symlink/tps3701.pdf")
+				(field
+					(name "Description") "Window voltage detector, 0.4 V thresholds, open-drain outputs, SOT-23-thin-6")
+			)
+			(libsource
+				(lib "ZoneFlow")
+				(part "TPS3701DDC")
+				(description "Window voltage detector, 0.4 V thresholds, open-drain outputs, SOT-23-thin-6")
+			)
+			(property
+				(name "Spec")
+				(value "TPS3701DDCR window voltage detector, 0.4 V thresholds, open-drain outputs")
+			)
+			(property
+				(name "MPN")
+				(value "TPS3701DDCR")
+			)
+			(property
+				(name "Manufacturer")
+				(value "Texas Instruments")
+			)
+			(property
+				(name "LCSC")
+				(value "C132788")
+			)
+			(property
+				(name "Sheetname")
+				(value "Failsafe")
+			)
+			(property
+				(name "Sheetfile")
+				(value "failsafe.kicad_sch")
+			)
+			(sheetpath
+				(names "/Failsafe/")
+				(tstamps "/c8090421-e4d9-51bd-b806-aa951cb2172e/")
+			)
+			(tstamps "489ec53c-50f0-59a9-99b1-6588f1d4189a")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "3")
+						)
+						(pin
+							(num "5")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "6")
+						)
+						(pin
+							(num "1")
 						)
 					)
 				)
@@ -31145,6 +31539,56 @@
 		)
 		(libpart
 			(lib "ZoneFlow")
+			(part "TPS3701DDC")
+			(description "Window voltage detector, 0.4 V thresholds, open-drain outputs, SOT-23-thin-6")
+			(docs "https://www.ti.com/lit/ds/symlink/tps3701.pdf")
+			(fields
+				(field
+					(name "Reference") "U")
+				(field
+					(name "Value") "TPS3701DDCR")
+				(field
+					(name "Footprint") "Package_TO_SOT_SMD:TSOT-23-6")
+				(field
+					(name "Datasheet") "https://www.ti.com/lit/ds/symlink/tps3701.pdf")
+				(field
+					(name "Description") "Window voltage detector, 0.4 V thresholds, open-drain outputs, SOT-23-thin-6")
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "~{OUTA}")
+					(type "open_collector")
+				)
+				(pin
+					(num "2")
+					(name "GND")
+					(type "power_in")
+				)
+				(pin
+					(num "3")
+					(name "INA")
+					(type "input")
+				)
+				(pin
+					(num "4")
+					(name "INB")
+					(type "input")
+				)
+				(pin
+					(num "5")
+					(name "VDD")
+					(type "power_in")
+				)
+				(pin
+					(num "6")
+					(name "~{OUTB}")
+					(type "open_collector")
+				)
+			)
+		)
+		(libpart
+			(lib "ZoneFlow")
 			(part "USB_C_Receptacle_16P")
 			(description "USB Type-C receptacle, USB 2.0, 16 contacts")
 			(fields
@@ -32416,6 +32860,32 @@
 		)
 		(net
 			(code "49")
+			(name "/Failsafe/OV_DIV")
+			(class "Default")
+			(node
+				(ref "C55")
+				(pin "1")
+				(pintype "passive")
+			)
+			(node
+				(ref "R100")
+				(pin "1")
+				(pintype "passive")
+			)
+			(node
+				(ref "R13")
+				(pin "2")
+				(pintype "passive")
+			)
+			(node
+				(ref "U13")
+				(pin "4")
+				(pinfunction "INB_4")
+				(pintype "input")
+			)
+		)
+		(net
+			(code "50")
 			(name "/I2C0_SCL")
 			(class "Default")
 			(node
@@ -32449,7 +32919,7 @@
 			)
 		)
 		(net
-			(code "50")
+			(code "51")
 			(name "/I2C0_SDA")
 			(class "Default")
 			(node
@@ -32483,7 +32953,7 @@
 			)
 		)
 		(net
-			(code "51")
+			(code "52")
 			(name "/ISENSE_HI")
 			(class "Default")
 			(node
@@ -32514,7 +32984,7 @@
 			)
 		)
 		(net
-			(code "52")
+			(code "53")
 			(name "/ISENSE_LO")
 			(class "Default")
 			(node
@@ -32550,7 +33020,7 @@
 			)
 		)
 		(net
-			(code "53")
+			(code "54")
 			(name "/ISNS")
 			(class "Default")
 			(node
@@ -32774,7 +33244,7 @@
 			)
 		)
 		(net
-			(code "54")
+			(code "55")
 			(name "/KA")
 			(class "Default")
 			(node
@@ -32800,7 +33270,7 @@
 			)
 		)
 		(net
-			(code "55")
+			(code "56")
 			(name "/KA_N2")
 			(class "Default")
 			(node
@@ -32837,7 +33307,7 @@
 			)
 		)
 		(net
-			(code "56")
+			(code "57")
 			(name "/KA_OK")
 			(class "Default")
 			(node
@@ -32873,7 +33343,7 @@
 			)
 		)
 		(net
-			(code "57")
+			(code "58")
 			(name "/MCU/LED_ST")
 			(class "Default")
 			(node
@@ -32889,7 +33359,7 @@
 			)
 		)
 		(net
-			(code "58")
+			(code "59")
 			(name "/MCU/STATUS_LED")
 			(class "Default")
 			(node
@@ -32905,7 +33375,7 @@
 			)
 		)
 		(net
-			(code "59")
+			(code "60")
 			(name "/MV/G")
 			(class "Default")
 			(node
@@ -32926,7 +33396,7 @@
 			)
 		)
 		(net
-			(code "60")
+			(code "61")
 			(name "/MV/LEDA")
 			(class "Default")
 			(node
@@ -32942,7 +33412,7 @@
 			)
 		)
 		(net
-			(code "61")
+			(code "62")
 			(name "/MV/OGT")
 			(class "Default")
 			(node
@@ -32957,7 +33427,7 @@
 			)
 		)
 		(net
-			(code "62")
+			(code "63")
 			(name "/MV/OLA")
 			(class "Default")
 			(node
@@ -32972,7 +33442,7 @@
 			)
 		)
 		(net
-			(code "63")
+			(code "64")
 			(name "/MV/SNB")
 			(class "Default")
 			(node
@@ -32987,7 +33457,7 @@
 			)
 		)
 		(net
-			(code "64")
+			(code "65")
 			(name "/MV/T2")
 			(class "Default")
 			(node
@@ -33013,7 +33483,7 @@
 			)
 		)
 		(net
-			(code "65")
+			(code "66")
 			(name "/OC_FAULT_N")
 			(class "Default")
 			(node
@@ -33029,7 +33499,7 @@
 			)
 		)
 		(net
-			(code "66")
+			(code "67")
 			(name "/OC_TRIP_N")
 			(class "Default")
 			(node
@@ -33042,6 +33512,12 @@
 				(pin "1")
 				(pinfunction "1_1")
 				(pintype "passive")
+			)
+			(node
+				(ref "U13")
+				(pin "6")
+				(pinfunction "~{OUTB}_6")
+				(pintype "open_collector")
 			)
 			(node
 				(ref "U6")
@@ -33060,7 +33536,7 @@
 			)
 		)
 		(net
-			(code "67")
+			(code "68")
 			(name "/OUT_MV")
 			(class "Default")
 			(node
@@ -33082,7 +33558,7 @@
 			)
 		)
 		(net
-			(code "68")
+			(code "69")
 			(name "/OUT_Z1")
 			(class "Default")
 			(node
@@ -33104,7 +33580,7 @@
 			)
 		)
 		(net
-			(code "69")
+			(code "70")
 			(name "/OUT_Z2")
 			(class "Default")
 			(node
@@ -33126,7 +33602,7 @@
 			)
 		)
 		(net
-			(code "70")
+			(code "71")
 			(name "/OUT_Z3")
 			(class "Default")
 			(node
@@ -33148,7 +33624,7 @@
 			)
 		)
 		(net
-			(code "71")
+			(code "72")
 			(name "/OUT_Z4")
 			(class "Default")
 			(node
@@ -33170,7 +33646,7 @@
 			)
 		)
 		(net
-			(code "72")
+			(code "73")
 			(name "/OUT_Z5")
 			(class "Default")
 			(node
@@ -33192,7 +33668,7 @@
 			)
 		)
 		(net
-			(code "73")
+			(code "74")
 			(name "/OUT_Z6")
 			(class "Default")
 			(node
@@ -33214,7 +33690,7 @@
 			)
 		)
 		(net
-			(code "74")
+			(code "75")
 			(name "/OUT_Z7")
 			(class "Default")
 			(node
@@ -33236,7 +33712,7 @@
 			)
 		)
 		(net
-			(code "75")
+			(code "76")
 			(name "/OUT_Z8")
 			(class "Default")
 			(node
@@ -33258,7 +33734,7 @@
 			)
 		)
 		(net
-			(code "76")
+			(code "77")
 			(name "/P06")
 			(class "Default")
 			(node
@@ -33281,7 +33757,7 @@
 			)
 		)
 		(net
-			(code "77")
+			(code "78")
 			(name "/P07")
 			(class "Default")
 			(node
@@ -33304,7 +33780,7 @@
 			)
 		)
 		(net
-			(code "78")
+			(code "79")
 			(name "/P16")
 			(class "Default")
 			(node
@@ -33327,7 +33803,7 @@
 			)
 		)
 		(net
-			(code "79")
+			(code "80")
 			(name "/P17")
 			(class "Default")
 			(node
@@ -33350,7 +33826,7 @@
 			)
 		)
 		(net
-			(code "80")
+			(code "81")
 			(name "/PGOOD")
 			(class "Default")
 			(node
@@ -33367,7 +33843,7 @@
 			)
 		)
 		(net
-			(code "81")
+			(code "82")
 			(name "/Power/BST")
 			(class "Default")
 			(node
@@ -33383,7 +33859,7 @@
 			)
 		)
 		(net
-			(code "82")
+			(code "83")
 			(name "/Power/FB")
 			(class "Default")
 			(node
@@ -33409,7 +33885,7 @@
 			)
 		)
 		(net
-			(code "83")
+			(code "84")
 			(name "/Power/FB_MID")
 			(class "Default")
 			(node
@@ -33424,7 +33900,7 @@
 			)
 		)
 		(net
-			(code "84")
+			(code "85")
 			(name "/Power/RIP")
 			(class "Default")
 			(node
@@ -33444,7 +33920,7 @@
 			)
 		)
 		(net
-			(code "85")
+			(code "86")
 			(name "/Power/RON")
 			(class "Default")
 			(node
@@ -33460,7 +33936,7 @@
 			)
 		)
 		(net
-			(code "86")
+			(code "87")
 			(name "/Power/SW")
 			(class "Default")
 			(node
@@ -33487,7 +33963,7 @@
 			)
 		)
 		(net
-			(code "87")
+			(code "88")
 			(name "/Power/UVLO")
 			(class "Default")
 			(node
@@ -33508,7 +33984,7 @@
 			)
 		)
 		(net
-			(code "88")
+			(code "89")
 			(name "/Power/VIN_U1")
 			(class "Default")
 			(node
@@ -33534,7 +34010,7 @@
 			)
 		)
 		(net
-			(code "89")
+			(code "90")
 			(name "/Power/VRECT")
 			(class "Default")
 			(node
@@ -33550,7 +34026,7 @@
 			)
 		)
 		(net
-			(code "90")
+			(code "91")
 			(name "/QW_SCL")
 			(class "Default")
 			(node
@@ -33584,7 +34060,7 @@
 			)
 		)
 		(net
-			(code "91")
+			(code "92")
 			(name "/QW_SDA")
 			(class "Default")
 			(node
@@ -33618,7 +34094,7 @@
 			)
 		)
 		(net
-			(code "92")
+			(code "93")
 			(name "/RLY_B")
 			(class "Default")
 			(node
@@ -33651,7 +34127,7 @@
 			)
 		)
 		(net
-			(code "93")
+			(code "94")
 			(name "/RLY_B_RB")
 			(class "Default")
 			(node
@@ -33672,7 +34148,7 @@
 			)
 		)
 		(net
-			(code "94")
+			(code "95")
 			(name "/RTC/OSCI")
 			(class "Default")
 			(node
@@ -33694,7 +34170,7 @@
 			)
 		)
 		(net
-			(code "95")
+			(code "96")
 			(name "/RTC/OSCO")
 			(class "Default")
 			(node
@@ -33711,7 +34187,7 @@
 			)
 		)
 		(net
-			(code "96")
+			(code "97")
 			(name "/RTC/VBAT")
 			(class "Default")
 			(node
@@ -33727,7 +34203,7 @@
 			)
 		)
 		(net
-			(code "97")
+			(code "98")
 			(name "/RTC/VBAT_R")
 			(class "Default")
 			(node
@@ -33743,7 +34219,7 @@
 			)
 		)
 		(net
-			(code "98")
+			(code "99")
 			(name "/RTC/VDD_RTC")
 			(class "Default")
 			(node
@@ -33771,7 +34247,7 @@
 			)
 		)
 		(net
-			(code "99")
+			(code "100")
 			(name "/RTC_INT_N")
 			(class "Default")
 			(node
@@ -33788,7 +34264,7 @@
 			)
 		)
 		(net
-			(code "100")
+			(code "101")
 			(name "/SENS_5V")
 			(class "Default")
 			(node
@@ -33816,7 +34292,7 @@
 			)
 		)
 		(net
-			(code "101")
+			(code "102")
 			(name "/SENS_AUX")
 			(class "Default")
 			(node
@@ -33832,7 +34308,7 @@
 			)
 		)
 		(net
-			(code "102")
+			(code "103")
 			(name "/SENS_FLOW")
 			(class "Default")
 			(node
@@ -33848,7 +34324,7 @@
 			)
 		)
 		(net
-			(code "103")
+			(code "104")
 			(name "/SENS_FLT_N")
 			(class "Default")
 			(node
@@ -33870,7 +34346,7 @@
 			)
 		)
 		(net
-			(code "104")
+			(code "105")
 			(name "/SENS_PWR_EN")
 			(class "Default")
 			(node
@@ -33898,7 +34374,7 @@
 			)
 		)
 		(net
-			(code "105")
+			(code "106")
 			(name "/SENS_RAIN")
 			(class "Default")
 			(node
@@ -33914,7 +34390,7 @@
 			)
 		)
 		(net
-			(code "106")
+			(code "107")
 			(name "/Sensors/N_AUX")
 			(class "Default")
 			(node
@@ -33940,7 +34416,7 @@
 			)
 		)
 		(net
-			(code "107")
+			(code "108")
 			(name "/Sensors/N_FLOW")
 			(class "Default")
 			(node
@@ -33966,7 +34442,7 @@
 			)
 		)
 		(net
-			(code "108")
+			(code "109")
 			(name "/Sensors/N_RAIN")
 			(class "Default")
 			(node
@@ -33992,7 +34468,7 @@
 			)
 		)
 		(net
-			(code "109")
+			(code "110")
 			(name "/Sensors/SP_A")
 			(class "Default")
 			(node
@@ -34018,7 +34494,7 @@
 			)
 		)
 		(net
-			(code "110")
+			(code "111")
 			(name "/Sensors/SP_B")
 			(class "Default")
 			(node
@@ -34034,7 +34510,7 @@
 			)
 		)
 		(net
-			(code "111")
+			(code "112")
 			(name "/Sensors/SP_ILIM")
 			(class "Default")
 			(node
@@ -34050,7 +34526,7 @@
 			)
 		)
 		(net
-			(code "112")
+			(code "113")
 			(name "/Sensors/SP_OUT")
 			(class "Default")
 			(node
@@ -34078,7 +34554,7 @@
 			)
 		)
 		(net
-			(code "113")
+			(code "114")
 			(name "/TFT_BL")
 			(class "Default")
 			(node
@@ -34094,7 +34570,7 @@
 			)
 		)
 		(net
-			(code "114")
+			(code "115")
 			(name "/TFT_CS")
 			(class "Default")
 			(node
@@ -34111,7 +34587,7 @@
 			)
 		)
 		(net
-			(code "115")
+			(code "116")
 			(name "/TFT_DC")
 			(class "Default")
 			(node
@@ -34128,7 +34604,7 @@
 			)
 		)
 		(net
-			(code "116")
+			(code "117")
 			(name "/TFT_MOSI")
 			(class "Default")
 			(node
@@ -34145,7 +34621,7 @@
 			)
 		)
 		(net
-			(code "117")
+			(code "118")
 			(name "/TFT_RST")
 			(class "Default")
 			(node
@@ -34167,7 +34643,7 @@
 			)
 		)
 		(net
-			(code "118")
+			(code "119")
 			(name "/TFT_SCLK")
 			(class "Default")
 			(node
@@ -34184,7 +34660,7 @@
 			)
 		)
 		(net
-			(code "119")
+			(code "120")
 			(name "/T_AUX")
 			(class "Default")
 			(node
@@ -34211,7 +34687,7 @@
 			)
 		)
 		(net
-			(code "120")
+			(code "121")
 			(name "/T_FLOW")
 			(class "Default")
 			(node
@@ -34238,7 +34714,7 @@
 			)
 		)
 		(net
-			(code "121")
+			(code "122")
 			(name "/T_RAIN")
 			(class "Default")
 			(node
@@ -34265,7 +34741,7 @@
 			)
 		)
 		(net
-			(code "122")
+			(code "123")
 			(name "/U0RXD")
 			(class "Default")
 			(node
@@ -34282,7 +34758,7 @@
 			)
 		)
 		(net
-			(code "123")
+			(code "124")
 			(name "/U0TXD_MCU")
 			(class "Default")
 			(node
@@ -34298,7 +34774,7 @@
 			)
 		)
 		(net
-			(code "124")
+			(code "125")
 			(name "/USB/CC1")
 			(class "Default")
 			(node
@@ -34314,7 +34790,7 @@
 			)
 		)
 		(net
-			(code "125")
+			(code "126")
 			(name "/USB/CC2")
 			(class "Default")
 			(node
@@ -34330,7 +34806,7 @@
 			)
 		)
 		(net
-			(code "126")
+			(code "127")
 			(name "/USB/USB_DM")
 			(class "Default")
 			(node
@@ -34364,7 +34840,7 @@
 			)
 		)
 		(net
-			(code "127")
+			(code "128")
 			(name "/USB/USB_DP")
 			(class "Default")
 			(node
@@ -34398,7 +34874,7 @@
 			)
 		)
 		(net
-			(code "128")
+			(code "129")
 			(name "/USB/USB_SHLD")
 			(class "Default")
 			(node
@@ -34414,7 +34890,7 @@
 			)
 		)
 		(net
-			(code "129")
+			(code "130")
 			(name "/USB_DM_MCU")
 			(class "Default")
 			(node
@@ -34435,7 +34911,7 @@
 			)
 		)
 		(net
-			(code "130")
+			(code "131")
 			(name "/USB_DP_MCU")
 			(class "Default")
 			(node
@@ -34456,7 +34932,7 @@
 			)
 		)
 		(net
-			(code "131")
+			(code "132")
 			(name "/VB")
 			(class "Default")
 			(node
@@ -34502,7 +34978,7 @@
 			)
 		)
 		(net
-			(code "132")
+			(code "133")
 			(name "/VH")
 			(class "Default")
 			(node
@@ -34523,7 +34999,7 @@
 			)
 		)
 		(net
-			(code "133")
+			(code "134")
 			(name "/VIN_MON")
 			(class "Default")
 			(node
@@ -34549,7 +35025,7 @@
 			)
 		)
 		(net
-			(code "134")
+			(code "135")
 			(name "/VL")
 			(class "Default")
 			(node
@@ -34576,7 +35052,7 @@
 			)
 		)
 		(net
-			(code "135")
+			(code "136")
 			(name "/V_DRV_RB")
 			(class "Default")
 			(node
@@ -34592,7 +35068,7 @@
 			)
 		)
 		(net
-			(code "136")
+			(code "137")
 			(name "/Z1/G")
 			(class "Default")
 			(node
@@ -34613,7 +35089,7 @@
 			)
 		)
 		(net
-			(code "137")
+			(code "138")
 			(name "/Z1/LEDA")
 			(class "Default")
 			(node
@@ -34629,7 +35105,7 @@
 			)
 		)
 		(net
-			(code "138")
+			(code "139")
 			(name "/Z1/OGT")
 			(class "Default")
 			(node
@@ -34644,7 +35120,7 @@
 			)
 		)
 		(net
-			(code "139")
+			(code "140")
 			(name "/Z1/OLA")
 			(class "Default")
 			(node
@@ -34659,7 +35135,7 @@
 			)
 		)
 		(net
-			(code "140")
+			(code "141")
 			(name "/Z1/SNB")
 			(class "Default")
 			(node
@@ -34674,7 +35150,7 @@
 			)
 		)
 		(net
-			(code "141")
+			(code "142")
 			(name "/Z1/T2")
 			(class "Default")
 			(node
@@ -34700,7 +35176,7 @@
 			)
 		)
 		(net
-			(code "142")
+			(code "143")
 			(name "/Z2/G")
 			(class "Default")
 			(node
@@ -34721,7 +35197,7 @@
 			)
 		)
 		(net
-			(code "143")
+			(code "144")
 			(name "/Z2/LEDA")
 			(class "Default")
 			(node
@@ -34737,7 +35213,7 @@
 			)
 		)
 		(net
-			(code "144")
+			(code "145")
 			(name "/Z2/OGT")
 			(class "Default")
 			(node
@@ -34752,7 +35228,7 @@
 			)
 		)
 		(net
-			(code "145")
+			(code "146")
 			(name "/Z2/OLA")
 			(class "Default")
 			(node
@@ -34767,7 +35243,7 @@
 			)
 		)
 		(net
-			(code "146")
+			(code "147")
 			(name "/Z2/SNB")
 			(class "Default")
 			(node
@@ -34782,7 +35258,7 @@
 			)
 		)
 		(net
-			(code "147")
+			(code "148")
 			(name "/Z2/T2")
 			(class "Default")
 			(node
@@ -34808,7 +35284,7 @@
 			)
 		)
 		(net
-			(code "148")
+			(code "149")
 			(name "/Z3/G")
 			(class "Default")
 			(node
@@ -34829,7 +35305,7 @@
 			)
 		)
 		(net
-			(code "149")
+			(code "150")
 			(name "/Z3/LEDA")
 			(class "Default")
 			(node
@@ -34845,7 +35321,7 @@
 			)
 		)
 		(net
-			(code "150")
+			(code "151")
 			(name "/Z3/OGT")
 			(class "Default")
 			(node
@@ -34860,7 +35336,7 @@
 			)
 		)
 		(net
-			(code "151")
+			(code "152")
 			(name "/Z3/OLA")
 			(class "Default")
 			(node
@@ -34875,7 +35351,7 @@
 			)
 		)
 		(net
-			(code "152")
+			(code "153")
 			(name "/Z3/SNB")
 			(class "Default")
 			(node
@@ -34890,7 +35366,7 @@
 			)
 		)
 		(net
-			(code "153")
+			(code "154")
 			(name "/Z3/T2")
 			(class "Default")
 			(node
@@ -34916,7 +35392,7 @@
 			)
 		)
 		(net
-			(code "154")
+			(code "155")
 			(name "/Z4/G")
 			(class "Default")
 			(node
@@ -34937,7 +35413,7 @@
 			)
 		)
 		(net
-			(code "155")
+			(code "156")
 			(name "/Z4/LEDA")
 			(class "Default")
 			(node
@@ -34953,7 +35429,7 @@
 			)
 		)
 		(net
-			(code "156")
+			(code "157")
 			(name "/Z4/OGT")
 			(class "Default")
 			(node
@@ -34968,7 +35444,7 @@
 			)
 		)
 		(net
-			(code "157")
+			(code "158")
 			(name "/Z4/OLA")
 			(class "Default")
 			(node
@@ -34983,7 +35459,7 @@
 			)
 		)
 		(net
-			(code "158")
+			(code "159")
 			(name "/Z4/SNB")
 			(class "Default")
 			(node
@@ -34998,7 +35474,7 @@
 			)
 		)
 		(net
-			(code "159")
+			(code "160")
 			(name "/Z4/T2")
 			(class "Default")
 			(node
@@ -35024,7 +35500,7 @@
 			)
 		)
 		(net
-			(code "160")
+			(code "161")
 			(name "/Z5/G")
 			(class "Default")
 			(node
@@ -35045,7 +35521,7 @@
 			)
 		)
 		(net
-			(code "161")
+			(code "162")
 			(name "/Z5/LEDA")
 			(class "Default")
 			(node
@@ -35061,7 +35537,7 @@
 			)
 		)
 		(net
-			(code "162")
+			(code "163")
 			(name "/Z5/OGT")
 			(class "Default")
 			(node
@@ -35076,7 +35552,7 @@
 			)
 		)
 		(net
-			(code "163")
+			(code "164")
 			(name "/Z5/OLA")
 			(class "Default")
 			(node
@@ -35091,7 +35567,7 @@
 			)
 		)
 		(net
-			(code "164")
+			(code "165")
 			(name "/Z5/SNB")
 			(class "Default")
 			(node
@@ -35106,7 +35582,7 @@
 			)
 		)
 		(net
-			(code "165")
+			(code "166")
 			(name "/Z5/T2")
 			(class "Default")
 			(node
@@ -35132,7 +35608,7 @@
 			)
 		)
 		(net
-			(code "166")
+			(code "167")
 			(name "/Z6/G")
 			(class "Default")
 			(node
@@ -35153,7 +35629,7 @@
 			)
 		)
 		(net
-			(code "167")
+			(code "168")
 			(name "/Z6/LEDA")
 			(class "Default")
 			(node
@@ -35169,7 +35645,7 @@
 			)
 		)
 		(net
-			(code "168")
+			(code "169")
 			(name "/Z6/OGT")
 			(class "Default")
 			(node
@@ -35184,7 +35660,7 @@
 			)
 		)
 		(net
-			(code "169")
+			(code "170")
 			(name "/Z6/OLA")
 			(class "Default")
 			(node
@@ -35199,7 +35675,7 @@
 			)
 		)
 		(net
-			(code "170")
+			(code "171")
 			(name "/Z6/SNB")
 			(class "Default")
 			(node
@@ -35214,7 +35690,7 @@
 			)
 		)
 		(net
-			(code "171")
+			(code "172")
 			(name "/Z6/T2")
 			(class "Default")
 			(node
@@ -35240,7 +35716,7 @@
 			)
 		)
 		(net
-			(code "172")
+			(code "173")
 			(name "/Z7/G")
 			(class "Default")
 			(node
@@ -35261,7 +35737,7 @@
 			)
 		)
 		(net
-			(code "173")
+			(code "174")
 			(name "/Z7/LEDA")
 			(class "Default")
 			(node
@@ -35277,7 +35753,7 @@
 			)
 		)
 		(net
-			(code "174")
+			(code "175")
 			(name "/Z7/OGT")
 			(class "Default")
 			(node
@@ -35292,7 +35768,7 @@
 			)
 		)
 		(net
-			(code "175")
+			(code "176")
 			(name "/Z7/OLA")
 			(class "Default")
 			(node
@@ -35307,7 +35783,7 @@
 			)
 		)
 		(net
-			(code "176")
+			(code "177")
 			(name "/Z7/SNB")
 			(class "Default")
 			(node
@@ -35322,7 +35798,7 @@
 			)
 		)
 		(net
-			(code "177")
+			(code "178")
 			(name "/Z7/T2")
 			(class "Default")
 			(node
@@ -35348,7 +35824,7 @@
 			)
 		)
 		(net
-			(code "178")
+			(code "179")
 			(name "/Z8/G")
 			(class "Default")
 			(node
@@ -35369,7 +35845,7 @@
 			)
 		)
 		(net
-			(code "179")
+			(code "180")
 			(name "/Z8/LEDA")
 			(class "Default")
 			(node
@@ -35385,7 +35861,7 @@
 			)
 		)
 		(net
-			(code "180")
+			(code "181")
 			(name "/Z8/OGT")
 			(class "Default")
 			(node
@@ -35400,7 +35876,7 @@
 			)
 		)
 		(net
-			(code "181")
+			(code "182")
 			(name "/Z8/OLA")
 			(class "Default")
 			(node
@@ -35415,7 +35891,7 @@
 			)
 		)
 		(net
-			(code "182")
+			(code "183")
 			(name "/Z8/SNB")
 			(class "Default")
 			(node
@@ -35430,7 +35906,7 @@
 			)
 		)
 		(net
-			(code "183")
+			(code "184")
 			(name "/Z8/T2")
 			(class "Default")
 			(node
@@ -35456,7 +35932,7 @@
 			)
 		)
 		(net
-			(code "184")
+			(code "185")
 			(name "/ZD_MV_N")
 			(class "Default")
 			(node
@@ -35483,7 +35959,7 @@
 			)
 		)
 		(net
-			(code "185")
+			(code "186")
 			(name "/ZD_Z1_N")
 			(class "Default")
 			(node
@@ -35511,7 +35987,7 @@
 			)
 		)
 		(net
-			(code "186")
+			(code "187")
 			(name "/ZD_Z2_N")
 			(class "Default")
 			(node
@@ -35539,7 +36015,7 @@
 			)
 		)
 		(net
-			(code "187")
+			(code "188")
 			(name "/ZD_Z3_N")
 			(class "Default")
 			(node
@@ -35567,7 +36043,7 @@
 			)
 		)
 		(net
-			(code "188")
+			(code "189")
 			(name "/ZD_Z4_N")
 			(class "Default")
 			(node
@@ -35595,7 +36071,7 @@
 			)
 		)
 		(net
-			(code "189")
+			(code "190")
 			(name "/ZD_Z5_N")
 			(class "Default")
 			(node
@@ -35623,7 +36099,7 @@
 			)
 		)
 		(net
-			(code "190")
+			(code "191")
 			(name "/ZD_Z6_N")
 			(class "Default")
 			(node
@@ -35651,7 +36127,7 @@
 			)
 		)
 		(net
-			(code "191")
+			(code "192")
 			(name "/ZD_Z7_N")
 			(class "Default")
 			(node
@@ -35679,7 +36155,7 @@
 			)
 		)
 		(net
-			(code "192")
+			(code "193")
 			(name "/ZD_Z8_N")
 			(class "Default")
 			(node
@@ -35707,7 +36183,7 @@
 			)
 		)
 		(net
-			(code "193")
+			(code "194")
 			(name "3V3")
 			(class "Default")
 			(node
@@ -35757,6 +36233,11 @@
 			)
 			(node
 				(ref "C54")
+				(pin "1")
+				(pintype "passive")
+			)
+			(node
+				(ref "C56")
 				(pin "1")
 				(pintype "passive")
 			)
@@ -35817,6 +36298,11 @@
 				(ref "Q3")
 				(pin "2")
 				(pinfunction "S_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "R13")
+				(pin "1")
 				(pintype "passive")
 			)
 			(node
@@ -35932,6 +36418,12 @@
 				(pintype "power_in")
 			)
 			(node
+				(ref "U13")
+				(pin "5")
+				(pinfunction "VDD_5")
+				(pintype "power_in")
+			)
+			(node
 				(ref "U3")
 				(pin "2")
 				(pinfunction "VO_2")
@@ -35963,7 +36455,7 @@
 			)
 		)
 		(net
-			(code "194")
+			(code "195")
 			(name "GND")
 			(class "Default")
 			(node
@@ -36188,6 +36680,16 @@
 				(pintype "passive")
 			)
 			(node
+				(ref "C55")
+				(pin "2")
+				(pintype "passive")
+			)
+			(node
+				(ref "C56")
+				(pin "2")
+				(pintype "passive")
+			)
+			(node
 				(ref "C6")
 				(pin "2")
 				(pintype "passive")
@@ -36384,6 +36886,11 @@
 			)
 			(node
 				(ref "R10")
+				(pin "2")
+				(pintype "passive")
+			)
+			(node
+				(ref "R100")
 				(pin "2")
 				(pintype "passive")
 			)
@@ -36610,6 +37117,18 @@
 				(pintype "power_in")
 			)
 			(node
+				(ref "U13")
+				(pin "2")
+				(pinfunction "GND_2")
+				(pintype "power_in")
+			)
+			(node
+				(ref "U13")
+				(pin "3")
+				(pinfunction "INA_3")
+				(pintype "input")
+			)
+			(node
 				(ref "U2")
 				(pin "2")
 				(pinfunction "GND_2")
@@ -36683,7 +37202,7 @@
 			)
 		)
 		(net
-			(code "195")
+			(code "196")
 			(name "V5")
 			(class "Default")
 			(node
@@ -36748,7 +37267,7 @@
 			)
 		)
 		(net
-			(code "196")
+			(code "197")
 			(name "VBUS")
 			(class "Default")
 			(node
@@ -36794,7 +37313,7 @@
 			)
 		)
 		(net
-			(code "197")
+			(code "198")
 			(name "VIN_DC")
 			(class "Default")
 			(node
@@ -36830,7 +37349,7 @@
 			)
 		)
 		(net
-			(code "198")
+			(code "199")
 			(name "V_BUCK")
 			(class "Default")
 			(node
@@ -36907,7 +37426,7 @@
 			)
 		)
 		(net
-			(code "199")
+			(code "200")
 			(name "V_DRV")
 			(class "Default")
 			(node
@@ -37082,7 +37601,7 @@
 			)
 		)
 		(net
-			(code "200")
+			(code "201")
 			(name "unconnected-(J5-SBU1-PadA8)")
 			(class "Default")
 			(node
@@ -37093,7 +37612,7 @@
 			)
 		)
 		(net
-			(code "201")
+			(code "202")
 			(name "unconnected-(J5-SBU2-PadB8)")
 			(class "Default")
 			(node
@@ -37104,7 +37623,7 @@
 			)
 		)
 		(net
-			(code "202")
+			(code "203")
 			(name "unconnected-(J6-MountPin-PadMP)")
 			(class "Default")
 			(node
@@ -37115,7 +37634,7 @@
 			)
 		)
 		(net
-			(code "203")
+			(code "204")
 			(name "unconnected-(J7-NC-Pad7)")
 			(class "Default")
 			(node
@@ -37126,7 +37645,7 @@
 			)
 		)
 		(net
-			(code "204")
+			(code "205")
 			(name "unconnected-(U4-IO35-Pad28)")
 			(class "Default")
 			(node
@@ -37137,7 +37656,7 @@
 			)
 		)
 		(net
-			(code "205")
+			(code "206")
 			(name "unconnected-(U4-IO36-Pad29)")
 			(class "Default")
 			(node
@@ -37148,7 +37667,7 @@
 			)
 		)
 		(net
-			(code "206")
+			(code "207")
 			(name "unconnected-(U4-IO37-Pad30)")
 			(class "Default")
 			(node
@@ -37159,7 +37678,7 @@
 			)
 		)
 		(net
-			(code "207")
+			(code "208")
 			(name "unconnected-(U10-CLKO-Pad7)")
 			(class "Default")
 			(node
@@ -37170,7 +37689,18 @@
 			)
 		)
 		(net
-			(code "208")
+			(code "209")
+			(name "unconnected-(U13-~{OUTA}-Pad1)")
+			(class "Default")
+			(node
+				(ref "U13")
+				(pin "1")
+				(pinfunction "~{OUTA}_1")
+				(pintype "open_collector+no_connect")
+			)
+		)
+		(net
+			(code "210")
 			(name "unconnected-(U101-NC-Pad3)")
 			(class "Default")
 			(node
@@ -37181,7 +37711,7 @@
 			)
 		)
 		(net
-			(code "209")
+			(code "211")
 			(name "unconnected-(U101-NC-Pad5)")
 			(class "Default")
 			(node
@@ -37192,7 +37722,7 @@
 			)
 		)
 		(net
-			(code "210")
+			(code "212")
 			(name "unconnected-(U201-NC-Pad3)")
 			(class "Default")
 			(node
@@ -37203,7 +37733,7 @@
 			)
 		)
 		(net
-			(code "211")
+			(code "213")
 			(name "unconnected-(U201-NC-Pad5)")
 			(class "Default")
 			(node
@@ -37214,7 +37744,7 @@
 			)
 		)
 		(net
-			(code "212")
+			(code "214")
 			(name "unconnected-(U301-NC-Pad3)")
 			(class "Default")
 			(node
@@ -37225,7 +37755,7 @@
 			)
 		)
 		(net
-			(code "213")
+			(code "215")
 			(name "unconnected-(U301-NC-Pad5)")
 			(class "Default")
 			(node
@@ -37236,7 +37766,7 @@
 			)
 		)
 		(net
-			(code "214")
+			(code "216")
 			(name "unconnected-(U401-NC-Pad3)")
 			(class "Default")
 			(node
@@ -37247,7 +37777,7 @@
 			)
 		)
 		(net
-			(code "215")
+			(code "217")
 			(name "unconnected-(U401-NC-Pad5)")
 			(class "Default")
 			(node
@@ -37258,7 +37788,7 @@
 			)
 		)
 		(net
-			(code "216")
+			(code "218")
 			(name "unconnected-(U501-NC-Pad3)")
 			(class "Default")
 			(node
@@ -37269,7 +37799,7 @@
 			)
 		)
 		(net
-			(code "217")
+			(code "219")
 			(name "unconnected-(U501-NC-Pad5)")
 			(class "Default")
 			(node
@@ -37280,7 +37810,7 @@
 			)
 		)
 		(net
-			(code "218")
+			(code "220")
 			(name "unconnected-(U601-NC-Pad3)")
 			(class "Default")
 			(node
@@ -37291,7 +37821,7 @@
 			)
 		)
 		(net
-			(code "219")
+			(code "221")
 			(name "unconnected-(U601-NC-Pad5)")
 			(class "Default")
 			(node
@@ -37302,7 +37832,7 @@
 			)
 		)
 		(net
-			(code "220")
+			(code "222")
 			(name "unconnected-(U701-NC-Pad3)")
 			(class "Default")
 			(node
@@ -37313,7 +37843,7 @@
 			)
 		)
 		(net
-			(code "221")
+			(code "223")
 			(name "unconnected-(U701-NC-Pad5)")
 			(class "Default")
 			(node
@@ -37324,7 +37854,7 @@
 			)
 		)
 		(net
-			(code "222")
+			(code "224")
 			(name "unconnected-(U801-NC-Pad3)")
 			(class "Default")
 			(node
@@ -37335,7 +37865,7 @@
 			)
 		)
 		(net
-			(code "223")
+			(code "225")
 			(name "unconnected-(U801-NC-Pad5)")
 			(class "Default")
 			(node
@@ -37346,7 +37876,7 @@
 			)
 		)
 		(net
-			(code "224")
+			(code "226")
 			(name "unconnected-(U901-NC-Pad3)")
 			(class "Default")
 			(node
@@ -37357,7 +37887,7 @@
 			)
 		)
 		(net
-			(code "225")
+			(code "227")
 			(name "unconnected-(U901-NC-Pad5)")
 			(class "Default")
 			(node

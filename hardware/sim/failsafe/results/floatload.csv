@@ -1,0 +1,289 @@
+net,ohms,corner,run,sim,on,a,b,found
+"50 % high, 500 Hz",0.01,"typical parts, 27 C",crash,ok,True,True,True,
+"50 % high, 500 Hz",0.01,"typical parts, 27 C",selftest,ok,,,,1 idle
+"50 % high, 500 Hz",0.01,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"50 % high, 500 Hz",0.01,"Q2 at 0.65 V, 27 C",selftest,ok,,,,1 idle
+"50 % high, 500 Hz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"50 % high, 500 Hz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,1 idle
+"50 % high, 500 Hz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,True,True,True,
+"50 % high, 500 Hz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,1 idle
+"50 % high, 500 Hz",470.0,"typical parts, 27 C",crash,ok,True,True,True,
+"50 % high, 500 Hz",470.0,"typical parts, 27 C",selftest,ok,,,,2b float
+"50 % high, 500 Hz",470.0,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"50 % high, 500 Hz",470.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"50 % high, 500 Hz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"50 % high, 500 Hz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"50 % high, 500 Hz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,True,True,True,
+"50 % high, 500 Hz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"50 % high, 500 Hz",1000.0,"typical parts, 27 C",crash,ok,True,True,True,
+"50 % high, 500 Hz",1000.0,"typical parts, 27 C",selftest,ok,,,,2b float
+"50 % high, 500 Hz",1000.0,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"50 % high, 500 Hz",1000.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"50 % high, 500 Hz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"50 % high, 500 Hz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"50 % high, 500 Hz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,True,True,True,
+"50 % high, 500 Hz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"50 % high, 500 Hz",2200.0,"typical parts, 27 C",crash,ok,True,True,True,
+"50 % high, 500 Hz",2200.0,"typical parts, 27 C",selftest,ok,,,,2b float
+"50 % high, 500 Hz",2200.0,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"50 % high, 500 Hz",2200.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"50 % high, 500 Hz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"50 % high, 500 Hz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"50 % high, 500 Hz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,True,True,True,
+"50 % high, 500 Hz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"50 % high, 500 Hz",3300.0,"typical parts, 27 C",crash,ok,False,False,False,
+"50 % high, 500 Hz",3300.0,"typical parts, 27 C",selftest,ok,,,,
+"50 % high, 500 Hz",3300.0,"Q2 at 0.65 V, 27 C",crash,ok,False,False,True,
+"50 % high, 500 Hz",3300.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"50 % high, 500 Hz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"50 % high, 500 Hz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"50 % high, 500 Hz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,False,False,True,
+"50 % high, 500 Hz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"50 % high, 500 Hz",4700.0,"typical parts, 27 C",crash,ok,False,False,False,
+"50 % high, 500 Hz",4700.0,"typical parts, 27 C",selftest,ok,,,,
+"50 % high, 500 Hz",4700.0,"Q2 at 0.65 V, 27 C",crash,ok,False,False,True,
+"50 % high, 500 Hz",4700.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"50 % high, 500 Hz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,False,False,True,
+"50 % high, 500 Hz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"50 % high, 500 Hz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,False,False,True,
+"50 % high, 500 Hz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"50 % high, 2 kHz",0.01,"typical parts, 27 C",crash,ok,True,True,True,
+"50 % high, 2 kHz",0.01,"typical parts, 27 C",selftest,ok,,,,1 idle
+"50 % high, 2 kHz",0.01,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"50 % high, 2 kHz",0.01,"Q2 at 0.65 V, 27 C",selftest,ok,,,,1 idle
+"50 % high, 2 kHz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"50 % high, 2 kHz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,1 idle
+"50 % high, 2 kHz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,True,True,True,
+"50 % high, 2 kHz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,1 idle
+"50 % high, 2 kHz",470.0,"typical parts, 27 C",crash,ok,True,True,True,
+"50 % high, 2 kHz",470.0,"typical parts, 27 C",selftest,ok,,,,2b float
+"50 % high, 2 kHz",470.0,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"50 % high, 2 kHz",470.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"50 % high, 2 kHz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"50 % high, 2 kHz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"50 % high, 2 kHz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,True,True,True,
+"50 % high, 2 kHz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"50 % high, 2 kHz",1000.0,"typical parts, 27 C",crash,ok,True,True,True,
+"50 % high, 2 kHz",1000.0,"typical parts, 27 C",selftest,ok,,,,2b float
+"50 % high, 2 kHz",1000.0,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"50 % high, 2 kHz",1000.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"50 % high, 2 kHz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"50 % high, 2 kHz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"50 % high, 2 kHz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,True,True,True,
+"50 % high, 2 kHz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"50 % high, 2 kHz",2200.0,"typical parts, 27 C",crash,ok,True,True,True,
+"50 % high, 2 kHz",2200.0,"typical parts, 27 C",selftest,ok,,,,2b float
+"50 % high, 2 kHz",2200.0,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"50 % high, 2 kHz",2200.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"50 % high, 2 kHz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"50 % high, 2 kHz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"50 % high, 2 kHz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,True,True,True,
+"50 % high, 2 kHz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"50 % high, 2 kHz",3300.0,"typical parts, 27 C",crash,ok,False,False,False,
+"50 % high, 2 kHz",3300.0,"typical parts, 27 C",selftest,ok,,,,
+"50 % high, 2 kHz",3300.0,"Q2 at 0.65 V, 27 C",crash,ok,False,False,True,
+"50 % high, 2 kHz",3300.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"50 % high, 2 kHz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"50 % high, 2 kHz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"50 % high, 2 kHz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,False,False,True,
+"50 % high, 2 kHz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"50 % high, 2 kHz",4700.0,"typical parts, 27 C",crash,ok,False,False,False,
+"50 % high, 2 kHz",4700.0,"typical parts, 27 C",selftest,ok,,,,
+"50 % high, 2 kHz",4700.0,"Q2 at 0.65 V, 27 C",crash,ok,False,False,True,
+"50 % high, 2 kHz",4700.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"50 % high, 2 kHz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,False,False,True,
+"50 % high, 2 kHz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"50 % high, 2 kHz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,False,False,True,
+"50 % high, 2 kHz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"25 % high, 500 Hz",0.01,"typical parts, 27 C",crash,ok,True,True,True,
+"25 % high, 500 Hz",0.01,"typical parts, 27 C",selftest,ok,,,,1 idle
+"25 % high, 500 Hz",0.01,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"25 % high, 500 Hz",0.01,"Q2 at 0.65 V, 27 C",selftest,ok,,,,1 idle
+"25 % high, 500 Hz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"25 % high, 500 Hz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,1 idle
+"25 % high, 500 Hz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,True,True,True,
+"25 % high, 500 Hz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,1 idle
+"25 % high, 500 Hz",470.0,"typical parts, 27 C",crash,ok,True,True,True,
+"25 % high, 500 Hz",470.0,"typical parts, 27 C",selftest,ok,,,,2b float
+"25 % high, 500 Hz",470.0,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"25 % high, 500 Hz",470.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"25 % high, 500 Hz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"25 % high, 500 Hz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"25 % high, 500 Hz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,True,True,True,
+"25 % high, 500 Hz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"25 % high, 500 Hz",1000.0,"typical parts, 27 C",crash,ok,True,True,True,
+"25 % high, 500 Hz",1000.0,"typical parts, 27 C",selftest,ok,,,,2b float
+"25 % high, 500 Hz",1000.0,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"25 % high, 500 Hz",1000.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"25 % high, 500 Hz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"25 % high, 500 Hz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"25 % high, 500 Hz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,True,True,True,
+"25 % high, 500 Hz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"25 % high, 500 Hz",2200.0,"typical parts, 27 C",crash,ok,True,True,True,
+"25 % high, 500 Hz",2200.0,"typical parts, 27 C",selftest,ok,,,,2b float
+"25 % high, 500 Hz",2200.0,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"25 % high, 500 Hz",2200.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"25 % high, 500 Hz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"25 % high, 500 Hz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"25 % high, 500 Hz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,True,True,True,
+"25 % high, 500 Hz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"25 % high, 500 Hz",3300.0,"typical parts, 27 C",crash,ok,False,False,False,
+"25 % high, 500 Hz",3300.0,"typical parts, 27 C",selftest,ok,,,,
+"25 % high, 500 Hz",3300.0,"Q2 at 0.65 V, 27 C",crash,ok,False,False,True,
+"25 % high, 500 Hz",3300.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"25 % high, 500 Hz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,False,False,True,
+"25 % high, 500 Hz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"25 % high, 500 Hz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,False,False,True,
+"25 % high, 500 Hz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"25 % high, 500 Hz",4700.0,"typical parts, 27 C",crash,ok,False,False,False,
+"25 % high, 500 Hz",4700.0,"typical parts, 27 C",selftest,ok,,,,
+"25 % high, 500 Hz",4700.0,"Q2 at 0.65 V, 27 C",crash,ok,False,False,True,
+"25 % high, 500 Hz",4700.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"25 % high, 500 Hz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,False,False,True,
+"25 % high, 500 Hz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"25 % high, 500 Hz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,False,False,True,
+"25 % high, 500 Hz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"10 % high, 500 Hz",0.01,"typical parts, 27 C",crash,ok,True,True,True,
+"10 % high, 500 Hz",0.01,"typical parts, 27 C",selftest,ok,,,,1 idle
+"10 % high, 500 Hz",0.01,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"10 % high, 500 Hz",0.01,"Q2 at 0.65 V, 27 C",selftest,ok,,,,1 idle
+"10 % high, 500 Hz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"10 % high, 500 Hz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,1 idle
+"10 % high, 500 Hz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,True,True,True,
+"10 % high, 500 Hz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,1 idle
+"10 % high, 500 Hz",470.0,"typical parts, 27 C",crash,ok,True,True,True,
+"10 % high, 500 Hz",470.0,"typical parts, 27 C",selftest,ok,,,,2b float
+"10 % high, 500 Hz",470.0,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"10 % high, 500 Hz",470.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"10 % high, 500 Hz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"10 % high, 500 Hz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"10 % high, 500 Hz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,True,True,True,
+"10 % high, 500 Hz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"10 % high, 500 Hz",1000.0,"typical parts, 27 C",crash,ok,True,True,True,
+"10 % high, 500 Hz",1000.0,"typical parts, 27 C",selftest,ok,,,,2b float
+"10 % high, 500 Hz",1000.0,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"10 % high, 500 Hz",1000.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"10 % high, 500 Hz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"10 % high, 500 Hz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"10 % high, 500 Hz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,True,True,True,
+"10 % high, 500 Hz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"10 % high, 500 Hz",2200.0,"typical parts, 27 C",crash,ok,False,True,False,
+"10 % high, 500 Hz",2200.0,"typical parts, 27 C",selftest,ok,,,,
+"10 % high, 500 Hz",2200.0,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"10 % high, 500 Hz",2200.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"10 % high, 500 Hz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,False,False,True,
+"10 % high, 500 Hz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"10 % high, 500 Hz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,False,False,True,
+"10 % high, 500 Hz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"10 % high, 500 Hz",3300.0,"typical parts, 27 C",crash,ok,False,False,False,
+"10 % high, 500 Hz",3300.0,"typical parts, 27 C",selftest,ok,,,,
+"10 % high, 500 Hz",3300.0,"Q2 at 0.65 V, 27 C",crash,ok,False,False,True,
+"10 % high, 500 Hz",3300.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"10 % high, 500 Hz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,False,False,True,
+"10 % high, 500 Hz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"10 % high, 500 Hz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,False,False,True,
+"10 % high, 500 Hz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"10 % high, 500 Hz",4700.0,"typical parts, 27 C",crash,ok,False,False,False,
+"10 % high, 500 Hz",4700.0,"typical parts, 27 C",selftest,ok,,,,
+"10 % high, 500 Hz",4700.0,"Q2 at 0.65 V, 27 C",crash,ok,False,False,False,
+"10 % high, 500 Hz",4700.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,
+"10 % high, 500 Hz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,False,False,True,
+"10 % high, 500 Hz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,
+"10 % high, 500 Hz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,False,False,True,
+"10 % high, 500 Hz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"90 % high, 500 Hz",0.01,"typical parts, 27 C",crash,ok,True,True,True,
+"90 % high, 500 Hz",0.01,"typical parts, 27 C",selftest,ok,,,,1 idle
+"90 % high, 500 Hz",0.01,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"90 % high, 500 Hz",0.01,"Q2 at 0.65 V, 27 C",selftest,ok,,,,1 idle
+"90 % high, 500 Hz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"90 % high, 500 Hz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,1 idle
+"90 % high, 500 Hz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,True,True,True,
+"90 % high, 500 Hz",0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,1 idle
+"90 % high, 500 Hz",470.0,"typical parts, 27 C",crash,ok,True,True,True,
+"90 % high, 500 Hz",470.0,"typical parts, 27 C",selftest,ok,,,,2b float
+"90 % high, 500 Hz",470.0,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"90 % high, 500 Hz",470.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"90 % high, 500 Hz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"90 % high, 500 Hz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"90 % high, 500 Hz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,True,True,True,
+"90 % high, 500 Hz",470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"90 % high, 500 Hz",1000.0,"typical parts, 27 C",crash,ok,True,True,True,
+"90 % high, 500 Hz",1000.0,"typical parts, 27 C",selftest,ok,,,,2b float
+"90 % high, 500 Hz",1000.0,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"90 % high, 500 Hz",1000.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"90 % high, 500 Hz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,True,True,True,
+"90 % high, 500 Hz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"90 % high, 500 Hz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,True,True,True,
+"90 % high, 500 Hz",1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"90 % high, 500 Hz",2200.0,"typical parts, 27 C",crash,ok,False,True,False,
+"90 % high, 500 Hz",2200.0,"typical parts, 27 C",selftest,ok,,,,
+"90 % high, 500 Hz",2200.0,"Q2 at 0.65 V, 27 C",crash,ok,True,True,True,
+"90 % high, 500 Hz",2200.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"90 % high, 500 Hz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,False,False,True,
+"90 % high, 500 Hz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"90 % high, 500 Hz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,False,False,True,
+"90 % high, 500 Hz",2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"90 % high, 500 Hz",3300.0,"typical parts, 27 C",crash,ok,False,False,False,
+"90 % high, 500 Hz",3300.0,"typical parts, 27 C",selftest,ok,,,,
+"90 % high, 500 Hz",3300.0,"Q2 at 0.65 V, 27 C",crash,ok,False,False,True,
+"90 % high, 500 Hz",3300.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+"90 % high, 500 Hz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,False,False,True,
+"90 % high, 500 Hz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"90 % high, 500 Hz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,False,False,True,
+"90 % high, 500 Hz",3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+"90 % high, 500 Hz",4700.0,"typical parts, 27 C",crash,ok,False,False,False,
+"90 % high, 500 Hz",4700.0,"typical parts, 27 C",selftest,ok,,,,
+"90 % high, 500 Hz",4700.0,"Q2 at 0.65 V, 27 C",crash,ok,False,False,False,
+"90 % high, 500 Hz",4700.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,
+"90 % high, 500 Hz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,False,False,True,
+"90 % high, 500 Hz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+"90 % high, 500 Hz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,False,False,True,
+"90 % high, 500 Hz",4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+steady high,0.01,"typical parts, 27 C",crash,ok,False,False,False,
+steady high,0.01,"typical parts, 27 C",selftest,ok,,,,2b float
+steady high,0.01,"Q2 at 0.65 V, 27 C",crash,ok,False,False,False,
+steady high,0.01,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+steady high,0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,False,False,False,
+steady high,0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+steady high,0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,False,False,False,
+steady high,0.01,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,1 idle
+steady high,470.0,"typical parts, 27 C",crash,ok,False,False,False,
+steady high,470.0,"typical parts, 27 C",selftest,ok,,,,2b float
+steady high,470.0,"Q2 at 0.65 V, 27 C",crash,ok,False,False,False,
+steady high,470.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,2b float
+steady high,470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,False,False,False,
+steady high,470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,2b float
+steady high,470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,False,False,False,
+steady high,470.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+steady high,1000.0,"typical parts, 27 C",crash,ok,False,False,False,
+steady high,1000.0,"typical parts, 27 C",selftest,ok,,,,
+steady high,1000.0,"Q2 at 0.65 V, 27 C",crash,ok,False,False,False,
+steady high,1000.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,
+steady high,1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,False,False,False,
+steady high,1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,
+steady high,1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,False,False,False,
+steady high,1000.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,2b float
+steady high,2200.0,"typical parts, 27 C",crash,ok,False,False,False,
+steady high,2200.0,"typical parts, 27 C",selftest,ok,,,,
+steady high,2200.0,"Q2 at 0.65 V, 27 C",crash,ok,False,False,False,
+steady high,2200.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,
+steady high,2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,False,False,False,
+steady high,2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,
+steady high,2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,False,False,False,
+steady high,2200.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,
+steady high,3300.0,"typical parts, 27 C",crash,ok,False,False,False,
+steady high,3300.0,"typical parts, 27 C",selftest,ok,,,,
+steady high,3300.0,"Q2 at 0.65 V, 27 C",crash,ok,False,False,False,
+steady high,3300.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,
+steady high,3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,False,False,False,
+steady high,3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,
+steady high,3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,False,False,False,
+steady high,3300.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,
+steady high,4700.0,"typical parts, 27 C",crash,ok,False,False,False,
+steady high,4700.0,"typical parts, 27 C",selftest,ok,,,,
+steady high,4700.0,"Q2 at 0.65 V, 27 C",crash,ok,False,False,False,
+steady high,4700.0,"Q2 at 0.65 V, 27 C",selftest,ok,,,,
+steady high,4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",crash,ok,False,False,False,
+steady high,4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C",selftest,ok,,,,
+steady high,4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",crash,ok,False,False,False,
+steady high,4700.0,"Q2 at 0.65 V, -4.5 mV/K, 70 C, low-leakage diodes, 3V3 at 3.4 V",selftest,ok,,,,

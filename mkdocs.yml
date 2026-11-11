@@ -117,6 +117,7 @@ nav:
       - Bill of materials: hardware/bom.md
       - The 4-zone build: hardware/four-zone.md
       - Ordering boards: hardware/ordering.md
+      - What a controller costs: hardware/cost.md
       - Design notes: hardware/design-notes.md
   - Enclosure:
       - enclosure/index.md
@@ -132,6 +133,7 @@ nav:
       - Hardware design: design/hardware-design.md
       - Hardware review A1: design/hardware-review-a1.md
       - Hardware review A2: design/hardware-review-a2.md
+      - Hardware answers A2: design/hardware-answers-a2.md
       - Hardware layout: design/hardware-layout.md
       - Hardware toolchain: design/hardware-toolchain.md
       - Mechanical design: design/mechanical.md

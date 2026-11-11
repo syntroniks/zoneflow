@@ -6,6 +6,12 @@
 # Source: https://jlcpcb.com/capabilities/Capabilities, read 2026-11-10,
 # 1 oz outer copper. The numeric board-wide minimums are in jlcpcb.toml.
 
+# A hole under 0.30 mm is charged extra (jlcpcb.toml has the sources). The
+# board-wide minimum says the same; this rule names the reason in the report
+# and also covers a hole that a footprint brings with it.
+(rule "JLCPCB hole below the no-surcharge size"
+	(constraint hole_size (min 0.3mm)))
+
 # "PTH annular ring >=0.20mm"; 2-layer 1 oz: "absolute minimum 0.18 mm",
 # multilayer 1 oz: "absolute minimum 0.15 mm". 0.18 covers both.
 (rule "JLCPCB PTH pad annular ring"
@@ -22,10 +28,14 @@
 	(condition "A.Type == 'Pad' && B.Type == 'Pad'")
 	(constraint hole_to_hole (min 0.45mm)))
 
-# "SMD pad to pad clearance (different nets) 0.15mm".
-(rule "JLCPCB SMD pad to pad"
-	(condition "A.Type == 'Pad' && B.Type == 'Pad' && A.Pad_Type == 'SMD' && B.Pad_Type == 'SMD'")
-	(constraint clearance (min 0.15mm)))
+# "SMD pad to pad clearance (different nets) 0.15mm" is NOT a rule here, on purpose. A clearance
+# in a custom rule replaces the clearance of the net classes for every pair the rule fits; it is
+# not a floor under it. Until the layout review of revision A this file had
+#   (rule "JLCPCB SMD pad to pad" (condition "... both pads SMD ...") (constraint clearance (min 0.15mm)))
+# and with it two surface-mount pads 0.15 mm apart passed DRC whatever their nets, a 24 VAC pad
+# beside a logic pad included. No net class of either board has a clearance under 0.2 mm, so the
+# fab limit is kept by the classes. A pair of pads that must be closer than its class allows gets
+# its own rule in the board's design/rules.kicad_dru, with the reason.
 
 # "Pad To Silkscreen 0.15mm".
 (rule "JLCPCB pad to silkscreen"
@@ -48,3 +58,11 @@
 (rule "high-impedance nodes at their pads"
   (condition "A.NetClass == 'HiZ' && A.Type == 'Pad'")
   (constraint clearance (min 0.2mm)))
+
+# The solder jumper JP1 bridges the contact of relay K1 on a board built without the relay. Its
+# two pads, AC_L and COM, are 0.3 mm apart in KiCad's footprint, closer than the 0.5 mm of their
+# class: that is what makes it bridgeable. The two nets are joined whenever the relay is closed.
+# This is the one pair of pads on the board that is closer than its net class allows.
+(rule "solder jumper JP1: pads 0.3 mm apart by design"
+  (condition "A.Type == 'Pad' && B.Type == 'Pad' && A.memberOfFootprint('JP1') && B.memberOfFootprint('JP1')")
+  (constraint clearance (min 0.25mm)))

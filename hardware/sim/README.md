@@ -7,6 +7,8 @@ tells more than a hand calculation. `keepalive.cir`, `isense.cir`,
 by review A1 (`docs/design/hardware-review-a1.md`).
 `buck_overvoltage.cir`, `outstage_smallload.cir` and the directory
 `failsafe/` were added by review A2 (`docs/design/hardware-review-a2.md`).
+`vin_mon.cir` and four more runs in `failsafe/` were added with the answers
+to the firmware's questions (`docs/design/hardware-answers-a2.md`).
 The design is in
 `docs/design/hardware-design.md`. No board exists. These runs check the
 circuit as drawn against idealised parts. They do not replace a bench test.
@@ -128,6 +130,49 @@ What it showed:
 - **Ripple**: at the typical load the valley stays above 24 V down to 21.6 VAC.
 - **Brownout**: the valley stays above the buck's 8.4 V lockout for a sag to 16 VAC at up to 3 W. An 18 VAC sag with every consumer at its limit, 5 W, does not hold.
 - **R1**: 1 W is enough for every case except that last one, which is a transient condition.
+
+## vin_mon.cir
+
+Added with the answers to the firmware's questions. The input stage of
+`supply.cir` with the supply monitor added: R9 and R10, 300 kohm and
+10 kohm, and C9 on the tap that GPIO3 reads. It answers "what is the normal
+range of `VIN_MON`", design section 19.10. The reading is the mean of a
+100 ms window. "Lowest" and "highest" are the extremes inside one window,
+which is the half-wave ripple. The transformer is a sine source behind
+0.92, 2.1 or 3.45 ohm, for 75, 40 and 20 VA by the 69 / VA ohm of design
+section 6.6. Those are assumptions, not measured transformers.
+
+| Supply | Transformer | Load | `VIN_DC`, mean | `VIN_MON`, mean | Lowest | Highest |
+|---|---|---|---|---|---|---|
+| 21.6 VAC, 50 Hz | 3.45 ohm | 5 W | 19.6 V | 0.634 V | 0.505 V | 0.741 V |
+| 21.6 VAC, 50 Hz | 3.45 ohm | 1.75 W | 25.6 V | 0.826 V | 0.789 V | 0.857 V |
+| 21.6 VAC, 50 Hz | 2.1 ohm | 5 W | 21.4 V | 0.690 V | 0.570 V | 0.791 V |
+| 21.6 VAC, 50 Hz | 2.1 ohm | 1.75 W | 26.2 V | 0.845 V | 0.809 V | 0.876 V |
+| 21.6 VAC, 60 Hz | 2.1 ohm | 1.75 W | 26.3 V | 0.847 V | 0.818 V | 0.871 V |
+| 21.6 VAC, 50 Hz | 0.92 ohm | 0.6 W | 28.4 V | 0.916 V | 0.904 V | 0.926 V |
+| 24 VAC, 50 Hz | 3.45 ohm | 1.75 W | 29.2 V | 0.943 V | 0.910 V | 0.970 V |
+| 24 VAC, 50 Hz | 2.1 ohm | 5 W | 25.5 V | 0.822 V | 0.719 V | 0.908 V |
+| 24 VAC, 50 Hz | 2.1 ohm | 1.75 W | 29.8 V | 0.961 V | 0.929 V | 0.988 V |
+| 24 VAC, 60 Hz | 2.1 ohm | 1.75 W | 29.8 V | 0.962 V | 0.936 V | 0.984 V |
+| 24 VAC, 50 Hz | 2.1 ohm | 0.6 W | 31.6 V | 1.020 V | 1.009 V | 1.029 V |
+| 24 VAC, 50 Hz | 0.92 ohm | 0.6 W | 31.9 V | 1.028 V | 1.017 V | 1.037 V |
+| 26.4 VAC, 50 Hz | 3.45 ohm | 5 W | 28.0 V | 0.905 V | 0.813 V | 0.984 V |
+| 26.4 VAC, 50 Hz | 2.1 ohm | 1.75 W | 33.3 V | 1.075 V | 1.046 V | 1.100 V |
+| 26.4 VAC, 50 Hz | 0.92 ohm | 0.6 W | 35.3 V | 1.139 V | 1.129 V | 1.147 V |
+| 32 VAC, 50 Hz | 2.1 ohm | 1.75 W | 41.5 V | 1.340 V | 1.316 V | 1.360 V |
+| 32 VAC, 50 Hz | 0.92 ohm | 0.6 W | 43.3 V | 1.397 V | 1.389 V | 1.404 V |
+| 32 VAC, 50 Hz | 0.92 ohm | 0.05 W | 44.3 V | 1.430 V | 1.429 V | 1.431 V |
+| 18 VAC, 50 Hz | 2.1 ohm | 5 W | 14.3 V | 0.460 V | 0.278 V | 0.602 V |
+| 16 VAC, 50 Hz | 2.1 ohm | 1.75 W | 17.6 V | 0.568 V | 0.515 V | 0.613 V |
+| 16 VAC, 50 Hz | 2.1 ohm | 3 W | 15.0 V | 0.484 V | 0.382 V | 0.569 V |
+| 12 VAC, 50 Hz | 2.1 ohm | 1.75 W | 10.8 V | 0.348 V | 0.265 V | 0.416 V |
+
+What it showed:
+
+- **The specified supply**, 21.6 to 26.4 VAC with 20 to 75 VA and 0.6 to 5 W, reads 0.63 to 1.14 V. With 1.9 % for the divider and 10 mV for the ADC that is 0.61 to 1.17 V. Design section 19.10 takes 0.60 to 1.20 V as normal.
+- **The mean is the reading to use.** Inside one window the tap moves by up to 0.24 V at the heavy corners.
+- **A sag to 16 VAC**, which the logic supply still rides through, reads 0.48 to 0.57 V. Step 0 of the self-test waits there, so that a brown-out is not taken for a relay fault.
+- **The mean of `VIN_DC` at 24 VAC and the typical load**, 29.8 V, agrees with the 28.7 to 30.9 V of `supply.cir`.
 
 ## zerocross.cir
 

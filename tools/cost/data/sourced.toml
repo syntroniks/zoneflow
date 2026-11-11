@@ -1,0 +1,149 @@
+# Sourced facts for the landed-cost estimate. Every value here was read from
+# the source named next to it, on the date given. Nothing here is a guess:
+# guesses are in assumptions.toml. Prices are USD.
+#
+# Per-part JLCPCB data (stock, price breaks, basic/extended, minimum and
+# attrition quantities) is in jlcpcb-parts.csv, fetched on 2026-11-11.
+
+snapshot_date = "2026-11-11"
+
+# --- The board, from the layout on branch hw/rev-a-layout (pull request #39) ---
+[board]
+source = "hardware/zoneflow-a/output on branch hw/rev-a-layout at 7ec8e75 (PR #39): build-summary.json, the JLCPCB BOM and placement files, zoneflow-a.kicad_pcb; docs/design/hardware-layout.md sections 2 and 12"
+date_checked = "2026-11-11"
+width_mm = 114
+height_mm = 110
+layers = 4
+thickness_mm = 1.6
+outer_copper_oz = 1
+inner_copper_oz = 0.5
+smallest_hole_mm = 0.2
+footprints = 351
+# Parts in the placement file (SMT, top side only), per build: 307 and 262.
+# Added to both here: the five SMT parts of the 3V3 over-voltage detector
+# (U13, R13, R100, C55, C56; hardware design section 9.5), which are in
+# hardware/netlist.yaml and not yet in that layout.
+placements = { "8-zone" = 312, "4-zone" = 267 }
+# Distinct soldered pins of the placed parts, counted from the pads of each
+# placed footprint in zoneflow-a.kicad_pcb (a pin with several pads, such as
+# the module's ground pad and its via pads, counts once): 836 and 726. Plus
+# 14 for the five parts above: six for U13 and two for each of the others.
+smt_joints = { "8-zone" = 850, "4-zone" = 740 }
+# Through-hole parts left out of the placement file. C1 and K1 sit on the
+# bottom side and are soldered from the top; the four headers are on top.
+tht_refs = ["J1", "J2", "J3", "J4", "C1", "K1"]
+tht_joints = { J1 = 2, J2 = 7, J3 = 4, J4 = 7, C1 = 2, K1 = 4 }
+# Plugged in at final assembly, not soldered.
+plugged_refs = ["DS1"]
+
+# --- PCB fabrication, JLCPCB online quote ---
+# cart.jlcpcb.com/quote, no login. FR-4 TG135 default material, 4 layers,
+# 114 x 110 mm, 1.6 mm, 1 oz outer / 0.5 oz inner, green, lead-free HASL,
+# single PCB, default build time for the quantity. The calculator returned
+# the same price for HASL with lead, lead-free HASL and ENIG.
+[pcb_fab]
+source = "JLCPCB online quote calculator, cart.jlcpcb.com/quote (calculationGoodsCostsNew), no login"
+date_checked = "2026-11-11"
+# Board price per order (engineering fee + board + test + other), USD, by the
+# quantity of boards ordered. "via_0p3": smallest hole 0.3 mm, the default.
+# "via_0p2": smallest hole 0.2 mm, which this layout needs (twelve thermal
+# vias under U1); selecting it also selects TG155 material and the 4-wire
+# Kelvin test, and the calculator adds those charges.
+quantities = [5, 10, 20, 25, 30, 50, 75, 100, 150, 200]
+via_0p3 = [32.80, 40.50, 56.00, 63.70, 71.40, 102.40, 131.50, 165.40, 233.40, 301.20]
+via_0p2 = [71.89, 82.28, 103.17, 113.57, 123.98, 165.76, 208.35, 255.73, 350.68, 445.45]
+# Shipping weight the calculator gives for 5 bare boards: 210 g of boards,
+# 336 g with packing.
+bare_board_g = 42.0
+
+# --- Shipping to the US, same calculator (calculateGoodsFreight) ---
+[freight_us]
+source = "JLCPCB online quote calculator, calculateGoodsFreight, destination US, UPS Express Saver (DDP)"
+date_checked = "2026-11-11"
+service = "UPS Express Saver (DDP), 2-4 business days"
+weight_g = [336, 500, 1000, 2000, 3000, 5000, 8000, 10000, 15000]
+usd = [26.60, 26.60, 31.69, 43.19, 45.70, 67.64, 99.31, 117.40, 155.77]
+
+# --- PCB assembly fees, JLCPCB price page ---
+[assembly]
+source = "https://jlcpcb.com/help/article/pcb-assembly-price (page last updated 2026-10-22)"
+date_checked = "2026-11-11"
+economic_max_qty = 50          # https://jlcpcb.com/capabilities/pcb-assembly-capabilities: Economic 2-50 pcs
+standard_max_qty = 80000
+economic_setup = 8.18
+economic_stencil = 1.53
+economic_joint = 0.0016         # 1-100,000 joints
+economic_feeder_extended = 3.07 # per extended part type; preferred extended exempt (see below)
+standard_setup_single = 25.56
+standard_stencil_single = 8.21
+# Standard SMT joint price: [upper joint count of the tier, USD per joint].
+standard_joint_tiers = [[50000, 0.0016], [100000, 0.0013], [1000000, 0.0012]]
+standard_feeder_per_type = 1.53 # basic and extended
+standard_packing_base = 0.50
+standard_packing_per_cm2 = 0.00003
+confirm_placement = 0.45
+manual_joint_tiers = [[10000, 0.0164], [30000, 0.015], [100000, 0.012]]
+hand_soldering_labor_per_order = 3.58
+# Fixtures, standard rigid PCB: [upper board count, number of fixtures], 8.21 each.
+fixture_each = 8.21
+fixture_tiers = [[29, 2], [99, 3], [199, 5], [349, 10], [499, 15], [100000, 20]]
+preferred_exempt_source = "https://jlcpcb.com/help/article/pcb-assembly-faqs: Preferred Extended parts are exempt from the feeder loading fee for Economic PCB assembly"
+capabilities_source = "https://jlcpcb.com/capabilities/pcb-assembly-capabilities: Economic single-sided placement (SMT/thru-hole), 2-50 pcs; Standard single and double sided, 2-80000 pcs"
+
+# --- Parts that JLCPCB does not stock ---
+[cell]
+part = "Panasonic CR2032, Digi-Key P189-ND"
+source = "https://www.digikey.com/en/products/detail/CR2032/P189-ND/31939 (as summarised by a web search; price table from 20 pieces)"
+date_checked = "2026-11-11"
+min_order = 20
+price_breaks = [[20, 0.2855], [4000, 0.18686]]
+
+# --- Enclosure ---
+[enclosure]
+source_volumes = "docs/enclosure/printing.md: mass from model volume x 1.27 g/cm3, time at 5 and 10 mm3/s"
+petg_g_per_unit = 182.0
+print_hours_fast = 4.3
+print_hours_slow = 8.3
+inserts_per_unit = 7
+screws_per_unit = 7            # 2 x M3x6 pan, 2 x M3x16 csk, 2 x M3x12 csk, 1 x M3x8 csk (docs/enclosure/assembly.md)
+petg_usd_per_kg = 18.99
+petg_source = "https://shop.polymaker.com/products/petg, Polymaker PETG 1 kg (search summary), 2026-11-11"
+insert_pack_qty = 100
+insert_pack_usd = 8.34
+insert_source = "https://www.3djake.com/ruthex/threaded-insert-m3-100-pieces, ruthex M3 x 5.7, 100 pcs, excl. VAT and delivery (search summary), 2026-11-11"
+
+# --- US import ---
+[us_import]
+date_checked = "2026-11-11"
+jlcpcb_ddp_rate = 0.35
+jlcpcb_source = "https://jlcpcb.com/help/article/us-tariff-policy-faq (last updated 2026-10-29): Section 301 25 %; '122 Tariff' 12.5 % official, 10 % as JLC collects it, from 2026-07-24; total 'about 35 %~92.5 %' by product; DDP, the seller bears duties"
+crs_source = "CRS fact sheet R49481, 2026-10-08 (everycrsreport.com/reports/R49481.html): IEEPA tariffs struck down 2026-02-20; Section 122 10 % from 2026-02-25 expired 2026-07-24; de minimis suspended globally (91 FR 17839, 2026-04-09)"
+
+# --- End-user items, listed apart from the controller ---
+[end_user]
+transformer = "Hunter 526500 plug-in, 24 VAC 1 A (about 24 VA): 32.18 USD at sprinklersupplystore.com, 35.24 and 39.99 elsewhere (search summary, 2026-11-11)"
+transformer_low = 32.18
+transformer_high = 39.99
+cable = "18 AWG 8-conductor direct-burial irrigation wire, 250 ft: 142.66 (sale) to 231.67 USD (sprinklerwarehouse.com, sprinklersupplystore.com, supplystop.com 159.00; search summary, 2026-11-11)"
+cable_low = 142.66
+cable_high = 231.67
+
+# --- Retail prices of other open controllers ---
+# From docs/design/prior-art.md, plus the two OpenSprinkler 3.4 figures found
+# on 2026-11-11.
+[[retail]]
+name = "OpenSprinkler 4 AC (8 zones)"
+price = "239 EUR incl. VAT"
+source = "docs/design/prior-art.md (opensprinklershop.de)"
+[[retail]]
+name = "OpenSprinkler 3.4 AC (8 zones)"
+price = "150 USD at pre-order, without power supply; opensprinkler.com lists 135 to 203 USD across its range"
+source = "hackster.io news on the v3.4 launch; opensprinkler.com/product/opensprinkler (search summaries, 2026-11-11)"
+[[retail]]
+name = "OpenSprinkler Bee 3.0 (3 latching DC zones)"
+price = "62 to 72 USD"
+source = "docs/design/prior-art.md"
+[[retail]]
+name = "Smart Garden, JGAguado (4 relay zones)"
+price = "34.99 USD, sold out since 2025-06-03"
+source = "docs/design/prior-art.md"

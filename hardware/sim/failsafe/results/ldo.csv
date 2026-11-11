@@ -1,0 +1,946 @@
+case,corner,what,detector,sim,suspect,ran,on_at_end,t_valve,t_led,t_relay,rail,drv_en_max,a_enabled,n2_max,alive_after,g2_end
+dead,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,-4.567e-06
+dead,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,0.001737
+dead,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,-4.568e-06
+dead,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,-0.0001512
+dead,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,0.001555
+dead,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,-0.0001521
+dead,"-20 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,-4.567e-06
+dead,"-20 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,0.001737
+dead,"-20 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,-4.568e-06
+dead,"-20 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,-0.0001512
+dead,"-20 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,0.001555
+dead,"-20 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,-0.0001521
+dead,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,-4.567e-06
+dead,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,0.001737
+dead,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,-4.568e-06
+dead,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,-0.0001512
+dead,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,0.001555
+dead,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,-0.0001521
+dead,"-20 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,-4.567e-06
+dead,"-20 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,0.001737
+dead,"-20 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,-4.568e-06
+dead,"-20 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,-0.0001512
+dead,"-20 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,0.001555
+dead,"-20 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,-0.0001521
+dead,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.067,,,True,0.000758
+dead,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.067,,,True,0.01735
+dead,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.067,,,True,0.000758
+dead,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.067,,,True,0.0006054
+dead,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.067,,,True,0.01765
+dead,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.067,,,True,0.0006046
+dead,"-20 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.067,,,True,0.000758
+dead,"-20 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.067,,,True,0.01735
+dead,"-20 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.067,,,True,0.000758
+dead,"-20 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.068,,,True,0.0006055
+dead,"-20 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.068,,,True,0.01765
+dead,"-20 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.068,,,True,0.0006046
+dead,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.068,,,True,0.000758
+dead,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.068,,,True,0.01735
+dead,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.068,,,True,0.000758
+dead,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.066,,,True,0.0006054
+dead,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.066,,,True,0.01765
+dead,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.066,,,True,0.0006046
+dead,"-20 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.067,,,True,0.000758
+dead,"-20 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.067,,,True,0.01735
+dead,"-20 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.067,,,True,0.000758
+dead,"-20 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.068,,,True,0.0006054
+dead,"-20 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.068,,,True,0.01765
+dead,"-20 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.004,5.069,5.068,,,True,0.0006046
+dead,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.833,,,True,-0.0002233
+dead,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.833,,,True,0.001358
+dead,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.833,,,True,-0.0002295
+dead,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.827,,,True,1.714e-09
+dead,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.827,,,True,3.245e-08
+dead,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.827,,,True,2.223e-09
+dead,"27 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.833,,,True,-0.0002233
+dead,"27 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.833,,,True,0.001358
+dead,"27 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.833,,,True,-0.0002295
+dead,"27 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.827,,,True,1.714e-09
+dead,"27 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.827,,,True,3.245e-08
+dead,"27 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.827,,,True,2.223e-09
+dead,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.833,,,True,-0.0002233
+dead,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.833,,,True,0.001358
+dead,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.833,,,True,-0.0002295
+dead,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.827,,,True,1.714e-09
+dead,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.827,,,True,3.245e-08
+dead,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.827,,,True,2.223e-09
+dead,"27 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.833,,,True,-0.0002233
+dead,"27 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.833,,,True,0.001358
+dead,"27 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.833,,,True,-0.0002295
+dead,"27 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.827,,,True,1.714e-09
+dead,"27 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.827,,,True,3.245e-08
+dead,"27 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,4.831,4.827,,,True,2.223e-09
+dead,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.069,,,True,0.0003284
+dead,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.069,,,True,0.01783
+dead,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.069,,,True,0.0003199
+dead,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.073,,,True,0.0001299
+dead,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.073,,,True,0.002074
+dead,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.073,,,True,0.0001383
+dead,"27 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.069,,,True,0.0003284
+dead,"27 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.069,,,True,0.01783
+dead,"27 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.069,,,True,0.0003199
+dead,"27 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.073,,,True,0.0001299
+dead,"27 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.073,,,True,0.002074
+dead,"27 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.073,,,True,0.0001383
+dead,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.069,,,True,0.0003283
+dead,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.069,,,True,0.01783
+dead,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.069,,,True,0.0003199
+dead,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.073,,,True,0.0001299
+dead,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.073,,,True,0.002073
+dead,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.073,,,True,0.0001383
+dead,"27 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.069,,,True,0.0003283
+dead,"27 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.069,,,True,0.01783
+dead,"27 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.069,,,True,0.0003199
+dead,"27 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.073,,,True,0.0001299
+dead,"27 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.073,,,True,0.002073
+dead,"27 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0035,5.069,5.073,,,True,0.0001383
+dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.839,,,True,3.047e-08
+dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.839,,,True,4.506e-07
+dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.839,,,True,3.727e-08
+dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,-6.206e-16
+dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,9.938e-15
+dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,-6.209e-16
+dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.838,,,True,3.047e-08
+dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.838,,,True,4.505e-07
+dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.838,,,True,3.727e-08
+dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,2.172e-16
+dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,2.216e-14
+dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,2.192e-16
+dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.839,,,True,3.046e-08
+dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.839,,,True,4.505e-07
+dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.839,,,True,3.726e-08
+dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,-8.711e-17
+dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,7.464e-15
+dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,-9.042e-17
+dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.838,,,True,3.046e-08
+dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.838,,,True,4.505e-07
+dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.838,,,True,3.726e-08
+dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,-8.89e-17
+dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,1.128e-14
+dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,-8.922e-17
+dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.000371
+dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.004545
+dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.0003841
+dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.07,,,True,-2.457e-16
+dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.07,,,True,-9.811e-15
+dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.07,,,True,-2.452e-16
+dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.000371
+dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.004545
+dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.0003841
+dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.07,,,True,-4.427e-16
+dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.07,,,True,1.69e-14
+dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.07,,,True,-4.423e-16
+dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.000371
+dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.004545
+dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.0003841
+dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.07,,,True,8.494e-17
+dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.07,,,True,-3.156e-15
+dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.07,,,True,8.558e-17
+dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.000371
+dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.004544
+dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.0003841
+dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.07,,,True,8.57e-17
+dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.07,,,True,-1.206e-14
+dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.07,,,True,8.515e-17
+erratic,"typical parts, 27 C",5 ms / 5 ms,with U13,ok,,True,False,0.0005,0.0005,0.003,4.92,4.923,,,True,4.093
+erratic,"typical parts, 27 C",20 ms / 20 ms,with U13,ok,,True,False,0.0005,0.0005,0.003,4.92,4.923,,,True,3.873
+erratic,"typical parts, 27 C",1 ms / 20 ms,with U13,ok,,True,False,0.0005,0.0005,0.003,4.92,4.923,,,True,2.949
+erratic,"typical parts, 27 C",100 ms / 100 ms,with U13,ok,,True,False,0.0005,0.0005,0.003,4.92,4.923,,,True,2.532
+erratic,"typical parts, 27 C",0.5 ms / 0.5 ms,with U13,ok,,True,False,0.0005,0.0005,0.003,4.92,4.918,,,True,4.139
+erratic,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",5 ms / 5 ms,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.079,,,True,4.272
+erratic,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",20 ms / 20 ms,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.079,,,True,4.095
+erratic,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",1 ms / 20 ms,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.079,,,True,3.113
+erratic,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",100 ms / 100 ms,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.079,,,True,2.811
+erratic,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",0.5 ms / 0.5 ms,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,4.31
+erratic,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",5 ms / 5 ms,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,3.602
+erratic,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",20 ms / 20 ms,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,3.241
+erratic,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",1 ms / 20 ms,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,2.514
+erratic,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",100 ms / 100 ms,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.832,,,True,1.821
+erratic,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",0.5 ms / 0.5 ms,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.831,4.83,,,True,3.685
+erratic,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",5 ms / 5 ms,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.84,,,True,3.95
+erratic,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",20 ms / 20 ms,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.84,,,True,3.451
+erratic,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",1 ms / 20 ms,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.84,,,True,2.449
+erratic,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",100 ms / 100 ms,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.84,,,True,1.495
+erratic,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",0.5 ms / 0.5 ms,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.832,,,True,4.064
+pin joined to its supply,"typical parts, 27 C",2 Hz,with U13,ok,,True,False,0.0005,0.0005,0.003,4.92,4.915,,,True,0.8498
+pin joined to its supply,"typical parts, 27 C",10 Hz,with U13,ok,,True,False,0.0005,0.0005,0.003,4.92,4.915,,,True,1.791
+pin joined to its supply,"typical parts, 27 C",50 Hz,with U13,ok,,True,False,0.0005,0.0005,0.003,4.92,4.915,,,True,2.195
+pin joined to its supply,"typical parts, 27 C",200 Hz,with U13,ok,,True,False,0.0005,0.0005,0.003,4.92,4.915,,,True,2.233
+pin joined to its supply,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",2 Hz,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.069,,,True,1
+pin joined to its supply,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",10 Hz,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.069,,,True,1.971
+pin joined to its supply,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",50 Hz,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.069,,,True,2.332
+pin joined to its supply,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",200 Hz,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.069,,,True,2.362
+pin joined to its supply,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",2 Hz,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.83,4.831,,,True,0.5002
+pin joined to its supply,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",10 Hz,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.83,4.831,,,True,1.307
+pin joined to its supply,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",50 Hz,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.83,4.831,,,True,1.821
+pin joined to its supply,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",200 Hz,with U13,ok,,True,False,0.0005,0.0005,0.0035,4.83,4.831,,,True,1.891
+pin joined to its supply,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",2 Hz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.83,4.824,,,True,0.02277
+pin joined to its supply,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",10 Hz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.83,4.824,,,True,1.2
+pin joined to its supply,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",50 Hz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.83,4.824,,,True,2.087
+pin joined to its supply,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",200 Hz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.83,4.824,,,True,2.214
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.002268,False,4e-05
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,with U13,ok,,,,,,,4.831,0.009647,False,1.451,False,1.435
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.002268,False,4e-05
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",with U13,ok,,,,,,,4.831,0.009647,False,1.452,False,1.435
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,4.831,0.009647,False,0.1332,False,0.03115
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,with U13,ok,,,,,,,4.831,0.009647,False,1.452,False,1.435
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.452,False,1.435
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",1 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.459,False,1.438
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",2 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.671,False,1.644
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",3 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.888,False,1.856
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,2.243,False,2.201
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.002253,False,3.998e-05
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,with U13,ok,,,,,,,4.831,0.009647,False,1.479,False,1.463
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.002253,False,3.998e-05
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",with U13,ok,,,,,,,4.831,0.009647,False,1.481,False,1.463
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,4.831,0.009647,False,0.1359,False,0.03178
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,with U13,ok,,,,,,,4.831,0.009647,False,1.481,False,1.463
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.481,False,1.463
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",1 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.518,False,1.497
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",2 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.739,False,1.711
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",3 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.966,False,1.932
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,2.516,False,2.292
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.002268,False,4e-05
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,with U13,ok,,,,,,,4.831,0.009647,False,1.451,False,1.435
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.002268,False,4e-05
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",with U13,ok,,,,,,,4.831,0.009647,False,1.453,False,1.435
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,4.831,0.009647,False,0.1332,False,0.03115
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,with U13,ok,,,,,,,4.831,0.009647,False,1.453,False,1.435
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.453,False,1.435
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",1 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.459,False,1.438
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",2 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.671,False,1.644
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",3 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.887,False,1.855
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,2.242,False,2.201
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.002253,False,3.998e-05
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,with U13,ok,,,,,,,4.831,0.009647,False,1.48,False,1.463
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.002253,False,3.998e-05
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",with U13,ok,,,,,,,4.831,0.009647,False,1.482,False,1.463
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,4.831,0.009647,False,0.1359,False,0.03178
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,with U13,ok,,,,,,,4.831,0.009647,False,1.482,False,1.463
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.482,False,1.463
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",1 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.519,False,1.497
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",2 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.739,False,1.711
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",3 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.965,False,1.932
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,2.515,False,2.292
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.0227,False,2.219e-05
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,with U13,ok,,,,,,,5.069,0.01012,False,1.496,False,1.473
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.0227,False,2.219e-05
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",with U13,ok,,,,,,,5.069,0.01012,False,1.502,False,1.473
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,5.069,0.01012,False,0.1044,False,0.02202
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,with U13,ok,,,,,,,5.069,0.01012,False,1.502,False,1.473
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.519,False,1.479
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",1 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.737,False,1.692
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",2 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.169,False,2.115
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",3 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.688,False,2.438
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,3.088,False,2.872
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.02258,False,2.218e-05
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,with U13,ok,,,,,,,5.069,0.01012,False,1.523,False,1.5
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.02258,False,2.218e-05
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",with U13,ok,,,,,,,5.069,0.01012,False,1.529,False,1.5
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,5.069,0.01012,False,0.1062,False,0.02243
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,with U13,ok,,,,,,,5.069,0.01012,False,1.529,False,1.5
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.576,False,1.535
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",1 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.802,False,1.756
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",2 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.251,False,2.195
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",3 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.782,False,2.531
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,3.2,False,2.982
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.0227,False,2.219e-05
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,with U13,ok,,,,,,,5.069,0.01012,False,1.496,False,1.473
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.0227,False,2.219e-05
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",with U13,ok,,,,,,,5.069,0.01012,False,1.503,False,1.473
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,5.069,0.01012,False,0.1044,False,0.02202
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,with U13,ok,,,,,,,5.069,0.01012,False,1.503,False,1.473
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.52,False,1.479
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",1 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.737,False,1.692
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",2 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.168,False,2.115
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",3 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.687,False,2.438
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,3.088,False,2.872
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.02258,False,2.218e-05
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,with U13,ok,,,,,,,5.069,0.01012,False,1.523,False,1.5
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.02258,False,2.218e-05
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",with U13,ok,,,,,,,5.069,0.01012,False,1.53,False,1.5
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,5.069,0.01012,False,0.1062,False,0.02243
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,with U13,ok,,,,,,,5.069,0.01012,False,1.53,False,1.5
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.576,False,1.535
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",1 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.802,False,1.756
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",2 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.25,False,2.195
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",3 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.782,False,2.531
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,3.2,False,2.982
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.002233,False,3.996e-05
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,with U13,ok,,,,,,,4.831,0.009647,False,1.478,False,1.461
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.002233,False,3.996e-05
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",with U13,ok,,,,,,,4.831,0.009647,False,1.479,False,1.461
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,4.831,0.009647,False,0.135,False,0.03162
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,with U13,ok,,,,,,,4.831,0.009647,False,1.479,False,1.461
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.479,False,1.461
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",1 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.521,False,1.499
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",2 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.742,False,1.713
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",3 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.969,False,1.934
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,2.518,False,2.293
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.00142,False,3.858e-05
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,with U13,ok,,,,,,,4.831,0.009647,False,1.511,False,1.493
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.00142,False,3.877e-05
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",with U13,ok,,,,,,,4.831,0.009647,False,1.512,False,1.493
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,4.831,0.009647,False,0.1378,False,0.03232
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,with U13,ok,,,,,,,4.831,0.009647,False,1.512,False,1.493
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.514,False,1.495
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",1 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.571,False,1.548
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",2 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.803,False,1.774
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",3 Hz,with U13,ok,,,,,,,4.831,0.009647,False,2.043,False,2.006
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,2.612,False,2.385
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.002233,False,3.996e-05
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,with U13,ok,,,,,,,4.831,0.009647,False,1.478,False,1.461
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.002233,False,3.996e-05
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",with U13,ok,,,,,,,4.831,0.009647,False,1.479,False,1.461
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,4.831,0.009647,False,0.135,False,0.03162
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,with U13,ok,,,,,,,4.831,0.009647,False,1.479,False,1.461
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.479,False,1.461
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",1 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.521,False,1.499
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",2 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.741,False,1.713
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",3 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.967,False,1.933
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,2.517,False,2.293
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.00142,False,3.858e-05
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,with U13,ok,,,,,,,4.831,0.009647,False,1.511,False,1.493
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.00142,False,3.877e-05
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",with U13,ok,,,,,,,4.831,0.009647,False,1.512,False,1.493
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,4.831,0.009647,False,0.1378,False,0.03232
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,with U13,ok,,,,,,,4.831,0.009647,False,1.512,False,1.493
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.514,False,1.494
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",1 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.571,False,1.548
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",2 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.803,False,1.774
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",3 Hz,with U13,ok,,,,,,,4.831,0.009647,False,2.041,False,2.006
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,2.612,False,2.385
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.02235,False,2.218e-05
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,with U13,ok,,,,,,,5.069,0.01012,False,1.521,False,1.497
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.02235,False,2.218e-05
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",with U13,ok,,,,,,,5.069,0.01012,False,1.527,False,1.497
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,5.069,0.01012,False,0.1056,False,0.02232
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,with U13,ok,,,,,,,5.069,0.01012,False,1.527,False,1.497
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.579,False,1.537
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",1 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.804,False,1.758
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",2 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.252,False,2.197
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",3 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.783,False,2.531
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,3.199,False,2.98
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.0147,False,2.177e-05
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,with U13,ok,,,,,,,5.069,0.01012,False,1.553,False,1.528
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.0147,False,2.581e-05
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",with U13,ok,,,,,,,5.069,0.01012,False,1.559,False,1.528
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,5.069,0.01012,False,0.1063,False,0.02278
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,with U13,ok,,,,,,,5.069,0.01012,False,1.559,False,1.528
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.624,False,1.581
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",1 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.861,False,1.813
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",2 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.332,False,2.274
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",3 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.881,False,2.626
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,3.32,False,3.099
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.02235,False,2.218e-05
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,with U13,ok,,,,,,,5.069,0.01012,False,1.521,False,1.497
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.02235,False,2.218e-05
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",with U13,ok,,,,,,,5.069,0.01012,False,1.528,False,1.497
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,5.069,0.01012,False,0.1056,False,0.02232
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,with U13,ok,,,,,,,5.069,0.01012,False,1.528,False,1.497
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.579,False,1.537
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",1 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.804,False,1.758
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",2 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.252,False,2.197
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",3 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.783,False,2.531
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,3.199,False,2.98
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.0147,False,2.177e-05
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,with U13,ok,,,,,,,5.069,0.01012,False,1.553,False,1.528
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.0147,False,2.581e-05
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",with U13,ok,,,,,,,5.069,0.01012,False,1.559,False,1.528
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,5.069,0.01012,False,0.1063,False,0.02278
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,with U13,ok,,,,,,,5.069,0.01012,False,1.559,False,1.528
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.624,False,1.581
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",1 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.861,False,1.813
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",2 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.331,False,2.274
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",3 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.881,False,2.626
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,3.32,False,3.099
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.001656,False,3.909e-05
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,with U13,ok,,,,,,,4.831,0.009647,False,1.502,False,1.484
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.001656,False,3.917e-05
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",with U13,ok,,,,,,,4.831,0.009647,False,1.504,False,1.484
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,4.831,0.009647,False,0.1363,False,0.03203
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,with U13,ok,,,,,,,4.831,0.009647,False,1.504,False,1.484
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.507,False,1.487
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",1 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.565,False,1.542
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",2 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.795,False,1.764
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",3 Hz,with U13,ok,,,,,,,4.831,0.009647,False,2.03,False,1.993
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,2.594,False,2.367
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.0001301,False,2.189e-05
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,with U13,ok,,,,,,,4.831,0.009647,False,1.518,False,1.491
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.0001301,False,2.411e-05
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",with U13,ok,,,,,,,4.831,0.009647,False,1.524,False,1.491
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,4.831,0.009647,False,0.1373,False,0.03161
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,with U13,ok,,,,,,,4.831,0.009647,False,1.524,False,1.491
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.524,False,1.491
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",1 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.524,False,1.491
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",2 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.524,False,1.491
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",3 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.587,False,1.55
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,2.072,False,2.019
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.001656,False,3.909e-05
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,with U13,ok,,,,,,,4.831,0.009647,False,1.502,False,1.484
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.001656,False,3.918e-05
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",with U13,ok,,,,,,,4.831,0.009647,False,1.504,False,1.484
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,4.831,0.009647,False,0.1363,False,0.03203
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,with U13,ok,,,,,,,4.831,0.009647,False,1.504,False,1.484
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.507,False,1.487
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",1 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.564,False,1.542
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",2 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.793,False,1.764
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",3 Hz,with U13,ok,,,,,,,4.831,0.009647,False,2.029,False,1.993
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,2.594,False,2.367
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.0001301,False,2.189e-05
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,with U13,ok,,,,,,,4.831,0.009647,False,1.518,False,1.491
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.0001301,False,2.41e-05
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",with U13,ok,,,,,,,4.831,0.009647,False,1.523,False,1.491
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,4.831,0.009647,False,0.1373,False,0.03161
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,with U13,ok,,,,,,,4.831,0.009647,False,1.523,False,1.491
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.523,False,1.491
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",1 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.523,False,1.491
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",2 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.523,False,1.491
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",3 Hz,with U13,ok,,,,,,,4.831,0.009647,False,1.587,False,1.55
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",5 Hz,with U13,ok,,,,,,,4.831,0.009647,False,2.069,False,2.019
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.01699,False,2.192e-05
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,with U13,ok,,,,,,,5.069,0.01012,False,1.545,False,1.52
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.01699,False,2.239e-05
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",with U13,ok,,,,,,,5.069,0.01012,False,1.551,False,1.52
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,5.069,0.01012,False,0.1056,False,0.02257
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,with U13,ok,,,,,,,5.069,0.01012,False,1.551,False,1.52
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.618,False,1.576
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",1 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.853,False,1.804
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",2 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.318,False,2.26
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",3 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.862,False,2.607
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,3.295,False,3.072
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.001281,False,1.588e-05
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,with U13,ok,,,,,,,5.069,0.01012,False,1.568,False,1.527
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.001281,False,2.187e-05
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",with U13,ok,,,,,,,5.069,0.01012,False,1.57,False,1.527
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,5.069,0.01012,False,0.1007,False,0.02249
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,with U13,ok,,,,,,,5.069,0.01012,False,1.57,False,1.527
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.57,False,1.527
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",1 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.57,False,1.527
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",2 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.887,False,1.822
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",3 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.333,False,2.26
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,3.081,False,2.847
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.01699,False,2.192e-05
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,with U13,ok,,,,,,,5.069,0.01012,False,1.544,False,1.52
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.01699,False,2.239e-05
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",with U13,ok,,,,,,,5.069,0.01012,False,1.551,False,1.52
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,5.069,0.01012,False,0.1056,False,0.02257
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,with U13,ok,,,,,,,5.069,0.01012,False,1.551,False,1.52
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.618,False,1.576
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",1 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.852,False,1.804
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",2 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.317,False,2.26
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",3 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.862,False,2.607
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,3.295,False,3.072
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.001281,False,1.588e-05
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,with U13,ok,,,,,,,5.069,0.01012,False,1.568,False,1.527
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,with U13,ok,,,,,,,5.069,0.01012,False,0.001281,False,2.187e-05
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",with U13,ok,,,,,,,5.069,0.01012,False,1.57,False,1.527
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),with U13,ok,,,,,,,5.069,0.01012,False,0.1007,False,0.02249
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,with U13,ok,,,,,,,5.069,0.01012,False,1.57,False,1.527
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.57,False,1.527
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",1 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.57,False,1.527
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",2 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.886,False,1.822
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",3 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.332,False,2.26
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,3.081,False,2.847
+the step itself,"typical parts, 27 C",pin low,with U13,ok,,,False,,,,4.92,0.009826,False,0.005608,False,0.002805
+the step itself,"typical parts, 27 C",pin high,with U13,ok,,,False,,,,4.92,0.009825,False,0.5197,False,0.4981
+the step itself,"typical parts, 27 C",pin hiz,with U13,ok,,,False,,,,4.92,0.009826,False,0.005538,False,0.002756
+the step itself,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",pin low,with U13,ok,,,False,,,,5.069,0.01012,False,0.02551,False,0.00505
+the step itself,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",pin high,with U13,ok,,,False,,,,5.069,0.01012,False,0.6073,False,0.5546
+the step itself,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",pin hiz,with U13,ok,,,False,,,,5.069,0.01012,False,0.02539,False,0.004993
+the step itself,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",pin low,with U13,ok,,,False,,,,4.831,0.009647,False,0.002263,False,1.912e-05
+the step itself,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",pin high,with U13,ok,,,False,,,,4.83,0.009646,False,0.4969,False,0.4851
+the step itself,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",pin hiz,with U13,ok,,,False,,,,4.831,0.009647,False,0.002263,False,1.912e-05
+the step itself,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",pin low,with U13,ok,,,False,,,,4.831,0.009647,False,0.0001301,False,1.132e-08
+the step itself,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",pin high,with U13,ok,,,False,,,,4.83,0.009646,False,0.5125,False,0.4882
+the step itself,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",pin hiz,with U13,ok,,,False,,,,4.831,0.009647,False,0.0001301,False,2.048e-07
+dead,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.377,0.377,0.3795,4.822,4.822,,,True,-4.568e-06
+dead,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.5845,0.5845,0.587,4.822,4.822,,,True,0.001737
+dead,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.377,0.377,0.3795,4.822,4.822,,,True,-4.568e-06
+dead,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.3905,0.3905,0.3935,4.822,4.822,,,True,-0.0001512
+dead,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.605,0.605,0.6075,4.822,4.822,,,True,0.001555
+dead,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.3905,0.3905,0.3935,4.822,4.822,,,True,-0.0001521
+dead,"-20 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.377,0.377,0.3795,4.822,4.822,,,True,-4.568e-06
+dead,"-20 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.5845,0.5845,0.587,4.822,4.822,,,True,0.001737
+dead,"-20 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.377,0.377,0.3795,4.822,4.822,,,True,-4.568e-06
+dead,"-20 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.3905,0.3905,0.3935,4.822,4.822,,,True,-0.0001512
+dead,"-20 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.605,0.605,0.608,4.822,4.822,,,True,0.001555
+dead,"-20 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.3905,0.3905,0.3935,4.822,4.822,,,True,-0.0001521
+dead,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.2445,0.3765,0.2445,4.822,4.827,,,True,-4.568e-06
+dead,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.387,0.584,0.387,4.822,4.827,,,True,0.001737
+dead,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.2445,0.3765,0.2445,4.822,4.827,,,True,-4.568e-06
+dead,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.2565,0.39,0.2565,4.822,4.827,,,True,-0.0001512
+dead,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.4055,0.605,0.4055,4.822,4.827,,,True,0.001555
+dead,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.2565,0.39,0.2565,4.822,4.827,,,True,-0.0001521
+dead,"-20 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.271,0.3765,0.271,4.822,4.827,,,True,-4.568e-06
+dead,"-20 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.4275,0.5845,0.4275,4.822,4.827,,,True,0.001737
+dead,"-20 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.271,0.3765,0.271,4.822,4.827,,,True,-4.568e-06
+dead,"-20 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.2835,0.39,0.2835,4.822,4.827,,,True,-0.0001512
+dead,"-20 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.446,0.605,0.446,4.822,4.827,,,True,0.001555
+dead,"-20 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.2835,0.39,0.2835,4.822,4.827,,,True,-0.0001521
+dead,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.801,0.801,0.805,5.06,5.06,,,True,0.0007564
+dead,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,1.196,1.196,1.2,5.06,5.06,,,True,0.01736
+dead,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.801,0.801,0.805,5.06,5.06,,,True,0.0007564
+dead,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.826,0.826,0.83,5.06,5.06,,,True,0.0006038
+dead,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,1.233,1.233,1.236,5.06,5.06,,,True,0.01766
+dead,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.826,0.826,0.83,5.06,5.06,,,True,0.0006029
+dead,"-20 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.801,0.801,0.805,5.06,5.06,,,True,0.0007564
+dead,"-20 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,1.196,1.196,1.2,5.06,5.06,,,True,0.01736
+dead,"-20 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.801,0.801,0.805,5.06,5.06,,,True,0.0007564
+dead,"-20 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.826,0.826,0.83,5.06,5.06,,,True,0.0006038
+dead,"-20 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,1.233,1.233,1.237,5.06,5.06,,,True,0.01766
+dead,"-20 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.826,0.826,0.83,5.06,5.06,,,True,0.0006029
+dead,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.545,0.8005,0.545,5.06,5.065,,,True,0.0007563
+dead,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.826,1.196,0.826,5.06,5.065,,,True,0.01735
+dead,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.545,0.8005,0.545,5.06,5.065,,,True,0.0007563
+dead,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.5675,0.825,0.5675,5.06,5.065,,,True,0.0006038
+dead,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.8585,1.232,0.8585,5.06,5.065,,,True,0.01765
+dead,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.5675,0.825,0.5675,5.06,5.065,,,True,0.0006029
+dead,"-20 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.5975,0.8005,0.5975,5.06,5.065,,,True,0.0007563
+dead,"-20 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.9035,1.196,0.9035,5.06,5.065,,,True,0.01735
+dead,"-20 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.5975,0.8005,0.5975,5.06,5.065,,,True,0.0007563
+dead,"-20 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.62,0.825,0.62,5.06,5.065,,,True,0.0006038
+dead,"-20 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.9365,1.233,0.9365,5.06,5.065,,,True,0.01765
+dead,"-20 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.62,0.825,0.62,5.06,5.065,,,True,0.0006029
+dead,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.3895,0.3895,0.3915,4.823,4.823,,,True,-0.0002233
+dead,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.604,0.604,0.606,4.823,4.823,,,True,0.001359
+dead,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.3895,0.3895,0.3915,4.823,4.823,,,True,-0.0002295
+dead,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.3975,0.3975,0.3995,4.823,4.823,,,True,1.71e-09
+dead,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.6155,0.6155,0.618,4.823,4.823,,,True,3.25e-08
+dead,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.3975,0.3975,0.3995,4.823,4.823,,,True,2.218e-09
+dead,"27 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.3895,0.3895,0.3915,4.823,4.823,,,True,-0.0002233
+dead,"27 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.604,0.604,0.606,4.823,4.823,,,True,0.001359
+dead,"27 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.3895,0.3895,0.3915,4.823,4.823,,,True,-0.0002295
+dead,"27 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.3975,0.3975,0.3995,4.823,4.823,,,True,1.71e-09
+dead,"27 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.6155,0.6155,0.618,4.823,4.823,,,True,3.25e-08
+dead,"27 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.3975,0.3975,0.3995,4.823,4.823,,,True,2.218e-09
+dead,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.298,0.389,0.298,4.823,4.827,,,True,-0.0002233
+dead,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.469,0.6035,0.469,4.823,4.827,,,True,0.001359
+dead,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.298,0.389,0.298,4.823,4.827,,,True,-0.0002295
+dead,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.3075,0.397,0.3075,4.823,4.827,,,True,1.71e-09
+dead,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.483,0.6155,0.483,4.823,4.827,,,True,3.248e-08
+dead,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.3075,0.397,0.3075,4.823,4.827,,,True,2.218e-09
+dead,"27 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.297,0.389,0.297,4.823,4.827,,,True,-0.0002233
+dead,"27 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.467,0.6035,0.467,4.823,4.827,,,True,0.001359
+dead,"27 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.297,0.389,0.297,4.823,4.827,,,True,-0.0002295
+dead,"27 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.306,0.397,0.306,4.823,4.827,,,True,1.71e-09
+dead,"27 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.481,0.6155,0.481,4.823,4.827,,,True,3.248e-08
+dead,"27 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.306,0.397,0.306,4.823,4.827,,,True,2.218e-09
+dead,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.8235,0.8235,0.8265,5.061,5.061,,,True,0.0003269
+dead,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,1.231,1.231,1.234,5.061,5.061,,,True,0.01784
+dead,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.8235,0.8235,0.8265,5.061,5.061,,,True,0.0003185
+dead,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.8365,0.8365,0.8395,5.061,5.061,,,True,0.0001296
+dead,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,1.25,1.25,1.252,5.061,5.061,,,True,0.002077
+dead,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.8365,0.8365,0.8395,5.061,5.061,,,True,0.000138
+dead,"27 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.8235,0.8235,0.8265,5.061,5.061,,,True,0.0003269
+dead,"27 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,1.231,1.231,1.234,5.061,5.061,,,True,0.01784
+dead,"27 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.8235,0.8235,0.8265,5.061,5.061,,,True,0.0003185
+dead,"27 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.8365,0.8365,0.8395,5.061,5.061,,,True,0.0001296
+dead,"27 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,1.25,1.25,1.252,5.061,5.061,,,True,0.002077
+dead,"27 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.8365,0.8365,0.8395,5.061,5.061,,,True,0.000138
+dead,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.6495,0.8225,0.6495,5.061,5.065,,,True,0.0003269
+dead,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.981,1.231,0.981,5.061,5.065,,,True,0.01784
+dead,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.6495,0.8225,0.6495,5.061,5.065,,,True,0.0003185
+dead,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.665,0.836,0.665,5.061,5.065,,,True,0.0001296
+dead,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,1.004,1.25,1.004,5.061,5.065,,,True,0.002075
+dead,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.665,0.836,0.665,5.061,5.065,,,True,0.000138
+dead,"27 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.6465,0.8225,0.6465,5.061,5.065,,,True,0.0003269
+dead,"27 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.977,1.231,0.977,5.061,5.065,,,True,0.01784
+dead,"27 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.6465,0.8225,0.6465,5.061,5.065,,,True,0.0003185
+dead,"27 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.6625,0.836,0.6625,5.061,5.065,,,True,0.0001296
+dead,"27 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,1,1.25,1,5.061,5.065,,,True,0.002075
+dead,"27 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.6625,0.836,0.6625,5.061,5.065,,,True,0.000138
+dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.3955,0.3955,0.3975,4.824,4.824,,,True,3.041e-08
+dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.613,0.613,0.6155,4.824,4.824,,,True,4.512e-07
+dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.3955,0.3955,0.3975,4.824,4.824,,,True,3.72e-08
+dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.2655,0.2655,0.2675,4.824,4.824,,,True,-6.197e-16
+dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.4155,0.4155,0.4175,4.824,4.824,,,True,1.373e-14
+dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.2655,0.2655,0.2675,4.824,4.824,,,True,-6.199e-16
+dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.3955,0.3955,0.3975,4.824,4.824,,,True,3.041e-08
+dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.613,0.613,0.6155,4.824,4.824,,,True,4.511e-07
+dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.3955,0.3955,0.3975,4.824,4.824,,,True,3.72e-08
+dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.2655,0.2655,0.2675,4.824,4.824,,,True,2.178e-16
+dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.4155,0.4155,0.4175,4.824,4.824,,,True,8.032e-15
+dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.2655,0.2655,0.2675,4.824,4.824,,,True,2.206e-16
+dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.349,0.395,0.349,4.824,4.827,,,True,3.041e-08
+dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.5475,0.613,0.5475,4.824,4.827,,,True,4.509e-07
+dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.349,0.395,0.349,4.824,4.827,,,True,3.72e-08
+dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.243,0.2655,0.243,4.824,4.827,,,True,-8.991e-17
+dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.384,0.4155,0.384,4.824,4.827,,,True,1.645e-14
+dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.243,0.2655,0.243,4.824,4.827,,,True,-8.905e-17
+dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.3175,0.395,0.3175,4.824,4.827,,,True,3.041e-08
+dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.4985,0.613,0.4985,4.824,4.827,,,True,4.509e-07
+dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.3175,0.395,0.3175,4.824,4.827,,,True,3.72e-08
+dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.225,0.2655,0.225,4.824,4.827,,,True,-8.867e-17
+dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.357,0.4155,0.357,4.824,4.827,,,True,7.253e-16
+dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.225,0.2655,0.225,4.824,4.827,,,True,-8.964e-17
+dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.833,0.833,0.8355,5.061,5.061,,,True,0.0003703
+dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,1.245,1.245,1.248,5.061,5.061,,,True,0.004552
+dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.833,0.833,0.8355,5.061,5.061,,,True,0.0003833
+dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.5665,0.5665,0.569,5.061,5.061,,,True,-2.448e-16
+dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.849,0.849,0.8515,5.061,5.061,,,True,1.136e-14
+dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.5665,0.5665,0.569,5.061,5.061,,,True,-2.447e-16
+dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.833,0.833,0.8355,5.061,5.061,,,True,0.0003703
+dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,1.245,1.245,1.248,5.061,5.061,,,True,0.004551
+dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.833,0.833,0.8355,5.061,5.061,,,True,0.0003833
+dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.5665,0.5665,0.569,5.061,5.061,,,True,-4.426e-16
+dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.849,0.849,0.8515,5.061,5.061,,,True,2.401e-14
+dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.5665,0.5665,0.569,5.061,5.061,,,True,-4.421e-16
+dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.7485,0.832,0.7485,5.061,5.065,,,True,0.0003702
+dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,1.129,1.245,1.129,5.061,5.065,,,True,0.004549
+dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.7485,0.832,0.7485,5.061,5.065,,,True,0.0003833
+dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.524,0.566,0.524,5.061,5.065,,,True,8.503e-17
+dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.794,0.849,0.794,5.061,5.065,,,True,-6.676e-15
+dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.524,0.566,0.524,5.061,5.065,,,True,8.527e-17
+dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.6855,0.832,0.6855,5.061,5.065,,,True,0.0003702
+dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,1.035,1.245,1.035,5.061,5.065,,,True,0.004548
+dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.6855,0.8325,0.6855,5.061,5.065,,,True,0.0003833
+dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.4895,0.566,0.4895,5.061,5.065,,,True,8.566e-17
+dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.7425,0.849,0.7425,5.061,5.065,,,True,1.288e-14
+dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.4895,0.566,0.4895,5.061,5.065,,,True,8.512e-17
+erratic,"typical parts, 27 C",5 ms / 5 ms,without U13,ok,,True,True,5.5,5.5,5.5,4.912,4.927,,,True,4.086
+erratic,"typical parts, 27 C",20 ms / 20 ms,without U13,ok,,True,True,5.5,5.5,5.5,4.912,4.927,,,True,3.866
+erratic,"typical parts, 27 C",1 ms / 20 ms,without U13,ok,,True,True,5.5,5.5,5.5,4.912,4.927,,,True,2.944
+erratic,"typical parts, 27 C",100 ms / 100 ms,without U13,ok,,True,True,5.5,5.5,5.5,4.912,4.927,,,True,2.528
+erratic,"typical parts, 27 C",0.5 ms / 0.5 ms,without U13,ok,,True,True,5.5,5.5,5.5,4.912,4.918,,,True,4.132
+erratic,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",5 ms / 5 ms,without U13,ok,,True,True,5.5,5.5,5.5,5.061,5.079,,,True,4.265
+erratic,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",20 ms / 20 ms,without U13,ok,,True,True,5.5,5.5,5.5,5.061,5.079,,,True,4.088
+erratic,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",1 ms / 20 ms,without U13,ok,,True,True,5.5,5.5,5.5,5.061,5.079,,,True,3.108
+erratic,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",100 ms / 100 ms,without U13,ok,,True,True,5.5,5.5,5.5,5.061,5.079,,,True,2.807
+erratic,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",0.5 ms / 0.5 ms,without U13,ok,,True,True,5.5,5.5,5.5,5.061,5.074,,,True,4.303
+erratic,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",5 ms / 5 ms,without U13,ok,,True,True,5.5,5.5,5.5,4.822,4.832,,,True,3.595
+erratic,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",20 ms / 20 ms,without U13,ok,,True,True,5.5,5.5,5.5,4.822,4.832,,,True,3.234
+erratic,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",1 ms / 20 ms,without U13,ok,,True,True,5.5,5.5,5.5,4.822,4.832,,,True,2.509
+erratic,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",100 ms / 100 ms,without U13,ok,,True,True,5.5,5.5,5.5,4.822,4.832,,,True,1.817
+erratic,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",0.5 ms / 0.5 ms,without U13,ok,,True,True,5.5,5.5,5.5,4.822,4.83,,,True,3.678
+erratic,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",5 ms / 5 ms,without U13,ok,,True,True,5.5,5.5,5.5,4.824,4.84,,,True,3.944
+erratic,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",20 ms / 20 ms,without U13,ok,,True,True,5.5,5.5,5.5,4.824,4.84,,,True,3.446
+erratic,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",1 ms / 20 ms,without U13,ok,,True,True,5.5,5.5,5.5,4.824,4.84,,,True,2.445
+erratic,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",100 ms / 100 ms,without U13,ok,,True,False,0.392,0.392,0.394,4.831,4.84,,,True,1.495
+erratic,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",0.5 ms / 0.5 ms,without U13,ok,,True,True,5.5,5.5,5.5,4.824,4.832,,,True,4.058
+pin joined to its supply,"typical parts, 27 C",2 Hz,without U13,ok,,True,False,0.7,0.7,0.7025,4.912,4.938,,,True,0.8498
+pin joined to its supply,"typical parts, 27 C",10 Hz,without U13,ok,,True,False,0.82,0.82,0.8225,4.912,4.943,,,True,1.791
+pin joined to its supply,"typical parts, 27 C",50 Hz,without U13,ok,,True,True,5.5,5.5,5.5,4.912,4.943,,,True,2.188
+pin joined to its supply,"typical parts, 27 C",200 Hz,without U13,ok,,True,True,5.5,5.5,5.5,4.912,4.942,,,True,2.226
+pin joined to its supply,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",2 Hz,without U13,ok,,True,False,0.7,0.7,0.7025,5.061,5.089,,,True,1
+pin joined to its supply,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",10 Hz,without U13,ok,,True,True,5.5,5.5,5.5,5.061,5.093,,,True,1.966
+pin joined to its supply,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",50 Hz,without U13,ok,,True,True,5.5,5.5,5.5,5.061,5.092,,,True,2.325
+pin joined to its supply,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",200 Hz,without U13,ok,,True,True,5.5,5.5,5.5,5.061,5.093,,,True,2.355
+pin joined to its supply,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",2 Hz,without U13,ok,,True,False,0.2,0.2,0.202,4.83,4.831,,,True,0.5002
+pin joined to its supply,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",10 Hz,without U13,ok,,True,False,0.303,0.32,0.303,4.83,4.842,,,True,1.307
+pin joined to its supply,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",50 Hz,without U13,ok,,True,True,5.5,5.5,5.5,4.822,4.843,,,True,1.814
+pin joined to its supply,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",200 Hz,without U13,ok,,True,True,5.5,5.5,5.5,4.822,4.843,,,True,1.884
+pin joined to its supply,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",2 Hz,without U13,ok,,True,False,0.2,0.2,0.202,4.83,4.824,,,True,0.02278
+pin joined to its supply,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",10 Hz,without U13,ok,,True,False,0.22,0.22,0.222,4.83,4.851,,,True,1.2
+pin joined to its supply,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",50 Hz,without U13,ok,,True,True,5.5,5.5,5.5,4.823,4.853,,,True,2.082
+pin joined to its supply,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",200 Hz,without U13,ok,,True,True,5.5,5.5,5.5,4.823,4.854,,,True,2.208
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.002268,False,4e-05
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,without U13,ok,,,,,,,4.831,0.009647,False,1.451,False,1.435
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.002268,False,4e-05
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",without U13,ok,,,,,,,4.831,0.009647,False,1.452,False,1.435
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,4.831,0.009647,False,0.1332,False,0.03115
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,without U13,ok,,,,,,,4.831,0.009647,False,1.452,False,1.435
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.452,False,1.435
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",1 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.459,False,1.438
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",2 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.671,False,1.644
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",3 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.888,False,1.856
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",5 Hz,without U13,ok,,,,,,,4.831,0.009647,False,2.243,False,2.201
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.002253,False,3.998e-05
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,without U13,ok,,,,,,,4.831,0.009647,False,1.479,False,1.463
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.002253,False,3.998e-05
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",without U13,ok,,,,,,,4.831,0.009647,False,1.481,False,1.463
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,4.831,0.009647,False,0.1359,False,0.03178
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,without U13,ok,,,,,,,4.831,0.009647,False,1.481,False,1.463
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.481,False,1.463
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",1 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.518,False,1.497
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",2 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.739,False,1.711
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",3 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.966,False,1.932
+no edges,"-20 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",5 Hz,without U13,ok,,,,,,,4.831,4.831,True,2.516,True,2.292
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.002268,False,4e-05
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,without U13,ok,,,,,,,4.831,0.009647,False,1.451,False,1.435
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.002268,False,4e-05
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",without U13,ok,,,,,,,4.831,0.009647,False,1.453,False,1.435
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,4.831,0.009647,False,0.1332,False,0.03115
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,without U13,ok,,,,,,,4.831,0.009647,False,1.453,False,1.435
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.453,False,1.435
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",1 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.459,False,1.438
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",2 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.671,False,1.644
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",3 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.888,False,1.855
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",5 Hz,without U13,ok,,,,,,,4.831,0.009647,False,2.242,False,2.201
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.002253,False,3.998e-05
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,without U13,ok,,,,,,,4.831,0.009647,False,1.48,False,1.463
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.002253,False,3.998e-05
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",without U13,ok,,,,,,,4.831,0.009647,False,1.482,False,1.463
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,4.831,0.009647,False,0.1359,False,0.03178
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,without U13,ok,,,,,,,4.831,0.009647,False,1.482,False,1.463
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.482,False,1.463
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",1 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.519,False,1.497
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",2 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.739,False,1.711
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",3 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.965,False,1.932
+no edges,"-20 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",5 Hz,without U13,ok,,,,,,,4.831,4.831,True,2.515,True,2.292
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.0227,False,2.219e-05
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,without U13,ok,,,,,,,5.069,0.01012,False,1.496,False,1.473
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.0227,False,2.219e-05
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",without U13,ok,,,,,,,5.069,0.01012,False,1.502,False,1.473
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,5.069,0.01012,False,0.1044,False,0.02202
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,without U13,ok,,,,,,,5.069,0.01012,False,1.502,False,1.473
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.519,False,1.479
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",1 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.737,False,1.692
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",2 Hz,without U13,ok,,,,,,,5.069,0.01012,False,2.169,False,2.115
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",3 Hz,without U13,ok,,,,,,,5.069,5.07,True,2.688,True,2.438
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",5 Hz,without U13,ok,,,,,,,5.069,5.07,True,3.088,True,2.872
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.02258,False,2.218e-05
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,without U13,ok,,,,,,,5.069,0.01012,False,1.523,False,1.5
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.02258,False,2.218e-05
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",without U13,ok,,,,,,,5.069,0.01012,False,1.529,False,1.5
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,5.069,0.01012,False,0.1062,False,0.02243
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,without U13,ok,,,,,,,5.069,0.01012,False,1.529,False,1.5
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.576,False,1.535
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",1 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.802,False,1.756
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",2 Hz,without U13,ok,,,,,,,5.069,0.01012,False,2.251,False,2.195
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",3 Hz,without U13,ok,,,,,,,5.069,5.07,True,2.782,True,2.531
+no edges,"-20 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",5 Hz,without U13,ok,,,,,,,5.069,5.069,True,3.2,True,2.982
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.0227,False,2.219e-05
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,without U13,ok,,,,,,,5.069,0.01012,False,1.496,False,1.473
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.0227,False,2.219e-05
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",without U13,ok,,,,,,,5.069,0.01012,False,1.503,False,1.473
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,5.069,0.01012,False,0.1044,False,0.02202
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,without U13,ok,,,,,,,5.069,0.01012,False,1.503,False,1.473
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.52,False,1.479
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",1 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.737,False,1.692
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",2 Hz,without U13,ok,,,,,,,5.069,0.01012,False,2.168,False,2.115
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",3 Hz,without U13,ok,,,,,,,5.069,5.07,True,2.687,True,2.438
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",5 Hz,without U13,ok,,,,,,,5.069,5.069,True,3.088,True,2.872
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.02258,False,2.218e-05
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,without U13,ok,,,,,,,5.069,0.01012,False,1.524,False,1.5
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.02258,False,2.218e-05
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",without U13,ok,,,,,,,5.069,0.01012,False,1.53,False,1.5
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,5.069,0.01012,False,0.1062,False,0.02243
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,without U13,ok,,,,,,,5.069,0.01012,False,1.53,False,1.5
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.576,False,1.535
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",1 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.802,False,1.756
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",2 Hz,without U13,ok,,,,,,,5.069,0.01012,False,2.25,False,2.195
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",3 Hz,without U13,ok,,,,,,,5.069,5.069,True,2.782,True,2.531
+no edges,"-20 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",5 Hz,without U13,ok,,,,,,,5.069,5.069,True,3.199,True,2.982
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.002233,False,3.996e-05
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,without U13,ok,,,,,,,4.831,0.009647,False,1.478,False,1.461
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.002233,False,3.996e-05
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",without U13,ok,,,,,,,4.831,0.009647,False,1.479,False,1.461
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,4.831,0.009647,False,0.135,False,0.03162
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,without U13,ok,,,,,,,4.831,0.009647,False,1.479,False,1.461
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.479,False,1.461
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",1 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.521,False,1.499
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",2 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.742,False,1.713
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",3 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.969,False,1.934
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",5 Hz,without U13,ok,,,,,,,4.831,4.831,True,2.518,True,2.293
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.00142,False,3.858e-05
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,without U13,ok,,,,,,,4.831,0.009647,False,1.511,False,1.493
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.00142,False,3.877e-05
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",without U13,ok,,,,,,,4.831,0.009647,False,1.512,False,1.493
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,4.831,0.009647,False,0.1378,False,0.03232
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,without U13,ok,,,,,,,4.831,0.009647,False,1.512,False,1.493
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.514,False,1.495
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",1 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.571,False,1.548
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",2 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.803,False,1.774
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",3 Hz,without U13,ok,,,,,,,4.831,0.009647,False,2.043,False,2.006
+no edges,"27 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",5 Hz,without U13,ok,,,,,,,4.831,4.831,True,2.612,True,2.385
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.002233,False,3.996e-05
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,without U13,ok,,,,,,,4.831,0.009647,False,1.478,False,1.461
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.002233,False,3.996e-05
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",without U13,ok,,,,,,,4.831,0.009647,False,1.479,False,1.461
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,4.831,0.009647,False,0.135,False,0.03162
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,without U13,ok,,,,,,,4.831,0.009647,False,1.479,False,1.461
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.479,False,1.461
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",1 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.521,False,1.499
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",2 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.741,False,1.713
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",3 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.967,False,1.933
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",5 Hz,without U13,ok,,,,,,,4.831,4.831,True,2.517,True,2.292
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.00142,False,3.858e-05
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,without U13,ok,,,,,,,4.831,0.009647,False,1.511,False,1.493
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.00142,False,3.877e-05
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",without U13,ok,,,,,,,4.831,0.009647,False,1.513,False,1.493
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,4.831,0.009647,False,0.1378,False,0.03232
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,without U13,ok,,,,,,,4.831,0.009647,False,1.513,False,1.493
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.514,False,1.494
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",1 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.571,False,1.548
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",2 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.803,False,1.774
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",3 Hz,without U13,ok,,,,,,,4.831,0.009647,False,2.041,False,2.006
+no edges,"27 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",5 Hz,without U13,ok,,,,,,,4.831,4.831,True,2.612,True,2.385
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.02235,False,2.218e-05
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,without U13,ok,,,,,,,5.069,0.01012,False,1.521,False,1.497
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.02235,False,2.218e-05
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",without U13,ok,,,,,,,5.069,0.01012,False,1.527,False,1.497
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,5.069,0.01012,False,0.1056,False,0.02232
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,without U13,ok,,,,,,,5.069,0.01012,False,1.527,False,1.497
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.579,False,1.537
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",1 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.804,False,1.758
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",2 Hz,without U13,ok,,,,,,,5.069,0.01012,False,2.252,False,2.197
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",3 Hz,without U13,ok,,,,,,,5.069,5.07,True,2.783,True,2.531
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",5 Hz,without U13,ok,,,,,,,5.069,5.069,True,3.199,True,2.98
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.0147,False,2.177e-05
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,without U13,ok,,,,,,,5.069,0.01012,False,1.553,False,1.528
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.0147,False,2.581e-05
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",without U13,ok,,,,,,,5.069,0.01012,False,1.559,False,1.528
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,5.069,0.01012,False,0.1063,False,0.02278
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,without U13,ok,,,,,,,5.069,0.01012,False,1.559,False,1.528
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.624,False,1.581
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",1 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.861,False,1.813
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",2 Hz,without U13,ok,,,,,,,5.069,0.01012,False,2.332,False,2.275
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",3 Hz,without U13,ok,,,,,,,5.069,5.069,True,2.881,True,2.626
+no edges,"27 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",5 Hz,without U13,ok,,,,,,,5.069,5.069,True,3.32,True,3.098
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.02235,False,2.218e-05
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,without U13,ok,,,,,,,5.069,0.01012,False,1.522,False,1.497
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.02235,False,2.218e-05
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",without U13,ok,,,,,,,5.069,0.01012,False,1.528,False,1.497
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,5.069,0.01012,False,0.1056,False,0.02232
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,without U13,ok,,,,,,,5.069,0.01012,False,1.528,False,1.497
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.579,False,1.537
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",1 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.804,False,1.758
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",2 Hz,without U13,ok,,,,,,,5.069,0.01012,False,2.252,False,2.197
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",3 Hz,without U13,ok,,,,,,,5.069,5.069,True,2.783,True,2.531
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",5 Hz,without U13,ok,,,,,,,5.069,5.069,True,3.199,True,2.98
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.0147,False,2.177e-05
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,without U13,ok,,,,,,,5.069,0.01012,False,1.553,False,1.528
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.0147,False,2.581e-05
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",without U13,ok,,,,,,,5.069,0.01012,False,1.559,False,1.528
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,5.069,0.01012,False,0.1063,False,0.02278
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,without U13,ok,,,,,,,5.069,0.01012,False,1.559,False,1.528
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.624,False,1.581
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",1 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.861,False,1.813
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",2 Hz,without U13,ok,,,,,,,5.069,0.01012,False,2.332,False,2.274
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",3 Hz,without U13,ok,,,,,,,5.069,5.07,True,2.881,True,2.626
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",5 Hz,without U13,ok,,,,,,,5.069,5.07,True,3.32,True,3.098
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.001656,False,3.909e-05
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,without U13,ok,,,,,,,4.831,0.009647,False,1.503,False,1.484
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.001656,False,3.917e-05
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",without U13,ok,,,,,,,4.831,0.009647,False,1.504,False,1.484
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,4.831,0.009647,False,0.1363,False,0.03203
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,without U13,ok,,,,,,,4.831,0.009647,False,1.504,False,1.484
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.507,False,1.487
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",1 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.565,False,1.542
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",2 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.795,False,1.764
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",3 Hz,without U13,ok,,,,,,,4.831,0.009647,False,2.03,False,1.993
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",5 Hz,without U13,ok,,,,,,,4.831,4.831,True,2.594,True,2.367
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.0001301,False,2.189e-05
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,without U13,ok,,,,,,,4.831,0.009647,False,1.518,False,1.491
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.0001301,False,2.411e-05
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",without U13,ok,,,,,,,4.831,0.009647,False,1.524,False,1.491
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,4.831,0.009647,False,0.1373,False,0.03161
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,without U13,ok,,,,,,,4.831,0.009647,False,1.524,False,1.491
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.524,False,1.491
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",1 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.524,False,1.491
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",2 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.524,False,1.491
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",3 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.587,False,1.55
+no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",5 Hz,without U13,ok,,,,,,,4.831,0.009647,False,2.072,False,2.019
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.001656,False,3.909e-05
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,without U13,ok,,,,,,,4.831,0.009647,False,1.502,False,1.484
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.001656,False,3.918e-05
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",without U13,ok,,,,,,,4.831,0.009647,False,1.504,False,1.484
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,4.831,0.009647,False,0.1363,False,0.03203
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,without U13,ok,,,,,,,4.831,0.009647,False,1.504,False,1.484
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.507,False,1.487
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",1 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.564,False,1.542
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",2 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.793,False,1.764
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",3 Hz,without U13,ok,,,,,,,4.831,0.009647,False,2.029,False,1.993
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",5 Hz,without U13,ok,,,,,,,4.831,4.831,True,2.594,True,2.367
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.0001301,False,2.189e-05
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,without U13,ok,,,,,,,4.831,0.009647,False,1.518,False,1.491
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,without U13,ok,,,,,,,4.831,0.009647,False,0.0001301,False,2.41e-05
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",without U13,ok,,,,,,,4.831,0.009647,False,1.523,False,1.491
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,4.831,0.009647,False,0.1373,False,0.03161
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,without U13,ok,,,,,,,4.831,0.009647,False,1.523,False,1.491
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.523,False,1.491
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",1 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.523,False,1.491
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",2 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.523,False,1.491
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",3 Hz,without U13,ok,,,,,,,4.831,0.009647,False,1.587,False,1.55
+no edges,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",5 Hz,without U13,ok,,,,,,,4.831,0.009647,False,2.069,False,2.019
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.01699,False,2.192e-05
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,without U13,ok,,,,,,,5.069,0.01012,False,1.545,False,1.52
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.01699,False,2.239e-05
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",without U13,ok,,,,,,,5.069,0.01012,False,1.551,False,1.52
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,5.069,0.01012,False,0.1056,False,0.02258
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,without U13,ok,,,,,,,5.069,0.01012,False,1.551,False,1.52
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.618,False,1.576
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",1 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.853,False,1.804
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",2 Hz,without U13,ok,,,,,,,5.069,0.01012,False,2.318,False,2.26
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",3 Hz,without U13,ok,,,,,,,5.069,5.07,True,2.862,True,2.607
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",5 Hz,without U13,ok,,,,,,,5.069,5.069,True,3.295,True,3.072
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.001281,False,1.588e-05
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,without U13,ok,,,,,,,5.069,0.01012,False,1.568,False,1.527
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.001281,False,2.187e-05
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",without U13,ok,,,,,,,5.069,0.01012,False,1.57,False,1.527
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,5.069,0.01012,False,0.1007,False,0.02249
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,without U13,ok,,,,,,,5.069,0.01012,False,1.57,False,1.527
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.57,False,1.527
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",1 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.57,False,1.527
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",2 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.887,False,1.822
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",3 Hz,without U13,ok,,,,,,,5.069,0.01012,False,2.333,False,2.26
+no edges,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",5 Hz,without U13,ok,,,,,,,5.069,5.069,True,3.081,True,2.847
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.01699,False,2.192e-05
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high from power-up,without U13,ok,,,,,,,5.069,0.01012,False,1.545,False,1.52
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",pin high-impedance from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.01699,False,2.239e-05
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08","one rising edge, then high",without U13,ok,,,,,,,5.069,0.01012,False,1.551,False,1.52
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,5.069,0.01012,False,0.1056,False,0.02258
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",one pulse of 100 ms,without U13,ok,,,,,,,5.069,0.01012,False,1.551,False,1.52
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",0.5 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.618,False,1.576
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",1 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.852,False,1.804
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",2 Hz,without U13,ok,,,,,,,5.069,0.01012,False,2.317,False,2.26
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",3 Hz,without U13,ok,,,,,,,5.069,5.069,True,2.862,True,2.607
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",5 Hz,without U13,ok,,,,,,,5.069,5.069,True,3.295,True,3.072
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin low from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.001281,False,1.588e-05
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high from power-up,without U13,ok,,,,,,,5.069,0.01012,False,1.568,False,1.527
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",pin high-impedance from power-up,without U13,ok,,,,,,,5.069,0.01012,False,0.001281,False,2.187e-05
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07","one rising edge, then high",without U13,ok,,,,,,,5.069,0.01012,False,1.57,False,1.527
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 60 us (a power-up glitch),without U13,ok,,,,,,,5.069,0.01012,False,0.1007,False,0.02249
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,without U13,ok,,,,,,,5.069,0.01012,False,1.57,False,1.527
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.57,False,1.527
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",1 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.57,False,1.527
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",2 Hz,without U13,ok,,,,,,,5.069,0.01012,False,1.886,False,1.822
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",3 Hz,without U13,ok,,,,,,,5.069,0.01012,False,2.332,False,2.26
+no edges,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",5 Hz,without U13,ok,,,,,,,5.069,5.069,True,3.081,True,2.847
+the step itself,"typical parts, 27 C",pin low,without U13,ok,,,False,,,,4.92,0.009826,False,0.005608,False,0.002805
+the step itself,"typical parts, 27 C",pin high,without U13,ok,,,False,,,,4.92,0.009825,False,0.5198,False,0.4981
+the step itself,"typical parts, 27 C",pin hiz,without U13,ok,,,False,,,,4.92,0.009826,False,0.005538,False,0.002756
+the step itself,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",pin low,without U13,ok,,,False,,,,5.069,0.01012,False,0.02551,False,0.00505
+the step itself,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",pin high,without U13,ok,,,False,,,,5.069,0.01012,False,0.6073,False,0.5546
+the step itself,"holds longest: 70 C, large capacitors, Q2 at 0.65 V, -4.5 mV/K",pin hiz,without U13,ok,,,False,,,,5.069,0.01012,False,0.02539,False,0.004993
+the step itself,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",pin low,without U13,ok,,,False,,,,4.831,0.009647,False,0.002263,False,1.912e-05
+the step itself,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",pin high,without U13,ok,,,False,,,,4.83,0.009646,False,0.4973,False,0.4852
+the step itself,"holds least: -20 C, small capacitors, Q2 at 1.45 V, -4.5 mV/K",pin hiz,without U13,ok,,,False,,,,4.831,0.009647,False,0.002263,False,1.912e-05
+the step itself,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",pin low,without U13,ok,,,False,,,,4.831,0.009647,False,0.0001301,False,1.133e-08
+the step itself,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",pin high,without U13,ok,,,False,,,,4.83,0.009646,False,0.5129,False,0.4882
+the step itself,"70 C, small capacitors, Q2 at 0.65 V, leaky diodes",pin hiz,without U13,ok,,,False,,,,4.831,0.009647,False,0.0001301,False,2.048e-07
+threshold,trips lowest,3.6,with U13,ok,,True,True,1.5,1.5,1.5,3.587,3.588,,,True,2.913
+threshold,trips lowest,3.7,with U13,ok,,True,True,1.5,1.5,1.5,3.687,3.688,,,True,3.001
+threshold,trips lowest,3.8,with U13,ok,,True,True,1.5,1.5,1.5,3.787,3.788,,,True,3.089
+threshold,trips lowest,3.9,with U13,ok,,True,True,1.5,1.5,1.5,3.886,3.888,,,True,3.177
+threshold,trips lowest,3.95,with U13,ok,,True,False,0.0035,0.0035,0.006,3.938,3.938,,,True,3.223
+threshold,trips lowest,4,with U13,ok,,True,False,0.0025,0.0025,0.0045,3.988,3.988,,,True,3.267
+threshold,trips lowest,4.05,with U13,ok,,True,False,0.002,0.002,0.005,4.037,4.038,,,True,3.311
+threshold,trips lowest,4.1,with U13,ok,,True,False,0.002,0.002,0.0045,4.087,4.088,,,True,3.355
+threshold,trips lowest,4.15,with U13,ok,,True,False,0.002,0.002,0.0045,4.137,4.138,,,True,3.399
+threshold,trips lowest,4.2,with U13,ok,,True,False,0.0015,0.0015,0.0045,4.187,4.185,,,True,3.443
+threshold,trips lowest,4.3,with U13,ok,,True,False,0.0015,0.0015,0.004,4.287,4.285,,,True,3.532
+threshold,typical,3.6,with U13,ok,,True,True,1.5,1.5,1.5,3.587,3.588,,,True,2.913
+threshold,typical,3.7,with U13,ok,,True,True,1.5,1.5,1.5,3.687,3.688,,,True,3.001
+threshold,typical,3.8,with U13,ok,,True,True,1.5,1.5,1.5,3.787,3.788,,,True,3.089
+threshold,typical,3.9,with U13,ok,,True,True,1.5,1.5,1.5,3.886,3.888,,,True,3.177
+threshold,typical,3.95,with U13,ok,,True,True,1.5,1.5,1.5,3.936,3.938,,,True,3.221
+threshold,typical,4,with U13,ok,,True,True,1.5,1.5,1.5,3.986,3.988,,,True,3.265
+threshold,typical,4.05,with U13,ok,,True,True,1.5,1.5,1.5,4.036,4.038,,,True,3.309
+threshold,typical,4.1,with U13,ok,,True,False,0.003,0.003,0.006,4.087,4.088,,,True,3.355
+threshold,typical,4.15,with U13,ok,,True,False,0.0025,0.0025,0.005,4.137,4.138,,,True,3.399
+threshold,typical,4.2,with U13,ok,,True,False,0.002,0.002,0.005,4.187,4.188,,,True,3.443
+threshold,typical,4.3,with U13,ok,,True,False,0.002,0.002,0.0045,4.287,4.288,,,True,3.532
+threshold,trips highest,3.6,with U13,ok,,True,True,1.5,1.5,1.5,3.587,3.588,,,True,2.913
+threshold,trips highest,3.7,with U13,ok,,True,True,1.5,1.5,1.5,3.687,3.688,,,True,3.001
+threshold,trips highest,3.8,with U13,ok,,True,True,1.5,1.5,1.5,3.787,3.788,,,True,3.089
+threshold,trips highest,3.9,with U13,ok,,True,True,1.5,1.5,1.5,3.886,3.888,,,True,3.177
+threshold,trips highest,3.95,with U13,ok,,True,True,1.5,1.5,1.5,3.936,3.938,,,True,3.221
+threshold,trips highest,4,with U13,ok,,True,True,1.5,1.5,1.5,3.986,3.988,,,True,3.265
+threshold,trips highest,4.05,with U13,ok,,True,True,1.5,1.5,1.5,4.036,4.038,,,True,3.309
+threshold,trips highest,4.1,with U13,ok,,True,True,1.5,1.5,1.5,4.085,4.088,,,True,3.353
+threshold,trips highest,4.15,with U13,ok,,True,True,1.5,1.5,1.5,4.135,4.138,,,True,3.398
+threshold,trips highest,4.2,with U13,ok,,True,False,0.004,0.004,0.0065,4.187,4.188,,,True,3.443
+threshold,trips highest,4.3,with U13,ok,,True,False,0.0025,0.0025,0.005,4.287,4.288,,,True,3.532

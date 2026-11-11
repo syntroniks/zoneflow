@@ -535,7 +535,7 @@ routing will take more effort than every other step combined.
 ## 12. Capture from a design netlist
 
 The revision A board, `hardware/zoneflow-a/`, was designed on paper first.
-`hardware/netlist.yaml` lists its 348 components, the part number of each and
+`hardware/netlist.yaml` lists its 353 components, the part number of each and
 the net on every pin, and it was reviewed before any schematic existed. The
 schematic must therefore be that netlist, drawn. `hwflow.capture` makes it so.
 This section describes what was added to the flow for it and what was checked.
@@ -597,8 +597,9 @@ a changed value, a changed part number, a part added, a part removed, a pin
 map the wrong way round, a renamed net) and checks that each one is
 reported: `tools/hwflow/tests/test_capture_parity.py`.
 
-Result on revision A, `make schematic`, 2026-11-10, after the two parts and
-one net that hardware review A2 added: "348 components and 199
+Result on revision A, `make schematic`, 2026-11-11, after the two parts and
+one net that hardware review A2 added and the five parts and one net of
+[hardware answers A2](hardware-answers-a2.md): "353 components and 200
 nets of the design netlist match KiCad's netlist pin for pin; fitted parts
 match in 2 build(s)".
 
