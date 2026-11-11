@@ -123,6 +123,7 @@ nav:
       - enclosure/index.md
       - Printing: enclosure/printing.md
       - Assembly: enclosure/assembly.md
+      - Test fit: enclosure/test-fit.md
   - FAQ: faq.md
   - Glossary: glossary.md
   - Contributing: contributing.md
