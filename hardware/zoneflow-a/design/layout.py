@@ -371,6 +371,12 @@ col("R25 R26 C21 R92", 13.6, 73.6, -1.6)
 col("R54 R87", 9.9, 76.9, -1.6)
 at("D8", 9.9, 79.2, 0)
 row("TP7 TP10 TP11 TP12", 12.0, 82.6, 3.0)
+block("Over-voltage detector on 3.3 V (hardware design, section 9.5). U13 is above the test pad of\nOC_TRIP_N, the net its output pulls low, 8 mm from pin 1 of U7. The divider R13, R100 and its\ncapacitor C55 are at pin 4, C56 at pin 5.")
+at("U13", 14.0, 86.0, 90)      # pins 6, 5, 4 at the top, from the left; 1, 2, 3 at the bottom
+at("C56", 14.0, 88.95, 0)      # 3.3 V pad above pin 5
+at("C55", 16.6, 87.0, 90)      # OV_DIV pads of C55 and R100 level with pin 4
+at("R100", 18.2, 87.0, 90)
+at("R13", 17.4, 84.7, 0)       # OV_DIV pad under that of R100
 block("Keep-alive detector B and the relay driver. More than 10 mm from detector A.")
 at("R89", 46.0, 78.6, 0)
 at("C51", 49.6, 78.5, 0)
@@ -736,6 +742,17 @@ hand = [
     track(["C25.2", {"via": [30.5, 67.75]}], width=0.3, via=(0.6, 0.3)),
     track(["R39.2", [30.6, 66.9], [28.4, 66.9], "R46.1"], width=0.2),
     track(["U2.2", {"via": [3.225, 17.7]}], width=0.3, via=(0.6, 0.3), comment="Ground of the USB ESD array: a via under it."),
+    "# Over-voltage detector U13 (hardware design, section 9.5). OV_DIV, the tap of its divider, is 5 mm\n"
+    "# of track between four pads. 3.3 V goes from pin 5 straight to C56. The two ground pins share a via\n"
+    "# under the package. The output goes round the package to TP10, the test pad of OC_TRIP_N; the\n"
+    "# autorouter takes that net on from there.",
+    track(["U13.4", "C55.1"], width=0.2),
+    track(["C55.1", "R100.1"], width=0.2),
+    track(["R100.1", "R13.2"], width=0.2),
+    track(["U13.5", [14.0, 88.3], "C56.1"], width=0.3),
+    track(["U13.2", {"via": [14.475, 85.85]}], width=0.3, via=(0.6, 0.3)),
+    track(["U13.3", [14.475, 85.85]], width=0.3),
+    track(["U13.6", [12.2, 87.14], [12.2, 84.2], [12.65, 83.75], [14.3, 83.75], "TP10.1"], width=0.2),
     "# V5: the two cathodes, the test pad, the input capacitor C10 and pin 3 of U3.",
     track(["D4.1", "D3.1", [3.0, 52.6], "TP3.1"], width=1.0),
     track(["D3.1", [3.0, 52.3], [4.4, 53.7], [6.6, 53.7], "C10.1"], width=0.8),
@@ -822,6 +839,10 @@ more = [
     track(["U4.11", [95.2, 95.5], {"via": [100.4, 95.5]}], width=0.2, via=(0.6, 0.3)),
     "# Detector A: pump, reservoir and comparator input, by hand so that each node stays short.",
     "@U5@",
+    track(["R35.2", [105.95, 85.7], {"via": [106.2, 86.45]}], width=0.25, via=(0.6, 0.3),
+          comment="Ground for R35: the builder finds no place for a via beside the pad, and the top pour reached it\n"
+                  "with one spoke in a trial routing. A via of its own, between the pump capacitor C22 and the\n"
+                  "3.3 V via of R34, 0.28 mm from the first and 0.6 mm from the second."),
     track(["R29.2", [99.6, 88.4], [103.9, 88.4], "C22.1"], width=0.3),
     track(["C22.2", "D7.3"], width=0.3),
     track(["D7.2", "C23.1"], width=0.3),
@@ -1062,7 +1083,7 @@ widen = true                          # and give the autorouter's tracks their c
 # Nets the autorouter must leave alone: they connect through planes, pours or hand-routed copper.
 exclude = ["GND", "3V3", "V_BUCK", "VBUS", "/VIN_MON", "/RLY_B_RB", "/ISNS", "/OUT_*", "/*/T2", "/*/SNB", "/AC_L_IN", "/AC_N", "/AC_L", "/COM",
            "/Power/VRECT", "VIN_DC", "/Power/VIN_U1", "/Power/UVLO", "/Power/SW", "/Power/BST", "/KA",
-           "/Failsafe/KA_N0", "/Failsafe/KA_N1", "/KA_N2", "/Failsafe/KA_INP",
+           "/Failsafe/KA_N0", "/Failsafe/KA_N1", "/KA_N2", "/Failsafe/KA_INP", "/Failsafe/OV_DIV",
            "/TFT_CS", "/TFT_MOSI", "/TFT_SCLK", "/TFT_DC", "/TFT_RST", "/TFT_BL", "/Display/TFT_LEDA",
            "/Display/TFT_LEDK", "/USB_DP_MCU", "/USB_DM_MCU", "/ADC_LO", "/ADC_HI", "/SENS_FLOW", "/ENC_B",
            "/Power/FB", "/Power/RIP", "/Power/FB_MID", "/Power/RON", "/*/G", "/*/OGT", "/*/OLA", "/*/LEDA"]
@@ -1142,7 +1163,7 @@ rect = [56.6, 78.05, 80.4, 79.15]
 # A via beside every surface-mount pad of a plane net.
 [[plane]]
 net = "GND"
-skip = ["U4.41", "U1.9", "R40.1", "R44.1", "J7.1", "J7.12", "J5.A12", "J5.B1", "U5.2", "U5.12", "U5.21", "C25.2", "U2.2"]   # exposed pads: vias by hand. R40, R44: Kelvin, see below
+skip = ["U4.41", "U1.9", "R40.1", "R44.1", "J7.1", "J7.12", "J5.A12", "J5.B1", "U5.2", "U5.12", "U5.21", "C25.2", "U2.2", "U13.2", "U13.3", "R35.2"]   # exposed pads: vias by hand. R40, R44: Kelvin, see below
 
 [[plane]]
 net = "3V3"
@@ -1312,6 +1333,14 @@ net = "/Failsafe/KA_INP"
 from = ["3V3", "V5", "V_BUCK", "VBUS", "V_DRV"]
 distance = 1.0
 scope = "layer"
+
+# The tap of the over-voltage divider, 100 kohm behind it: the hardware design asks for it short and
+# away from the switch node, the keep-alive and the display lines (hardware-answers-a2.md, section 6).
+[[keepaway]]
+net = "/Failsafe/OV_DIV"
+from = ["/Power/SW", "/KA", "/TFT_SCLK", "/TFT_MOSI", "/TFT_CS", "/TFT_DC", "/TFT_RST", "/TFT_BL"]
+distance = 10.0
+scope = "plan"
 
 # Rule 2: no test pad on these nets. TP8 on KA_N2 is allowed by the rule and is covered above.
 [[no_pad]]

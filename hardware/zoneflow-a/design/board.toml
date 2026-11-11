@@ -363,6 +363,15 @@ TP10 = [15, 82.6, 0]
 TP11 = [18, 82.6, 0]
 TP12 = [21, 82.6, 0]
 
+# Over-voltage detector on 3.3 V (hardware design, section 9.5). U13 is above the test pad of
+# OC_TRIP_N, the net its output pulls low, 8 mm from pin 1 of U7. The divider R13, R100 and its
+# capacitor C55 are at pin 4, C56 at pin 5.
+U13 = [14, 86, 90]
+C56 = [14, 88.95, 0]
+C55 = [16.6, 87, 90]
+R100 = [18.2, 87, 90]
+R13 = [17.4, 84.7, 0]
+
 # Keep-alive detector B and the relay driver. More than 10 mm from detector A.
 R89 = [46, 78.6, 0]
 C51 = [49.6, 78.5, 0]
@@ -479,7 +488,7 @@ widen = true                          # and give the autorouter's tracks their c
 # Nets the autorouter must leave alone: they connect through planes, pours or hand-routed copper.
 exclude = ["GND", "3V3", "V_BUCK", "VBUS", "/VIN_MON", "/RLY_B_RB", "/ISNS", "/OUT_*", "/*/T2", "/*/SNB", "/AC_L_IN", "/AC_N", "/AC_L", "/COM",
            "/Power/VRECT", "VIN_DC", "/Power/VIN_U1", "/Power/UVLO", "/Power/SW", "/Power/BST", "/KA",
-           "/Failsafe/KA_N0", "/Failsafe/KA_N1", "/KA_N2", "/Failsafe/KA_INP",
+           "/Failsafe/KA_N0", "/Failsafe/KA_N1", "/KA_N2", "/Failsafe/KA_INP", "/Failsafe/OV_DIV",
            "/TFT_CS", "/TFT_MOSI", "/TFT_SCLK", "/TFT_DC", "/TFT_RST", "/TFT_BL", "/Display/TFT_LEDA",
            "/Display/TFT_LEDK", "/USB_DP_MCU", "/USB_DM_MCU", "/ADC_LO", "/ADC_HI", "/SENS_FLOW", "/ENC_B",
            "/Power/FB", "/Power/RIP", "/Power/FB_MID", "/Power/RON", "/*/G", "/*/OGT", "/*/OLA", "/*/LEDA"]
@@ -559,7 +568,7 @@ rect = [56.6, 78.05, 80.4, 79.15]
 # A via beside every surface-mount pad of a plane net.
 [[plane]]
 net = "GND"
-skip = ["U4.41", "U1.9", "R40.1", "R44.1", "J7.1", "J7.12", "J5.A12", "J5.B1", "U5.2", "U5.12", "U5.21", "C25.2", "U2.2"]   # exposed pads: vias by hand. R40, R44: Kelvin, see below
+skip = ["U4.41", "U1.9", "R40.1", "R44.1", "J7.1", "J7.12", "J5.A12", "J5.B1", "U5.2", "U5.12", "U5.21", "C25.2", "U2.2", "U13.2", "U13.3", "R35.2"]   # exposed pads: vias by hand. R40, R44: Kelvin, see below
 
 [[plane]]
 net = "3V3"
@@ -1256,6 +1265,46 @@ width = 0.3
 via = [0.6, 0.3]
 points = ["U2.2", {via = [3.225, 17.7]}]
 
+# Over-voltage detector U13 (hardware design, section 9.5). OV_DIV, the tap of its divider, is 5 mm
+# of track between four pads. 3.3 V goes from pin 5 straight to C56. The two ground pins share a via
+# under the package. The output goes round the package to TP10, the test pad of OC_TRIP_N; the
+# autorouter takes that net on from there.
+[[track]]
+layer = "F.Cu"
+width = 0.2
+points = ["U13.4", "C55.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+points = ["C55.1", "R100.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+points = ["R100.1", "R13.2"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["U13.5", [14, 88.3], "C56.1"]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+via = [0.6, 0.3]
+points = ["U13.2", {via = [14.475, 85.85]}]
+
+[[track]]
+layer = "F.Cu"
+width = 0.3
+points = ["U13.3", [14.475, 85.85]]
+
+[[track]]
+layer = "F.Cu"
+width = 0.2
+points = ["U13.6", [12.2, 87.14], [12.2, 84.2], [12.65, 83.75], [14.3, 83.75], "TP10.1"]
+
 # V5: the two cathodes, the test pad, the input capacitor C10 and pin 3 of U3.
 [[track]]
 layer = "F.Cu"
@@ -1690,6 +1739,15 @@ layer = "F.Cu"
 width = 0.2
 via = [0.6, 0.3]
 points = ["RN2.4", {via = [40.6, 73.3]}]
+
+# Ground for R35: the builder finds no place for a via beside the pad, and the top pour reached it
+# with one spoke in a trial routing. A via of its own, between the pump capacitor C22 and the
+# 3.3 V via of R34, 0.28 mm from the first and 0.6 mm from the second.
+[[track]]
+layer = "F.Cu"
+width = 0.25
+via = [0.6, 0.3]
+points = ["R35.2", [105.95, 85.7], {via = [106.2, 86.45]}]
 
 [[track]]
 layer = "F.Cu"
@@ -2531,6 +2589,14 @@ net = "/Failsafe/KA_INP"
 from = ["3V3", "V5", "V_BUCK", "VBUS", "V_DRV"]
 distance = 1.0
 scope = "layer"
+
+# The tap of the over-voltage divider, 100 kohm behind it: the hardware design asks for it short and
+# away from the switch node, the keep-alive and the display lines (hardware-answers-a2.md, section 6).
+[[keepaway]]
+net = "/Failsafe/OV_DIV"
+from = ["/Power/SW", "/KA", "/TFT_SCLK", "/TFT_MOSI", "/TFT_CS", "/TFT_DC", "/TFT_RST", "/TFT_BL"]
+distance = 10.0
+scope = "plan"
 
 # Rule 2: no test pad on these nets. TP8 on KA_N2 is allowed by the rule and is covered above.
 [[no_pad]]
