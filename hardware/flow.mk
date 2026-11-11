@@ -60,7 +60,7 @@ comma := ,
 empty :=
 space := $(empty) $(empty)
 
-.PHONY: all schematic footprints layout sch lint erc sch-outputs board route reroute finish patches drc mech rules board-check ibom outputs check committed
+.PHONY: all schematic footprints layout sch lint erc sch-outputs board route reroute finish patches drc mech rules board-check ibom outputs check committed cpl-check
 .NOTPARALLEL:
 
 all: outputs ibom
@@ -249,6 +249,18 @@ outputs: drc mech rules sch-outputs
 	$(KICAD_PY) -m hwflow.routereport . $(DESIGN) $(OUT)/reports/routing.md
 	$(STABILISE)
 	$(PROJECT_FILE)
+
+# The placement files against the footprints that JLCPCB's part library holds for each LCSC number
+# (hwflow.cplcheck): every pad of the library footprint, placed as the file says, must land on a pad of
+# the board, pin 1 on pin 1 and the cathode on the cathode. It fetches the library footprints into the
+# cache the first time, so it needs the network and is not part of `make`. Run it after `make` and
+# before an order, and whenever a part number or hardware/rules/jlcpcb-cpl-rotations.csv changes.
+JLC_LIBRARY ?= $(CACHE)/jlc-library
+cpl-check:
+	$(KICAD_PY) -m hwflow.cplcheck build/placement.json $(OUT)/$(NAME)-cpl-jlcpcb.csv $(OUT)/$(NAME)-bom-jlcpcb.csv \
+		--cache $(JLC_LIBRARY) --fetch --report $(OUT)/reports/placement-check.md
+	$(foreach v,$(VARIANTS),$(KICAD_PY) -m hwflow.cplcheck build/placement.json $(OUT)/$(NAME)-cpl-jlcpcb-$(v).csv \
+		$(OUT)/$(NAME)-bom-jlcpcb-$(v).csv --cache $(JLC_LIBRARY) --fetch &&) true
 
 # Unit tests, KiCad round-trip tests, and proof that ERC and DRC catch
 # deliberately broken inputs. Needs the board to have been built.
