@@ -20,8 +20,8 @@
 //   S4  A zone's on-time, added over runs until it has been closed for the
 //       minimum rest, never exceeds its maximum run time, across software
 //       restarts (spec section 2 rule 4, firmware architecture section 20).
-//       On-time is time energised while commanded, or while the firmware is
-//       halted; the tail after a stop by the keep-alive is S1's.
+//       On-time is time energised while commanded; the tail after a stop by
+//       the keep-alive is S1's, the tail after a halt S2's (both counted).
 #pragma once
 
 #include <array>
@@ -83,11 +83,12 @@ private:
         uint64_t burstMs = 0;
         uint64_t closedMs = 0;
         bool reported = false;
-        bool halted = false; // a halt happened during this burst
-        bool lost = false;   // the firmware lost the budget during this burst
+        bool lost = false;     // the firmware lost the budget during this burst
+        uint32_t restarts = 0; // firmware stops (halts, restarts) during this burst
     };
     std::array<Budget, kMaxZones> budget_{};
     bool kaWasHigh_ = false;
+    bool wasRunning_ = false;
     uint64_t kaLastEdgeMs_ = 0;
     bool haltReported_ = false;
     bool edgeReported_ = false;

@@ -124,24 +124,31 @@ void PhysicalOracle::step(World &w, const FirmwareView &fw, uint64_t dtMs)
     }
 
     // ---- S4: run budget -----------------------------------------------------------------------
+    const bool stopped = !fw.running && wasRunning_;
+    wasRunning_ = fw.running;
     for (std::size_t z = 0; z < kMaxZones; ++z) {
         Budget &b = budget_[z];
+        if (stopped && b.burstMs > 0) {
+            ++b.restarts;
+        }
         if (static_cast<int>(z) == w.shortedOutput) {
             b = Budget{}; // the firmware cannot switch it off; S1 covers it
             continue;
         }
-        if (w.energised(z) && fw.running && !fw.halted && !fw.commanded[z]) {
+        if (w.energised(z) && !(fw.running && !fw.halted && fw.commanded[z])) {
             // A valve still on after the firmware stopped it by stopping the
-            // keep-alive (a fault path): the detectors let go within their
-            // hold-up. S1 bounds this time; the budget counts commanded time.
-            w.count("s4.uncommanded_tail_ms", dtMs);
+            // keep-alive (a fault path), or after the firmware halted: the
+            // detectors let go within their hold-up, which S1 and S2 bound
+            // per episode. The firmware cannot count it; the budget counts
+            // commanded time.
+            w.count(fw.running && !fw.halted ? "s4.uncommanded_tail_ms" : "s4.halt_tail_ms", dtMs);
             b.closedMs = 0;
         } else if (w.energised(z)) {
             b.burstMs += dtMs;
             b.closedMs = 0;
-            b.halted = b.halted || fw.halted || !fw.running;
-            const uint64_t limit =
-                fw.maxRunMs[z] + kBudgetSlackMs + (b.halted ? kEdgeStopMs + kBReleaseHighMs + 10 : 0);
+            // The retained record is saved every tick: a restart loses up to
+            // one tick of on-time from the budget.
+            const uint64_t limit = fw.maxRunMs[z] + kBudgetSlackMs + b.restarts * (kTickMs + kIsrMs);
             if (b.burstMs > limit && !b.reported) {
                 b.reported = true;
                 if (b.lost) {
