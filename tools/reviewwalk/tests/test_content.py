@@ -83,6 +83,20 @@ def test_a_changed_picture_description_makes_the_pictures_stale(content):
     assert spec.inputs_hash(reworded) == spec.inputs_hash(content)  # text alone does not redraw anything
 
 
+def test_a_render_with_other_bytes_and_the_same_framing_is_not_stale(content, tmp_path):
+    again = tmp_path / "top.png"
+    data = spec.TOP_RENDER.read_bytes()
+    # A text chunk before the end of the file: other bytes, the same picture.
+    chunk = b"tEXt" + b"Comment\x00rendered again"
+    import struct
+    import zlib
+
+    extra = struct.pack(">I", len(chunk) - 4) + chunk + struct.pack(">I", zlib.crc32(chunk))
+    again.write_bytes(data[:-12] + extra + data[-12:])
+    assert again.read_bytes() != data
+    assert spec.inputs_hash(content, top_render=again) == spec.inputs_hash(content)
+
+
 def test_a_missing_and_a_stray_picture_are_reported(content, tmp_path):
     out = tmp_path / "review"
     shutil.copytree(spec.OUT, out)

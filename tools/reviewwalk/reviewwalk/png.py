@@ -8,6 +8,7 @@ background of the render is one flat colour, and the board is everything else.
 
 from __future__ import annotations
 
+import os
 import struct
 import zlib
 
@@ -58,13 +59,35 @@ def read(path):
     return width, height, n, rows
 
 
-def find_board(path, board_w, board_h, tolerance=0.008):
+_edges = {}
+
+
+def find_edges(path):
     """Where the board outline is in a top render: pixel positions of its four edges.
 
     Parts overhang the top and bottom edges (the module, the terminal headers), so
     the top edge is where most columns begin and the bottom edge where the shortest
-    columns end. The result must have the proportions of the board, or this fails.
+    columns end.
     """
+    stat = os.stat(path)
+    key = (str(path), stat.st_mtime_ns, stat.st_size)
+    if key not in _edges:
+        _edges[key] = _find_edges(path)
+    return dict(_edges[key])
+
+
+def find_board(path, board_w, board_h, tolerance=0.008):
+    """The same, and the result must have the proportions of the board, or this fails."""
+    edges = find_edges(path)
+    kx = (edges["right"] - edges["left"]) / board_w
+    ky = (edges["bottom"] - edges["top"]) / board_h
+    if abs(kx / ky - 1) > tolerance:
+        raise ValueError(f"{path}: the board found is {edges['right'] - edges['left']} x {edges['bottom'] - edges['top']} "
+                         f"pixels, which is not {board_w} x {board_h} mm at one scale")
+    return edges
+
+
+def _find_edges(path):
     width, height, n, rows = read(path)
     bg = bytes(rows[0][:3])
 
@@ -84,8 +107,4 @@ def find_board(path, board_w, board_h, tolerance=0.008):
     inner = [x for x in cols if left + (right - left) * 0.03 < x < right - (right - left) * 0.03]
     top = sorted(tops[x] for x in inner)[int(len(inner) * 0.95)]
     bottom = sorted(bots[x] for x in inner)[int(len(inner) * 0.05)] + 1
-    kx, ky = (right - left) / board_w, (bottom - top) / board_h
-    if abs(kx / ky - 1) > tolerance:
-        raise ValueError(f"{path}: the board found is {right - left} x {bottom - top} pixels, "
-                         f"which is not {board_w} x {board_h} mm at one scale")
     return {"width": width, "height": height, "left": left, "right": right, "top": top, "bottom": bottom}

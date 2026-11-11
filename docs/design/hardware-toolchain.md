@@ -1195,7 +1195,9 @@ can be wrong, and each one was looked at when it was written.
   and in their text. `make review` fails if one is not on the board, and
   says which step names it.
 - **Stale pictures.** The manifest holds one hash over the board file, the
-  top render, the picture descriptions and the drawing code. The
+  picture descriptions, the drawing code and the place of the board in the
+  top render. The render's bytes do not count: a build that only renders it
+  again leaves the manifest as it was. The
   documentation build has no KiCad. It reads the board file as text, checks
   the names and the hash, and fails on a difference.
 - **CI.** The board job runs `make review-check` on the committed board

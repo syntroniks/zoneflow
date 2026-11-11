@@ -39,8 +39,9 @@ node --test tools/reviewwalk/tests/js/review.test.cjs     # the page logic
   finding is not a part on the board. A finding id such as L5, and the words
   in `meta.not_parts`, are not taken for parts.
 - **Pictures of another board are refused.** `manifest.json` holds one hash
-  over the board file, the top render, the picture descriptions and the
-  drawing code. `check` and the site build compare it with the files in the
+  over the board file, the picture descriptions, the drawing code and the
+  place of the board in the top render. The bytes of the render do not
+  count: KiCad does not write the same picture file twice. `check` and the site build compare it with the files in the
   repository. Change any of them and the site does not build until
   `make -C hardware/zoneflow-a review` has run and its result is committed.
   Changing the text of a step does not need new pictures.

@@ -140,11 +140,19 @@ def render_inputs(spec):
 
 
 def inputs_hash(spec, board=BOARD, top_render=TOP_RENDER):
-    """One hash over everything a picture depends on: board, render, picture descriptions, drawing code."""
+    """One hash over everything a picture depends on: board, picture descriptions, drawing code, and
+    where the board is in the top render.
+
+    Of the render only the place of the board counts, not its bytes: KiCad does not write the same
+    file twice, and the numbered boxes depend on nothing else in it.
+    """
+    from . import png
+
     h = hashlib.sha256()
     here = Path(__file__).resolve().parent
-    for path in (Path(board), Path(top_render), here / "render.py", here / "png.py"):
+    for path in (Path(board), here / "render.py", here / "png.py"):
         h.update(hashlib.sha256(path.read_bytes()).hexdigest().encode())
+    h.update(json.dumps(png.find_edges(top_render), sort_keys=True).encode())
     h.update(render_inputs(spec).encode())
     return h.hexdigest()
 
