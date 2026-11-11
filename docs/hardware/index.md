@@ -30,6 +30,7 @@ In words:
 - [Bill of materials](bom.md): every part, with LCSC numbers and data sheets.
 - [The 4-zone build](four-zone.md): what is left off.
 - [Ordering boards](ordering.md): what is missing before anyone can order.
+- [What a controller costs](cost.md): landed cost for 5 to 100 units, both builds.
 - [Design notes](design-notes.md): where the calculations are.
 
 ## Safety rules built into the design

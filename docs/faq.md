@@ -100,10 +100,13 @@ rain delay from any source.
 
 ## What does it cost?
 
-The design estimates the parts of an 8-zone board at about 31.84 USD each
-for 100 boards, without the PCB, assembly, shipping, the coin cell and the
-enclosure, at prices checked on 2026-11-10. That is an estimate, not a
-price. See [hardware design section 18](design/hardware-design.md#18-bill-of-materials-and-cost-estimate).
+Nobody sells ZoneFlow controllers; you have one made. The
+[cost estimate](hardware/cost.md), from prices checked on 2026-11-11, puts a
+finished 8-zone controller, assembled by JLCPCB, delivered to the United
+States with duty paid and in its printed enclosure, at about 134 USD each
+for a batch of 5, 73 USD for 25 and 54 USD for 100. The 4-zone build is 6 to
+7 USD less. The transformer and the valve cable come on top. These are
+estimates, not prices, and US tariffs move them most.
 
 ## Is it certified?
 

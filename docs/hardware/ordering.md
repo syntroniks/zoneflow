@@ -20,6 +20,7 @@
 - The [schematic](schematic.md), with ERC and a pin-for-pin check against the design netlist.
 - The [bill of materials](bom.md) in JLCPCB's format for both builds, every line with an LCSC number, stock and price checked on 2026-11-10.
 - The [board outline and fixed part positions](../design/mechanical.md): 114 x 110 mm, four layers.
+- A [cost estimate](cost.md) from JLCPCB's published prices and its online board quote, dated 2026-11-11. It is not a quote for assembly.
 
 ## How ordering will work
 
@@ -41,8 +42,7 @@ files exist.
 
 ## Stock
 
-The design checked stock on 2026-11-10. The lines with the least stock
-against 100 eight-zone boards were the triac (3384 for 900 needed), the
-display panel (460 for 100) and the 7-way terminal header and plug (about
-1800 for 200). Check stock again before you order. See
-[hardware design section 18](../design/hardware-design.md#18-bill-of-materials-and-cost-estimate).
+Stock was checked again on 2026-11-11 for the [cost estimate](cost.md#components).
+No line was short of 100 eight-zone boards. The thinnest were the triac
+(3,384 for 900 needed), the 48 V TVS diode (5,782 for 1,402) and the display
+panel (413 for 100). Check stock again before you order.

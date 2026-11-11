@@ -14,8 +14,10 @@ repository, and a check that they agree.
 | [`zoneflow-a-bom-jlcpcb.csv`](zoneflow-a/zoneflow-a-bom-jlcpcb.csv) | The 8-zone build in the format JLCPCB's assembly order takes: comment, designators, footprint, LCSC number, quantity. 92 lines | KiCad, from the schematic |
 | [`zoneflow-a-bom-jlcpcb-4-zone.csv`](zoneflow-a/zoneflow-a-bom-jlcpcb-4-zone.csv) | The same for the 4-zone build. 91 lines | KiCad, from the schematic, variant `4-zone` |
 
-The cost estimate and the reasoning behind each part are in
+The reasoning behind each part is in
 [hardware design section 18](../design/hardware-design.md#18-bill-of-materials-and-cost-estimate).
+What a finished controller costs, with the board, assembly, freight, duty and
+enclosure, is on [what a controller costs](cost.md).
 
 ## What keeps them in step
 
