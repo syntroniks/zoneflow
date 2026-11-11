@@ -35,32 +35,36 @@ cause is still there comes back at once. Fix the cause first.
 
 ## Fault messages
 
-The display's title is on the left, the code used by the API and MQTT on the
-right. "Zone N" is the zone's number; a zone-type fault on the master output
-reads "Master valve: ...".
+The display, the web interface and the ESPHome `Faults` sensor use the same
+title for each fault, from one table in the firmware
+(`zf_core/include/zf/fault_text.hpp`); the API and MQTT send the code in the
+middle column. "Zone N" is the zone's number, or its name in the web
+interface and ESPHome; a zone-type fault on the master output reads
+"Master valve: ...". Where no zone is named, the web interface uses the
+plain form, for example "Valve drew no current".
 
-| Display title | Web interface title | Code | Clears itself |
-|---|---|---|---|
-| [Zone N: no current](#zone-n-no-current) | No current through a valve | `zone_open_circuit` | No |
-| [Zone N: current too high](#zone-n-current-too-high) | Too much current through a valve | `zone_over_current` | No |
-| [Zone N: short circuit](#zone-n-short-circuit) | Short circuit | `short_circuit` | No |
-| [Protection tripped](#protection-tripped) | Over-current protection tripped | `over_current_trip` | No |
-| [Master valve locked](#master-valve-locked) | Master valve locked out | `master_locked_out` | No |
-| [Current with all valves off](#current-with-all-valves-off) | Current with every valve off | `current_while_idle` | No |
-| [No 24 V AC supply](#no-24-v-ac-supply) | No 24 V AC power | `ac_lost` | Yes |
-| [Water flows with all valves off](#water-flows-with-all-valves-off) | Water flowing with every valve closed | `flow_without_zones` | No |
-| [Clock not set](#clock-not-set) | The clock is not set | `time_invalid` | Yes |
-| [Settings could not be read](#settings-could-not-be-read) | The stored settings could not be read | `config_invalid` | No |
-| [Settings could not be saved](#settings-could-not-be-saved) | Settings could not be saved | `storage_error` | No |
-| [Valve current not measured](#valve-current-not-measured) | Valve current is not being measured | `current_sense_unavailable` | Yes |
-| [Sensor supply overloaded](#sensor-supply-overloaded) | Sensor supply overloaded | `sensor_supply` | Yes |
-| [Zone N: valve current lopsided](#zone-n-valve-current-lopsided) | Valve current in one direction only | `zone_dc_current` | No |
-| [Mains signal wrong](#mains-signal-wrong) | Mains timing signal wrong | `mains_signal` | Yes |
-| [Safety circuit failed its test](#safety-circuit-failed-its-test) | Safety circuit failed its self-test | `keepalive_detector` | No, needs a confirmed repair |
-| [Valve driver not responding](#valve-driver-not-responding) | Valve driver not responding | `output_expander` | No |
-| [Valve relay stuck closed](#valve-relay-stuck-closed) | Valve relay stuck closed | `relay_welded` | No |
-| [Valve output stuck on](#valve-output-stuck-on) | Valve output stuck on | `output_shorted` | No |
-| [Protection did not reset](#protection-did-not-reset) | Over-current protection did not reset | `trip_latch_stuck` | No |
+| Title | Code | Clears itself |
+|---|---|---|
+| [Zone N: no current](#zone-n-no-current) | `zone_open_circuit` | No |
+| [Zone N: current too high](#zone-n-current-too-high) | `zone_over_current` | No |
+| [Zone N: short circuit](#zone-n-short-circuit) | `short_circuit` | No |
+| [Protection tripped](#protection-tripped), or Zone N: protection tripped | `over_current_trip` | No |
+| [Master valve locked](#master-valve-locked) | `master_locked_out` | No |
+| [Current with all valves off](#current-with-all-valves-off) | `current_while_idle` | No |
+| [No 24 V AC supply](#no-24-v-ac-supply) | `ac_lost` | Yes |
+| [Water flows with all valves off](#water-flows-with-all-valves-off) | `flow_without_zones` | No |
+| [Clock not set](#clock-not-set) | `time_invalid` | Yes |
+| [Settings could not be read](#settings-could-not-be-read) | `config_invalid` | No |
+| [Settings could not be saved](#settings-could-not-be-saved) | `storage_error` | No |
+| [Valve current not measured](#valve-current-not-measured) | `current_sense_unavailable` | Yes |
+| [Sensor supply overloaded](#sensor-supply-overloaded) | `sensor_supply` | Yes |
+| [Zone N: valve current lopsided](#zone-n-valve-current-lopsided) | `zone_dc_current` | No |
+| [Mains signal wrong](#mains-signal-wrong) | `mains_signal` | Yes |
+| [Safety circuit failed its test](#safety-circuit-failed-its-test) | `keepalive_detector` | No, needs a confirmed repair |
+| [Valve driver not responding](#valve-driver-not-responding) | `output_expander` | No |
+| [Valve relay stuck closed](#valve-relay-stuck-closed) | `relay_welded` | No |
+| [Valve output stuck on](#valve-output-stuck-on) | `output_shorted` | No |
+| [Protection did not reset](#protection-did-not-reset) | `trip_latch_stuck` | No |
 
 ### Valve and wiring faults
 
@@ -389,6 +393,15 @@ Check each with the transformer unplugged and the plugs off the board.
 ### Joining the network fails
 
 See [joining your network, if it does not work](getting-started/provisioning.md#if-it-does-not-work).
+
+### The WiFi changed and the controller is offline
+
+A new router, a new WiFi name or a new WiFi password leaves the controller
+off the network, and with it the web interface. Use the display:
+**Menu → Setup → Network → Set up WiFi**, then **Restart**. The controller
+restarts into Bluetooth setup for 15 minutes and keeps watering on
+schedule meanwhile; a zone that was watering stops. See
+[changing networks](getting-started/provisioning.md#changing-networks-later).
 
 ### Installing firmware fails
 

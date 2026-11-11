@@ -71,7 +71,14 @@ Assistant. Back up the device file with your other ESPHome files. Program
 settings you set from Home Assistant (start times, days, zones) are entities
 on the controller, not lines in the device file.
 
-!!! note "To be completed"
-    How to carry ESPHome program settings to a replacement controller has
-    not been worked out. Tracked with the ESPHome package's follow-up in the
-    [progress log, issue #1](https://github.com/syntroniks/zoneflow/issues/1).
+The controller keeps these entity values in its own flash, so they survive
+a restart and an update, but not a replacement board: a new controller
+starts with the package defaults (`firmware/esphome/zoneflow/program.yaml`:
+every program off, start 1 at 06:00, start 2 at 18:00 and off, every day,
+all zones, 100 %). The package has no export for them, by
+decision: Home Assistant already holds every value. To move them, note the
+`Program …` entities of the old controller (start times, days, zones, run
+time, enabled), adopt the new controller with the same device file, and set
+the same values on its entities. Zone names, the maximum run time, the
+master valve and the flow meter are substitutions in the device file and
+move with it.

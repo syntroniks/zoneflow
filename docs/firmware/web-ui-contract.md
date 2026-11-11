@@ -67,7 +67,8 @@ in its `README.md`); `npm run build` there writes `www/`.
 
 1. On load call `GET /api/v1/auth`:
    - `password_set: false`: show a "set admin password" form that asks for
-     the setup code from the device display, then `POST /api/v1/auth/setup`.
+     the setup code (the display shows it under Setup, Network, Show setup
+     code after a 3 s hold of the knob), then `POST /api/v1/auth/setup`.
    - `authenticated: false`: show the login form, `POST /api/v1/auth/login`.
    - `authenticated: true`: the answer includes `csrf`.
 2. Keep the `csrf` value in memory (not localStorage) and send it as

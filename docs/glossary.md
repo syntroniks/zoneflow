@@ -53,7 +53,7 @@ Terms as this manual uses them.
 **Flow meter**
 : A sensor on the water line that gives a pulse for each small volume of water. The **K-factor** is its number of pulses per litre.
 
-**Unscheduled flow, leak alarm**
+**Leak alarm ("Water flows with all valves off")**
 : Water counted by the flow meter while every valve is closed.
 
 **Inrush**
@@ -96,7 +96,7 @@ Terms as this manual uses them.
 : Joining the controller to a WiFi network the first time, from a phone or computer.
 
 **Setup code**
-: The 10-character code that proves you are at the controller during setup (standalone firmware). Also called the proof of possession in Espressif's app.
+: The 10-character code that proves you are at the controller during setup (standalone firmware). The display shows it under **Menu → Setup → Network → Show setup code** after you hold the knob for 3 seconds. Also called the proof of possession in Espressif's app.
 
 **Improv**
 : The open standard the ESPHome package uses to receive WiFi settings over USB or Bluetooth LE.

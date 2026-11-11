@@ -160,8 +160,8 @@ the last minute.
 | Device | Controller name, and how this browser shows and enters times (automatic, 24-hour or 12-hour). |
 | Time | Controller time and its source, time zone, set the clock from the phone when there is no internet. |
 | Watering | Seasonal adjustment, zones in use, catch-up of missed starts, pause timeout, rest time, master valve. |
-| Sensors | Rain sensor and its contact type, flow meter, valve-current monitoring. |
-| Network | WiFi status and signal; change the WiFi network (restarts into setup). |
+| Sensors | Rain sensor and its contact type, spare input (contact type, and whether it holds programs like the rain sensor), flow meter, valve-current monitoring. |
+| Network | WiFi status and signal; change the WiFi network (restarts into setup: a zone that is watering stops and is not resumed, scheduled starts still run while setup waits). The display can do the same: **Menu → Setup → Network → Set up WiFi**. |
 | MQTT and Home Assistant | Broker address and port, TLS with public certificate authorities or your own CA certificate, username and password (write-only: the page only says whether one is stored), base topic, Home Assistant discovery with zones shown as valves or switches, and the live connection state. See [MQTT](mqtt.md). |
 | Password and security | Change password, require sign-in to view, HTTPS with the certificate fingerprint, host-name check. |
 | Backup and restore | Download settings, zones and programs as a file; restore one. WiFi and the admin password are never in a backup. |
@@ -169,6 +169,7 @@ the last minute.
 | Restart and reset | Restart, and factory reset (type RESET to confirm). |
 
 ![Time settings](img/webui/light-phone-settings-time.png){ width="300" }
+![Sensor settings](img/webui/light-desktop-settings-sensors.png){ width="600" }
 ![MQTT settings](img/webui/light-phone-settings-mqtt.png){ width="300" }
 ![Firmware update](img/webui/dark-phone-settings-firmware.png){ width="300" }
 ![Factory reset confirmation](img/webui/light-phone-confirm-reset.png){ width="300" }

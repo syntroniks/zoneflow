@@ -18,6 +18,7 @@ There is no touch screen. Three controls do everything.
 |---|---|---|
 | Knob | Turn | Moves the white bar to another row or button. In a value picker, changes the value. |
 | Knob | Press | Selects. In a picker, confirms. |
+| Knob | Hold 3 s | Only under **Show setup code**: shows the setup code. |
 | Back (left button) | Press | One level up. In a picker, cancels. |
 | Back | Hold | Climbs out of the menus, one level every 0.4 s. |
 | Manual/Home (right button) | Press | On Home: opens Manual run. Anywhere else: goes Home. |
@@ -96,7 +97,7 @@ with the time left. A manual run waits behind whatever is already watering.
 | Zones | Each zone's state; a test run of 1 to 10 minutes; enable or disable; last current; longest allowed run; Clear faults |
 | Programs | The programs, when each starts next, Add program, and the seasonal adjustment |
 | Rain delay | Off, 6 h, 12 h, 1, 2, 3, 5, 7, 10 or 14 days |
-| Sensors and flow | Rain sensor, 24 V AC supply, valve current, flow rate, water counted since power-on, valve board state, master valve, spare input. Read only. |
+| Sensors and flow | Rain sensor, 24 V AC supply, valve current, flow rate, water counted since power-on, valve board state, master valve, spare input and what it is set to do. Read only; sensors are set up in the web interface. |
 | Faults | What is wrong, one row each; a row opens what to check |
 | Setup | Network, Time, Display, Zones in use, About, Run setup again, Factory reset |
 
@@ -148,7 +149,9 @@ message.
 |---|---|---|
 | ![Setup](../design/display-ui/setup.png){ width="260" } | ![Time](../design/display-ui/time.png){ width="260" } | ![Display](../design/display-ui/display.png){ width="260" } |
 
-- **Network:** link state, network name, address, signal. **Set up WiFi** shows the QR code while WiFi setup runs. On a controller that already has a network it says setup is not running; use the web interface to change networks.
+- **Network:** link state, network name, address, signal.
+    - **Set up WiFi** shows the QR code while WiFi setup runs. On a controller that already has a network, it asks "Restart into WiFi setup?" with Cancel focused. **Restart** restarts the controller into Bluetooth setup for 15 minutes; this works when the WiFi is down and the web interface cannot be reached. A zone that is watering stops; scheduled starts still run while setup waits. See [changing networks](../getting-started/provisioning.md#changing-networks-later).
+    - **Show setup code** shows the 10-character setup code as text after you hold the knob down for 3 seconds. It hides again after one minute, when the screen dims, or when you leave.
 - **Time:** the time zone (34 cities and UTC offsets), the clock set by hand, and where the time came from (network, backup clock, not set).
 - **Display:** brightness, time until the screen dims, time until it goes dark.
 - **Zones in use:** how many of the outputs are wired.
