@@ -19,9 +19,9 @@
 # the cathode on the cathode. docs/design/hardware-layout-review.md, section 5,
 # has the method and the table. The rows below are what that comparison asks
 # for. Before it, the table held seven rows copied from the Fabrication-Toolkit
-# project; with them 25 placements of revision A were wrong (the nine triacs,
-# the nine opto-triacs, both USB ESD arrays, the module, the display connector
-# and the three resistor arrays).
+# project; with them 26 placements of revision A were wrong (the nine triacs,
+# the nine opto-triacs, both USB ESD arrays, the module, the display connector,
+# the USB receptacle and the three resistor arrays).
 #
 # What this does not prove: that the library footprint is how the part lies in
 # its tape. It is what JLCPCB's placement preview draws. Compare the preview
@@ -33,6 +33,8 @@
 footprint_regex,rotation,dx,dy,lcsc
 # USBLC6-2SC6: library footprint SOT-23-6_..._BL, pin 1 at the bottom left
 ^SOT-23-6,270,0,0,C7519
+# TPS3701DDCR (U13, added with the over-voltage detector): the same library footprint, pin 1 at the bottom left
+^TSOT-23-6,270,0,0,C132788
 # TPS2553DBVR, and the three-pin parts BAT54S, AO3400A, AO3401A, TLV803EA30: pin 1 at the bottom right
 ^SOT-223,180,0,0,
 ^SOT-23,180,0,0,
