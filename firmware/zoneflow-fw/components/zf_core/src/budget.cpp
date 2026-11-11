@@ -36,8 +36,8 @@ void seal(BudgetRecord &r)
 
 bool intact(const BudgetRecord &r)
 {
-    return r.magic == BudgetRecord::kMagic && r.version == BudgetRecord::kVersion &&
-           r.size == sizeof(BudgetRecord) && r.crc == bodyCrc(r);
+    return r.magic == BudgetRecord::kMagic && r.version == BudgetRecord::kVersion && r.size == sizeof(BudgetRecord) &&
+           r.crc == bodyCrc(r);
 }
 
 const char *toString(RecordLoad l)
@@ -66,8 +66,8 @@ RecordLoad loadBudget(IBlobStorage &storage, BudgetRecord &out, uint32_t &seq)
     return chooseBudget(presentA, okA, a, presentB, okB, b, out, seq);
 }
 
-RecordLoad chooseBudget(bool presentA, bool okA, const BudgetRecord &a, bool presentB, bool okB,
-                        const BudgetRecord &b, BudgetRecord &out, uint32_t &seq)
+RecordLoad chooseBudget(bool presentA, bool okA, const BudgetRecord &a, bool presentB, bool okB, const BudgetRecord &b,
+                        BudgetRecord &out, uint32_t &seq)
 {
     seq = 0;
     if (!presentA && !presentB) {

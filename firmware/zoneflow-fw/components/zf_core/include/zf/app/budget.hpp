@@ -75,8 +75,8 @@ RecordLoad loadBudget(IBlobStorage &storage, BudgetRecord &out, uint32_t &seq);
 
 // The decision of loadBudget() from two copies read by other means (the
 // ESPHome preferences). `present`: the copy exists; `ok`: it is intact.
-RecordLoad chooseBudget(bool presentA, bool okA, const BudgetRecord &a, bool presentB, bool okB,
-                        const BudgetRecord &b, BudgetRecord &out, uint32_t &seq);
+RecordLoad chooseBudget(bool presentA, bool okA, const BudgetRecord &a, bool presentB, bool okB, const BudgetRecord &b,
+                        BudgetRecord &out, uint32_t &seq);
 
 // When to write: on every open, close and finished rest, every kPeriodMs
 // while a zone is open, never more often than kMinIntervalMs. Both

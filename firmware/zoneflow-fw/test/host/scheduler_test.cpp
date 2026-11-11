@@ -919,8 +919,8 @@ TEST_F(SchedulerTest, ClockPutBackLessThanADayReportsCoveredStartsMissed)
     step();
     clock.utc = utcOf(2026, 6, 1, 7, 30); // someone sets it two hours ahead
     runFor(5);
-    ASSERT_EQ(rec.started.size(), 1u); // 07:00 runs late
-    ASSERT_EQ(rec.missed.size(), 1u);  // 06:00 reported missed
+    ASSERT_EQ(rec.started.size(), 1u);    // 07:00 runs late
+    ASSERT_EQ(rec.missed.size(), 1u);     // 06:00 reported missed
     clock.utc = utcOf(2026, 6, 1, 5, 45); // put right
     runUntil(utcOf(2026, 6, 1, 7, 30));
     EXPECT_EQ(rec.started.size(), 1u) << "no start runs twice";
@@ -943,7 +943,7 @@ TEST_F(SchedulerTest, EditWhileTheClockIsAheadThenPutBackReportsTheStartMissed)
     runFor(5);
     cfg.schedule.programs[0].startMinutes[1] = at(6, 30); // an edit then adds 06:30
     cfg.schedule.programs[0].startCount = 2;
-    apply(); // policy 6: the edit consumes everything up to 07:00
+    apply();                             // policy 6: the edit consumes everything up to 07:00
     clock.utc = utcOf(2026, 6, 1, 6, 5); // put right
     runUntil(utcOf(2026, 6, 1, 6, 40));
     EXPECT_TRUE(rec.started.empty());

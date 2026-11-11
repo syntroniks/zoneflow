@@ -112,7 +112,7 @@ Names below use the default zone names.
 | `Zone 1 enabled` | switch | Leaves the zone out of full cycles and programs |
 | `Zone 1 run duration` | number | Minutes, 1 to `max_run_minutes` |
 | `Zone 1 status` | text | `off`, `starting`, `open`, `resting 23 min`, `locked out`, `fault: open_circuit`, `not fitted` |
-| `Zone 1 fault` | binary sensor | On while the zone is locked out by a fault |
+| `Zone 1 fault` | binary sensor | On while the zone has a fault: locked out, or (an open circuit) until its next run draws current |
 | `Zone 1 current` | sensor | Mean current of the last run with no other output changing, in mA |
 
 ### Controller
@@ -207,15 +207,23 @@ to the other. What the package does for each:
 - **Self-test.** At start-up, before every run, after every run and every 10 minutes
   between runs, the output stage tests both keep-alive detectors and the expander, and
   before every run it checks the relay for a welded contact and the outputs for a short
-  (hardware design 19.7). Before every run it also holds the keep-alive pin high for 1 s
-  and then lets it float for 0.5 s (step 2b): nothing may drive the keep-alive net
-  meanwhile. The display's `on_float_test` hook runs the backlight at half brightness and
-  redraws the display during those 0.5 s, and the component streams through a PSRAM
-  buffer, so that a leak from one of those signals onto the keep-alive net shows. Then it
-  checks that the relay driver lets go when its control is released undriven (step 5b).
-  After every run it times both detectors and compares the times with fixed limits and
-  with the board's own times, which it learns in its first minute with 24 V AC and keeps
-  in flash. Until then the `Faults` text says `Safety timing not learned`.
+  (hardware design 19.7). First it checks the supply on `VIN_MON` (GPIO3): under 0.60 V
+  or above 1.50 V it waits and the `Faults` text says `24 V AC supply too low` or
+  `too high`. Before every run it holds the keep-alive pin high for 2 s (step 2; with
+  `self_test_before_every_run: false` only at start-up and once a day) and then, before
+  every run whatever that option says, lets it float for 0.5 s (step 2b): nothing may
+  drive the keep-alive net meanwhile. The display's `on_float_test` hook runs the
+  backlight at half brightness at 4.7 kHz and redraws the display during those 0.5 s,
+  and the component streams through a PSRAM buffer and sends 0x55 on UART0 (a terminal
+  on J8 shows a line of U; the logger is on USB, so UART0 is free; a YAML that opens
+  UART0 itself keeps it, and the log says the test runs without that load), so that a
+  leak from one of those signals onto the keep-alive net shows. Then it checks that the
+  relay driver lets go when its control is released undriven (step 5b). After every run
+  it times both detectors and compares the times with fixed limits and with the board's
+  own times (0.40 to 1.70 times), which it learns with 24 V AC on while the chip's
+  temperature sensor reads 25 to 50 °C, and keeps in flash. Until then the `Faults` text
+  says `Safety timing not learned`. The component reads the chip's temperature itself; do
+  not add ESPHome's `internal_temperature` sensor, which would take the sensor from it.
 - **Keep-alive pin.** GPIO17 is UART1's default transmit pin. The package refuses a
   `logger:` with `hardware_uart: UART1`, and the output stage checks every 50 ms that no
   peripheral is routed to the pin (hardware design 19.1 rule 16).
@@ -223,8 +231,10 @@ to the other. What the package does for each:
   limit counts on-time across runs: back-to-back programs, repeated manual runs and
   automations all add up until the zone has been closed for `rest_time`. A zone that
   reached its limit stays closed for the rest time, and a software restart does not
-  shorten the rest. This sits below the sprinkler component, so no automation or Home
-  Assistant call gets past it.
+  shorten the rest. A power cut does not either: the budget is also kept in flash, two
+  copies written a few times per run, and what the last write may have missed counts as
+  used (firmware architecture section 20). This sits below the sprinkler component, so
+  no automation or Home Assistant call gets past it.
 - **Stagger and concurrency.** Two outputs never switch on within 100 ms. At most one
   zone runs at a time by default (two zones plus the master is the board's limit).
 - **Master valve.** Off by default, as in the standalone firmware, so a controller
@@ -236,8 +246,13 @@ to the other. What the package does for each:
 - **Current faults.** The board measures one total current. The firmware compares it
   with the sum of the windows of the outputs that are on (80 to 700 mA per output by
   default) after 500 ms of inrush blanking. Below the window is an open circuit: that zone
-  stops and is locked out. Above it, or above 3 A at any time, everything stops and the
-  zone is locked out. A hardware over-current trip blames the output switched on in the
+  stops and is reported, and is not locked out (the same policy as the standalone
+  firmware since the soak found them differing: an open wire is a fault in the garden,
+  and once it is fixed the next run clears the fault). Above it, or above 3 A at any time,
+  everything stops and the zone is locked out. A current in one direction only (a
+  half-dead output on the board) stops the zone and locks it out. A current that rises
+  with no output switched stops everything; a shorted output on the board is then found
+  within one current window and the relay opens. A hardware over-current trip blames the output switched on in the
   last 500 ms; three trips in a day lock it out. Repeated faults on the master valve lock
   it out, and with it every zone.
 - **Open circuit with the master valve on.** With the master valve on, the master's own
@@ -250,10 +265,11 @@ to the other. What the package does for each:
 
 | Fault | What happens | Clear |
 |---|---|---|
-| Zone open, short, over-current, DC current, trip | Zone (or everything) off, zone locked out, `Zone N fault` on | `Clear faults`, or hold **Home** for 3 s |
+| Zone open | Zone off, `Zone N fault` on, not locked out | Clears itself at the zone's next run that draws current; or `Clear faults` |
+| Zone short, over-current, DC current, trip | Zone (or everything) off, zone locked out, `Zone N fault` on | `Clear faults`, or hold **Home** for 3 s |
 | Output stage (expander, relay, read-back) | Everything off, nothing starts | `Clear faults` |
-| Safety layer (self-test steps 1, 2, 2b, 5b, 9): `Safety circuit failed its test`, `Safety signal disturbed`, `Valve relay driver faulty` | Everything off, nothing starts, the board needs repair | `Acknowledge repair`, pressed twice within 10 s; the board then learns its detector times again |
-| No 24 V AC supply, valve current not measured, sensor supply overloaded, safety timing not learned | Reported; no 24 V AC also blocks starts | Clear themselves |
+| Safety layer (self-test steps 1, 2, 2b, 5b, 9): `Safety circuit failed its test`, `Safety signal disturbed`, `Valve relay driver faulty`; and `Power input circuit failed`, `Logic supply too high`, `Protection held on` | Everything off, nothing starts, the board needs repair | `Acknowledge repair`, pressed twice within 10 s; the board then learns its detector times again |
+| No 24 V AC supply, 24 V AC supply too low or too high, valve current not measured, sensor supply overloaded, safety timing not learned | Reported; no 24 V AC and a supply out of range also block starts | Clear themselves |
 | Water flows with all valves off | Reported | `Clear faults` |
 
 A new fault that stops everything also stops the sprinkler cycle, so it does not move on

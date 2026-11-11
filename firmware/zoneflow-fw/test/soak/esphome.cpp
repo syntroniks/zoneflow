@@ -13,12 +13,12 @@
 #include "alloc_count.hpp"
 #include "physical_oracle.hpp"
 #include "scenario.hpp"
-#include "soak.hpp"
 #include "schedule_logic.h"
+#include "soak.hpp"
 #include "supervisor.h"
-#include "zf/time/civil.hpp"
 #include "world.hpp"
 #include "zf/hw/reference_store.hpp"
+#include "zf/time/civil.hpp"
 
 namespace zf::soak {
 namespace {
@@ -109,7 +109,7 @@ private:
         uint8_t zone = 0;
         uint32_t sec = 60;
         int64_t lastKey = zfe::sched::kNoKey; // the preference
-        std::set<int64_t> ran;                 // oracle
+        std::set<int64_t> ran;                // oracle
         int64_t seenMinute = zfe::sched::kNoKey;
         uint64_t seenAtPhys = 0;
     };

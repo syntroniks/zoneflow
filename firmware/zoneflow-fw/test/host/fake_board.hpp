@@ -210,7 +210,7 @@ public:
     bool eightZone = true;
     bool sensorFault = false;
     bool acPresent = true;
-    bool vBuck = true;           // false: U1 failed and F5 open, logic on USB (rule 15)
+    bool vBuck = true; // false: U1 failed and F5 open, logic on USB (rule 15)
     // VIN_MON, GPIO3: the mean of a 100 ms window, mV (hardware design
     // 19.10: 960 at 24 VAC, 40 VA, typical load). Without 24 VAC the
     // rectified supply is gone: 0.
@@ -544,7 +544,7 @@ public:
         }
         ++writes;
         ++pairWrites;
-        const auto i = static_cast<std::size_t>((r & 0x06u) == hw::reg::kOutput0  ? 0
+        const auto i = static_cast<std::size_t>((r & 0x06u) == hw::reg::kOutput0   ? 0
                                                 : (r & 0x06u) == hw::reg::kConfig0 ? 2
                                                                                    : 1);
         auto &regs = i == 0 ? out : i == 2 ? cfg : pol;

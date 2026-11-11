@@ -88,8 +88,7 @@ void PhysicalOracle::step(World &w, const FirmwareView &fw, uint64_t dtMs)
             lastChangeMs_ = now;
         }
     }
-    if (w.shortedOutput < 0 || !anyCommanded || fw.halted ||
-        !w.energised(static_cast<std::size_t>(w.shortedOutput))) {
+    if (w.shortedOutput < 0 || !anyCommanded || fw.halted || !w.energised(static_cast<std::size_t>(w.shortedOutput))) {
         shortedSince_ = 0;
         shortedReported_ = false;
     }
@@ -119,8 +118,8 @@ void PhysicalOracle::step(World &w, const FirmwareView &fw, uint64_t dtMs)
             w.count("s1.shorted_output_watering_ms", dtMs);
             if (d > kUncommandedLimitMs && !shortedReported_) {
                 shortedReported_ = true;
-                fail("S1-shorted-output", "failed-short output " + std::to_string(o) + " watered " +
-                                              std::to_string(d) + " ms during another output's run");
+                fail("S1-shorted-output", "failed-short output " + std::to_string(o) + " watered " + std::to_string(d) +
+                                              " ms during another output's run");
             }
             continue;
         }
@@ -179,8 +178,7 @@ void PhysicalOracle::step(World &w, const FirmwareView &fw, uint64_t dtMs)
                 if (b.lost) {
                     // The budget is kept in flash as well since gap 3 was
                     // closed: a power cycle no longer excuses an overrun.
-                    fail("S4-budget-power-cycle", "zone " + std::to_string(z) + " on for " +
-                                                      std::to_string(b.burstMs) +
+                    fail("S4-budget-power-cycle", "zone " + std::to_string(z) + " on for " + std::to_string(b.burstMs) +
                                                       " ms without a rest, across a power cycle or torn record");
                 } else {
                     fail("S4-budget", "zone " + std::to_string(z) + " on for " + std::to_string(b.burstMs) +

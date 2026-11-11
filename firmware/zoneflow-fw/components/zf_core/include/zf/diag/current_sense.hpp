@@ -81,7 +81,7 @@ struct CurrentReading {
     bool hiClipped = false;
     int32_t meanHiMv = -1; // window mean of the high-gain channel (the bias, about 790 mV); -1 if not sampled
     int32_t meanLoMv = -1; // window mean of the low-gain channel; -1 if not sampled
-    int32_t dcMa = 0;     // window mean minus the idle mean, as current; 0 without an idle mean
+    int32_t dcMa = 0;      // window mean minus the idle mean, as current; 0 without an idle mean
     bool dcComponent = false;
     int32_t relayReadbackMv = -1; // window mean of GPIO7; -1 if not sampled
     int32_t vinMonMv = -1;        // window mean of VIN_MON (GPIO3); -1 if not sampled

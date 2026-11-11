@@ -320,8 +320,7 @@ SensorSample SensorInputs::read()
     const int64_t nowUs = esp_timer_get_time();
     if (temp_ != nullptr && (tempReadUs_ == 0 || nowUs - tempReadUs_ >= 10'000'000)) {
         tempReadUs_ = nowUs;
-        tempKnown_ =
-            temperature_sensor_get_celsius(static_cast<temperature_sensor_handle_t>(temp_), &tempC_) == ESP_OK;
+        tempKnown_ = temperature_sensor_get_celsius(static_cast<temperature_sensor_handle_t>(temp_), &tempC_) == ESP_OK;
     }
     s.dieTempKnown = tempKnown_;
     s.dieTempC = tempC_;

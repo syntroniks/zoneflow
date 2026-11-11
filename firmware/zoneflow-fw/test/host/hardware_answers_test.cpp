@@ -86,8 +86,8 @@ TEST(HardwareAnswers, HealthyHotAndColdCornersPassStepTwoWithTheTwoSecondHold)
     for (const DetectorCorner c : {DetectorCorner::LatestRelease, DetectorCorner::SlowCharge}) {
         StageRig r;
         r.board.setCorner(c);
-        r.reference.stored = c == DetectorCorner::LatestRelease ? DetectorReference{830, 1450}
-                                                                : DetectorReference{680, 200};
+        r.reference.stored =
+            c == DetectorCorner::LatestRelease ? DetectorReference{830, 1450} : DetectorReference{680, 200};
         startUp(r);
         EXPECT_EQ(r.fault(), HwCheck::None) << static_cast<int>(c);
         runZone(r);
@@ -167,12 +167,12 @@ TEST(HardwareAnswers, BandIsFortyToOneHundredSeventyPercent)
         HwCheck expected;
     };
     const Case cases[] = {
-        {275, 570, HwCheck::None},           // tA 0.41 of stored
-        {255, 570, HwCheck::StopDriveBand},  // tA 0.38
-        {670, 240, HwCheck::None},           // tB 0.42
-        {670, 215, HwCheck::StopRelayBand},  // tB 0.38
-        {670, 960, HwCheck::None},           // tB 1.68
-        {670, 985, HwCheck::StopRelayBand},  // tB 1.73
+        {275, 570, HwCheck::None},             // tA 0.41 of stored
+        {255, 570, HwCheck::StopDriveBand},    // tA 0.38
+        {670, 240, HwCheck::None},             // tB 0.42
+        {670, 215, HwCheck::StopRelayBand},    // tB 0.38
+        {670, 960, HwCheck::None},             // tB 1.68
+        {670, 985, HwCheck::StopRelayBand},    // tB 1.73
         {280 * 670 / 570, 570, HwCheck::None}, // review A2's D22 open (0.49): inside the wider band
     };
     for (const Case &c : cases) {
@@ -500,9 +500,8 @@ TEST(HardwareAnswers, FaultPathSwitchesBothPortsOffInOnePairWrite)
     const auto off = std::find(r.board.log.begin(), r.board.log.end(), "w02=df,ff");
     ASSERT_NE(off, r.board.log.end());
     EXPECT_NE(std::find(off, r.board.log.end(), "w06=ff,ff"), r.board.log.end());
-    EXPECT_TRUE(std::none_of(r.board.log.begin(), off, [](const std::string &e) {
-        return e.rfind("w02=", 0) == 0 || e.rfind("w03=", 0) == 0;
-    }));
+    EXPECT_TRUE(std::none_of(r.board.log.begin(), off,
+                             [](const std::string &e) { return e.rfind("w02=", 0) == 0 || e.rfind("w03=", 0) == 0; }));
     EXPECT_EQ(r.board.valvesLow(), 0);
     EXPECT_FALSE(r.board.relayClosed());
     // The bound: zones 5 to 8 follow the relay and zones 1 to 4 by nine SCL
@@ -513,7 +512,6 @@ TEST(HardwareAnswers, FaultPathSwitchesBothPortsOffInOnePairWrite)
 }
 
 // ---- the controller: every new condition reaches the fault codes ------------------------------------------
-
 
 TEST(HardwareAnswers, ControllerReportsSupplyLowAndHighAsConditions)
 {

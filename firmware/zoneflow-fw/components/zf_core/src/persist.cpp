@@ -96,8 +96,7 @@ bool persistWriteOnce(PersistMailbox &box, IBlobStorage &storage)
         budget.seq = box.nextBudgetSeq();
         seal(budget);
         const char *key = (budget.seq & 1u) != 0 ? BudgetRecord::kKeyA : BudgetRecord::kKeyB;
-        box.reportWrite(storage.write(
-            key, std::string_view(reinterpret_cast<const char *>(&budget), sizeof budget)));
+        box.reportWrite(storage.write(key, std::string_view(reinterpret_cast<const char *>(&budget), sizeof budget)));
     }
     return wrote;
 }

@@ -88,5 +88,4 @@ struct WindowRig {
     }
 };
 
-
 } // namespace zf::test

@@ -523,8 +523,7 @@ void Runner::boot()
     // Either copy damaged beyond NVS's guarantee: the firmware's own check
     // rejects it (gap 9, closed), and when the newest copy may be the
     // damaged one the catch-up reports instead of running.
-    runtimeDamagedAtBoot =
-        w.nvs.damaged.count(ConfigStore::kRuntimeKey) != 0 || w.nvs.damaged.count(kRuntimeKeyB) != 0;
+    runtimeDamagedAtBoot = w.nvs.damaged.count(ConfigStore::kRuntimeKey) != 0 || w.nvs.damaged.count(kRuntimeKeyB) != 0;
     {
         SchedulerPersist p;
         uint32_t seq = 0;
@@ -932,8 +931,7 @@ bool Runner::idleNow() const
     return (st.phase == StagePhase::Idle || st.phase == StagePhase::NoAc || st.phase == StagePhase::Fault) &&
            d.guard.request() == KeepAliveRequest::Off && !w.board.a.on && !w.board.b.on && !w.board.latched &&
            w.energisedCount() == 0 && drv.activeCount() == 0 && !drv.masterOn() && !drv.masterPending() &&
-           d.ctrl->scheduler().queueSize() == 0 && d.edits.empty() && d.inbox.empty() &&
-           w.phys >= w.flashBusyUntil;
+           d.ctrl->scheduler().queueSize() == 0 && d.edits.empty() && d.inbox.empty() && w.phys >= w.flashBusyUntil;
 }
 
 void Runner::advance(uint64_t ms, bool events)
@@ -1245,8 +1243,8 @@ void Runner::onEvent(const Event &e)
         }
         if (d->replaySmall) {
             d->replaySmall = false;
-            violation("S8-rerun-after-clock-put-back",
-                      "program " + std::to_string(pid) + " start " + keyText(k) + " ran again after the clock was put back");
+            violation("S8-rerun-after-clock-put-back", "program " + std::to_string(pid) + " start " + keyText(k) +
+                                                           " ran again after the clock was put back");
         }
         if (runtimeDamagedAtBoot && (d->st == Due::St::Started || d->st == Due::St::Skipped) &&
             dueBoot[{pid, k}] != boots) {

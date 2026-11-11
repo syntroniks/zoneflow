@@ -497,9 +497,9 @@ OutputStageStatus OutputStage::status() const
     s.supplyLow = vinMv_ >= kVinAbsentMv && vinMv_ < kVinMinMv;
     s.supplyHigh = vinMv_ > kVinMaxMv;
     s.currentLost = !in_.currentSenseAvailable ? CurrentLoss::Unavailable
-                    : windowLost_               ? CurrentLoss::NoWindow
-                    : restLost_                 ? CurrentLoss::RestLevel
-                                                : CurrentLoss::None;
+                    : windowLost_              ? CurrentLoss::NoWindow
+                    : restLost_                ? CurrentLoss::RestLevel
+                                               : CurrentLoss::None;
     s.checksSkipped = checksSkipped_;
     s.restLoMv = restLoMv_;
     s.restHiMv = restHiMv_;

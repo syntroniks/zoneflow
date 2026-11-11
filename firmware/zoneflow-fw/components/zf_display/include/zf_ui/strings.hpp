@@ -266,7 +266,7 @@
                            "Check: master valve wiring and solenoid. Then clear the fault.")                           \
     X(FaultSenseTitle, "Valve current not measured")                                                                   \
     X(FaultSenseBody, "The board gets no usable current reading. Zones still run, but a broken or shorted "            \
-                      "valve, a stuck relay or a shorted output is not noticed. If it stays, the board needs "        \
+                      "valve, a stuck relay or a shorted output is not noticed. If it stays, the board needs "         \
                       "service.")                                                                                      \
     X(FaultTripTitle, "Protection tripped")                                                                            \
     X(FaultTripZoneTitle, "%s: protection tripped") /* zone label */                                                   \
@@ -311,7 +311,7 @@
     X(FaultSupplyLowBody, "The supply is below what the board needs, so no valve opens. Watering resumes when it "     \
                           "is back. Check: transformer rating, supply wires and connections.")                         \
     X(FaultSupplyHighTitle, "24 V AC supply too high")                                                                 \
-    X(FaultSupplyHighBody, "The supply is above what the board allows, so no valve opens. Check: the transformer "    \
+    X(FaultSupplyHighBody, "The supply is above what the board allows, so no valve opens. Check: the transformer "     \
                            "must be a 24 V AC one.")                                                                   \
     X(FaultRectifierTitle, "Power input circuit failed")                                                               \
     X(FaultRectifierBody, "24 V AC is connected, but the board's power input gives nothing, so nothing runs. "         \
