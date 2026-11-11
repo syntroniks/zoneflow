@@ -740,7 +740,8 @@ layout itself is described in [hardware layout](hardware-layout.md).
 | `[route] prune = true` | After the import, remove a hand-placed escape via or stub that nothing came to use (13.10) |
 | `[route] widen = true` | After the import, give every autorouted track the width of its net class where DRC allows (13.11) |
 | `[[unroute]]`, `[[patch]]`, `[patches]` | Changes to the routed board that do not disturb the stored routing (13.10) |
-| `[[route.keepout]]` | Rectangles of one layer where the autorouter may put neither track nor via: the planes and islands that are added as zones after the Specctra file is written |
+| `[[route.keepout]]` | Rectangles of some layers where the autorouter may put neither track nor via. The patch router keeps out of them too, unless the rectangle is marked `stands_for_copper = true`: that mark is for planes and islands that are added as zones after the Specctra file is written, which only the autorouter cannot see |
+| `[route.patch_last_resort] layer, cost, keepout` | A plane layer that the patch router may use for a connection with no path on the routing layers (13.13) |
 | `[route.layer_cost]` | A cost factor for a layer, to make the autorouter use it less |
 | `[[text]] angle, justify, optional` | A turned or left- or right-aligned text, and a text the builder may drop if it collides (13.6) |
 | `[[line]]` | Straight silkscreen strokes, for a mark that is not text |
@@ -984,7 +985,7 @@ imported session has a track on such a layer.
 The autorouter does not give the same result twice, and a change to the
 placement or to the hand-routed copper changes the Specctra file and so
 discards the stored session. On the revision A board Freerouting also ends
-with connections open: fifteen in the stored run, after 28 passes. To close
+with connections open: seventeen in the stored run, after 29 passes. To close
 them without routing again, `board.toml` has tables that act after the
 session is imported, in `pcbbuild finish`:
 
@@ -1010,7 +1011,7 @@ hole keeps 0.3 mm from every other hole, and no via goes into a surface-mount
 pad. It tries the width of the net class first, then 0.25 and 0.2 mm, in a
 window 9 mm round the two ends and then 22.5 mm. A found path is then
 straightened. From each corner it goes to the farthest cell of the path that
-one 45 degree bend reaches over free cells. Twelve tests in `tests/test_patchroute.py` run it
+one 45 degree bend reaches over free cells. Thirteen tests in `tests/test_patchroute.py` run it
 on made-up boards.
 
 `make patches` runs it in passes. The first is on the board without patches.
@@ -1025,6 +1026,12 @@ shortest. `output/reports/routing.md` lists every net it touched, so that a
 person looks at each.
 
 After the board is routed again, run `make patches` and then `make`.
+
+**Patches by hand.** `design/patches-hand.toml`, if it exists, is copied into
+`board.toml` after `patches.toml`. It holds `[[unroute]]` and `[[patch]]`
+entries for what the patch router cannot close by itself, with the reason for
+each. They belong to the stored routing like the others. Before `make
+patches` on a new routing, delete its entries.
 
 ### 13.11 The autorouter narrows tracks and does not say so
 
@@ -1115,3 +1122,29 @@ It needs the network the first time and is not part of `make`. Five tests in
   stopped. Routing revision A on two layers takes longer than that on the
   build machine. A board Makefile may set `ROUTE_LIMITS`; revision A has
   `--timeout 7200 --passes 30`.
+- **The patch router's last resort.** With two planes, revision A is routed
+  on F.Cu and B.Cu, and the hand-routed buses on B.Cu are walls that a
+  signal can cross only on F.Cu. Seven connections had no path on the two
+  layers. `[route.patch_last_resort]` names a plane layer that the patch
+  router may then use. A cell of track there costs `cost` cells elsewhere,
+  six on revision A, so it passes under the obstacle and comes up again.
+  `keepout` lists rectangles of that layer where it may not go: on revision
+  A the Kelvin sense pair and 3 mm either side of the keep-alive net, which
+  run on B.Cu, the layer next to it. Each such track is a slot in the plane.
+  The note of the patch says how much of it is on that layer, and the
+  routing report lists it.
+- **The patch router and keep-outs.** It used to read the rule areas of the
+  board file and nothing else. It now keeps out of every `[[route.keepout]]`
+  rectangle as well, and reads the rule areas that footprints carry. Before,
+  it laid a track under a screw head and two across a closed stretch of the
+  keep-alive net, and DRC had no objection to either.
+- **A limit of the patch router, not changed.** It joins the two items that
+  DRC names as unconnected. Another pin of the same net may be much easier
+  to reach. Where that is so, write the patch by hand.
+- **A limit of the plane-via placer, not changed.** `[[plane]]` gives a pad
+  a via of its own only if no via of the same net is within `reach`, 2.5 mm
+  by default. Otherwise it joins the pad to that via with a 0.3 mm stub. That
+  is right for a decoupling capacitor beside its pin. It is wrong for a pad
+  that carries current or heat: on revision A the tab of the 3.3 V regulator
+  was joined to a capacitor's via 3.8 mm away and had no via of its own.
+  Name such a pad in `skip` and write its vias in the `[[via]]` list.
