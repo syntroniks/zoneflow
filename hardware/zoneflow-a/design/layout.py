@@ -963,13 +963,15 @@ labels += [
     text("Not built, not tested", 26.0, 101.5),
     text("CERN-OHL-P-2.0", 26.0, 99.8),
     "# Connectors, buttons and the debug pads.",
-    text("USB", 8.0, 7.9, optional=True),
+    text("USB", 8.0, 9.6, optional=True),            # where the designator of J5 was: that is hidden
     text("QWIIC", 106.2, 8.25, optional=True),
     text("RESET", 55.3, 105.5, optional=True),
     text("BOOT", 55.0, 100.0, optional=True),
     text("BACK", 22.0, 66.0, optional=True),
-    text("HOME", 48.0, 57.2, optional=True),
-    text("CR2032 +", 95.0, 56.6, optional=True),
+    text("HOME", 48.0, 67.4, optional=True),
+    "# The cell: its name above the holder, and a plus above the positive land, which is at the left.",
+    text("CR2032", 86.0, 73.6, optional=True),
+    text("+", 80.5, 68.5, optional=True),
 ]
 for name, y in (("3V3", 93.5), ("GND", 90.96), ("TX", 88.42), ("RX", 85.88), ("EN", 83.34), ("IO0", 80.8)):
     labels.append(text(name, 73.0, y, justify="right", optional=True))
@@ -992,6 +994,8 @@ TAIL = '''
 layers = ["F.Cu", "In2.Cu", "B.Cu"]   # In2.Cu is also the 3.3 V pour: what is routed there cuts into it
 plane_layers = ["In2.Cu"]             # for the routing report: a track here is a slot in a pour
 clearance_margin = 0.01               # the autorouter works to 0.01 mm more than DRC checks
+prune = true                          # after routing, take away the escape vias that were not used
+widen = true                          # and give the autorouter's tracks their class width where there is room
 # Nets the autorouter must leave alone: they connect through planes, pours or hand-routed copper.
 exclude = ["GND", "3V3", "/ISNS", "/OUT_*", "/*/T2", "/*/SNB", "/AC_L_IN", "/AC_N", "/AC_L", "/COM",
            "/Power/VRECT", "VIN_DC", "/Power/VIN_U1", "/Power/UVLO", "/Power/SW", "/Power/BST", "/KA",
@@ -1124,6 +1128,26 @@ net = "GND"
 at = [94.05, 83]
 size = [0.6, 0.3]
 
+# One of the ground vias above is inside the encoder's "no wiring" area on F.Cu. It was there when
+# the board was routed, so it stays in the list, and is taken out again after the routing is
+# imported: moving it would discard the stored routing.
+[[unroute]]
+vias = [[91.0, 83.5]]
+
+# The autorouter joined the four V_DRV pads of RN2 with a bar and a via 0.86 mm from the gate node
+# of Q2. Layout rule 3 wants a rail 1 mm from that node. The bar is taken out; the patch router,
+# which knows the rule, joins the pads again.
+[[unroute]]
+net = "V_DRV"
+box = [43.95, 73.0, 44.9, 75.9]
+
+# The autorouter took V5 from the OR-ing diodes to the regulator U3, the whole 3.3 V load, through
+# a piece 0.3 mm wide where 0.4 mm does not fit on its line. It is taken out with its via and
+# routed again at the width of the class.
+[[unroute]]
+net = "V5"
+box = [8.6, 51.6, 10.05, 53.05]
+
 # No other track or via within 1 mm of the keep-alive net (hardware design, section 8.5).
 [[guard]]
 net = "/KA"
@@ -1223,7 +1247,7 @@ parts = ["C22", "C51"]
 [silk]
 clean = true
 hide = ["R*", "C[2-9]", "C[1-9][0-9]", "C[1-9][0-9][0-9]", "D*", "F[23]", "F[1-9]0[0-9]", "Q*", "L*", "Y*",
-        "H*", "U[1-9]0[0-9]"]
+        "H*", "U[1-9]0[0-9]", "J5"]
 
 @LABELS@
 

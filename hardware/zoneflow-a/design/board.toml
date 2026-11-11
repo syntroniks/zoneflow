@@ -474,6 +474,8 @@ U1 = [0, 8.8, 90]          # opto-triac: LED side down, pin 1 left; pin 4 (gate)
 layers = ["F.Cu", "In2.Cu", "B.Cu"]   # In2.Cu is also the 3.3 V pour: what is routed there cuts into it
 plane_layers = ["In2.Cu"]             # for the routing report: a track here is a slot in a pour
 clearance_margin = 0.01               # the autorouter works to 0.01 mm more than DRC checks
+prune = true                          # after routing, take away the escape vias that were not used
+widen = true                          # and give the autorouter's tracks their class width where there is room
 # Nets the autorouter must leave alone: they connect through planes, pours or hand-routed copper.
 exclude = ["GND", "3V3", "/ISNS", "/OUT_*", "/*/T2", "/*/SNB", "/AC_L_IN", "/AC_N", "/AC_L", "/COM",
            "/Power/VRECT", "VIN_DC", "/Power/VIN_U1", "/Power/UVLO", "/Power/SW", "/Power/BST", "/KA",
@@ -1197,6 +1199,14 @@ name = "Kelvin sense: no pour"
 layers = ["F.Cu"]
 no_pour = true
 rect = [30.5, 60.95, 39.5, 63.4]
+
+# Under the sensor terminal block the ground pour on F.Cu would be three scraps, each hanging on
+# one ground pin by its thermal spokes. The pins have the plane and the rail on B.Cu: no pour here.
+[[rule_area]]
+name = "J4: no pour scraps"
+layers = ["F.Cu"]
+no_pour = true
+rect = [76.4, 0.3, 103.2, 7.5]
 
 [[rule_area]]
 name = "Kelvin sense: ground via not tied to the plane here"
@@ -2182,6 +2192,26 @@ net = "GND"
 at = [94.05, 83]
 size = [0.6, 0.3]
 
+# One of the ground vias above is inside the encoder's "no wiring" area on F.Cu. It was there when
+# the board was routed, so it stays in the list, and is taken out again after the routing is
+# imported: moving it would discard the stored routing.
+[[unroute]]
+vias = [[91.0, 83.5]]
+
+# The autorouter joined the four V_DRV pads of RN2 with a bar and a via 0.86 mm from the gate node
+# of Q2. Layout rule 3 wants a rail 1 mm from that node. The bar is taken out; the patch router,
+# which knows the rule, joins the pads again.
+[[unroute]]
+net = "V_DRV"
+box = [43.95, 73.0, 44.9, 75.9]
+
+# The autorouter took V5 from the OR-ing diodes to the regulator U3, the whole 3.3 V load, through
+# a piece 0.3 mm wide where 0.4 mm does not fit on its line. It is taken out with its via and
+# routed again at the width of the class.
+[[unroute]]
+net = "V5"
+box = [8.6, 51.6, 10.05, 53.05]
+
 # No other track or via within 1 mm of the keep-alive net (hardware design, section 8.5).
 [[guard]]
 net = "/KA"
@@ -2281,7 +2311,7 @@ parts = ["C22", "C51"]
 [silk]
 clean = true
 hide = ["R*", "C[2-9]", "C[1-9][0-9]", "C[1-9][0-9][0-9]", "D*", "F[23]", "F[1-9]0[0-9]", "Q*", "L*", "Y*",
-        "H*", "U[1-9]0[0-9]"]
+        "H*", "U[1-9]0[0-9]", "J5"]
 
 # Terminal labels, one behind each terminal, as the installer reads them with the plugs in.
 # The names are those of the wiring page of the manual.
@@ -2510,7 +2540,7 @@ thickness = 0.15
 [[text]]
 text = "USB"
 layer = "F.SilkS"
-at = [8, 7.9]
+at = [8, 9.6]
 size = 1
 thickness = 0.15
 optional = true
@@ -2550,15 +2580,24 @@ optional = true
 [[text]]
 text = "HOME"
 layer = "F.SilkS"
-at = [48, 57.2]
+at = [48, 67.4]
+size = 1
+thickness = 0.15
+optional = true
+
+# The cell: its name above the holder, and a plus above the positive land, which is at the left.
+[[text]]
+text = "CR2032"
+layer = "F.SilkS"
+at = [86, 73.6]
 size = 1
 thickness = 0.15
 optional = true
 
 [[text]]
-text = "CR2032 +"
+text = "+"
 layer = "F.SilkS"
-at = [95, 56.6]
+at = [80.5, 68.5]
 size = 1
 thickness = 0.15
 optional = true
@@ -2647,3 +2686,460 @@ optional = true
 # libraries on every run and no board file is edited by hand.
 [drc_severity]
 lib_footprint_mismatch = "ignore"
+
+# Tracks that close what the autorouter left open. WRITTEN BY hwflow.patchroute: do not edit.
+# They belong to one stored routing, named by its hash. pcbbuild finish lays them after it
+# has imported that routing, and refuses them for any other: run `make patches` again then.
+
+[patches]
+session = "9013fe2512de6ad46f12fffc2946fbf7361fefc883be1991967c9d70d5e459f6"
+
+# 3V3: (22.47, 78.51) to (19.22, 79.60), 6.8 mm, 0 vias, 0.4 mm wide
+# 3V3: (26.62, 69.80) to (22.47, 77.81), 17.2 mm, 2 vias, 0.4 mm wide
+# 3V3: (27.58, 69.80) to (33.38, 77.60), 25.7 mm, 0 vias, 0.4 mm wide
+# 3V3: (33.38, 57.65) to (33.09, 65.08), 23.2 mm, 1 vias, 0.2 mm wide
+# 3V3: (42.38, 66.10) to (33.09, 65.08), 32.9 mm, 1 vias, 0.4 mm wide
+# 3V3: (74.20, 93.50) to (80.57, 77.30), 23.1 mm, 2 vias, 0.4 mm wide
+# 3V3: (79.79, 76.51) to (74.05, 75.05), 8.1 mm, 0 vias, 0.4 mm wide
+# 3V3: (80.57, 77.30) to (86.84, 77.05), 8.6 mm, 0 vias, 0.4 mm wide
+# 3V3: (107.20, 84.97) to (94.18, 78.40), 36.9 mm, 4 vias, 0.4 mm wide
+# V_DRV: (30.23, 76.83) to (43.50, 75.70), 17.9 mm, 1 vias, 0.4 mm wide
+# V_DRV: (43.50, 74.90) to (43.50, 75.70), 0.8 mm, 0 vias, 0.4 mm wide
+# V_DRV: (43.50, 74.10) to (43.50, 74.90), 0.8 mm, 0 vias, 0.4 mm wide
+# V_DRV: (43.50, 73.30) to (43.50, 74.10), 0.8 mm, 0 vias, 0.4 mm wide
+# V5: (7.25, 54.40) to (16.03, 56.89), 9.9 mm, 1 vias, 0.4 mm wide
+# V5: (11.35, 47.80) to (7.25, 54.40), 8.8 mm, 0 vias, 0.4 mm wide
+# /PGOOD: (18.72, 33.64) to (23.90, 28.00), 10.1 mm, 2 vias, 0.2 mm wide
+# /VIN_MON: (96.01, 90.75) to (36.22, 37.95), 119.8 mm, 10 vias, 0.2 mm wide
+# 3V3: (111.94, 73.51) to (111.84, 50.15), 24.0 mm, 1 vias, 0.4 mm wide
+
+[[patch]]
+layer = "B.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[22.475, 78.51], [22.475, 79.86], [21.975, 80.36], [19.125, 80.36], [18.375, 79.61]]
+
+[[patch]]
+layer = "F.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[18.375, 79.61], [19.225, 79.61]]
+
+[[patch]]
+layer = "B.Cu"
+net = "3V3"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[26.625, 69.8], [25.525, 68.7], {via = [25.525, 66.75]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "3V3"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[25.525, 66.75], [23.575, 68.7], {via = [23.575, 69.3]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[23.575, 69.3], [22.475, 70.4], [22.475, 78.5]]
+
+[[patch]]
+layer = "F.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[22.475, 78.5], [22.475, 77.8]]
+
+[[patch]]
+layer = "F.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[27.575, 69.8], [26.625, 69.8]]
+
+[[patch]]
+layer = "B.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[26.625, 69.8], [25.525, 68.7], [25.525, 66.75]]
+
+[[patch]]
+layer = "In2.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[25.525, 66.75], [23.575, 68.7], [23.575, 69.3]]
+
+[[patch]]
+layer = "B.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[23.575, 69.3], [23.575, 76.95], [24.375, 77.75], [27.075, 77.75], [27.325, 77.5], [29.875, 77.5], [29.975, 77.6], [33.375, 77.6]]
+
+[[patch]]
+layer = "In2.Cu"
+net = "3V3"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[33.395, 57.65], [33.395, 57.7], [32.845, 58.25], [30.345, 58.25], [28.445, 60.15], [28.045, 60.15], {via = [27.645, 60.55]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "3V3"
+width = 0.2
+stay = true
+points = [[27.645, 60.55], [28.295, 59.9], [29.595, 59.9], [29.745, 59.75], [30.395, 59.75], [30.795, 60.15], [30.795, 65], [29.395, 66.4], [29.395, 67.1], [29.745, 67.45], [30.395, 67.45], [31.095, 66.75], [31.095, 66.35], [32.395, 65.05]]
+
+[[patch]]
+layer = "F.Cu"
+net = "3V3"
+width = 0.2
+stay = true
+points = [[32.395, 65.05], [33.095, 65.05]]
+
+[[patch]]
+layer = "In2.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[42.395, 66.075], [38.295, 61.975], [31.195, 61.975], [30.545, 61.325], [29.095, 61.325], [28.845, 61.575], [28.095, 61.575], [27.645, 61.125], [27.645, 60.525]]
+
+[[patch]]
+layer = "B.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[27.645, 60.525], [25.645, 62.525], [25.645, 66.625], [25.545, 66.725]]
+
+[[patch]]
+layer = "F.Cu"
+net = "3V3"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[25.545, 66.725], {via = [27.895, 66.725]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[27.895, 66.725], [29.545, 65.075], [32.395, 65.075]]
+
+[[patch]]
+layer = "F.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[32.395, 65.075], [33.095, 65.075]]
+
+[[patch]]
+layer = "B.Cu"
+net = "3V3"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[74.2, 93.5], [74.35, 93.5], [76.2, 91.65], {via = [76.2, 80.1]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "3V3"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[76.2, 80.1], {via = [76.2, 76.45]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[76.2, 76.45], [76.6, 76.85], [79.45, 76.85], [79.8, 76.5]]
+
+[[patch]]
+layer = "F.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[79.8, 76.5], [79.8, 76.65], [80.45, 77.3], [80.6, 77.3]]
+
+[[patch]]
+layer = "B.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[79.8, 76.5], [79.45, 76.85], [77.2, 76.85], [74.4, 74.05], [74.05, 74.05]]
+
+[[patch]]
+layer = "F.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[74.05, 74.05], [74.05, 75.05]]
+
+[[patch]]
+layer = "F.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[80.575, 77.3], [79.925, 76.65], [79.825, 76.65], [79.775, 76.6], [79.775, 76.5]]
+
+[[patch]]
+layer = "B.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[79.775, 76.5], [79.925, 76.35], [86.125, 76.35], [86.825, 77.05]]
+
+[[patch]]
+layer = "F.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[107.175, 84.95], [107.175, 85.8]]
+
+[[patch]]
+layer = "B.Cu"
+net = "3V3"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[107.175, 85.8], [107.175, 79.95], {via = [106.475, 79.25]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "3V3"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[106.475, 79.25], [104.325, 77.1], [101.825, 77.1], [96.625, 71.9], {via = [95.725, 71.9]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "3V3"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[95.725, 71.9], {via = [94.125, 70.3]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "3V3"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[94.125, 70.3], [93.375, 69.55], [92.025, 69.55], [91.425, 70.15], {via = [91.425, 70.3]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[91.425, 70.3], [91.425, 74.4], [93.375, 76.35], [93.375, 78.4]]
+
+[[patch]]
+layer = "F.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[93.375, 78.4], [94.175, 78.4]]
+
+[[patch]]
+layer = "In2.Cu"
+net = "V_DRV"
+width = 0.4
+stay = true
+points = [[30.229, 76.85], [30.079, 76.7]]
+
+[[patch]]
+layer = "B.Cu"
+net = "V_DRV"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[30.079, 76.7], [34.429, 76.7], [38.029, 80.3], [40.379, 80.3], [42.829, 77.85], [42.829, 77.7], {via = [43.329, 77.2]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "V_DRV"
+width = 0.4
+stay = true
+points = [[43.329, 77.2], [43.479, 77.05], [43.479, 75.7]]
+
+[[patch]]
+layer = "F.Cu"
+net = "V_DRV"
+width = 0.4
+stay = true
+points = [[43.5, 74.9], [43.5, 75.7]]
+
+[[patch]]
+layer = "F.Cu"
+net = "V_DRV"
+width = 0.4
+stay = true
+points = [[43.5, 74.1], [43.5, 74.9]]
+
+[[patch]]
+layer = "F.Cu"
+net = "V_DRV"
+width = 0.4
+stay = true
+points = [[43.5, 73.3], [43.5, 74.1]]
+
+[[patch]]
+layer = "F.Cu"
+net = "V5"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[7.25, 54.4], {via = [8.05, 54.4]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "V5"
+width = 0.4
+stay = true
+points = [[8.05, 54.4], [10.35, 54.4], [12.9, 56.95], [16.05, 56.95], [16.05, 56.9]]
+
+[[patch]]
+layer = "F.Cu"
+net = "V5"
+width = 0.4
+stay = true
+points = [[11.35, 47.8], [10.3, 48.85], [9.85, 48.85], [9.85, 51.95], [8.6, 53.2], [8.15, 53.2], [7.25, 54.1], [7.25, 54.4]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/PGOOD"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[18.72, 33.65], [18.62, 33.75], {via = [17.47, 33.75]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/PGOOD"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[17.47, 33.75], [22.17, 29.05], {via = [22.87, 29.05]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/PGOOD"
+width = 0.2
+stay = true
+points = [[22.87, 29.05], [23.92, 28]]
+
+[[patch]]
+layer = "F.Cu"
+net = "/VIN_MON"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[96.025, 90.75], [95.925, 90.65], {via = [94.725, 90.65]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/VIN_MON"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[94.725, 90.65], [90.525, 90.65], [85.425, 85.55], [82.275, 85.55], {via = [78.175, 81.45]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/VIN_MON"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[78.175, 81.45], [76.575, 81.45], [75.425, 80.3], [75.425, 77.15], [75.375, 77.1], {via = [75.375, 76.35]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/VIN_MON"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[75.375, 76.35], [75.375, 76.3], [76.275, 75.4], {via = [76.825, 75.4]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/VIN_MON"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[76.825, 75.4], [76.825, 73.6], [82.575, 67.85], {via = [82.575, 66.1]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/VIN_MON"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[82.575, 66.1], [80.125, 63.65], [65.625, 63.65], [55.075, 53.1], {via = [53.075, 53.1]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/VIN_MON"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[53.075, 53.1], [51.075, 51.1], {via = [41.475, 51.1]}]
+
+[[patch]]
+layer = "In2.Cu"
+net = "/VIN_MON"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[41.475, 51.1], [37.975, 47.6], {via = [34.825, 47.6]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/VIN_MON"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[34.825, 47.6], [34.625, 47.4], [31.675, 47.4], [31.675, 46.5], [28.225, 43.05], {via = [27.525, 43.05]}]
+
+[[patch]]
+layer = "B.Cu"
+net = "/VIN_MON"
+width = 0.2
+via = [0.6, 0.3]
+stay = true
+points = [[27.525, 43.05], [27.525, 40.6], [30.025, 38.1], {via = [34.125, 38.1]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "/VIN_MON"
+width = 0.2
+stay = true
+points = [[34.125, 38.1], [34.275, 37.95], [36.225, 37.95]]
+
+[[patch]]
+layer = "B.Cu"
+net = "3V3"
+width = 0.4
+via = [0.6, 0.3]
+stay = true
+points = [[111.938, 73.5], [112.138, 73.3], [112.138, 53.95], [111.938, 53.75], [111.938, 53.05], {via = [112.488, 52.5]}]
+
+[[patch]]
+layer = "F.Cu"
+net = "3V3"
+width = 0.4
+stay = true
+points = [[112.488, 52.5], [112.488, 50.8], [111.838, 50.15]]
