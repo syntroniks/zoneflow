@@ -86,6 +86,17 @@ void addZoneNumber(cJSON *o, const char *key, ZoneIndex z)
     }
 }
 
+// The self-test step of a check, hardware design 19.7: a string, because
+// review A2 added steps 2b and 5b. null for a check that is not a step.
+void addStep(cJSON *o, const char *step)
+{
+    if (step == nullptr || step[0] == '\0') {
+        cJSON_AddNullToObject(o, "step");
+    } else {
+        cJSON_AddStringToObject(o, "step", step);
+    }
+}
+
 } // namespace
 
 cJSON *zoneToJson(std::size_t index, const ZoneStatus &st, const ZoneConfig &cfg)
@@ -195,7 +206,7 @@ cJSON *hardwareToJson(const HardwareStatus &h)
         cJSON_AddNullToObject(o, "step");
     } else {
         cJSON_AddStringToObject(o, "check", toString(h.check));
-        cJSON_AddNumberToObject(o, "step", h.step);
+        addStep(o, h.step);
     }
     cJSON_AddBoolToObject(o, "repair_needed", h.repairNeeded);
     cJSON_AddNumberToObject(o, "self_tests_passed", h.selfTestsPassed);
@@ -204,6 +215,15 @@ cJSON *hardwareToJson(const HardwareStatus &h)
     cJSON_AddNumberToObject(det, "enable_relay_ms", h.enableRelayMs);
     cJSON_AddNumberToObject(det, "release_drive_ms", h.releaseDriveMs);
     cJSON_AddNumberToObject(det, "release_relay_ms", h.releaseRelayMs);
+    // This board's stored release times (hardware design 19.7, step 9).
+    cJSON_AddBoolToObject(det, "commissioned", h.commissioned);
+    if (h.commissioned) {
+        cJSON_AddNumberToObject(det, "reference_drive_ms", h.referenceDriveMs);
+        cJSON_AddNumberToObject(det, "reference_relay_ms", h.referenceRelayMs);
+    } else {
+        cJSON_AddNullToObject(det, "reference_drive_ms");
+        cJSON_AddNullToObject(det, "reference_relay_ms");
+    }
     if (h.mainsMilliHz == 0) {
         cJSON_AddNullToObject(o, "mains_hz");
     } else {
@@ -249,7 +269,7 @@ cJSON *faultsToJson(const SystemState &s)
     } else {
         cJSON *h = cJSON_AddObjectToObject(o, "hardware");
         cJSON_AddStringToObject(h, "check", toString(s.hardware.check));
-        cJSON_AddNumberToObject(h, "step", s.hardware.step);
+        addStep(h, s.hardware.step);
         cJSON_AddBoolToObject(h, "repair_needed", s.hardware.repairNeeded);
     }
     return o;
@@ -341,7 +361,7 @@ cJSON *eventToJson(const Event &e)
             e.fault.detail < static_cast<uint8_t>(HwCheck::Count)) {
             const auto check = static_cast<HwCheck>(e.fault.detail);
             cJSON_AddStringToObject(o, "check", toString(check));
-            cJSON_AddNumberToObject(o, "step", hwCheckStep(check));
+            addStep(o, hwCheckStep(check));
         }
         break;
     case EventType::RainDelayChanged:

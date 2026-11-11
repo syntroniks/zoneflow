@@ -87,9 +87,10 @@ bool Screen::savePng(const std::string &path, int scale, int backlightPercent) c
     return ok;
 }
 
-World::World(bool wizardDone, bool clockValid, bool wifi, bool revA)
+World::World(bool wizardDone, bool clockValid, bool wifi, bool revA, bool commissioned)
 {
     if (revA) {
+        h.reference.have = commissioned;
         h.useRevABoard();
     }
     h.clock.utc = test::utcOf(2026, 11, 10, 13, 32); // 14:32 CET

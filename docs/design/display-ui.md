@@ -352,10 +352,14 @@ string table to it.
 | Sensor supply | Sensor supply overloaded | The 5 V terminal for sensors is overloaded or too hot. Check: sensor wiring and how much current the sensors draw (100 mA at most). |
 | DC current | Zone 3: valve current lopsided | The valve current flowed in one direction only, so the output that drives it is failing. The zone was switched off. The board needs service. |
 | Mains signal | Mains signal wrong | The 24 V AC timing signal is not at mains frequency. Zero-cross switching and current readings may be off. The board needs service. |
+| Float test (step 2b) | Safety signal disturbed | Another signal drives the safety line: a valve could stay on if the controller stops. Nothing runs. Repair the board, then confirm it here. |
+| Gate bleed (step 5b) | Valve relay driver faulty | The valve relay stayed on when its control was let go. Nothing runs. Repair the board, then confirm it here. |
+| Not commissioned | Safety timing not learned | The board has not learned how fast its safety circuit switches off. It learns this by itself with 24 V AC on. If this stays, the board needs service. |
 
 A failed self-test of the valve board (hardware design section 19.7) adds a
-line with its step and check, for whoever repairs the board. When a
-keep-alive detector failed (steps 1, 2 and 9), one press does not clear it:
+line with its step and check, for whoever repairs the board, for example
+"Step 2b: float_drive_enabled". When one of the safety layers failed (steps
+1, 2, 2b, 5b and 9), one press does not clear it:
 the button is **Repaired**, and it asks again, with Cancel first, before it
 confirms the repair. The full self-test then runs before any valve opens.
 **Sensors and flow** shows the valve board's state on its own row.
@@ -363,11 +367,11 @@ confirms the repair. The full self-test then runs before any valve opens.
 | | | |
 |---|---|---|
 | ![Board fault](display-ui/home-board-fault.png){ width="300" } | ![Detector fault](display-ui/fault-detail-detector.png){ width="300" } | ![Confirm the repair](display-ui/fault-repair-confirm.png){ width="300" } |
-| ![Valve board row](display-ui/sensors-board-fault.png){ width="300" } | | |
+| ![Valve board row](display-ui/sensors-board-fault.png){ width="300" } | ![Float test fault](display-ui/fault-detail-float-test.png){ width="300" } | ![Not commissioned](display-ui/home-not-commissioned.png){ width="300" } |
 
 A zone-type fault that no zone carries belongs to the master valve and reads
-"Master valve: ...". "No 24 V AC supply", "Clock not set" and "Valve current
-not measured" clear by themselves and have no Clear button. A new latched
+"Master valve: ...". "No 24 V AC supply", "Clock not set", "Valve current
+not measured" and "Safety timing not learned" clear by themselves and have no Clear button. A new latched
 fault lights the screen.
 
 ## 9. Setup and the first-boot wizard

@@ -1608,7 +1608,7 @@
             "cookieAuth": []
           }
         ],
-        "description": "A keep-alive detector fault (hardware design 19.7 steps 1, 2 and 9) means a safety circuit can no longer be relied on, so it is not cleared with one press. This is the second, deliberate action: the body must say repaired: true. 409 `no_repair_fault` when no such fault is active. The full self-test runs again before any valve opens.",
+        "description": "A fault of a safety layer (hardware design 19.7 steps 1, 2, 2b, 5b and 9: keepalive_detector, keepalive_bridged, relay_gate_bleed) means that layer can no longer be relied on, so it is not cleared with one press. This is the second, deliberate action: the body must say repaired: true. 409 `no_repair_fault` when no such fault is active. The board then learns its detector release times again, and the full self-test runs before any valve opens.",
         "requestBody": {
           "required": true,
           "x-max-body-bytes": 512,
@@ -3619,7 +3619,10 @@
                 "trip_latch_stuck",
                 "sensor_supply",
                 "zone_dc_current",
-                "mains_signal"
+                "mains_signal",
+                "keepalive_bridged",
+                "relay_gate_bleed",
+                "not_commissioned"
               ]
             }
           },
@@ -3650,15 +3653,17 @@
               "object",
               "null"
             ],
-            "description": "The output stage's latched self-test failure (hardware design 19.7), or null. While it is set nothing runs. repair_needed: a keep-alive detector failed (steps 1, 2 or 9); POST /faults/clear leaves it, POST /faults/acknowledge-repair clears it. Sent by firmware with the rev A output stage; optional in this schema so that older firmware and the web UI's mock controller still validate.",
+            "description": "The output stage's latched self-test failure (hardware design 19.7), or null. While it is set nothing runs. repair_needed: one of the layers can no longer be relied on (steps 1, 2, 2b, 5b or 9); POST /faults/clear leaves it, POST /faults/acknowledge-repair clears it, and the board then learns its detector release times again. Sent by firmware with the rev A output stage; optional in this schema so that older firmware and the web UI's mock controller still validate.",
             "properties": {
               "check": {
                 "type": "string"
               },
               "step": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 10
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Self-test step of the check, hardware design 19.7: \"1\", \"2\", \"2b\", \"3\", \"4a\", \"4b\", \"4c\", \"5\", \"5b\", \"6\", \"7\", \"8\" or \"9\". null for a check that is not a step of the sequence (bus error, the over-current latch of 19.8, a firmware limit, rule 16). A string since review A2 added steps 2b and 5b."
               },
               "repair_needed": {
                 "type": "boolean"
@@ -5824,10 +5829,10 @@
           },
           "step": {
             "type": [
-              "integer",
+              "string",
               "null"
             ],
-            "description": "Self-test step of the check (19.7), 10 for the over-current latch (19.8), 0 for a firmware limit."
+            "description": "Self-test step of the check (19.7): \"1\" to \"9\" with \"2b\", \"4a\" to \"4c\" and \"5b\". null when no check is latched, or for a check that is not a step (bus error, the over-current latch of 19.8, a firmware limit, rule 16)."
           },
           "repair_needed": {
             "type": "boolean"
@@ -5838,7 +5843,7 @@
           },
           "detectors": {
             "type": "object",
-            "description": "Last measured detector times, ms (0 = not measured). Pass limits: enable within 150 ms; release 300 to 1000 ms (drive) and 80 to 1000 ms (relay).",
+            "description": "Last measured detector times, ms (0 = not measured), and this board's stored release times. Pass limits (hardware design 19.7 as review A2 left it): enable within 150 ms; release 150 to 1000 ms (drive) and 50 to 1600 ms (relay), and each within 0.5 to 1.5 times the stored value once the board is commissioned.",
             "properties": {
               "enable_drive_ms": {
                 "type": "integer"
@@ -5851,13 +5856,34 @@
               },
               "release_relay_ms": {
                 "type": "integer"
+              },
+              "commissioned": {
+                "type": "boolean",
+                "description": "The board has stored release times. false: step 9 applies its absolute limits only, and not_commissioned is active."
+              },
+              "reference_drive_ms": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Stored release time of the gate-drive detector, the median of five stop tests at commissioning; null when not commissioned."
+              },
+              "reference_relay_ms": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Stored release time of the relay detector; null when not commissioned."
               }
             },
             "required": [
               "enable_drive_ms",
               "enable_relay_ms",
               "release_drive_ms",
-              "release_relay_ms"
+              "release_relay_ms",
+              "commissioned",
+              "reference_drive_ms",
+              "reference_relay_ms"
             ]
           },
           "mains_hz": {

@@ -141,12 +141,15 @@ public:
     // With useRevABoard() before start(): the simulated rev A output stage
     // (expander, relay, keep-alive detectors) instead of direct outputs, so
     // runs go through its self-test and its faults reach the display.
+    // The board's stored detector release times (commissioned, as after its
+    // first start); clear it before useRevABoard() for a new board.
+    FakeReferenceStore reference = StageRig::storeWith(true);
     std::unique_ptr<FakeBoard> board;
     std::unique_ptr<hw::OutputStage> stage;
     void useRevABoard()
     {
         board = std::make_unique<FakeBoard>(oe, clock);
-        stage = std::make_unique<hw::OutputStage>(*board, oe, clock, revALayout());
+        stage = std::make_unique<hw::OutputStage>(*board, oe, clock, revALayout(), hw::OutputStageConfig{}, &reference);
     }
 
     UiHarness()

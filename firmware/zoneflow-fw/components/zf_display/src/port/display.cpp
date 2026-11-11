@@ -38,6 +38,8 @@ constexpr UBaseType_t kInputQueueDepth = 32;
 constexpr UBaseType_t kEventQueueDepth = 16;
 // Longest sleep between loop passes; the state is polled this often.
 constexpr uint32_t kMaxSleepMs = 20;
+// Rule 17: a duty well away from 0 and 100 %, so that the PWM net toggles.
+constexpr uint8_t kFloatTestBacklightPercent = 50;
 
 class EspSystemPort final : public ISystemPort {
 public:
@@ -104,12 +106,21 @@ void uiTask(void *arg)
         } else if (!lit) {
             drawn = false;
         }
+        // Hardware design 19.1 rule 17: during the float test the backlight
+        // PWM runs at a mid duty, whatever the user set, and the whole screen
+        // is sent to the panel again and again, so that the PWM net and the
+        // SPI bus toggle. A bridge from either to the keep-alive net then
+        // shows in step 2b.
+        const bool floatLoad = platform::floatTestLoad();
+        if (floatLoad) {
+            lv_obj_invalidate(lv_screen_active());
+        }
         const uint32_t next = lv_timer_handler();
-        port::backlightSet(drawn ? ui.backlightPercent() : 0);
+        port::backlightSet(floatLoad ? kFloatTestBacklightPercent : drawn ? ui.backlightPercent() : 0);
 
         // Sleep until LVGL needs to run again, at most kMaxSleepMs, and wake
         // at once when a control is used.
-        const uint32_t sleepMs = next < kMaxSleepMs ? (next == 0 ? 1 : next) : kMaxSleepMs;
+        const uint32_t sleepMs = floatLoad ? 1 : next < kMaxSleepMs ? (next == 0 ? 1 : next) : kMaxSleepMs;
         xQueuePeek(ctx->inputs, &input, pdMS_TO_TICKS(sleepMs));
     }
 }

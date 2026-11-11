@@ -24,9 +24,10 @@ enum class CommandType : uint8_t {
     ClearFaults,
     SetMaintenance, // flag; stops everything and blocks starts (OTA)
     ReloadConfig,   // ConfigStore changed; re-read and apply
-    // flag: the person confirms the board was repaired. A keep-alive
-    // detector fault (hardware design 19.7 steps 1, 2 and 9) clears only
-    // with it; ClearFaults leaves such a fault in place.
+    // flag: the person confirms the board was repaired. A fault of a safety
+    // layer (hardware design 19.7 steps 1, 2, 2b, 5b and 9) clears only with
+    // it; ClearFaults leaves such a fault in place. The board then learns its
+    // detector release times again.
     AcknowledgeRepair,
 };
 

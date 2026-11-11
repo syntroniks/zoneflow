@@ -73,10 +73,17 @@ shorted output). If a detector fails, the controller refuses to water and
 shows [Safety circuit failed its test](../troubleshooting.md#safety-circuit-failed-its-test).
 That fault needs a person to confirm a repair before any valve opens again.
 
-Hardware review A2 added two checks to the procedure that the firmware does
-not run yet. One lets the heartbeat pin float for half a second and watches
-that nothing else moves it. The other checks that the relay's first
-transistor lets go when the chip driving it is reset.
+Hardware review A2 added two checks, and the firmware runs both before
+every run. One lets the heartbeat pin float for half a second, with the
+display, its backlight and the memory busy, and watches that nothing else
+moves it ([Safety signal disturbed](../troubleshooting.md#safety-signal-disturbed)).
+The other checks that the relay's first transistor lets go when the chip
+driving it lets go of it ([Valve relay driver faulty](../troubleshooting.md#valve-relay-driver-faulty)).
+The review also widened the time windows of the stop test. In its first
+minute with 24 V AC the board learns how long its own detectors take, and
+from then on each stop test must come within half and one and a half times
+those times, which is how an open bleed resistor shows
+([Safety timing not learned](../troubleshooting.md#safety-timing-not-learned)).
 
 ## What it does not cover
 

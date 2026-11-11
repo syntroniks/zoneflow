@@ -165,6 +165,25 @@ TEST(MqttPayload, SensorsFlowFaultsRainDelay)
     EXPECT_EQ(none["hours"]->valueint, 0);
 }
 
+TEST(MqttPayload, HardwareStepIsAStringSinceReviewA2)
+{
+    SystemState s{};
+    Json clean(faultsPayload(s));
+    EXPECT_TRUE(cJSON_IsNull(cJSON_GetObjectItem(clean["hardware"], "step")));
+    s.hardware.check = HwCheck::FloatPinHigh;
+    s.hardware.step = hwCheckStep(HwCheck::FloatPinHigh);
+    s.hardware.repairNeeded = true;
+    s.activeFaults = 1u << static_cast<unsigned>(FaultCode::KeepAliveBridged);
+    Json f(faultsPayload(s));
+    EXPECT_EQ(str(cJSON_GetObjectItem(f["hardware"], "step")), "2b");
+    EXPECT_EQ(str(cJSON_GetObjectItem(f["hardware"], "check")), "float_pin_high");
+    EXPECT_EQ(str(cJSON_GetArrayItem(f["active"], 0)), "keepalive_bridged");
+    s.hardware.check = HwCheck::LatchStuck; // not a step of the sequence
+    s.hardware.step = hwCheckStep(HwCheck::LatchStuck);
+    Json g(faultsPayload(s));
+    EXPECT_TRUE(cJSON_IsNull(cJSON_GetObjectItem(g["hardware"], "step")));
+}
+
 TEST(MqttPayload, UpdateEntityState)
 {
     ota::OtaStatus idle;

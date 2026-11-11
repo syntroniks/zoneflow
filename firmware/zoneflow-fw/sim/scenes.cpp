@@ -136,6 +136,23 @@ void homeScenes(Walk &shot)
         shot("sensors-board-fault", w.h);
     }
     {
+        // Review A2's float test (step 2b) finds a 1 kohm bridge from the
+        // backlight PWM onto the keep-alive net.
+        World w(true, true, true, true);
+        w.h.board->kaNet = test::KaNet::ToggleWeak;
+        w.h.runSec(8);
+        w.h.press(); // Faults
+        w.h.press();
+        shot("fault-detail-float-test", w.h);
+    }
+    {
+        // A new board learns its detector release times in its first minute
+        // with 24 VAC (19.7, the limits of step 9); meanwhile it says so.
+        World w(true, true, true, true, false);
+        w.h.runSec(4);
+        shot("home-not-commissioned", w.h);
+    }
+    {
         World w;
         w.h.sensors.sample.acPresent = false;
         w.h.runSec(2);

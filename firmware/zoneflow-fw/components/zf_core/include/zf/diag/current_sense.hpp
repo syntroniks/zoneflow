@@ -57,6 +57,11 @@ struct CurrentWindowStats {
     MonoMs endMs = 0;
     ChannelStats hi; // ISENSE_HI, 1.503 mA per mV
     ChannelStats lo; // ISENSE_LO, 7.50 mA per mV
+    // GPIO7, the relay detector read-back (B_RB), as ADC1 channel 6: 3.05 V
+    // with Q2 off, 0 V with Q2 on, 0.4 to 0.95 V with Q2 shorted gate to
+    // drain (hardware design 7.4, review A2 4.6 question 7). Empty on boards
+    // and fakes that do not sample it.
+    ChannelStats relayRb;
 };
 
 enum class CurrentChannel : uint8_t { None, High, Low };
@@ -73,6 +78,7 @@ struct CurrentReading {
     int32_t meanHiMv = 0; // window mean of the high-gain channel (the bias, about 790 mV)
     int32_t dcMa = 0;     // window mean minus the idle mean, as current; 0 without an idle mean
     bool dcComponent = false;
+    int32_t relayReadbackMv = -1; // window mean of GPIO7; -1 if not sampled
 };
 
 struct CurrentSenseConfig {

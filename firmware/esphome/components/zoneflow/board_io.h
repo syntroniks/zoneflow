@@ -49,10 +49,19 @@ bool init_output_stage_pins(const BoardPins &pins);
 bool start_keepalive_timer(const BoardPins &pins);
 // Pin low now and the guard tripped (shutdown, restart, brownout).
 void force_outputs_off();
+// Rule 16 and contract 19.4: the keep-alive pin's IO_MUX function is GPIO
+// and no peripheral signal is routed to it.
+bool keepalive_pin_plain();
+// Rule 17: a task that streams through a PSRAM buffer while the float test
+// runs (19.7 step 2b). The backlight and display part is in display.yaml,
+// on the zoneflow component's on_float_test trigger.
+bool start_float_test_load();
+void set_float_test_load(bool on);
 // SENS_PWR_EN high: latch the level, then make the pin an output, no pull.
 bool enable_sensor_supply(const BoardPins &pins);
 
-// ADC1 continuous mode on ISENSE_HI and ISENSE_LO, 5 kS/s each, 6 dB,
+// ADC1 continuous mode on ISENSE_HI, ISENSE_LO and GPIO7 (B_RB, review A2
+// 4.6 question 7; its digital input stays on for the interrupt), 5 kS/s each, 6 dB,
 // calibrated to millivolts, windows of exactly 500 samples (100 ms, whole
 // mains cycles at 50 and 60 Hz). Hardware design 19.2. A task on core 0
 // accumulates; the main loop takes the latest window.
@@ -69,8 +78,10 @@ class CurrentSampler {
   void *adc_ = nullptr;
   void *cali_hi_ = nullptr;
   void *cali_lo_ = nullptr;
+  void *cali_rb_ = nullptr;
   int ch_hi_ = -1;
   int ch_lo_ = -1;
+  int ch_rb_ = -1;
   mutable portMUX_TYPE lock_ = portMUX_INITIALIZER_UNLOCKED;
   zf::CurrentWindowStats latest_{};
   std::atomic<bool> running_{false};

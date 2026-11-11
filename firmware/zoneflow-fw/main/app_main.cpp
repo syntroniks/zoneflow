@@ -21,6 +21,7 @@
 #include "sdkconfig.h"
 #include "zf/app/controller.hpp"
 #include "zf/app/services.hpp"
+#include "zf/hw/reference_store.hpp"
 #include "zf_board/board.hpp"
 #include "zf_display/display.hpp"
 #include "zf_mqtt/mqtt.hpp"
@@ -75,7 +76,10 @@ hw::OutputStageConfig stageConfig()
     return c;
 }
 
-hw::OutputStage gStage(gExpander, gOutputEnable, gClock, expanderLayout(), stageConfig());
+// This board's detector release times (19.7, the limits of step 9), in NVS.
+// Loaded on the first control tick, after gStorage.init().
+hw::BlobReferenceStore gReference(gStorage);
+hw::OutputStage gStage(gExpander, gOutputEnable, gClock, expanderLayout(), stageConfig(), &gReference);
 TimeService *gTime = nullptr;
 Controller *gController = nullptr;
 
@@ -95,6 +99,9 @@ void controlTask(void *)
         }
         gController->setTimeStatus(gTime->status());
         gController->tick();
+        // Rule 17: the display, the backlight and the PSRAM busy while the
+        // float test runs.
+        platform::setFloatTestLoad(gStage.status().floatTest);
         esp_task_wdt_reset();
         vTaskDelayUntil(&last, pdMS_TO_TICKS(CONFIG_ZF_CONTROL_PERIOD_MS));
     }
@@ -191,6 +198,9 @@ extern "C" void app_main(void)
     }
     controller.setTimeStatus(timeService.status());
 
+    if (platform::startFloatTestLoad() != ESP_OK) {
+        ESP_LOGW(kTag, "float test load: PSRAM part not started");
+    }
     ESP_ERROR_CHECK(platform::startKeepAlive(gOutputEnable));
     const TaskHandle_t control = xTaskCreateStaticPinnedToCore(&controlTask, "zf_control", sizeof sControlStack,
                                                                nullptr, 10, sControlStack, &sControlTcb, 1);

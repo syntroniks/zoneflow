@@ -33,7 +33,7 @@ inline constexpr bool kOctalPsram = true;                    // N16R8
 // ---- output stage: keep-alive, read-backs, over-current latch -------------------
 // Hardware design 8 and 19.4. Valve outputs are expander bits, not GPIOs.
 inline constexpr int kKeepAliveGpio = pm::kKeepaliveGpio;         // plain GPIO output, idle low
-inline constexpr int kDriveEnableReadbackGpio = pm::kDrvEnRbGpio; // A_RB: high = gate drive enabled; internal pull-down
+inline constexpr int kDriveEnableReadbackGpio = pm::kDrvEnRbGpio; // A_RB: high = V_DRV on (gate drive); pull-down
 inline constexpr int kRelayOffReadbackGpio = pm::kRlyBRbGpio;     // B_RB: high = relay transistor Q2 off; no pull
 inline constexpr int kOverCurrentGpio = pm::kOcFaultNGpio;        // low while the latch is set; no pull
 static_assert(!pm::kOcFaultNActiveHigh, "OC_FAULT_N is active low");

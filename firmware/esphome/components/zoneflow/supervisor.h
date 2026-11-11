@@ -67,6 +67,7 @@ enum GeneralFault : uint32_t {
   kCondCurrentSenseUnavailable = 1u << 17,
   kCondSensorSupply = 1u << 18,
   kCondMainsSignal = 1u << 19,
+  kCondNotCommissioned = 1u << 20,  // no stored detector release times (hardware design 19.7, step 9)
 };
 inline constexpr uint32_t kConditionMask = 0xFFFF0000u;
 
@@ -109,6 +110,8 @@ struct SupervisorInputs {
   bool current_sense_available = false;
   bool sensor_supply_on = false;
   float flow_lpm = -1.0f;  // < 0: no flow meter
+  // Rule 16 and contract 19.4: no peripheral signal routed to the keep-alive pin.
+  bool keepalive_pin_plain = true;
 };
 
 class Supervisor final : private zf::IZoneDriverListener {
@@ -120,8 +123,11 @@ class Supervisor final : private zf::IZoneDriverListener {
   static constexpr uint32_t kMaxMainsMilliHz = 66000;
   static constexpr uint32_t kFlowPollMinIntervalMs = 60000;
 
+  // `reference` keeps this board's detector release times (hardware design
+  // 19.7, the limits of step 9); nullptr keeps them in RAM only.
   Supervisor(zf::hw::IExpanderBus &bus, zf::OutputEnableGuard &guard, const zf::IClock &clock,
-             const zf::hw::ExpanderLayout &layout, const SupervisorConfig &cfg);
+             const zf::hw::ExpanderLayout &layout, const SupervisorConfig &cfg,
+             zf::IDetectorReferenceStore *reference = nullptr);
 
   // Before the first tick. `retained` is the record kept in RTC memory over
   // a software restart, or nullptr.
@@ -141,7 +147,8 @@ class Supervisor final : private zf::IZoneDriverListener {
   // One press: zone lockouts, latched faults and every output-stage fault
   // except a keep-alive detector fault (hardware design 19.7).
   void clear_faults();
-  // The detector faults of steps 1, 2 and 9: only with the repair confirmed.
+  // The faults of steps 1, 2, 2b, 5b and 9: only with the repair confirmed.
+  // The board then learns its detector release times again.
   bool acknowledge_repair(bool repaired);
   void request_poll() { stage_.requestPoll(); }
   // Any context: outputs off and the keep-alive guard tripped.
@@ -168,6 +175,9 @@ class Supervisor final : private zf::IZoneDriverListener {
   bool ac_present() const { return ac_.present(); }
   bool hardware_fault() const { return stage_status_.phase == zf::StagePhase::Fault; }
   bool repair_needed() const { return zf::hwCheckNeedsRepair(stage_status_.fault); }
+  // Step 2b runs: the display, the backlight PWM and the PSRAM must be busy (rule 17).
+  bool float_test() const { return stage_status_.floatTest; }
+  bool commissioned() const { return stage_status_.commissioned; }
   bool maintenance() const { return maintenance_; }
   uint32_t general_faults() const { return general_; }
   bool leak() const { return (general_ & kFaultLeak) != 0; }

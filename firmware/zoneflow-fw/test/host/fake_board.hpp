@@ -10,8 +10,10 @@
 // tables, adjustable per test.
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -36,14 +38,51 @@ inline hw::ExpanderLayout revALayout()
 }
 
 // One keep-alive detector: on after `onMs` of edges no more than `maxGapMs`
-// apart, off `holdMs` after the last edge (`holdHighMs` if the pin stopped
-// high). Faults: stuck on, and on while the pin is held high (a shorted pump
-// capacitor: C22 for A, C51 for B).
+// apart, off `holdMs` after the last edge (`holdHighMs` if the net stopped
+// high). Faults: stuck on, on while the net is held high (a shorted pump
+// capacitor: C22 for A, C51 for B), never on.
+//
+// The hold time depends on how long the keep-alive ran before it stopped,
+// because the reservoir takes time to fill (review A2 4.6 question 1,
+// hardware/sim/failsafe/results/warmup.md). `warmup` gives the share of the
+// full hold time after a toggle of a given length, interpolated linearly
+// between the points of that table for the corner that charges slowest.
+enum class Warmup : uint8_t {
+    None,      // full hold time after any toggle
+    SlowDrive, // detector A at the slow corner: 0.61 of 0.68 s after 0.1 s
+    SlowRelay, // detector B at the slow corner: 0.08 of 0.20 s after 0.1 s
+};
+
+inline double warmupShare(Warmup w, uint64_t toggledMs)
+{
+    struct Point {
+        uint64_t ms;
+        double share;
+    };
+    // results/warmup.md, last column: tA 0.61 0.66 0.67 0.68 0.68 and
+    // tB 0.08 0.14 0.17 0.19 0.20 after 0.1, 0.15, 0.2, 0.3 and 0.5 s.
+    static constexpr Point kDrive[] = {{0, 0.0}, {100, 0.90}, {150, 0.97}, {200, 0.985}, {300, 1.0}};
+    static constexpr Point kRelay[] = {{0, 0.0}, {100, 0.40}, {150, 0.70}, {200, 0.85}, {300, 0.95}, {500, 1.0}};
+    const Point *p = w == Warmup::SlowDrive ? kDrive : kRelay;
+    const std::size_t n = w == Warmup::SlowDrive ? std::size(kDrive) : std::size(kRelay);
+    if (w == Warmup::None || toggledMs >= p[n - 1].ms) {
+        return 1.0;
+    }
+    for (std::size_t i = 1; i < n; ++i) {
+        if (toggledMs <= p[i].ms) {
+            const double f = static_cast<double>(toggledMs - p[i - 1].ms) / static_cast<double>(p[i].ms - p[i - 1].ms);
+            return p[i - 1].share + f * (p[i].share - p[i - 1].share);
+        }
+    }
+    return 1.0;
+}
+
 struct FakeDetector {
     uint32_t onMs = 20;
     uint32_t holdMs = 600;
     uint32_t holdHighMs = 900;
     uint32_t maxGapMs = 20;
+    Warmup warmup = Warmup::None;
     bool stuckOn = false;
     bool onWhilePinHigh = false;
     bool neverOn = false;
@@ -53,6 +92,7 @@ struct FakeDetector {
     bool toggling = false;
     uint64_t lastEdgeMs = 0;
     uint32_t edges = 0;
+    uint64_t toggledMs = 0; // length of the latest toggling, ms
 
     void step(uint64_t nowMs, bool edge, bool pinHigh)
     {
@@ -64,6 +104,7 @@ struct FakeDetector {
             }
             ++edges;
             lastEdgeMs = nowMs;
+            toggledMs = nowMs - toggleSinceMs;
         }
         const uint64_t idle = nowMs - lastEdgeMs;
         if (toggling && idle > maxGapMs) {
@@ -73,35 +114,101 @@ struct FakeDetector {
         if (toggling && edges >= 3 && nowMs - toggleSinceMs >= onMs && !neverOn) {
             on = true;
         }
-        if (on && !toggling && idle >= (pinHigh ? holdHighMs : holdMs)) {
+        if (on && !toggling && idle >= hold(pinHigh)) {
             on = false;
         }
     }
+    uint64_t hold(bool pinHigh) const
+    {
+        const double full = pinHigh ? holdHighMs : holdMs;
+        return static_cast<uint64_t>(full * warmupShare(warmup, toggledMs));
+    }
     bool level(bool pinHigh) const { return stuckOn || on || (onWhilePinHigh && pinHigh); }
+};
+
+// Release times of both detectors at the tolerance corners of review A2
+// (section 4.3, 4.5 and results/warmup.md), 5 ms edges, ms after the last
+// edge with the pin low / with the pin high.
+enum class DetectorCorner : uint8_t {
+    Typical,         // typical parts, 27 C: tA 670 / 1010, tB 570 / 860
+    LatestRelease,   // 70 C, 3.6 V, large capacitors, Q2 at 0.65 V: tA 830 / 1250, tB 1450 / 2190
+    EarliestRelease, // 70 C, 3.0 V, small capacitors, Q2 at 1.45 V, leaky diodes: tA 210, tB 100
+    SlowCharge,      // -20 C, 3.0 V, large reservoirs, small pumps: tA 680, tB 200, slow to fill
+};
+
+// What else drives the keep-alive net (review A2 section 3.3 and appendix A).
+enum class KaNet : uint8_t {
+    Pin,          // only the pin and R33: healthy
+    Disconnected, // U4 pin 10 not connected: the net stays at R33's low
+    ToggleStrong, // a 0 ohm bridge to a net that toggles by itself (backlight, boot log): it wins
+    ToggleWeak,   // a 1 kohm bridge to such a net: the pin wins while driven; floating, the net toggles
+    HighStrong,   // KA shorted to 3V3
+    HighWeak,     // a node of detector A shorted to 3V3 (KA_N0): the pin wins while driven, floating it reads high
 };
 
 class FakeBoard final : public hw::IExpanderBus {
 public:
     FakeBoard(OutputEnableGuard &guard, FakeClock &clock) : guard_(guard), clock_(clock)
     {
+        setCorner(DetectorCorner::Typical);
+    }
+
+    void setCorner(DetectorCorner c)
+    {
         a.onMs = 20;
         b.onMs = 40;
-        b.holdMs = 500;
-        b.holdHighMs = 800;
+        a.warmup = Warmup::None;
+        b.warmup = Warmup::None;
+        switch (c) {
+        case DetectorCorner::Typical:
+            a.holdMs = 670, a.holdHighMs = 1010, b.holdMs = 570, b.holdHighMs = 860;
+            break;
+        case DetectorCorner::LatestRelease:
+            a.holdMs = 830, a.holdHighMs = 1250, b.holdMs = 1450, b.holdHighMs = 2190;
+            break;
+        case DetectorCorner::EarliestRelease:
+            a.holdMs = 210, a.holdHighMs = 270, b.holdMs = 100, b.holdHighMs = 130;
+            break;
+        case DetectorCorner::SlowCharge:
+            a.holdMs = 680, a.holdHighMs = 1020, b.holdMs = 200, b.holdHighMs = 300;
+            a.warmup = Warmup::SlowDrive;
+            b.warmup = Warmup::SlowRelay;
+            break;
+        }
     }
 
     // ---- what the tests set ----
-    FakeDetector a; // gate drive, DRV_EN
+    FakeDetector a; // gate drive: comparator, latch logic, DRV_EN
     FakeDetector b; // relay transistor Q2
     bool eightZone = true;
     bool sensorFault = false;
     bool acPresent = true;
+    bool vBuck = true;           // false: U1 failed and F5 open, logic on USB (rule 15)
     bool latchStuck = false;     // the latch does not clear when detector A lets go
-    bool relayWelded = false;    // K1 contact welded
+    bool relayWelded = false;    // K1 contact welded, JP1 bridged or Q1 shorted
     int32_t shortedOutputMa = 0; // a shorted output device: current whenever K1 is closed
     std::array<int32_t, 9> valveMa{300, 300, 300, 300, 300, 300, 300, 300, 250}; // zones, master
     int32_t noiseMa = 0;
-    bool expanderIgnoresReset = false;
+    bool expanderIgnoresReset = false; // DRV_EN stuck high: the expander answers with no keep-alive
+    bool expanderNeverActive = false;  // DRV_EN stuck low or RESET held: the expander never answers
+    bool q3Shorted = false;            // V_DRV on whatever DRV_EN_N does (Q3, or GPIO42 driven high)
+    bool vDrvNeverOn = false;          // V_DRV, or its read-back on GPIO42, never high
+    bool r12Open = false;              // Q1's gate keeps its charge when RLY_ON is released
+    // B_RB, GPIO7: forced low (R93 open, read-back shorted to ground, ...).
+    bool relayReadbackLow = false;
+    // Q2 shorted gate to drain: Q2 sits at its threshold and GPIO7 reads
+    // 0.6 times that (hardware design 7.4). 0: no such fault.
+    int32_t q2GateDrainMv = 0;
+    KaNet kaNet = KaNet::Pin;
+    // ToggleWeak: whether the floating pin's swing crosses the input high
+    // threshold. With 1 kohm against R33 the review puts it between the
+    // thresholds; the detectors follow it either way.
+    bool kaWeakReadsHigh = false;
+    // The device does not read the pin while it floats (a firmware fault).
+    bool floatNotRead = false;
+    // Expander pins forced by a fault, per port: they read (and act) low or high.
+    std::array<uint8_t, 2> pinStuckLow{0, 0};
+    std::array<uint8_t, 2> pinStuckHigh{0, 0};
     // Bus faults: the next n transactions fail like this.
     int nackNext = 0;
     int timeoutNext = 0;
@@ -117,25 +224,40 @@ public:
     std::vector<std::string> log; // "w06=c0", "r00", "probe", ...
     int maxValvesLow = 0;
     int writes = 0;
+    // The keep-alive waveform while the pin is driven (contract 19.4).
+    uint64_t minPhaseMs = UINT64_MAX; // shortest time between two level changes
+    uint64_t floatMs = 0;             // total time the pin was an input
 
-    bool kaHigh() const { return kaHigh_; }
-    bool driveEnabled() const { return a.level(kaHigh_) && !latched; }
-    bool expanderActive() const { return driveEnabled() || expanderIgnoresReset; }
-    bool relayTransistorOn() const { return b.level(kaHigh_); }
-    bool relayClosed() const
+    bool kaHigh() const { return kaNetHigh_; }
+    bool pinIsInput() const { return pinInput_; }
+    // DRV_EN: the expander is out of reset.
+    bool drvEn() const { return !expanderNeverActive && ((a.level(kaNetHigh_) && !latched) || expanderIgnoresReset); }
+    // V_DRV, the opto LED supply behind Q3, which GPIO42 reads since review A2.
+    bool vDrv() const { return q3Shorted || (a.level(kaNetHigh_) && !latched && !vDrvNeverOn); }
+    bool driveEnabled() const { return vDrv(); }
+    bool expanderActive() const { return drvEn(); }
+    bool relayTransistorOn() const { return b.level(kaNetHigh_); }
+    bool q1On() const { return q1Gate_; }
+    bool relayClosed() const { return relayWelded || (vBuck && acPresent && q1Gate_ && relayTransistorOn()); }
+    // The level on GPIO7 (B_RB), mV.
+    int32_t relayReadbackMv() const
     {
-        return relayWelded || (expanderActive() && (cfg[relayPort()] & relayMask()) == 0 &&
-                               (out[relayPort()] & relayMask()) != 0 && relayTransistorOn());
+        if (q2GateDrainMv > 0) {
+            return q2GateDrainMv;
+        }
+        return relayReadbackLow || !vBuck || !acPresent || relayTransistorOn() ? 0 : 3050;
     }
-    // Valves whose opto LED is driven: bit an output, driven low, V_DRV on.
+    // Digital read of GPIO7: low under 0.25 VDD, high over 0.75 VDD. A level
+    // between them is taken as high, the case only the analogue read finds.
+    bool relayReadbackHigh() const { return relayReadbackMv() > 825; }
+    // Valves whose opto LED is driven: the pin low and V_DRV on.
     bool valveDriven(std::size_t i) const
     {
-        const auto bit = i < 8 ? board::kExpanderBits.zone[i] : board::kExpanderBits.master;
         if (i >= 4 && i < 8 && !eightZone) {
             return false;
         }
-        const uint8_t m = static_cast<uint8_t>(1u << bit.bit);
-        return driveEnabled() && (cfg[bit.port] & m) == 0 && (out[bit.port] & m) == 0;
+        const auto bit = i < 8 ? board::kExpanderBits.zone[i] : board::kExpanderBits.master;
+        return vDrv() && !pinLevel(bit.port, bit.bit);
     }
     int valvesLow() const
     {
@@ -154,7 +276,7 @@ public:
         if (relayClosed()) {
             ma += shortedOutputMa;
             for (std::size_t i = 0; i < 9; ++i) {
-                ma += valveDriven(i) || (relayWelded && valveOutputOn(i)) ? valveMa[i] : 0;
+                ma += valveDriven(i) ? valveMa[i] : 0;
             }
         }
         return ma;
@@ -162,28 +284,67 @@ public:
     // The comparator trips while drive is enabled: drive and relay drop.
     void trip()
     {
-        if (driveEnabled()) {
+        if (a.level(kaNetHigh_)) {
             latched = true;
-            reset();
+            update();
         }
     }
 
     // One keep-alive interrupt period: the guard decides the pin, the
-    // detectors follow, the guard samples the read-backs.
+    // detectors follow the net, the guard samples the read-backs. While the
+    // pin is an input the interrupt reads it every 1 ms.
     void step5ms(uint32_t periodMs = 5)
     {
         const bool level = guard_.step(periodMs);
-        const bool edge = level != kaHigh_;
-        kaHigh_ = level;
+        pinInput_ = guard_.pinIsInput();
         const uint64_t now = clock_.mono;
-        a.step(now, edge, kaHigh_);
-        b.step(now, edge, kaHigh_);
-        if (latched && !a.level(kaHigh_) && !latchStuck) {
+        ++periods_;
+        // The net's own toggling, for a bridge to a net that toggles.
+        const bool other = (periods_ & 1u) != 0;
+        bool net = level;
+        bool reads = false;
+        switch (kaNet) {
+        case KaNet::Pin:
+            net = pinInput_ ? false : level;
+            break;
+        case KaNet::Disconnected:
+            net = false;
+            break;
+        case KaNet::ToggleStrong:
+            net = other;
+            reads = other;
+            break;
+        case KaNet::ToggleWeak:
+            net = pinInput_ ? other : level;
+            reads = other && kaWeakReadsHigh;
+            break;
+        case KaNet::HighStrong:
+            net = true;
+            reads = true;
+            break;
+        case KaNet::HighWeak:
+            net = pinInput_ ? true : level;
+            reads = true;
+            break;
+        }
+        if (pinInput_) {
+            floatMs += periodMs;
+            for (uint32_t i = 0; i < periodMs && !floatNotRead; ++i) {
+                guard_.sampleFloat(reads && (kaNet != KaNet::ToggleStrong || (i & 1u) == 0));
+            }
+        } else if (level != pinLevel_) {
+            minPhaseMs = std::min<uint64_t>(minPhaseMs, now - pinChangedMs_);
+            pinChangedMs_ = now;
+            pinLevel_ = level;
+        }
+        const bool edge = net != kaNetHigh_;
+        kaNetHigh_ = net;
+        a.step(now, edge, kaNetHigh_);
+        b.step(now, edge, kaNetHigh_);
+        if (latched && !a.level(kaNetHigh_) && !latchStuck) {
             latched = false; // KA_OK low clears the latch
         }
-        if (!expanderActive()) {
-            reset();
-        }
+        update();
         maxValvesLow = std::max(maxValvesLow, valvesLow());
         // Current windows: 100 ms, contiguous. Peak current in the window.
         windowPeak_ = std::max(windowPeak_, currentMa());
@@ -195,12 +356,13 @@ public:
             r.valid = true;
             r.ma = windowPeak_;
             r.rawMa = windowPeak_;
+            r.relayReadbackMv = relayReadbackMv();
             window_ = r;
             windowStartMs_ = now;
             windowPeak_ = currentMa();
         }
         // B_RB is pulled up from V_BUCK: it reads low without 24 VAC (7.4).
-        guard_.sample(driveEnabled(), acPresent && !relayTransistorOn(), latched);
+        guard_.sample(vDrv(), relayReadbackHigh(), latched);
     }
     const CurrentReading &window() const { return window_; }
 
@@ -228,6 +390,7 @@ public:
         default:
             break;
         }
+        update();
         maxValvesLow = std::max(maxValvesLow, valvesLow());
         return hw::BusStatus::Ok;
     }
@@ -281,12 +444,6 @@ private:
     }
     static uint8_t relayPort() { return board::kExpanderBits.relay.port; }
     static uint8_t relayMask() { return static_cast<uint8_t>(1u << board::kExpanderBits.relay.bit); }
-    bool valveOutputOn(std::size_t i) const
-    {
-        const auto bit = i < 8 ? board::kExpanderBits.zone[i] : board::kExpanderBits.master;
-        const uint8_t m = static_cast<uint8_t>(1u << bit.bit);
-        return (cfg[bit.port] & m) == 0 && (out[bit.port] & m) == 0 && driveEnabled();
-    }
     hw::BusStatus fault()
     {
         if (busStuck) {
@@ -305,17 +462,38 @@ private:
         }
         return hw::BusStatus::Ok;
     }
-    void reset()
+    // The expander in reset while DRV_EN is low; Q1's gate follows RLY_ON,
+    // and keeps its charge with R12 open when nothing drives it.
+    void update()
     {
-        out = {0xFF, 0xFF};
-        cfg = {0xFF, 0xFF};
-        pol = {0x00, 0x00};
+        if (!expanderActive()) {
+            out = {0xFF, 0xFF};
+            cfg = {0xFF, 0xFF};
+            pol = {0x00, 0x00};
+        }
+        const uint8_t rp = relayPort();
+        const uint8_t rm = relayMask();
+        bool gate = q1Gate_;
+        if ((cfg[rp] & rm) == 0) {
+            gate = (out[rp] & rm) != 0;
+        } else if (!r12Open) {
+            gate = false;
+        }
+        if ((pinStuckHigh[rp] & rm) != 0) {
+            gate = true;
+        }
+        if ((pinStuckLow[rp] & rm) != 0) {
+            gate = false;
+        }
+        q1Gate_ = gate;
     }
+    // The physical level of one expander pin.
+    bool pinLevel(uint8_t port, uint8_t bit) const { return ((pins(port) >> bit) & 1u) != 0; }
     // Pin levels: driven bits as written; inputs show the pull resistors.
     uint8_t pins(uint8_t port) const
     {
         uint8_t pulled = 0;
-        const bool vdrv = driveEnabled();
+        const bool vdrv = vDrv();
         for (const auto &z : board::kExpanderBits.zone) {
             pulled |= z.port == port && vdrv ? static_cast<uint8_t>(1u << z.bit) : 0;
         }
@@ -325,16 +503,54 @@ private:
         pulled |= v.port == port && !eightZone ? static_cast<uint8_t>(1u << v.bit) : 0;
         const auto &s = board::kExpanderBits.sensorFaultN;
         pulled |= s.port == port && !sensorFault ? static_cast<uint8_t>(1u << s.bit) : 0;
-        return static_cast<uint8_t>((pulled & cfg[port]) | (out[port] & ~cfg[port]));
+        // RLY_ON as an input reads the gate of Q1 through R11.
+        pulled |= relayPort() == port && q1Gate_ ? relayMask() : 0;
+        const auto level = static_cast<uint8_t>((pulled & cfg[port]) | (out[port] & ~cfg[port]));
+        return static_cast<uint8_t>((level & ~pinStuckLow[port]) | pinStuckHigh[port]);
     }
 
     OutputEnableGuard &guard_;
     FakeClock &clock_;
-    bool kaHigh_ = false;
+    bool kaNetHigh_ = false;
+    bool pinInput_ = false;
+    bool pinLevel_ = false;
+    uint64_t pinChangedMs_ = 0;
+    uint64_t periods_ = 0;
+    bool q1Gate_ = false;
     uint64_t windowStartMs_ = 0;
     int32_t windowPeak_ = 0;
     uint32_t windowSeq_ = 0;
     CurrentReading window_{};
+};
+
+// Detector release times kept in RAM, for tests.
+struct FakeReferenceStore final : IDetectorReferenceStore {
+    DetectorReference stored{};
+    bool have = false;
+    int saves = 0;
+    int clears = 0;
+    bool load(DetectorReference &out) override
+    {
+        if (!have) {
+            return false;
+        }
+        out = stored;
+        return true;
+    }
+    bool save(const DetectorReference &r) override
+    {
+        stored = r;
+        have = true;
+        ++saves;
+        return true;
+    }
+    bool clear() override
+    {
+        have = false;
+        stored = {};
+        ++clears;
+        return true;
+    }
 };
 
 // Output stage on the simulated board, stepped in 5 ms periods with a
@@ -343,15 +559,33 @@ struct StageRig {
     FakeClock clock;
     OutputEnableGuard guard{OutputEnableMode::Toggle, 500};
     FakeBoard board{guard, clock};
+    FakeReferenceStore reference;
     hw::OutputStage stage;
     bool sensorSupplyOn = true;
     bool senseAvailable = true;
     uint16_t idleThresholdMa = 30;
     uint64_t ticks = 0;
 
-    explicit StageRig(hw::OutputStageConfig cfg = {}) : stage(board, guard, clock, revALayout(), cfg)
+    // Typical release times of the simulated board, as commissioning
+    // stores them (19.7, the limits of step 9).
+    static constexpr DetectorReference kTypicalReference{670, 570};
+
+    // commissioned: the board has stored release times, as every board has
+    // after its first start. false: a new board that learns them first.
+    explicit StageRig(hw::OutputStageConfig cfg = {}, bool commissioned = true)
+        : reference(storeWith(commissioned)), stage(board, guard, clock, revALayout(), cfg, &reference)
     {
         clock.mono = 0;
+    }
+
+    static FakeReferenceStore storeWith(bool commissioned)
+    {
+        FakeReferenceStore s;
+        if (commissioned) {
+            s.stored = kTypicalReference;
+            s.have = true;
+        }
+        return s;
     }
 
     StageTickInput input() const

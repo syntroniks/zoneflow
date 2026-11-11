@@ -11,6 +11,7 @@ from pathlib import Path
 
 import esphome.codegen as cg
 import esphome.config_validation as cv
+import esphome.final_validate as fv
 from esphome import automation, pins
 from esphome.components import esp32, i2c, sensor
 from esphome.components.sprinkler import Sprinkler
@@ -66,6 +67,7 @@ CONF_DELAY = "delay"
 CONF_SELF_TEST_EVERY_RUN = "self_test_before_every_run"
 CONF_SPRINKLER_ID = "sprinkler_id"
 CONF_ON_FAULT = "on_fault"
+CONF_ON_FLOAT_TEST = "on_float_test"
 
 zoneflow_ns = cg.esphome_ns.namespace("zoneflow")
 ZoneFlowComponent = zoneflow_ns.class_("ZoneFlowComponent", cg.Component, i2c.I2CDevice)
@@ -73,6 +75,7 @@ ClearFaultsAction = zoneflow_ns.class_("ClearFaultsAction", automation.Action)
 StopAllAction = zoneflow_ns.class_("StopAllAction", automation.Action)
 SelfTestAction = zoneflow_ns.class_("SelfTestAction", automation.Action)
 FaultTrigger = zoneflow_ns.class_("FaultTrigger", automation.Trigger.template(cg.std_string))
+FloatTestTrigger = zoneflow_ns.class_("FloatTestTrigger", automation.Trigger.template(cg.bool_))
 
 
 def expander_bit(value):
@@ -206,6 +209,12 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_ON_FAULT): automation.validate_automation(
                 {cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(FaultTrigger)}
             ),
+            # Hardware design 19.1 rule 17: `x` is true from just before the
+            # float test (19.7 step 2b) to just after it. display.yaml runs the
+            # backlight PWM at a mid duty and redraws the display meanwhile.
+            cv.Optional(CONF_ON_FLOAT_TEST): automation.validate_automation(
+                {cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(FloatTestTrigger)}
+            ),
         }
     )
     .extend(cv.COMPONENT_SCHEMA)
@@ -311,6 +320,27 @@ async def to_code(config):
     for conf in config.get(CONF_ON_FAULT, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
         await automation.build_automation(trigger, [(cg.std_string, "fault")], conf)
+    for conf in config.get(CONF_ON_FLOAT_TEST, []):
+        trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
+        await automation.build_automation(trigger, [(cg.bool_, "x")], conf)
+
+
+def _final_validate(config):
+    """Hardware design 19.1 rule 16: GPIO17, the keep-alive pin, is the default
+    TXD of UART1. A logger on UART1 uses its default pins and would drive the
+    keep-alive net. A `uart:` block naming the pin is refused by ESPHome's own
+    pin check, because this component claims it."""
+    full = fv.full_config.get()
+    logger = full.get("logger", {})
+    if str(logger.get("hardware_uart", "")).upper() == "UART1":
+        raise cv.Invalid(
+            "logger: hardware_uart UART1 uses GPIO17, the keep-alive pin, as TXD (hardware design 19.1 rule 16). "
+            "Use USB_SERIAL_JTAG or UART0."
+        )
+    return config
+
+
+FINAL_VALIDATE_SCHEMA = _final_validate
 
 
 ACTION_SCHEMA = automation.maybe_simple_id({cv.GenerateID(): cv.use_id(ZoneFlowComponent)})

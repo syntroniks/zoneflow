@@ -366,3 +366,46 @@ TEST_F(ApiSchemaTest, TheCheckerCatchesAMissingRequiredField)
     check(responseSchema("/history"), h.get(), "history", errors);
     EXPECT_FALSE(errors.empty()) << "unknown record type";
 }
+
+// Review A2 added steps 2b and 5b: the step is a string, and the hardware
+// status carries this board's stored release times.
+TEST(ApiSchemaHardware, LetteredStepAndStoredTimesMatchTheSchema)
+{
+    const cJSON *schemas =
+        cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(doc().root, "components"), "schemas");
+    HardwareStatus h;
+    h.phase = StagePhase::Fault;
+    h.check = HwCheck::FloatDriveEnabled;
+    h.step = hwCheckStep(h.check);
+    h.repairNeeded = true;
+    h.commissioned = true;
+    h.referenceDriveMs = 672;
+    h.referenceRelayMs = 568;
+    JsonPtr body(hardwareToJson(h));
+    EXPECT_STREQ(cJSON_GetObjectItem(body.get(), "step")->valuestring, "2b");
+    std::vector<std::string> errors;
+    check(cJSON_GetObjectItemCaseSensitive(schemas, "Hardware"), body.get(), "hardware", errors);
+    EXPECT_TRUE(errors.empty()) << (errors.empty() ? "" : errors.front());
+
+    h.check = HwCheck::LatchStuck; // not a step of the sequence: null
+    h.step = hwCheckStep(h.check);
+    h.commissioned = false;
+    body.reset(hardwareToJson(h));
+    EXPECT_TRUE(cJSON_IsNull(cJSON_GetObjectItem(body.get(), "step")));
+    const cJSON *det = cJSON_GetObjectItem(body.get(), "detectors");
+    EXPECT_TRUE(cJSON_IsNull(cJSON_GetObjectItem(det, "reference_relay_ms")));
+    errors.clear();
+    check(cJSON_GetObjectItemCaseSensitive(schemas, "Hardware"), body.get(), "hardware", errors);
+    EXPECT_TRUE(errors.empty()) << (errors.empty() ? "" : errors.front());
+
+    SystemState s{};
+    s.hardware.check = HwCheck::GateBleed;
+    s.hardware.step = hwCheckStep(HwCheck::GateBleed);
+    s.hardware.repairNeeded = true;
+    s.activeFaults = 1u << static_cast<unsigned>(FaultCode::RelayGateBleed);
+    JsonPtr faults(faultsToJson(s));
+    errors.clear();
+    check(cJSON_GetObjectItemCaseSensitive(schemas, "Faults"), faults.get(), "faults", errors);
+    EXPECT_TRUE(errors.empty()) << (errors.empty() ? "" : errors.front());
+    EXPECT_STREQ(cJSON_GetObjectItem(cJSON_GetObjectItem(faults.get(), "hardware"), "step")->valuestring, "5b");
+}
