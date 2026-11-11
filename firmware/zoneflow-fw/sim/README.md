@@ -81,3 +81,5 @@ and look at them before committing.
 | `scenes.cpp` | the screenshot walk |
 | `window_sdl.cpp` | SDL2 window and keyboard |
 | `main.cpp` | command line |
+| `controls.hpp` | encoder and buttons, through the device's input decoding; shared with the browser demo |
+| `web/` | the browser demo: this simulator, the REST API and the web interface as one page. See [`web/README.md`](web/README.md) |

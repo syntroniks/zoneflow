@@ -40,3 +40,8 @@ firmware/zoneflow-fw/build-*/
 # ZoneFlow web UI build output, packed into the www partition image
 firmware/zoneflow-fw/www/
 firmware/zoneflow-fw/version.txt
+
+# Browser demo: downloaded Emscripten, build trees and the assembled site
+firmware/zoneflow-fw/sim/.cache/
+firmware/zoneflow-fw/sim/build-web/
+firmware/zoneflow-fw/sim/web/dist/
