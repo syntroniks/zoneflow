@@ -204,9 +204,9 @@ at("R7", 27.1, 38.85, 180)
 at("TP20", 23.9, 28.0, 0)
 at("TP2", 20.9, 28.0, 0)
 block("Between the fuse well and the channel columns: valve-common TVS, shunt, and the input monitor\ndivider around the pads of C1. Only low parts within 2.5 mm of those pads.")
-at("D23", 36.7, 11.6, 90)
-at("R37", 36.3, 19.25, 270)
-at("TP17", 36.3, 25.1, 0)
+at("D23", 36.7, 12.6, 90)
+at("R37", 36.3, 20.25, 270)
+at("TP17", 104.0, 10.6, 0)     # ISNS, at the far end of the strip
 at("TP1", 38.0, 30.0, 0)
 at("R9", 37.0, 34.75, 0)
 at("R10", 37.0, 36.35, 0)
@@ -414,13 +414,13 @@ sheet = "channel"
 "/Z8/" = [99.65, 0]
 
 [group.channel_power.parts]
-D1 = [-1.25, 11.53, 270]   # TVS, pad 1 (OUT) up
-C1 = [2.05, 9.58, 270]     # snubber capacitor, ISNS end down
-R5 = [2.05, 13.06, 270]    # snubber resistor, T2 end up
-F1 = [0, 19.93, 90]        # PTC, pad 1 (OUT) down
-Q1 = [0, 29.44, 270]       # triac, tab down, leads up: A1 right, gate left
-R4 = [1.5, 36.9, 0]        # gate to A1
-R3 = [-1.8, 37.3, 0]       # T2 to the opto output
+D1 = [-1.25, 12.53, 270]   # TVS, pad 1 (OUT) up. The strip below, y = 7.5 to 9, is for the terminal labels
+C1 = [2.05, 10.58, 270]    # snubber capacitor, ISNS end down
+R5 = [2.05, 14.06, 270]    # snubber resistor, T2 end up
+F1 = [0, 20.93, 90]        # PTC, pad 1 (OUT) down
+Q1 = [0, 30.44, 270]       # triac, tab down, leads up: A1 right, gate left
+R4 = [1.5, 37.9, 0]        # gate to A1
+R3 = [-1.8, 38.3, 0]       # T2 to the opto output
 
 # channel_logic: the LED, its resistor, the opto LED resistor and the opto-triac. The origin of
 # an instance is its LED, whose position the mechanical contract fixes (y = 42, pitch 9.5).
@@ -490,26 +490,26 @@ G = "group.channel_power.track"
 group_tracks = [
     "# Copper of one channel column, repeated nine times. Offsets from the column centre at y = 0.",
     track(["C1.1", "R5.2"], width=0.3, table=G, comment="Snubber mid-point."),
-    track(["D1.1", [-1.25, 16.54], "F1.1"], width=1.2, table=G, comment="Output: TVS to the PTC."),
-    track(["D1.1", [-1.25, 14.2], [0.25, 14.2], [0.25, 16.3], "F1.1"], width=1.2, table=G,
+    track(["D1.1", [-1.25, 17.54], "F1.1"], width=1.2, table=G, comment="Output: TVS to the PTC."),
+    track(["D1.1", [-1.25, 15.2], [0.25, 15.2], [0.25, 17.3], "F1.1"], width=1.2, table=G,
           comment="Output: from the two vias of the fan-out lane up into the PTC pad, 1.2 mm wide."),
-    track(["F1.1", [0.45, 15.9], {"via": [0.45, 15.0]}, {"via": [0.45, 14.2]}], width=0.6, via=(0.6, 0.3), table=G, stay=True),
+    track(["F1.1", [0.45, 16.9], {"via": [0.45, 16.0]}, {"via": [0.45, 15.2]}], width=0.6, via=(0.6, 0.3), table=G, stay=True),
     track(["F1.2", "Q1.2"], width=5.0, table=G, comment="T2: PTC to the triac tab, and vias to the island on B.Cu."),
-    track(["F1.2", [2.6, 22.6], {"via": [3.25, 22.6]}], width=1.0, table=G),
-    track(["F1.2", [2.6, 23.9], {"via": [3.25, 23.9]}], width=1.0, table=G),
+    track(["F1.2", [2.6, 23.6], {"via": [3.25, 23.6]}], width=1.0, table=G),
+    track(["F1.2", [2.6, 24.9], {"via": [3.25, 24.9]}], width=1.0, table=G),
 ]
-for vx, vy in ((-1.5, 26.9), (1.5, 26.9), (-1.5, 29.7), (1.5, 29.7)):
+for vx, vy in ((-1.5, 27.9), (1.5, 27.9), (-1.5, 30.7), (1.5, 30.7)):
     group_tracks.append(track(["Q1.2", {"via": [vx, vy]}], width=0.6, via=(0.6, 0.3), table=G))
 group_tracks += [
-    track(["R5.1", [3.375, 15.0], [3.375, 22.4], [3.25, 22.6]], width=0.3, table=G,
+    track(["R5.1", [3.375, 16.0], [3.375, 23.4], [3.25, 23.6]], width=0.3, table=G,
           comment="T2 for the snubber resistor: up the gap between this PTC and the next, on F.Cu."),
     track(["Q1.1", "R4.2"], width=0.6, table=G, comment="A1: to the gate resistor, and vias to the ISNS plane on In2.Cu."),
-    track(["Q1.1", {"via": [2.3, 36.0]}], width=0.6, via=(0.6, 0.3), table=G),
-    track(["Q1.1", {"via": [2.3, 32.5]}], width=0.6, via=(0.8, 0.4), table=G),
-    track(["Q1.3", [-2.28, 35.9], [0.675, 35.9], "R4.1"], width=0.3, table=G, comment="Gate."),
-    track(["R4.1", {"via": [0.675, 38.4]}], width=0.3, via=(0.6, 0.3), table=G),
-    track(["R3.1", {"via": [-2.71, 38.55]}], width=0.3, via=(0.6, 0.3), table=G, comment="T2 and the opto output."),
-    track(["R3.2", {"via": [-0.89, 38.65]}], width=0.3, via=(0.6, 0.3), table=G),
+    track(["Q1.1", {"via": [2.3, 37.0]}], width=0.6, via=(0.6, 0.3), table=G),
+    track(["Q1.1", {"via": [2.3, 33.5]}], width=0.6, via=(0.8, 0.4), table=G),
+    track(["Q1.3", [-2.28, 36.9], [0.675, 36.9], "R4.1"], width=0.3, table=G, comment="Gate."),
+    track(["R4.1", {"via": [0.675, 39.4]}], width=0.3, via=(0.6, 0.3), table=G),
+    track(["R3.1", {"via": [-2.71, 39.55]}], width=0.3, via=(0.6, 0.3), table=G, comment="T2 and the opto output."),
+    track(["R3.2", {"via": [-0.89, 39.65]}], width=0.3, via=(0.6, 0.3), table=G),
 ]
 
 # ---- fan-out lanes on B.Cu, with a copy on In2.Cu -----------------------------------------------
@@ -520,7 +520,7 @@ LANES = [13.6, 12.2, 10.8, 9.4, 8.0, 6.6]
 # few millimetres right of its own pin where no other pin is: LOW_LANE_END checks that.
 LOW_LANE_END = 76.2                # the next terminal pad, J4 pin 1, begins at x = 77.2
 JOG, STEP = PITCH, 0.05
-VIA_DX, RISE_Y = 0.45, 15.0        # the two vias of an output are at x = centre + 0.45, y = 14.2 and 15.0
+VIA_DX, RISE_Y = 0.45, 16.0        # the two vias of an output are at x = centre + 0.45, y = 15.2 and 16.0
 order = list(COLS)
 via_x = {n: round(COLS[n] + VIA_DX, 3) for n in order}
 pts = {n: [] for n in order}
@@ -617,11 +617,11 @@ zones = ["# Ground: all of In1.Cu, and pours on both outer layers.",
          "outline = [[0.5, 109.5], [113.5, 109.5], [113.5, 5.0], [103.9, 5.0], [103.9, 45.3], [9.5, 45.3], "
          "[9.5, 16.0], [0.5, 16.0]]\nclearance = 0.3\nmin_width = 0.25\nconnect = \"solid\"\npriority = 1\n",
          "# Shunt return: In2.Cu under the triacs. Every A1 terminal drops into it through two vias.",
-         zone("/ISNS", ["In2.Cu"], rect=(34.6, 17.6, 103.3, 39.1), clearance=0.5, min_width=0.3, connect="solid",
+         zone("/ISNS", ["In2.Cu"], rect=(34.6, 18.6, 103.3, 40.1), clearance=0.5, min_width=0.3, connect="solid",
               priority=2),
          "# One island per triac tab on B.Cu, 6.6 x 23.1 mm, above the fan-out lanes, joined to the tab by six vias."]
 for n in order:
-    zones.append(zone(f"/{n}/T2", ["B.Cu"], rect=(COLS[n] - 3.3, 16.0, COLS[n] + 3.3, 39.1), clearance=0.5,
+    zones.append(zone(f"/{n}/T2", ["B.Cu"], rect=(COLS[n] - 3.3, 17.0, COLS[n] + 3.3, 40.1), clearance=0.5,
                       min_width=0.3, connect="solid", priority=3))
 
 # ---- 24 VAC entry and other hand tracks ----------------------------------------------------------
@@ -637,10 +637,10 @@ hand = [
     track(["K1.14", [7.15, 16.3], [9.6, 13.8], [9.6, 10.6], [11.2, 9.0], [27.0, 9.0], [29.0, 7.2], "J2.1"], layer="B.Cu",
           width=2.0, comment="COM: relay contact to the two COM terminals, on B.Cu under the fuse well."),
     track(["J2.1", "J2.2"], layer="B.Cu", width=2.0),
-    track(["J2.2", [34.035, 8.4], [35.6, 9.45], "D23.1"], width=1.5),
+    track(["J2.2", [34.035, 9.0], [35.5, 10.45], "D23.1"], width=1.5),
     track(["K1.14", "JP1.2"], width=0.5),
     track(["K1.14", "TP22.1"], width=0.5),
-    track(["F1.2", [30.185, 13.6], [36.0, 13.6], "D23.2"], width=2.0,
+    track(["F1.2", [30.185, 14.6], [36.0, 14.6], "D23.2"], width=2.0,
           comment="Return: shunt and valve-common TVS to the fuse in the AC_N leg."),
     track(["D23.2", "R37.2"], width=2.0),
     track(["D2.1", [27.2, 23.0], [26.5, 23.6], "R1.1"], width=1.0, comment="Rectifier to the surge resistor."),
@@ -669,11 +669,11 @@ hand = [
     track(["C1.1", "TP1.1"], width=0.4),
     "# ISNS: a strip through the lower pads of every TVS and snubber capacitor, then up to the\n"
     "# shunt. It carries surge and snubber current only. The triac currents take the In2.Cu plane.",
-    track(["D901.2", [41.6, 8.63], [101.7, 8.63], "C801.2"], width=1.0),
-    track(["D901.2", [41.6, 8.63], [38.65, 8.63], [38.65, 21.6], [37.6, 21.6], "R37.1"], width=0.5),
-    track(["R37.1", {"via": [37.3, 23.7]}], width=1.0),
-    track(["R37.1", {"via": [35.3, 23.7]}], width=1.0),
-    track(["R37.1", "TP17.1"], width=0.6),
+    track(["D901.2", [41.6, 9.63], [101.7, 9.63], "C801.2"], width=1.0),
+    track(["D901.2", [41.6, 9.63], [38.65, 9.63], [38.65, 23.213], "R37.1"], width=0.5),
+    track(["R37.1", {"via": [37.3, 24.7]}], width=1.0),
+    track(["R37.1", {"via": [35.3, 24.7]}], width=1.0),
+    track(["C801.2", "TP17.1"], width=0.6),
 ]
 
 # Kelvin sense of the shunt (hardware design, section 10.2): one track from each pad of R37 to the
@@ -683,11 +683,11 @@ kelvin = [
     "# pad, and runs on B.Cu: left under C1, up at x = 18.4 and 19.0, where no gate line crosses, then\n"
     "# right to the amplifier. Rule areas keep the ground pours away from both, so that the ground\n"
     "# sense has no second path.",
-    track(["R37.1", {"via": [34.1, 22.15]}, [34.1, 23.6], [33.3, 24.4], [19.6, 24.4], [19.0, 25.0], [19.0, 57.7],
+    track(["R37.1", {"via": [34.1, 23.15]}, [34.1, 23.6], [33.3, 24.4], [19.6, 24.4], [19.0, 25.0], [19.0, 57.7],
            [19.6, 58.3], [32.7, 58.3], [32.7, 62.8]], width=0.25, via=(0.6, 0.3)),
     track(["R38.1", {"via": [32.7, 62.8]}], width=0.25, via=(0.6, 0.3)),
     track(["R38.1", [32.7, 62.8], "R42.1"], width=0.25),
-    track(["R37.2", {"via": [34.1, 16.35]}, [33.3, 17.15], [33.3, 23.0], [32.5, 23.8], [18.9, 23.8], [18.4, 24.3],
+    track(["R37.2", {"via": [34.1, 17.35]}, [33.3, 18.15], [33.3, 23.0], [32.5, 23.8], [18.9, 23.8], [18.4, 24.3],
            [18.4, 58.3], [19.0, 58.9], [31.9, 58.9], [31.9, 61.2]], width=0.25, via=(0.6, 0.3)),
     track(["R40.1", {"via": [31.9, 61.2]}], width=0.25, via=(0.6, 0.3)),
     track(["R40.1", [31.9, 61.2], [32.3, 61.6], [38.6, 61.6], "R44.1"], width=0.25),
@@ -778,14 +778,14 @@ more += [
     track(["J7.10", [56.0, 90.18], [55.5, 90.68], [55.5, 91.6], "R60.2"], width=0.3),
     track(["J7.11", [56.55, 90.68], [56.55, 95.3], "Q4.3"], width=0.3),
     "# V_DRV, the opto LED supply: one bus under the LED row, a stub to each resistor.",
-    track(["R901.1", [22.075, 40.6], [105.925, 40.6], "R802.1"], width=0.4),
+    track(["R901.1", [22.075, 40.75], [105.925, 40.75], "R802.1"], width=0.3),
 ]
 for n in order:
     k, x0 = NUM[n], LEDX[n]
     if n != "MV":
-        more.append(track([f"R{k}01.1", [x0 - 3.925, 40.6]], width=0.3))
+        more.append(track([f"R{k}01.1", [x0 - 3.925, 40.75]], width=0.3))
     if n != "Z8":
-        more.append(track([f"R{k}02.1", [x0 + 3.925, 40.6]], width=0.3))
+        more.append(track([f"R{k}02.1", [x0 + 3.925, 40.75]], width=0.3))
 more += [
     "# Ground for a pad where the fan-out finds no place by itself.",
     track(["J5.A12", [11.25, 7.65], [14.15, 7.65], "R17.2"], width=0.3),
@@ -803,7 +803,7 @@ logic_tracks = [
 # Gate and opto-output lines: from the two vias at the top of each column, sideways in the strip
 # under the LED row, then up under the opto-triac to a via beside its pin. The opto-output lines
 # take In2.Cu and the gate lines B.Cu: on one layer the eighteen would need more lanes than fit.
-GATE_LANES = [39.75 + 0.8 * i for i in range(6)]
+GATE_LANES = [40.75 + 0.8 * i for i in range(6)]
 
 def lanes_for(jobs, what):
     done = []
@@ -819,8 +819,8 @@ def lanes_for(jobs, what):
     print(f"{what} lines: {len(done)} routed, highest lane y = {max(q[0][1][1] for q in done):.2f}")
     return done
 
-ogt = lanes_for([(COLS[n] - 0.89, 38.65, LEDX[n] - 2.54, f"U{NUM[n]}01.6") for n in order], "opto-output")
-gate = lanes_for([(COLS[n] + 0.675, 38.4, LEDX[n] + 2.54, f"U{NUM[n]}01.4") for n in order], "gate")
+ogt = lanes_for([(COLS[n] - 0.89, 39.65, LEDX[n] - 2.54, f"U{NUM[n]}01.6") for n in order], "opto-output")
+gate = lanes_for([(COLS[n] + 0.675, 39.4, LEDX[n] + 2.54, f"U{NUM[n]}01.4") for n in order], "gate")
 gate_tracks = ["# Opto-output lines of the nine channels on In2.Cu, gate lines on B.Cu: sideways in the strip\n"
                "# under the LED row, then under each opto-triac to a via beside its pin. 0.3 mm, 0.5 mm apart."]
 for jobs, layer in ((ogt, "In2.Cu"), (gate, "B.Cu")):
@@ -829,6 +829,62 @@ for jobs, layer in ((ogt, "In2.Cu"), (gate, "B.Cu")):
         gate_tracks.append(track([pad, {"via": [xd, 53.4]}, [xd, lane], [xs, lane], [xs, ys]], width=0.3,
                                  via=(0.6, 0.3), via_to=layer))
 COPPER = "\n".join(group_tracks) + "\n" + "\n".join(lane_tracks) + "\n" + "\n".join(zones) + "\n" + "\n".join(hand) + "\n" + "\n".join(kelvin) + "\n" + "\n".join(more) + "\n" + "\n".join(logic_tracks) + "\n" + "\n".join(gate_tracks)
+
+# =============================================================================================
+# Silkscreen labels
+# =============================================================================================
+def text(t, x, y, size=1.0, thickness=0.15, layer="F.SilkS", **kw):
+    s_ = ["[[text]]", f'text = "{t}"', f'layer = "{layer}"', f"at = [{x:g}, {y:g}]", f"size = {size:g}",
+          f"thickness = {thickness:g}"]
+    for k, v in kw.items():
+        s_.append(f"{k} = {str(v).lower()}" if isinstance(v, bool) else f'{k} = "{v}"' if isinstance(v, str) else f"{k} = {v:g}")
+    return "\n".join(s_) + "\n"
+
+LABEL_Y = 8.25      # the strip behind the terminal headers, kept free of pads: y = 7.6 to 8.9
+TERMINALS = [
+    (17.805, "24V~"), (21.615, "24V~"),
+    (30.225, "COM"), (34.035, "COM"), (37.845, "MV"), (41.655, "Z1"), (45.465, "Z2"), (49.275, "Z3"), (53.085, "Z4"),
+    (58.295, "Z5"), (62.105, "Z6"), (65.915, "Z7"), (69.725, "Z8"),
+    (78.335, "5V"), (82.145, "FLOW"), (85.955, "GND"), (89.765, "RAIN"), (93.575, "GND"), (97.385, "AUX"), (101.195, "GND"),
+]
+labels = ["# Terminal labels, one behind each terminal, as the installer reads them with the plugs in.\n"
+          "# The names are those of the wiring page of the manual."]
+labels += [text(t, x, LABEL_Y) for x, t in TERMINALS]
+labels += [
+    "# Terminal 2 of the 24 VAC block is the board's ground (hardware design, section 16.1): a ground\n"
+    "# symbol right of its label, and the word.",
+    "[[line]]\nlayer = \"F.SilkS\"\nwidth = 0.15\npoints = [[24.7, 8.9], [24.7, 8.3]]\n",
+    "[[line]]\nlayer = \"F.SilkS\"\nwidth = 0.15\npoints = [[23.9, 8.3], [25.5, 8.3]]\n",
+    "[[line]]\nlayer = \"F.SilkS\"\nwidth = 0.15\npoints = [[24.2, 7.95], [25.2, 7.95]]\n",
+    "[[line]]\nlayer = \"F.SilkS\"\nwidth = 0.15\npoints = [[24.5, 7.6], [24.9, 7.6]]\n",
+    "# Fuse ratings.",
+    text("F4 3A T", 15.0, 16.6),
+    text("F1 3A T", 27.0, 16.6),
+    text("F5 0.5A FF", 31.1, 39.0, optional=True),
+    "# Board name, revision, licence and status, in the open area under the display.",
+    text("ZoneFlow", 26.0, 106.6, size=2.0, thickness=0.3),
+    text("rev A", 38.2, 106.4, size=1.5, thickness=0.25),
+    text("ENGINEERING PROTOTYPE", 26.0, 103.6, size=1.3, thickness=0.2),
+    text("Not built, not tested", 26.0, 101.5),
+    text("CERN-OHL-P-2.0", 26.0, 99.8),
+    "# Connectors, buttons and the debug pads.",
+    text("USB", 8.0, 7.9, optional=True),
+    text("QWIIC", 106.2, 8.25, optional=True),
+    text("RESET", 55.3, 105.5, optional=True),
+    text("BOOT", 55.0, 100.0, optional=True),
+    text("BACK", 22.0, 66.0, optional=True),
+    text("HOME", 48.0, 57.2, optional=True),
+    text("CR2032 +", 95.0, 56.6, optional=True),
+]
+for name, y in (("3V3", 93.5), ("GND", 90.96), ("TX", 88.42), ("RX", 85.88), ("EN", 83.34), ("IO0", 80.8)):
+    labels.append(text(name, 73.0, y, justify="right", optional=True))
+labels += [
+    "# Bottom side.",
+    text("ZoneFlow rev A   ENGINEERING PROTOTYPE   CERN-OHL-P-2.0", 57.0, 99.6, size=1.3, thickness=0.2, layer="B.SilkS"),
+    text("JP1: bridge only if K1 is not fitted", 26.0, 20.5, layer="B.SilkS"),
+    text("C1 +", 39.2, 34.6, layer="B.SilkS", optional=True),
+]
+LABELS = "\n".join(labels)
 
 # =============================================================================================
 # Route settings, silkscreen, and the file itself
@@ -853,11 +909,11 @@ exclude = ["GND", "3V3", "/ISNS", "/OUT_*", "/*/T2", "/*/SNB", "/AC_L_IN", "/AC_
 # on In2.Cu (shunt plane and fan-out lanes), which it cannot see because they are added afterwards.
 [[route.keepout]]
 layers = ["B.Cu", "In2.Cu"]
-rect = [39.4, 7.3, 103.3, 37.9]
+rect = [39.4, 7.3, 103.3, 38.9]
 
 [[route.keepout]]
 layers = ["In2.Cu"]
-rect = [34.6, 17.6, 39.4, 39.1]
+rect = [34.6, 18.6, 39.4, 40.1]
 
 # A via beside every surface-mount pad of a plane net.
 [[plane]]
@@ -878,42 +934,23 @@ net = "/KA"
 distance = 1.0
 
 # ---- silkscreen -----------------------------------------------------------------------------------
-# 349 parts on one side: the designators of the small parts do not fit between them. They are left
+# 351 parts on one side: the designators of the small parts do not fit between them. They are left
 # off the silkscreen and are on the assembly drawing (F.Fab) instead. Connectors, ICs, switches,
-# fuses and the bottom-side parts keep theirs.
+# fuses, test pads and the bottom-side parts keep theirs. "clean" lets the builder take away what
+# DRC then still finds wrong: an outline over a neighbour's pad, a designator with no free place.
 [silk]
+clean = true
 hide = ["R*", "C[2-9]", "C[1-9][0-9]", "C[1-9][0-9][0-9]", "D*", "F[23]", "F[1-9]0[0-9]", "Q*", "L*", "Y*",
-        "TP*", "H*", "U[1-9]0[0-9]", "JP*"]
+        "H*", "U[1-9]0[0-9]"]
 
-[[text]]
-text = "ZoneFlow rev A"
-layer = "F.SilkS"
-at = [22.0, 106.5]
-size = 1.5
-thickness = 0.25
+@LABELS@
 
-[[text]]
-text = "Not built, not tested. CERN-OHL-P-2.0"
-layer = "F.SilkS"
-at = [28.0, 104.2]
-size = 1.0
-thickness = 0.15
-
-[[text]]
-text = "3A T"
-layer = "F.SilkS"
-at = [21.0, 16.6]
-size = 1.0
-thickness = 0.15
-
-[[text]]
-text = "JP1: bridge only if K1 is not fitted"
-layer = "B.SilkS"
-at = [22.0, 20.5]
-size = 1.0
-thickness = 0.15
-
+# The builder takes strokes off the silkscreen outline of a footprint where DRC finds them over a
+# neighbour's pad (see [silk]). Such a footprint no longer equals its library copy, and DRC would
+# say so for each one. Nothing else in a footprint can differ: the board is built from the
+# libraries on every run and no board file is edited by hand.
 [drc_severity]
+lib_footprint_mismatch = "ignore"
 '''
 
 def main(board_dir: Path) -> int:
@@ -933,7 +970,7 @@ def main(board_dir: Path) -> int:
     out.append("")
     out.append(GROUPS.strip())
     out.append("")
-    out.append(TAIL.replace("@COPPER@", COPPER).strip())
+    out.append(TAIL.replace("@COPPER@", COPPER).replace("@LABELS@", LABELS).strip())
     dest = board_dir / "design" / "board.toml"
     text = "\n".join(out) + "\n"
     if not dest.exists() or dest.read_text(encoding="utf-8") != text:

@@ -119,6 +119,7 @@ class Builder:
         self.y_up = bool(b.get("y_up", False))
         self.fp_dirs = [project_dir / d for d in self.model.get("footprint_dirs", [])]
         self.board = None
+        self.optional_texts: set[str] = set()     # UUIDs of [[text]] entries marked optional
         self.fps: dict[str, pcbnew.FOOTPRINT] = {}
         self.nets: dict[str, pcbnew.NETINFO_ITEM] = {}
 
@@ -704,8 +705,36 @@ class Builder:
             item.SetTextThickness(mm(t.get("thickness", 0.15)))
             if item.GetLayer() in (pcbnew.B_SilkS, pcbnew.B_Cu, pcbnew.B_Fab):
                 item.SetMirrored(True)
+            if "angle" in t:
+                item.SetTextAngleDegrees(float(t["angle"]))
+            just = {"left": pcbnew.GR_TEXT_H_ALIGN_LEFT, "right": pcbnew.GR_TEXT_H_ALIGN_RIGHT,
+                    "center": pcbnew.GR_TEXT_H_ALIGN_CENTER}[t.get("justify", "center")]
+            item.SetHorizJustify(just)
             set_uuid(item, "text", t["text"], t["at"][0], t["at"][1])
             self.board.Add(item)
+            if t.get("optional", False):
+                self.optional_texts.add(item.m_Uuid.AsString())
+
+    def lines(self) -> None:
+        """[[line]]: straight silkscreen strokes, for a mark that is not text (the ground symbol)."""
+        for i, ln in enumerate(self.cfg.get("line", [])):
+            for j, (a, b) in enumerate(zip(ln["points"], ln["points"][1:])):
+                seg = pcbnew.PCB_SHAPE(self.board, pcbnew.SHAPE_T_SEGMENT)
+                seg.SetStart(self.pt(a[0], a[1]))
+                seg.SetEnd(self.pt(b[0], b[1]))
+                seg.SetLayer(self.layer(ln.get("layer", "F.SilkS")))
+                seg.SetWidth(mm(ln.get("width", 0.15)))
+                set_uuid(seg, "line", i, j)
+                self.board.Add(seg)
+
+    def clean_silk(self) -> dict:
+        """Remove or move what DRC finds wrong on the silkscreen. See hwflow.silk."""
+        from . import silk as silk_mod
+        work = self.project_dir / "build" / "silk"
+        try:
+            return silk_mod.clean(self.board, self.pcb_path, work, self.optional_texts, log=print)
+        except silk_mod.SilkError as e:
+            raise BoardError(str(e)) from e
 
     def save(self) -> None:
         stamp_copper(self.board)
@@ -756,7 +785,15 @@ def cmd_build(args) -> int:
         sys.stderr.write("fan-out: no place for a plane via at: " + ", ".join(no_via) + "\n")
     b.silk()
     b.texts()
+    b.lines()
+    silk_stats = b.clean_silk() if b.cfg.get("silk", {}).get("clean", False) else None
     b.save()
+    if silk_stats is not None:
+        (Path(args.project_dir) / "build" / "silk.json").write_text(json.dumps(silk_stats, indent=1) + "\n",
+                                                                    encoding="utf-8")
+        print(f"silkscreen: clean after {silk_stats['rounds']} DRC rounds; {silk_stats['graphics_removed']} outline "
+              f"strokes removed, {len(silk_stats['refs_moved'])} designators moved, "
+              f"{len(silk_stats['refs_hidden'])} hidden, {len(silk_stats['texts_removed'])} optional texts dropped")
     dsn = Path(args.project_dir) / "build" / f"{b.name}.dsn"
     layers = b.board.GetCopperLayerCount()
     outer_only = layers > 2 and b.cfg.get("route", {}).get("outer_layers_only", False)

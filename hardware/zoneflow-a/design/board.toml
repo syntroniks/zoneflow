@@ -164,9 +164,9 @@ TP2 = [20.9, 28, 0]
 
 # Between the fuse well and the channel columns: valve-common TVS, shunt, and the input monitor
 # divider around the pads of C1. Only low parts within 2.5 mm of those pads.
-D23 = [36.7, 11.6, 90]
-R37 = [36.3, 19.25, 270]
-TP17 = [36.3, 25.1, 0]
+D23 = [36.7, 12.6, 90]
+R37 = [36.3, 20.25, 270]
+TP17 = [104, 10.6, 0]
 TP1 = [38, 30, 0]
 R9 = [37, 34.75, 0]
 R10 = [37, 36.35, 0]
@@ -425,13 +425,13 @@ sheet = "channel"
 "/Z8/" = [99.65, 0]
 
 [group.channel_power.parts]
-D1 = [-1.25, 11.53, 270]   # TVS, pad 1 (OUT) up
-C1 = [2.05, 9.58, 270]     # snubber capacitor, ISNS end down
-R5 = [2.05, 13.06, 270]    # snubber resistor, T2 end up
-F1 = [0, 19.93, 90]        # PTC, pad 1 (OUT) down
-Q1 = [0, 29.44, 270]       # triac, tab down, leads up: A1 right, gate left
-R4 = [1.5, 36.9, 0]        # gate to A1
-R3 = [-1.8, 37.3, 0]       # T2 to the opto output
+D1 = [-1.25, 12.53, 270]   # TVS, pad 1 (OUT) up. The strip below, y = 7.5 to 9, is for the terminal labels
+C1 = [2.05, 10.58, 270]    # snubber capacitor, ISNS end down
+R5 = [2.05, 14.06, 270]    # snubber resistor, T2 end up
+F1 = [0, 20.93, 90]        # PTC, pad 1 (OUT) down
+Q1 = [0, 30.44, 270]       # triac, tab down, leads up: A1 right, gate left
+R4 = [1.5, 37.9, 0]        # gate to A1
+R3 = [-1.8, 38.3, 0]       # T2 to the opto output
 
 # channel_logic: the LED, its resistor, the opto LED resistor and the opto-triac. The origin of
 # an instance is its LED, whose position the mechanical contract fixes (y = 42, pitch 9.5).
@@ -474,11 +474,11 @@ exclude = ["GND", "3V3", "/ISNS", "/OUT_*", "/*/T2", "/*/SNB", "/AC_L_IN", "/AC_
 # on In2.Cu (shunt plane and fan-out lanes), which it cannot see because they are added afterwards.
 [[route.keepout]]
 layers = ["B.Cu", "In2.Cu"]
-rect = [39.4, 7.3, 103.3, 37.9]
+rect = [39.4, 7.3, 103.3, 38.9]
 
 [[route.keepout]]
 layers = ["In2.Cu"]
-rect = [34.6, 17.6, 39.4, 39.1]
+rect = [34.6, 18.6, 39.4, 40.1]
 
 # A via beside every surface-mount pad of a plane net.
 [[plane]]
@@ -502,20 +502,20 @@ points = ["C1.1", "R5.2"]
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 1.2
-points = ["D1.1", [-1.25, 16.54], "F1.1"]
+points = ["D1.1", [-1.25, 17.54], "F1.1"]
 
 # Output: from the two vias of the fan-out lane up into the PTC pad, 1.2 mm wide.
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 1.2
-points = ["D1.1", [-1.25, 14.2], [0.25, 14.2], [0.25, 16.3], "F1.1"]
+points = ["D1.1", [-1.25, 15.2], [0.25, 15.2], [0.25, 17.3], "F1.1"]
 
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 0.6
 via = [0.6, 0.3]
 stay = true
-points = ["F1.1", [0.45, 15.9], {via = [0.45, 15]}, {via = [0.45, 14.2]}]
+points = ["F1.1", [0.45, 16.9], {via = [0.45, 16]}, {via = [0.45, 15.2]}]
 
 # T2: PTC to the triac tab, and vias to the island on B.Cu.
 [[group.channel_power.track]]
@@ -526,42 +526,42 @@ points = ["F1.2", "Q1.2"]
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 1
-points = ["F1.2", [2.6, 22.6], {via = [3.25, 22.6]}]
+points = ["F1.2", [2.6, 23.6], {via = [3.25, 23.6]}]
 
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 1
-points = ["F1.2", [2.6, 23.9], {via = [3.25, 23.9]}]
+points = ["F1.2", [2.6, 24.9], {via = [3.25, 24.9]}]
 
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 0.6
 via = [0.6, 0.3]
-points = ["Q1.2", {via = [-1.5, 26.9]}]
+points = ["Q1.2", {via = [-1.5, 27.9]}]
 
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 0.6
 via = [0.6, 0.3]
-points = ["Q1.2", {via = [1.5, 26.9]}]
+points = ["Q1.2", {via = [1.5, 27.9]}]
 
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 0.6
 via = [0.6, 0.3]
-points = ["Q1.2", {via = [-1.5, 29.7]}]
+points = ["Q1.2", {via = [-1.5, 30.7]}]
 
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 0.6
 via = [0.6, 0.3]
-points = ["Q1.2", {via = [1.5, 29.7]}]
+points = ["Q1.2", {via = [1.5, 30.7]}]
 
 # T2 for the snubber resistor: up the gap between this PTC and the next, on F.Cu.
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 0.3
-points = ["R5.1", [3.375, 15], [3.375, 22.4], [3.25, 22.6]]
+points = ["R5.1", [3.375, 16], [3.375, 23.4], [3.25, 23.6]]
 
 # A1: to the gate resistor, and vias to the ISNS plane on In2.Cu.
 [[group.channel_power.track]]
@@ -573,38 +573,38 @@ points = ["Q1.1", "R4.2"]
 layer = "F.Cu"
 width = 0.6
 via = [0.6, 0.3]
-points = ["Q1.1", {via = [2.3, 36]}]
+points = ["Q1.1", {via = [2.3, 37]}]
 
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 0.6
 via = [0.8, 0.4]
-points = ["Q1.1", {via = [2.3, 32.5]}]
+points = ["Q1.1", {via = [2.3, 33.5]}]
 
 # Gate.
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 0.3
-points = ["Q1.3", [-2.28, 35.9], [0.675, 35.9], "R4.1"]
+points = ["Q1.3", [-2.28, 36.9], [0.675, 36.9], "R4.1"]
 
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
-points = ["R4.1", {via = [0.675, 38.4]}]
+points = ["R4.1", {via = [0.675, 39.4]}]
 
 # T2 and the opto output.
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
-points = ["R3.1", {via = [-2.71, 38.55]}]
+points = ["R3.1", {via = [-2.71, 39.55]}]
 
 [[group.channel_power.track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
-points = ["R3.2", {via = [-0.89, 38.65]}]
+points = ["R3.2", {via = [-0.89, 39.65]}]
 
 # Valve outputs, from each terminal pin to the two vias under its column. On B.Cu, which is
 # 1 oz copper, 0.9 mm wide and 0.5 mm apart, and the same again on In2.Cu: the terminal pin and
@@ -613,92 +613,92 @@ points = ["R3.2", {via = [-0.89, 38.65]}]
 [[track]]
 layer = "B.Cu"
 width = 0.9
-points = ["J2.3", [37.845, 13.6], [43.3, 13.6], [43.3, 15]]
+points = ["J2.3", [37.845, 13.6], [43.3, 13.6], [43.3, 16]]
 
 [[track]]
 layer = "In2.Cu"
 width = 0.9
-points = ["J2.3", [37.845, 13.6], [43.3, 13.6], [43.3, 15]]
+points = ["J2.3", [37.845, 13.6], [43.3, 13.6], [43.3, 16]]
 
 [[track]]
 layer = "B.Cu"
 width = 0.9
-points = ["J2.4", [41.655, 12.2], [44.75, 12.2], [46.15, 13.6], [50.4, 13.6], [50.4, 15]]
+points = ["J2.4", [41.655, 12.2], [44.75, 12.2], [46.15, 13.6], [50.4, 13.6], [50.4, 16]]
 
 [[track]]
 layer = "In2.Cu"
 width = 0.9
-points = ["J2.4", [41.655, 12.2], [44.75, 12.2], [46.15, 13.6], [50.4, 13.6], [50.4, 15]]
+points = ["J2.4", [41.655, 12.2], [44.75, 12.2], [46.15, 13.6], [50.4, 13.6], [50.4, 16]]
 
 [[track]]
 layer = "B.Cu"
 width = 0.9
-points = ["J2.5", [45.465, 10.8], [46.3, 10.8], [47.7, 12.2], [51.85, 12.2], [53.25, 13.6], [57.5, 13.6], [57.5, 15]]
+points = ["J2.5", [45.465, 10.8], [46.3, 10.8], [47.7, 12.2], [51.85, 12.2], [53.25, 13.6], [57.5, 13.6], [57.5, 16]]
 
 [[track]]
 layer = "In2.Cu"
 width = 0.9
-points = ["J2.5", [45.465, 10.8], [46.3, 10.8], [47.7, 12.2], [51.85, 12.2], [53.25, 13.6], [57.5, 13.6], [57.5, 15]]
+points = ["J2.5", [45.465, 10.8], [46.3, 10.8], [47.7, 12.2], [51.85, 12.2], [53.25, 13.6], [57.5, 13.6], [57.5, 16]]
 
 [[track]]
 layer = "B.Cu"
 width = 0.9
-points = ["J2.6", [49.275, 9.4], [50.1, 9.4], [51.5, 10.8], [52.6, 10.8], [54, 12.2], [58.95, 12.2], [60.35, 13.6], [64.6, 13.6], [64.6, 15], [64.6, 13.6], [64.6, 15]]
+points = ["J2.6", [49.275, 9.4], [50.1, 9.4], [51.5, 10.8], [52.6, 10.8], [54, 12.2], [58.95, 12.2], [60.35, 13.6], [64.6, 13.6], [64.6, 16], [64.6, 13.6], [64.6, 16]]
 
 [[track]]
 layer = "In2.Cu"
 width = 0.9
-points = ["J2.6", [49.275, 9.4], [50.1, 9.4], [51.5, 10.8], [52.6, 10.8], [54, 12.2], [58.95, 12.2], [60.35, 13.6], [64.6, 13.6], [64.6, 15], [64.6, 13.6], [64.6, 15]]
+points = ["J2.6", [49.275, 9.4], [50.1, 9.4], [51.5, 10.8], [52.6, 10.8], [54, 12.2], [58.95, 12.2], [60.35, 13.6], [64.6, 13.6], [64.6, 16], [64.6, 13.6], [64.6, 16]]
 
 [[track]]
 layer = "B.Cu"
 width = 0.9
-points = ["J2.7", [53.085, 9.4], [53.9, 9.4], [55.3, 10.8], [59.7, 10.8], [61.1, 12.2], [66.05, 12.2], [67.45, 13.6], [71.7, 13.6], [71.7, 15]]
+points = ["J2.7", [53.085, 9.4], [53.9, 9.4], [55.3, 10.8], [59.7, 10.8], [61.1, 12.2], [66.05, 12.2], [67.45, 13.6], [71.7, 13.6], [71.7, 16]]
 
 [[track]]
 layer = "In2.Cu"
 width = 0.9
-points = ["J2.7", [53.085, 9.4], [53.9, 9.4], [55.3, 10.8], [59.7, 10.8], [61.1, 12.2], [66.05, 12.2], [67.45, 13.6], [71.7, 13.6], [71.7, 15]]
+points = ["J2.7", [53.085, 9.4], [53.9, 9.4], [55.3, 10.8], [59.7, 10.8], [61.1, 12.2], [66.05, 12.2], [67.45, 13.6], [71.7, 13.6], [71.7, 16]]
 
 [[track]]
 layer = "B.Cu"
 width = 0.9
-points = ["J3.1", [58.295, 9.4], [60.45, 9.4], [61.85, 10.8], [66.75, 10.8], [68.15, 12.2], [73.15, 12.2], [74.55, 13.6], [78.8, 13.6], [78.8, 15]]
+points = ["J3.1", [58.295, 9.4], [60.45, 9.4], [61.85, 10.8], [66.75, 10.8], [68.15, 12.2], [73.15, 12.2], [74.55, 13.6], [78.8, 13.6], [78.8, 16]]
 
 [[track]]
 layer = "In2.Cu"
 width = 0.9
-points = ["J3.1", [58.295, 9.4], [60.45, 9.4], [61.85, 10.8], [66.75, 10.8], [68.15, 12.2], [73.15, 12.2], [74.55, 13.6], [78.8, 13.6], [78.8, 15]]
+points = ["J3.1", [58.295, 9.4], [60.45, 9.4], [61.85, 10.8], [66.75, 10.8], [68.15, 12.2], [73.15, 12.2], [74.55, 13.6], [78.8, 13.6], [78.8, 16]]
 
 [[track]]
 layer = "B.Cu"
 width = 0.9
-points = ["J3.2", [62.105, 8], [62.95, 8], [64.35, 9.4], [67.45, 9.4], [68.85, 10.8], [73.9, 10.8], [75.3, 12.2], [80.25, 12.2], [81.65, 13.6], [85.9, 13.6], [85.9, 15]]
+points = ["J3.2", [62.105, 8], [62.95, 8], [64.35, 9.4], [67.45, 9.4], [68.85, 10.8], [73.9, 10.8], [75.3, 12.2], [80.25, 12.2], [81.65, 13.6], [85.9, 13.6], [85.9, 16]]
 
 [[track]]
 layer = "In2.Cu"
 width = 0.9
-points = ["J3.2", [62.105, 8], [62.95, 8], [64.35, 9.4], [67.45, 9.4], [68.85, 10.8], [73.9, 10.8], [75.3, 12.2], [80.25, 12.2], [81.65, 13.6], [85.9, 13.6], [85.9, 15]]
+points = ["J3.2", [62.105, 8], [62.95, 8], [64.35, 9.4], [67.45, 9.4], [68.85, 10.8], [73.9, 10.8], [75.3, 12.2], [80.25, 12.2], [81.65, 13.6], [85.9, 13.6], [85.9, 16]]
 
 [[track]]
 layer = "B.Cu"
 width = 0.9
-points = ["J3.3", [65.915, 8], [68.15, 8], [69.55, 9.4], [74.65, 9.4], [76.05, 10.8], [80.95, 10.8], [82.35, 12.2], [87.4, 12.2], [88.8, 13.6], [93, 13.6], [93, 15]]
+points = ["J3.3", [65.915, 8], [68.15, 8], [69.55, 9.4], [74.65, 9.4], [76.05, 10.8], [80.95, 10.8], [82.35, 12.2], [87.4, 12.2], [88.8, 13.6], [93, 13.6], [93, 16]]
 
 [[track]]
 layer = "In2.Cu"
 width = 0.9
-points = ["J3.3", [65.915, 8], [68.15, 8], [69.55, 9.4], [74.65, 9.4], [76.05, 10.8], [80.95, 10.8], [82.35, 12.2], [87.4, 12.2], [88.8, 13.6], [93, 13.6], [93, 15]]
+points = ["J3.3", [65.915, 8], [68.15, 8], [69.55, 9.4], [74.65, 9.4], [76.05, 10.8], [80.95, 10.8], [82.35, 12.2], [87.4, 12.2], [88.8, 13.6], [93, 13.6], [93, 16]]
 
 [[track]]
 layer = "B.Cu"
 width = 0.9
-points = ["J3.4", [69.725, 6.6], [70.55, 6.6], [71.95, 8], [75.4, 8], [76.8, 9.4], [81.65, 9.4], [83.05, 10.8], [88.15, 10.8], [89.55, 12.2], [94.45, 12.2], [95.85, 13.6], [100.1, 13.6], [100.1, 15]]
+points = ["J3.4", [69.725, 6.6], [70.55, 6.6], [71.95, 8], [75.4, 8], [76.8, 9.4], [81.65, 9.4], [83.05, 10.8], [88.15, 10.8], [89.55, 12.2], [94.45, 12.2], [95.85, 13.6], [100.1, 13.6], [100.1, 16]]
 
 [[track]]
 layer = "In2.Cu"
 width = 0.9
-points = ["J3.4", [69.725, 6.6], [70.55, 6.6], [71.95, 8], [75.4, 8], [76.8, 9.4], [81.65, 9.4], [83.05, 10.8], [88.15, 10.8], [89.55, 12.2], [94.45, 12.2], [95.85, 13.6], [100.1, 13.6], [100.1, 15]]
+points = ["J3.4", [69.725, 6.6], [70.55, 6.6], [71.95, 8], [75.4, 8], [76.8, 9.4], [81.65, 9.4], [83.05, 10.8], [88.15, 10.8], [89.55, 12.2], [94.45, 12.2], [95.85, 13.6], [100.1, 13.6], [100.1, 16]]
 
 # Ground: all of In1.Cu, and pours on both outer layers.
 [[zone]]
@@ -733,7 +733,7 @@ priority = 1
 [[zone]]
 net = "/ISNS"
 layers = ["In2.Cu"]
-outline = [[34.6, 17.6], [103.3, 17.6], [103.3, 39.1], [34.6, 39.1]]
+outline = [[34.6, 18.6], [103.3, 18.6], [103.3, 40.1], [34.6, 40.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
@@ -743,7 +743,7 @@ priority = 2
 [[zone]]
 net = "/MV/T2"
 layers = ["B.Cu"]
-outline = [[39.55, 16], [46.15, 16], [46.15, 39.1], [39.55, 39.1]]
+outline = [[39.55, 17], [46.15, 17], [46.15, 40.1], [39.55, 40.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
@@ -752,7 +752,7 @@ priority = 3
 [[zone]]
 net = "/Z1/T2"
 layers = ["B.Cu"]
-outline = [[46.65, 16], [53.25, 16], [53.25, 39.1], [46.65, 39.1]]
+outline = [[46.65, 17], [53.25, 17], [53.25, 40.1], [46.65, 40.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
@@ -761,7 +761,7 @@ priority = 3
 [[zone]]
 net = "/Z2/T2"
 layers = ["B.Cu"]
-outline = [[53.75, 16], [60.35, 16], [60.35, 39.1], [53.75, 39.1]]
+outline = [[53.75, 17], [60.35, 17], [60.35, 40.1], [53.75, 40.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
@@ -770,7 +770,7 @@ priority = 3
 [[zone]]
 net = "/Z3/T2"
 layers = ["B.Cu"]
-outline = [[60.85, 16], [67.45, 16], [67.45, 39.1], [60.85, 39.1]]
+outline = [[60.85, 17], [67.45, 17], [67.45, 40.1], [60.85, 40.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
@@ -779,7 +779,7 @@ priority = 3
 [[zone]]
 net = "/Z4/T2"
 layers = ["B.Cu"]
-outline = [[67.95, 16], [74.55, 16], [74.55, 39.1], [67.95, 39.1]]
+outline = [[67.95, 17], [74.55, 17], [74.55, 40.1], [67.95, 40.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
@@ -788,7 +788,7 @@ priority = 3
 [[zone]]
 net = "/Z5/T2"
 layers = ["B.Cu"]
-outline = [[75.05, 16], [81.65, 16], [81.65, 39.1], [75.05, 39.1]]
+outline = [[75.05, 17], [81.65, 17], [81.65, 40.1], [75.05, 40.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
@@ -797,7 +797,7 @@ priority = 3
 [[zone]]
 net = "/Z6/T2"
 layers = ["B.Cu"]
-outline = [[82.15, 16], [88.75, 16], [88.75, 39.1], [82.15, 39.1]]
+outline = [[82.15, 17], [88.75, 17], [88.75, 40.1], [82.15, 40.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
@@ -806,7 +806,7 @@ priority = 3
 [[zone]]
 net = "/Z7/T2"
 layers = ["B.Cu"]
-outline = [[89.25, 16], [95.85, 16], [95.85, 39.1], [89.25, 39.1]]
+outline = [[89.25, 17], [95.85, 17], [95.85, 40.1], [89.25, 40.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
@@ -815,7 +815,7 @@ priority = 3
 [[zone]]
 net = "/Z8/T2"
 layers = ["B.Cu"]
-outline = [[96.35, 16], [102.95, 16], [102.95, 39.1], [96.35, 39.1]]
+outline = [[96.35, 17], [102.95, 17], [102.95, 40.1], [96.35, 40.1]]
 clearance = 0.5
 min_width = 0.3
 connect = "solid"
@@ -872,7 +872,7 @@ points = ["J2.1", "J2.2"]
 [[track]]
 layer = "F.Cu"
 width = 1.5
-points = ["J2.2", [34.035, 8.4], [35.6, 9.45], "D23.1"]
+points = ["J2.2", [34.035, 9], [35.5, 10.45], "D23.1"]
 
 [[track]]
 layer = "F.Cu"
@@ -888,7 +888,7 @@ points = ["K1.14", "TP22.1"]
 [[track]]
 layer = "F.Cu"
 width = 2
-points = ["F1.2", [30.185, 13.6], [36, 13.6], "D23.2"]
+points = ["F1.2", [30.185, 14.6], [36, 14.6], "D23.2"]
 
 [[track]]
 layer = "F.Cu"
@@ -1022,27 +1022,27 @@ points = ["C1.1", "TP1.1"]
 [[track]]
 layer = "F.Cu"
 width = 1
-points = ["D901.2", [41.6, 8.63], [101.7, 8.63], "C801.2"]
+points = ["D901.2", [41.6, 9.63], [101.7, 9.63], "C801.2"]
 
 [[track]]
 layer = "F.Cu"
 width = 0.5
-points = ["D901.2", [41.6, 8.63], [38.65, 8.63], [38.65, 21.6], [37.6, 21.6], "R37.1"]
+points = ["D901.2", [41.6, 9.63], [38.65, 9.63], [38.65, 23.213], "R37.1"]
 
 [[track]]
 layer = "F.Cu"
 width = 1
-points = ["R37.1", {via = [37.3, 23.7]}]
+points = ["R37.1", {via = [37.3, 24.7]}]
 
 [[track]]
 layer = "F.Cu"
 width = 1
-points = ["R37.1", {via = [35.3, 23.7]}]
+points = ["R37.1", {via = [35.3, 24.7]}]
 
 [[track]]
 layer = "F.Cu"
 width = 0.6
-points = ["R37.1", "TP17.1"]
+points = ["C801.2", "TP17.1"]
 
 # Kelvin sense of the shunt R37. Each track leaves from its own via at the left end of a shunt
 # pad, and runs on B.Cu: left under C1, up at x = 18.4 and 19.0, where no gate line crosses, then
@@ -1052,7 +1052,7 @@ points = ["R37.1", "TP17.1"]
 layer = "F.Cu"
 width = 0.25
 via = [0.6, 0.3]
-points = ["R37.1", {via = [34.1, 22.15]}, [34.1, 23.6], [33.3, 24.4], [19.6, 24.4], [19, 25], [19, 57.7], [19.6, 58.3], [32.7, 58.3], [32.7, 62.8]]
+points = ["R37.1", {via = [34.1, 23.15]}, [34.1, 23.6], [33.3, 24.4], [19.6, 24.4], [19, 25], [19, 57.7], [19.6, 58.3], [32.7, 58.3], [32.7, 62.8]]
 
 [[track]]
 layer = "F.Cu"
@@ -1069,7 +1069,7 @@ points = ["R38.1", [32.7, 62.8], "R42.1"]
 layer = "F.Cu"
 width = 0.25
 via = [0.6, 0.3]
-points = ["R37.2", {via = [34.1, 16.35]}, [33.3, 17.15], [33.3, 23], [32.5, 23.8], [18.9, 23.8], [18.4, 24.3], [18.4, 58.3], [19, 58.9], [31.9, 58.9], [31.9, 61.2]]
+points = ["R37.2", {via = [34.1, 17.35]}, [33.3, 18.15], [33.3, 23], [32.5, 23.8], [18.9, 23.8], [18.4, 24.3], [18.4, 58.3], [19, 58.9], [31.9, 58.9], [31.9, 61.2]]
 
 [[track]]
 layer = "F.Cu"
@@ -1338,88 +1338,88 @@ points = ["J7.11", [56.55, 90.68], [56.55, 95.3], "Q4.3"]
 # V_DRV, the opto LED supply: one bus under the LED row, a stub to each resistor.
 [[track]]
 layer = "F.Cu"
-width = 0.4
-points = ["R901.1", [22.075, 40.6], [105.925, 40.6], "R802.1"]
+width = 0.3
+points = ["R901.1", [22.075, 40.75], [105.925, 40.75], "R802.1"]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
-points = ["R902.1", [29.925, 40.6]]
+points = ["R902.1", [29.925, 40.75]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
-points = ["R101.1", [31.575, 40.6]]
+points = ["R101.1", [31.575, 40.75]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
-points = ["R102.1", [39.425, 40.6]]
+points = ["R102.1", [39.425, 40.75]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
-points = ["R201.1", [41.075, 40.6]]
+points = ["R201.1", [41.075, 40.75]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
-points = ["R202.1", [48.925, 40.6]]
+points = ["R202.1", [48.925, 40.75]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
-points = ["R301.1", [50.575, 40.6]]
+points = ["R301.1", [50.575, 40.75]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
-points = ["R302.1", [58.425, 40.6]]
+points = ["R302.1", [58.425, 40.75]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
-points = ["R401.1", [60.075, 40.6]]
+points = ["R401.1", [60.075, 40.75]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
-points = ["R402.1", [67.925, 40.6]]
+points = ["R402.1", [67.925, 40.75]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
-points = ["R501.1", [69.575, 40.6]]
+points = ["R501.1", [69.575, 40.75]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
-points = ["R502.1", [77.425, 40.6]]
+points = ["R502.1", [77.425, 40.75]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
-points = ["R601.1", [79.075, 40.6]]
+points = ["R601.1", [79.075, 40.75]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
-points = ["R602.1", [86.925, 40.6]]
+points = ["R602.1", [86.925, 40.75]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
-points = ["R701.1", [88.575, 40.6]]
+points = ["R701.1", [88.575, 40.75]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
-points = ["R702.1", [96.425, 40.6]]
+points = ["R702.1", [96.425, 40.75]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
-points = ["R801.1", [98.075, 40.6]]
+points = ["R801.1", [98.075, 40.75]]
 
 # Ground for a pad where the fan-out finds no place by itself.
 [[track]]
@@ -1451,126 +1451,126 @@ layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
 via_to = "In2.Cu"
-points = ["U901.6", {via = [23.46, 53.4]}, [23.46, 39.75], [41.96, 39.75], [41.96, 38.65]]
+points = ["U901.6", {via = [23.46, 53.4]}, [23.46, 40.75], [41.96, 40.75], [41.96, 39.65]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
 via_to = "In2.Cu"
-points = ["U101.6", {via = [32.96, 53.4]}, [32.96, 40.55], [49.06, 40.55], [49.06, 38.65]]
+points = ["U101.6", {via = [32.96, 53.4]}, [32.96, 41.55], [49.06, 41.55], [49.06, 39.65]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
 via_to = "In2.Cu"
-points = ["U201.6", {via = [42.46, 53.4]}, [42.46, 41.35], [56.16, 41.35], [56.16, 38.65]]
+points = ["U201.6", {via = [42.46, 53.4]}, [42.46, 42.35], [56.16, 42.35], [56.16, 39.65]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
 via_to = "In2.Cu"
-points = ["U301.6", {via = [51.96, 53.4]}, [51.96, 42.15], [63.26, 42.15], [63.26, 38.65]]
+points = ["U301.6", {via = [51.96, 53.4]}, [51.96, 43.15], [63.26, 43.15], [63.26, 39.65]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
 via_to = "In2.Cu"
-points = ["U401.6", {via = [61.46, 53.4]}, [61.46, 42.95], [70.36, 42.95], [70.36, 38.65]]
+points = ["U401.6", {via = [61.46, 53.4]}, [61.46, 43.95], [70.36, 43.95], [70.36, 39.65]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
 via_to = "In2.Cu"
-points = ["U501.6", {via = [70.96, 53.4]}, [70.96, 43.75], [77.46, 43.75], [77.46, 38.65]]
+points = ["U501.6", {via = [70.96, 53.4]}, [70.96, 44.75], [77.46, 44.75], [77.46, 39.65]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
 via_to = "In2.Cu"
-points = ["U601.6", {via = [80.46, 53.4]}, [80.46, 39.75], [84.56, 39.75], [84.56, 38.65]]
+points = ["U601.6", {via = [80.46, 53.4]}, [80.46, 40.75], [84.56, 40.75], [84.56, 39.65]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
 via_to = "In2.Cu"
-points = ["U701.6", {via = [89.96, 53.4]}, [89.96, 39.75], [91.66, 39.75], [91.66, 38.65]]
+points = ["U701.6", {via = [89.96, 53.4]}, [89.96, 40.75], [91.66, 40.75], [91.66, 39.65]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
 via_to = "In2.Cu"
-points = ["U801.6", {via = [99.46, 53.4]}, [99.46, 39.75], [98.76, 39.75], [98.76, 38.65]]
+points = ["U801.6", {via = [99.46, 53.4]}, [99.46, 40.75], [98.76, 40.75], [98.76, 39.65]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
 via_to = "B.Cu"
-points = ["U901.4", {via = [28.54, 53.4]}, [28.54, 39.75], [43.525, 39.75], [43.525, 38.4]]
+points = ["U901.4", {via = [28.54, 53.4]}, [28.54, 40.75], [43.525, 40.75], [43.525, 39.4]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
 via_to = "B.Cu"
-points = ["U101.4", {via = [38.04, 53.4]}, [38.04, 40.55], [50.625, 40.55], [50.625, 38.4]]
+points = ["U101.4", {via = [38.04, 53.4]}, [38.04, 41.55], [50.625, 41.55], [50.625, 39.4]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
 via_to = "B.Cu"
-points = ["U201.4", {via = [47.54, 53.4]}, [47.54, 41.35], [57.725, 41.35], [57.725, 38.4]]
+points = ["U201.4", {via = [47.54, 53.4]}, [47.54, 42.35], [57.725, 42.35], [57.725, 39.4]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
 via_to = "B.Cu"
-points = ["U301.4", {via = [57.04, 53.4]}, [57.04, 42.15], [64.825, 42.15], [64.825, 38.4]]
+points = ["U301.4", {via = [57.04, 53.4]}, [57.04, 43.15], [64.825, 43.15], [64.825, 39.4]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
 via_to = "B.Cu"
-points = ["U401.4", {via = [66.54, 53.4]}, [66.54, 39.75], [71.925, 39.75], [71.925, 38.4]]
+points = ["U401.4", {via = [66.54, 53.4]}, [66.54, 40.75], [71.925, 40.75], [71.925, 39.4]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
 via_to = "B.Cu"
-points = ["U501.4", {via = [76.04, 53.4]}, [76.04, 39.75], [79.025, 39.75], [79.025, 38.4]]
+points = ["U501.4", {via = [76.04, 53.4]}, [76.04, 40.75], [79.025, 40.75], [79.025, 39.4]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
 via_to = "B.Cu"
-points = ["U601.4", {via = [85.54, 53.4]}, [85.54, 39.75], [86.125, 39.75], [86.125, 38.4]]
+points = ["U601.4", {via = [85.54, 53.4]}, [85.54, 40.75], [86.125, 40.75], [86.125, 39.4]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
 via_to = "B.Cu"
-points = ["U701.4", {via = [95.04, 53.4]}, [95.04, 39.75], [93.225, 39.75], [93.225, 38.4]]
+points = ["U701.4", {via = [95.04, 53.4]}, [95.04, 40.75], [93.225, 40.75], [93.225, 39.4]]
 
 [[track]]
 layer = "F.Cu"
 width = 0.3
 via = [0.6, 0.3]
 via_to = "B.Cu"
-points = ["U801.4", {via = [104.54, 53.4]}, [104.54, 39.75], [100.325, 39.75], [100.325, 38.4]]
+points = ["U801.4", {via = [104.54, 53.4]}, [104.54, 40.75], [100.325, 40.75], [100.325, 39.4]]
 
 
 # No other track or via within 1 mm of the keep-alive net (hardware design, section 8.5).
@@ -1579,39 +1579,376 @@ net = "/KA"
 distance = 1.0
 
 # ---- silkscreen -----------------------------------------------------------------------------------
-# 349 parts on one side: the designators of the small parts do not fit between them. They are left
+# 351 parts on one side: the designators of the small parts do not fit between them. They are left
 # off the silkscreen and are on the assembly drawing (F.Fab) instead. Connectors, ICs, switches,
-# fuses and the bottom-side parts keep theirs.
+# fuses, test pads and the bottom-side parts keep theirs. "clean" lets the builder take away what
+# DRC then still finds wrong: an outline over a neighbour's pad, a designator with no free place.
 [silk]
+clean = true
 hide = ["R*", "C[2-9]", "C[1-9][0-9]", "C[1-9][0-9][0-9]", "D*", "F[23]", "F[1-9]0[0-9]", "Q*", "L*", "Y*",
-        "TP*", "H*", "U[1-9]0[0-9]", "JP*"]
+        "H*", "U[1-9]0[0-9]"]
+
+# Terminal labels, one behind each terminal, as the installer reads them with the plugs in.
+# The names are those of the wiring page of the manual.
+[[text]]
+text = "24V~"
+layer = "F.SilkS"
+at = [17.805, 8.25]
+size = 1
+thickness = 0.15
 
 [[text]]
-text = "ZoneFlow rev A"
+text = "24V~"
 layer = "F.SilkS"
-at = [22.0, 106.5]
+at = [21.615, 8.25]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "COM"
+layer = "F.SilkS"
+at = [30.225, 8.25]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "COM"
+layer = "F.SilkS"
+at = [34.035, 8.25]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "MV"
+layer = "F.SilkS"
+at = [37.845, 8.25]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "Z1"
+layer = "F.SilkS"
+at = [41.655, 8.25]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "Z2"
+layer = "F.SilkS"
+at = [45.465, 8.25]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "Z3"
+layer = "F.SilkS"
+at = [49.275, 8.25]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "Z4"
+layer = "F.SilkS"
+at = [53.085, 8.25]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "Z5"
+layer = "F.SilkS"
+at = [58.295, 8.25]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "Z6"
+layer = "F.SilkS"
+at = [62.105, 8.25]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "Z7"
+layer = "F.SilkS"
+at = [65.915, 8.25]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "Z8"
+layer = "F.SilkS"
+at = [69.725, 8.25]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "5V"
+layer = "F.SilkS"
+at = [78.335, 8.25]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "FLOW"
+layer = "F.SilkS"
+at = [82.145, 8.25]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "GND"
+layer = "F.SilkS"
+at = [85.955, 8.25]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "RAIN"
+layer = "F.SilkS"
+at = [89.765, 8.25]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "GND"
+layer = "F.SilkS"
+at = [93.575, 8.25]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "AUX"
+layer = "F.SilkS"
+at = [97.385, 8.25]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "GND"
+layer = "F.SilkS"
+at = [101.195, 8.25]
+size = 1
+thickness = 0.15
+
+# Terminal 2 of the 24 VAC block is the board's ground (hardware design, section 16.1): a ground
+# symbol right of its label, and the word.
+[[line]]
+layer = "F.SilkS"
+width = 0.15
+points = [[24.7, 8.9], [24.7, 8.3]]
+
+[[line]]
+layer = "F.SilkS"
+width = 0.15
+points = [[23.9, 8.3], [25.5, 8.3]]
+
+[[line]]
+layer = "F.SilkS"
+width = 0.15
+points = [[24.2, 7.95], [25.2, 7.95]]
+
+[[line]]
+layer = "F.SilkS"
+width = 0.15
+points = [[24.5, 7.6], [24.9, 7.6]]
+
+# Fuse ratings.
+[[text]]
+text = "F4 3A T"
+layer = "F.SilkS"
+at = [15, 16.6]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "F1 3A T"
+layer = "F.SilkS"
+at = [27, 16.6]
+size = 1
+thickness = 0.15
+
+[[text]]
+text = "F5 0.5A FF"
+layer = "F.SilkS"
+at = [31.1, 39]
+size = 1
+thickness = 0.15
+optional = true
+
+# Board name, revision, licence and status, in the open area under the display.
+[[text]]
+text = "ZoneFlow"
+layer = "F.SilkS"
+at = [26, 106.6]
+size = 2
+thickness = 0.3
+
+[[text]]
+text = "rev A"
+layer = "F.SilkS"
+at = [38.2, 106.4]
 size = 1.5
 thickness = 0.25
 
 [[text]]
-text = "Not built, not tested. CERN-OHL-P-2.0"
+text = "ENGINEERING PROTOTYPE"
 layer = "F.SilkS"
-at = [28.0, 104.2]
-size = 1.0
+at = [26, 103.6]
+size = 1.3
+thickness = 0.2
+
+[[text]]
+text = "Not built, not tested"
+layer = "F.SilkS"
+at = [26, 101.5]
+size = 1
 thickness = 0.15
 
 [[text]]
-text = "3A T"
+text = "CERN-OHL-P-2.0"
 layer = "F.SilkS"
-at = [21.0, 16.6]
-size = 1.0
+at = [26, 99.8]
+size = 1
 thickness = 0.15
+
+# Connectors, buttons and the debug pads.
+[[text]]
+text = "USB"
+layer = "F.SilkS"
+at = [8, 7.9]
+size = 1
+thickness = 0.15
+optional = true
+
+[[text]]
+text = "QWIIC"
+layer = "F.SilkS"
+at = [106.2, 8.25]
+size = 1
+thickness = 0.15
+optional = true
+
+[[text]]
+text = "RESET"
+layer = "F.SilkS"
+at = [55.3, 105.5]
+size = 1
+thickness = 0.15
+optional = true
+
+[[text]]
+text = "BOOT"
+layer = "F.SilkS"
+at = [55, 100]
+size = 1
+thickness = 0.15
+optional = true
+
+[[text]]
+text = "BACK"
+layer = "F.SilkS"
+at = [22, 66]
+size = 1
+thickness = 0.15
+optional = true
+
+[[text]]
+text = "HOME"
+layer = "F.SilkS"
+at = [48, 57.2]
+size = 1
+thickness = 0.15
+optional = true
+
+[[text]]
+text = "CR2032 +"
+layer = "F.SilkS"
+at = [95, 56.6]
+size = 1
+thickness = 0.15
+optional = true
+
+[[text]]
+text = "3V3"
+layer = "F.SilkS"
+at = [73, 93.5]
+size = 1
+thickness = 0.15
+justify = "right"
+optional = true
+
+[[text]]
+text = "GND"
+layer = "F.SilkS"
+at = [73, 90.96]
+size = 1
+thickness = 0.15
+justify = "right"
+optional = true
+
+[[text]]
+text = "TX"
+layer = "F.SilkS"
+at = [73, 88.42]
+size = 1
+thickness = 0.15
+justify = "right"
+optional = true
+
+[[text]]
+text = "RX"
+layer = "F.SilkS"
+at = [73, 85.88]
+size = 1
+thickness = 0.15
+justify = "right"
+optional = true
+
+[[text]]
+text = "EN"
+layer = "F.SilkS"
+at = [73, 83.34]
+size = 1
+thickness = 0.15
+justify = "right"
+optional = true
+
+[[text]]
+text = "IO0"
+layer = "F.SilkS"
+at = [73, 80.8]
+size = 1
+thickness = 0.15
+justify = "right"
+optional = true
+
+# Bottom side.
+[[text]]
+text = "ZoneFlow rev A   ENGINEERING PROTOTYPE   CERN-OHL-P-2.0"
+layer = "B.SilkS"
+at = [57, 99.6]
+size = 1.3
+thickness = 0.2
 
 [[text]]
 text = "JP1: bridge only if K1 is not fitted"
 layer = "B.SilkS"
-at = [22.0, 20.5]
-size = 1.0
+at = [26, 20.5]
+size = 1
 thickness = 0.15
 
+[[text]]
+text = "C1 +"
+layer = "B.SilkS"
+at = [39.2, 34.6]
+size = 1
+thickness = 0.15
+optional = true
+
+
+# The builder takes strokes off the silkscreen outline of a footprint where DRC finds them over a
+# neighbour's pad (see [silk]). Such a footprint no longer equals its library copy, and DRC would
+# say so for each one. Nothing else in a footprint can differ: the board is built from the
+# libraries on every run and no board file is edited by hand.
 [drc_severity]
+lib_footprint_mismatch = "ignore"
