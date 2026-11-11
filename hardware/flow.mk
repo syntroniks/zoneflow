@@ -111,7 +111,7 @@ reroute:
 
 # Import the routed session and remove dangling stubs.
 finish: route
-	$(KICAD_PY) -m hwflow.pcbbuild finish . --session route/$(NAME).ses
+	$(KICAD_PY) -m hwflow.pcbbuild finish . --session route/$(NAME).ses --design $(DESIGN)
 
 # The first call fills the copper zones and saves the board. Errors and
 # warnings both fail the build; --schematic-parity checks that the board still

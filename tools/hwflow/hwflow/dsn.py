@@ -13,31 +13,84 @@ import re
 from pathlib import Path
 
 
-def exclude_nets(dsn: Path, patterns: list[str]) -> int:
-    """Take the pins of some nets out of the Specctra file, so that the autorouter leaves them alone.
+FIXED = "__fixed"       # suffix of the net classes that the autorouter is told to ignore
+
+
+def _class_blocks(text: str):
+    """Yield (start, end, name, nets, body) of every ``(class ...)`` block of a Specctra file."""
+    pos = 0
+    while True:
+        start = text.find("(class ", pos)
+        if start < 0:
+            return
+        depth, i = 0, start
+        while True:
+            ch = text[i]
+            if ch == '"':
+                i = text.index('"', i + 1)
+            elif ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+                if depth == 0:
+                    break
+            i += 1
+        end = i + 1
+        inner = text[start + len("(class "):i]
+        body_at = len(inner)
+        j = 0
+        while j < len(inner):               # the first parenthesis outside a quoted name starts the body
+            if inner[j] == '"':
+                j = inner.index('"', j + 1)
+            elif inner[j] == "(":
+                body_at = j
+                break
+            j += 1
+        tokens = re.findall(r'"[^"]*"|\S+', inner[:body_at])
+        yield start, end, tokens[0], tokens[1:], inner[body_at:].rstrip()
+        pos = end
+
+
+def fix_nets(dsn: Path, patterns: list[str]) -> tuple[int, list[str]]:
+    """Mark nets as not to be routed: move them to net classes of their own, for the autorouter to ignore.
 
     ``patterns`` are shell-style patterns of KiCad net names. A net that is
-    connected through a plane, a pour or tracks on a layer the autorouter does
-    not see looks unrouted to it. With no pins the net has nothing to route;
-    its pads stay in the file as obstacles and its pre-routed tracks and vias
-    stay as fixed copper.
+    connected through a plane, a pour or hand-routed copper must be left alone
+    by the autorouter. Each such net moves from its class ``X`` to a class
+    ``X__fixed`` with the same rules; the caller gives the names of those
+    classes to Freerouting as ``router.autorouter.ignore_net_classes``.
+
+    The pins of the net stay in the file, so its pads keep the clearance of
+    their class. Taking the pins out, as an earlier version of this function
+    did, left the pads with the default clearance, and Freerouting also joined
+    the pieces of a net that connects through a plane.
+
+    Returns the number of nets moved and the names of the new classes.
     """
     if not patterns:
-        return 0
+        return 0, []
     text = dsn.read_text(encoding="utf-8")
-    count = 0
-
-    def strip(m):
-        nonlocal count
-        name = m.group(1).strip('"')
-        if any(fnmatch.fnmatchcase(name, pat) for pat in patterns):
-            count += 1
-            return f"(net {m.group(1)}\n    )"
-        return m.group(0)
-
-    text = re.sub(r'\(net ("[^"]+"|\S+)\s*\(pins[^)]*\)\s*\)', strip, text)
-    dsn.write_text(text, encoding="utf-8")
-    return count
+    out, last, count, names = [], 0, 0, []
+    for start, end, name, nets, body in _class_blocks(text):
+        fixed = [n for n in nets if any(fnmatch.fnmatchcase(n.strip('"'), pat) for pat in patterns)]
+        if not fixed:
+            continue
+        kept = [n for n in nets if n not in fixed]
+        new_name = (name.strip('"') + FIXED)
+        token = f'"{new_name}"' if name.startswith('"') else new_name
+        indent = "    "
+        block = ""
+        if kept:
+            block += f"(class {name} " + " ".join(kept) + f"\n{indent}  {body}\n{indent})\n{indent}"
+        block += f"(class {token} " + " ".join(fixed) + f"\n{indent}  {body}\n{indent})"
+        out.append(text[last:start] + block)
+        last = end
+        count += len(fixed)
+        names.append(new_name)
+    if not out:
+        return 0, []
+    dsn.write_text("".join(out) + text[last:], encoding="utf-8")
+    return count, names
 
 
 def add_keepouts(dsn: Path, keepouts: list[dict], to_dsn) -> int:
@@ -64,7 +117,7 @@ def add_keepouts(dsn: Path, keepouts: list[dict], to_dsn) -> int:
     return len(lines)
 
 
-def router_settings(board_layers: list[str], route: dict) -> dict:
+def router_settings(board_layers: list[str], route: dict, ignore: list[str] | None = None) -> dict:
     """Freerouting's ``router`` settings for a board: which layers it may route on, and at what cost.
 
     Freerouting 2.5.0 does not take these from the Specctra file. They go into
@@ -72,8 +125,11 @@ def router_settings(board_layers: list[str], route: dict) -> dict:
     the copper layers the autorouter may route on; its vias still pass through
     the others. The fan-out stage is off unless ``[route] fanout = true``: on a
     dense board it spends the space the router needs.
+    ``ignore`` are the net classes of ``fix_nets``.
     """
     settings: dict = {"fanout": {"enabled": bool(route.get("fanout", False))}}
+    if ignore:
+        settings["autorouter"] = {"ignore_net_classes": sorted(ignore)}
     if "layers" in route:
         costs = route.get("layer_cost", {})
         layers = []

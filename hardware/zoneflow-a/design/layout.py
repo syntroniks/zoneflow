@@ -465,6 +465,14 @@ U1 = [0, 8.8, 90]          # opto-triac: LED side down, pin 1 left; pin 4 (gate)
 # Copper
 # =============================================================================================
 
+# Every terminal of J1 to J4: x of its pin, and the label behind it.
+TERMINALS = [
+    (17.805, "24V~"), (21.615, "24V~"),
+    (30.225, "COM"), (34.035, "COM"), (37.845, "MV"), (41.655, "Z1"), (45.465, "Z2"), (49.275, "Z3"), (53.085, "Z4"),
+    (58.295, "Z5"), (62.105, "Z6"), (65.915, "Z7"), (69.725, "Z8"),
+    (78.335, "5V"), (82.145, "FLOW"), (85.955, "GND"), (89.765, "RAIN"), (93.575, "GND"), (97.385, "AUX"), (101.195, "GND"),
+]
+
 COLS = {name: 42.85 + 7.1 * k for k, name in enumerate(["MV", "Z1", "Z2", "Z3", "Z4", "Z5", "Z6", "Z7", "Z8"])}
 PINS = {"MV": "J2.3", "Z1": "J2.4", "Z2": "J2.5", "Z3": "J2.6", "Z4": "J2.7",
         "Z5": "J3.1", "Z6": "J3.2", "Z7": "J3.3", "Z8": "J3.4"}
@@ -788,6 +796,21 @@ for i, n in enumerate(BUS):
     bus.append(track(pts, width=0.2, via=(0.6, 0.3)))
     bus.append(track([f"J7.{pin}", [fx - 0.5, py], [fx, py + 0.5], {"via": [fx, ys]}], width=0.2, via=(0.6, 0.3)))
 more += bus
+# Flash-over points at the field terminals (system specification, section 4; hardware design, 13.4).
+# A ground rail on B.Cu below the terminal row, and from it a tooth towards the pad of every
+# terminal that is not ground, ending 0.6 mm from the pad: the smallest gap that still keeps the
+# 0.5 mm clearance of the 24 VAC nets. The solder mask is opened over each tooth.
+GAP_PINS = [x for x, name in TERMINALS[2:] if name != "GND"]          # J2, J3 and J4; not the 24 VAC input
+GAP_RAIL_Y, GAP_TIP_Y = 3.2, 3.95                                      # pad edge at y = 4.75; tooth 0.4 wide
+more += ["# Flash-over points at the field terminals: ground rail and teeth on B.Cu. See layout.py.",
+         track(["J4.3", [85.955, GAP_RAIL_Y], [30.225, GAP_RAIL_Y]], layer="B.Cu", width=0.5),
+         track(["J4.7", [101.195, GAP_RAIL_Y], [85.955, GAP_RAIL_Y]], layer="B.Cu", width=0.5),
+         track(["J4.5", [93.575, GAP_RAIL_Y]], layer="B.Cu", width=0.5)]
+for gx in GAP_PINS:
+    more.append('[[track]]\nlayer = "B.Cu"\nwidth = 0.4\nnet = "GND"\n'
+                f"points = [[{gx:g}, {GAP_RAIL_Y:g}], [{gx:g}, {GAP_TIP_Y:g}]]\n")
+    more.append('[[line]]\nlayer = "B.Mask"\nwidth = 0.6\n'
+                f"points = [[{gx:g}, {GAP_TIP_Y - 0.25:g}], [{gx:g}, {GAP_TIP_Y:g}]]\n")
 more += [
     "# ADC lines (hardware design, section 8.5: the current waveform may not come near the keep-alive).\n"
     "# From the series resistors at the amplifier on B.Cu, east along y = 67, south of everything the\n"
@@ -878,12 +901,6 @@ def text(t, x, y, size=1.0, thickness=0.15, layer="F.SilkS", **kw):
     return "\n".join(s_) + "\n"
 
 LABEL_Y = 8.25      # the strip behind the terminal headers, kept free of pads: y = 7.6 to 8.9
-TERMINALS = [
-    (17.805, "24V~"), (21.615, "24V~"),
-    (30.225, "COM"), (34.035, "COM"), (37.845, "MV"), (41.655, "Z1"), (45.465, "Z2"), (49.275, "Z3"), (53.085, "Z4"),
-    (58.295, "Z5"), (62.105, "Z6"), (65.915, "Z7"), (69.725, "Z8"),
-    (78.335, "5V"), (82.145, "FLOW"), (85.955, "GND"), (89.765, "RAIN"), (93.575, "GND"), (97.385, "AUX"), (101.195, "GND"),
-]
 labels = ["# Terminal labels, one behind each terminal, as the installer reads them with the plugs in.\n"
           "# The names are those of the wiring page of the manual."]
 labels += [text(t, x, LABEL_Y) for x, t in TERMINALS]
@@ -952,23 +969,38 @@ rect = [39.4, 7.3, 103.3, 38.9]
 layers = ["In2.Cu"]
 rect = [34.6, 18.6, 39.4, 40.1]
 
-# The keep-alive net runs on B.Cu. In2.Cu is the layer next to it with no plane between: nothing is
-# routed on In2.Cu within 1.1 mm of it in plan view. The 3.3 V pour stays.
+# The keep-alive net runs on B.Cu. Nothing is routed there within 1.1 mm of it, nor on In2.Cu, the
+# layer next to it with no plane between. The pours stay. The [[guard]] strips say the same to DRC
+# for the long segments; these rectangles also cover the vias and the corners.
 [[route.keepout]]
-layers = ["In2.Cu"]
+layers = ["In2.Cu", "B.Cu"]
 rect = [95.1, 88.9, 97.3, 98.2]
 
 [[route.keepout]]
-layers = ["In2.Cu"]
+layers = ["In2.Cu", "B.Cu"]
 rect = [92.8, 86.5, 97.6, 88.9]
 
 [[route.keepout]]
-layers = ["In2.Cu"]
+layers = ["In2.Cu", "B.Cu"]
 rect = [91.4, 78.6, 93.6, 87.6]
 
 [[route.keepout]]
-layers = ["In2.Cu"]
+layers = ["In2.Cu", "B.Cu"]
 rect = [43.1, 77.5, 92.6, 79.7]
+
+# The three short pieces of the keep-alive on F.Cu: at the module pin, at R33 and R29, at R89.
+# A track of 0.2 mm that leaves a neighbouring module pin straight stays just outside.
+[[route.keepout]]
+layers = ["F.Cu"]
+rect = [93.2, 95.96, 97.45, 98.2]
+
+[[route.keepout]]
+layers = ["F.Cu"]
+rect = [94.6, 86.45, 98.3, 88.75]
+
+[[route.keepout]]
+layers = ["F.Cu"]
+rect = [43.0, 77.45, 46.3, 79.75]
 
 # Between detector B and the encoder no net has a reason to cross the keep-alive: closed on F.Cu too.
 [[route.keepout]]

@@ -117,6 +117,8 @@ def main(argv=None) -> int:
     ap.add_argument("--passes", type=int, default=20)
     ap.add_argument("--timeout", type=int, default=1800)
     ap.add_argument("--force", action="store_true", help="route again even if the DSN is unchanged")
+    ap.add_argument("--stored-only", action="store_true",
+                    help="never run the autorouter: fail unless the stored session was made from this DSN (for CI)")
     args = ap.parse_args(argv)
 
     project = Path(args.project_dir)
@@ -134,6 +136,12 @@ def main(argv=None) -> int:
     if not args.force and ses.exists() and stamp.exists() and stamp.read_text().strip() == digest:
         print(f"route: DSN unchanged, reusing {ses}")
         return 0
+    if args.stored_only:
+        sys.stderr.write(f"route: the session stored in {route_dir} was not made from the board these sources give.\n"
+                         f"  hash of this DSN and router settings: {digest}\n"
+                         f"  hash stored with the session:         {stamp.read_text().strip() if stamp.exists() else 'none'}\n"
+                         "Run make in the board directory on a machine with Java and commit route/ and output/.\n")
+        return 1
 
     jar = fetch_jar(Path(args.cache))
     out = project / "build" / f"{name}.ses"

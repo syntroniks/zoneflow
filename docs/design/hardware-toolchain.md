@@ -714,6 +714,20 @@ layout itself is described in [hardware layout](hardware-layout.md).
 | `[route] exclude` | Nets the autorouter must leave alone, by pattern. Their pins are taken out of the Specctra file; their pads stay as obstacles and their pre-routed copper stays as fixed copper |
 | `[[route.keepout]]` | Rectangles of one layer where the autorouter may put neither track nor via: the planes and islands that are added as zones after the Specctra file is written |
 | `[route.layer_cost]` | A cost factor for a layer, to make the autorouter use it less |
+| `[[text]] angle, justify, optional` | A turned or left- or right-aligned text, and a text the builder may drop if it collides (13.6) |
+| `[[line]]` | Straight silkscreen strokes, for a mark that is not text |
+| `[silk] clean = true` | Make the silkscreen pass DRC by removing and moving what DRC finds (13.6) |
+| `[[keepaway]]`, `[[apart]]`, `[[perpendicular]]`, `[[no_pad]]` | Layout rules that DRC cannot express, checked on the finished board (13.7) |
+| `[drc_severity]` | The severity of one DRC check, written into the project file |
+
+`board.toml` of this board is itself written by a program, `design/layout.py`,
+which `make` runs first. Most of the file repeats or is computed: nine output
+columns, the fan-out lanes of the valve outputs, eighteen gate lines, a bus
+with eighteen stubs, twenty terminal labels. `layout.py` is the source;
+`board.toml` is committed so that a reviewer can read the numbers without
+running anything. `layout.py` uses the standard library only and asserts what
+it computes: that no two fan-out lanes come closer than their pitch, that
+every gate line found a lane.
 
 A footprint named `Lib:Name` is taken from the project's own `lib/Lib.pretty`
 if that exists, and from KiCad's library otherwise.
@@ -744,17 +758,34 @@ that each is reported.
 
 ### 13.3 The autorouter reports usage unless told not to
 
-Freerouting 2.5.0 sends usage data to its maker's server by default. Reading
-the class files of the jar: the events carry the command line, which names the
-design file, the host name, and board statistics. The defaults in its settings
-file are `disable_analytics: false` and `allow_telemetry: true`.
+Freerouting 2.5.0 sends usage data to its maker's server,
+`api.freerouting.app`, by default. The defaults in its settings file are
+`disable_analytics: false` and `allow_telemetry: true`. Reading the class
+files of the jar (`app/freerouting/analytics/`), an event carries:
 
-`hwflow.route` now writes a settings file with both turned off into
-`build/freerouting-home/`, points Freerouting at it through the `XDG_*`
-variables, and sets the Java proxy properties to a closed local port, so that
-no request can leave even if a later version ignores the setting. **The runs
-before this change, the test board's and the first probes of this board, went
-out with the defaults.**
+- the command line, which names the design file: `zoneflow-a.dsn`,
+  `toolchain-test.dsn`, with the path it was given;
+- the host name of the machine;
+- statistics of the board and of the routing run.
+
+I read the names of the event fields in the class files. I did not capture a
+request, so I cannot say more exactly what a run sent, and I saw no field for
+the design file's contents.
+
+**The runs before this was found went out with the defaults**: every
+autorouter run of the test board, and the first probes of the revision A
+board, on 2026-11-10 from the build machine. The project owner has been told.
+
+Since then:
+
+- `hwflow.route` writes a settings file with both switches off into
+  `build/freerouting-home/` and points Freerouting at it through the `XDG_*`
+  variables. It never uses the user's own Freerouting settings.
+- It sets the Java proxy properties for HTTP and HTTPS to a closed port on the
+  local machine, so that no request can leave even if a later version ignores
+  the settings file. This is the only way the jar is run: do not start it by
+  hand.
+- CI does not run the autorouter. It reuses the stored session (13.8).
 
 The same settings file carries what the Specctra file cannot:
 
@@ -792,3 +823,62 @@ three passes. What made it tractable:
    repeats.
 3. A third routing layer for the logic nets.
 4. No fan-out stage.
+
+
+### 13.6 A silkscreen that passes DRC
+
+On a dense board the stock silkscreen of the footprints cannot stay: outlines
+cross the pads of the neighbours, designators land on other parts, the outline
+of an edge connector hangs over the board edge. `hwflow/silk.py` does not model
+any of that. It uses KiCad's DRC as the judge: it saves a copy of the board,
+runs `kicad-cli pcb drc`, and for every silkscreen finding
+
+- deletes the footprint stroke that is at fault;
+- moves a reference designator to the next of fourteen places round its part,
+  and hides it when none is free;
+- deletes a `[[text]]` marked `optional`, and fails the build for one that is
+  not.
+
+It repeats until DRC has no silkscreen finding. One round takes about a
+second on this board and it needs about sixteen. `build/silk.json` says what
+was removed, moved and hidden.
+
+The price: a footprint with a stroke removed no longer equals its library
+copy, and DRC says so (`lib_footprint_mismatch`). `board.toml` sets that one
+check to "ignore". The check has little to say in this flow in any case: the
+board is built from the libraries on every run and no board file is edited by
+hand.
+
+### 13.7 Layout rules that DRC cannot express
+
+DRC measures copper against copper on one layer. A safety analysis also makes
+statements such as "this net stays away from that one on every layer", "these
+two circuits are 10 mm apart", "this net has no test pad".
+`hwflow/layoutrules.py` reads them from `board.toml` and measures them on the
+finished board file: `make rules`, part of `make`.
+
+| Table | What it checks |
+|---|---|
+| `[[keepaway]] net, from, distance, scope` | The smallest distance from the copper of `net` to the copper of every net matching `from`. `scope = "plan"` measures in plan view whatever the layers, so that not even a crossing on another layer passes. `scope = "layer"` measures copper that shares a layer. `kinds` and `own_kinds` choose among tracks, vias and pads; `except` leaves nets out |
+| `[[apart]] a, b, distance` | The smallest gap between a pad of one group of parts and a pad of the other |
+| `[[perpendicular]] parts` | Two parts at right angles |
+| `[[no_pad]] nets, refs` | No part matching `refs` has a pad on one of the nets |
+
+Tracks are lines with a width, vias circles on every layer, pads their
+bounding rectangles. Pours are not looked at. A rule that names no net of the
+board fails, so that a renamed net cannot silently switch a rule off. The
+result goes to `output/reports/layout-rules.md`. Ten tests in
+`tests/test_layoutrules.py` run each rule on made-up copper, met and broken.
+
+A `[[keepaway]]` with `scope = "layer"` also acts earlier: the builder keeps
+the plane vias of the `from` nets that distance away when it places them.
+
+### 13.8 What CI does with the board
+
+The board build needs KiCad's Python module, which the `kicad/kicad` image has,
+and the autorouter, which CI does not run. The job regenerates the placed and
+pre-routed board from the sources, checks that the Specctra file it writes has
+the hash stored beside the committed session in `route/`, imports that
+session, and runs `make board-check`: DRC with schematic parity, the
+mechanical contract, the layout rules. It makes no renders and needs no
+display.

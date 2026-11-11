@@ -92,6 +92,10 @@ def stamp_copper(board) -> None:
             a, b = sorted([(t.GetStart().x, t.GetStart().y), (t.GetEnd().x, t.GetEnd().y)])
             k = ("seg", t.GetNetname(), t.GetLayer(), a, b, t.GetWidth())
         keyed.append((k, t))
+    # Two passes. An item may be given the UUID another item still has from an earlier stamping,
+    # which KiCad's debug build reports as an assertion. Park them all on unused values first.
+    for i, (_, t) in enumerate(keyed):
+        set_uuid(t, "parked", i)
     for k, t in keyed:
         n = seen.get(k, 0)
         seen[k] = n + 1
@@ -337,6 +341,11 @@ class Builder:
             layer = self.layer(t.get("layer", "F.Cu"))
             other = self.layer(t.get("via_to", "B.Cu"))
             net = None
+            if "net" in t:
+                # a track that touches no pad names its net
+                net = self.board.FindNet(t["net"])
+                if net is None:
+                    raise BoardError(f"track {t['points']}: no net named {t['net']}")
             pts: list[tuple[pcbnew.VECTOR2I, bool]] = []
             for p in t["points"]:
                 if isinstance(p, str):
@@ -818,7 +827,7 @@ def cmd_build(args) -> int:
     if not ok:
         raise BoardError("Specctra DSN export failed")
     route = b.cfg.get("route", {})
-    n_excluded = dsn_mod.exclude_nets(dsn, route.get("exclude", []))
+    n_excluded, fixed_classes = dsn_mod.fix_nets(dsn, route.get("exclude", []))
     names = ["F.Cu"] + [f"In{i}.Cu" for i in range(1, layers - 1)] + ["B.Cu"]
 
     def to_dsn(x: float, y: float) -> tuple[float, float]:
@@ -828,7 +837,7 @@ def cmd_build(args) -> int:
     dsn_mod.add_keepouts(dsn, route.get("keepout", []), to_dsn)
     # Read by hwflow.route, which hands them to the autorouter in its settings file.
     (Path(args.project_dir) / "build" / "router.json").write_text(
-        json.dumps(dsn_mod.router_settings(names, route), indent=1, sort_keys=True) + "\n", encoding="utf-8")
+        json.dumps(dsn_mod.router_settings(names, route, fixed_classes), indent=1, sort_keys=True) + "\n", encoding="utf-8")
     # Zones are added after the DSN is written: the autorouter then routes
     # GND like any other net, and the pour only adds copper on top.
     b.zones()
@@ -850,12 +859,32 @@ def cmd_finish(args) -> int:
         if not pcbnew.ImportSpecctraSES(board, str(args.session)):
             raise BoardError("Specctra session import failed")
     after = len(list(board.GetTracks()))
+    unrouted, patched = 0, 0
+    if args.design_dir:
+        # [[unroute]] and [[patch]] of board.toml: what the autorouter left open or did badly is
+        # taken out and written by hand. This happens after the import, so the stored session
+        # stays valid; the patches belong to that session and DRC fails if they no longer fit.
+        b = Builder(project_dir, Path(args.design_dir))
+        b.board = board
+        b.fps = {fp.GetReference(): fp for fp in board.GetFootprints()}
+        import fnmatch
+        pats = [p for u in b.cfg.get("unroute", []) for p in u["nets"]]
+        if pats:
+            gone = [t for t in board.GetTracks() if not t.IsLocked()
+                    and any(fnmatch.fnmatchcase(t.GetNetname(), p) for p in pats)]
+            unrouted = len(gone)
+            for t in gone:
+                board.Delete(t)
+            del gone
+        patched = b._tracks(b.cfg.get("patch", []))
     removed = remove_dangling(board, board.GetConnectivity())
     tracks = list(board.GetTracks())
     stats = {
         "pre_routed_items": before,
         "items_after_session_import": after,
         "dangling_stubs_removed": removed,
+        "autorouted_items_taken_out": unrouted,
+        "patch_segments": patched,
         "track_segments": sum(1 for t in tracks if t.Type() != pcbnew.PCB_VIA_T),
         "vias": sum(1 for t in tracks if t.Type() == pcbnew.PCB_VIA_T),
         "track_length_mm": round(sum(pcbnew.ToMM(t.GetLength()) for t in tracks if t.Type() != pcbnew.PCB_VIA_T), 1),
@@ -868,7 +897,8 @@ def cmd_finish(args) -> int:
     stamp_points(pcb_path)
     (project_dir / "build" / "route-stats.json").write_text(json.dumps(stats, indent=1) + "\n", encoding="utf-8")
     print(f"board: {stats['track_segments']} track segments, {stats['vias']} vias "
-          f"({before} items were pre-routed, {removed} dangling stubs removed)")
+          f"({before} items were pre-routed, {removed} dangling stubs removed, {unrouted} autorouted items "
+          f"taken out and {patched} segments patched by hand)")
     return 0
 
 
@@ -947,6 +977,7 @@ def main(argv=None) -> int:
     s = sub.add_parser("finish")
     s.add_argument("project_dir")
     s.add_argument("--session")
+    s.add_argument("--design", dest="design_dir", help="design directory: apply [[unroute]] and [[patch]] of board.toml")
     s.set_defaults(fn=cmd_finish)
     s = sub.add_parser("dump")
     s.add_argument("design_dir")

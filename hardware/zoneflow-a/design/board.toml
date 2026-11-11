@@ -492,23 +492,38 @@ rect = [39.4, 7.3, 103.3, 38.9]
 layers = ["In2.Cu"]
 rect = [34.6, 18.6, 39.4, 40.1]
 
-# The keep-alive net runs on B.Cu. In2.Cu is the layer next to it with no plane between: nothing is
-# routed on In2.Cu within 1.1 mm of it in plan view. The 3.3 V pour stays.
+# The keep-alive net runs on B.Cu. Nothing is routed there within 1.1 mm of it, nor on In2.Cu, the
+# layer next to it with no plane between. The pours stay. The [[guard]] strips say the same to DRC
+# for the long segments; these rectangles also cover the vias and the corners.
 [[route.keepout]]
-layers = ["In2.Cu"]
+layers = ["In2.Cu", "B.Cu"]
 rect = [95.1, 88.9, 97.3, 98.2]
 
 [[route.keepout]]
-layers = ["In2.Cu"]
+layers = ["In2.Cu", "B.Cu"]
 rect = [92.8, 86.5, 97.6, 88.9]
 
 [[route.keepout]]
-layers = ["In2.Cu"]
+layers = ["In2.Cu", "B.Cu"]
 rect = [91.4, 78.6, 93.6, 87.6]
 
 [[route.keepout]]
-layers = ["In2.Cu"]
+layers = ["In2.Cu", "B.Cu"]
 rect = [43.1, 77.5, 92.6, 79.7]
+
+# The three short pieces of the keep-alive on F.Cu: at the module pin, at R33 and R29, at R89.
+# A track of 0.2 mm that leaves a neighbouring module pin straight stays just outside.
+[[route.keepout]]
+layers = ["F.Cu"]
+rect = [93.2, 95.96, 97.45, 98.2]
+
+[[route.keepout]]
+layers = ["F.Cu"]
+rect = [94.6, 86.45, 98.3, 88.75]
+
+[[route.keepout]]
+layers = ["F.Cu"]
+rect = [43.0, 77.45, 46.3, 79.75]
 
 # Between detector B and the encoder no net has a reason to cross the keep-alive: closed on F.Cu too.
 [[route.keepout]]
@@ -1332,6 +1347,187 @@ layer = "F.Cu"
 width = 0.2
 via = [0.6, 0.3]
 points = ["R61.1", [48.2, 94.2], {via = [48.2, 96.8]}]
+
+# Flash-over points at the field terminals: ground rail and teeth on B.Cu. See layout.py.
+[[track]]
+layer = "B.Cu"
+width = 0.5
+points = ["J4.3", [85.955, 3.2], [30.225, 3.2]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.5
+points = ["J4.7", [101.195, 3.2], [85.955, 3.2]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.5
+points = ["J4.5", [93.575, 3.2]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.4
+net = "GND"
+points = [[30.225, 3.2], [30.225, 3.95]]
+
+[[line]]
+layer = "B.Mask"
+width = 0.6
+points = [[30.225, 3.7], [30.225, 3.95]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.4
+net = "GND"
+points = [[34.035, 3.2], [34.035, 3.95]]
+
+[[line]]
+layer = "B.Mask"
+width = 0.6
+points = [[34.035, 3.7], [34.035, 3.95]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.4
+net = "GND"
+points = [[37.845, 3.2], [37.845, 3.95]]
+
+[[line]]
+layer = "B.Mask"
+width = 0.6
+points = [[37.845, 3.7], [37.845, 3.95]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.4
+net = "GND"
+points = [[41.655, 3.2], [41.655, 3.95]]
+
+[[line]]
+layer = "B.Mask"
+width = 0.6
+points = [[41.655, 3.7], [41.655, 3.95]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.4
+net = "GND"
+points = [[45.465, 3.2], [45.465, 3.95]]
+
+[[line]]
+layer = "B.Mask"
+width = 0.6
+points = [[45.465, 3.7], [45.465, 3.95]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.4
+net = "GND"
+points = [[49.275, 3.2], [49.275, 3.95]]
+
+[[line]]
+layer = "B.Mask"
+width = 0.6
+points = [[49.275, 3.7], [49.275, 3.95]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.4
+net = "GND"
+points = [[53.085, 3.2], [53.085, 3.95]]
+
+[[line]]
+layer = "B.Mask"
+width = 0.6
+points = [[53.085, 3.7], [53.085, 3.95]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.4
+net = "GND"
+points = [[58.295, 3.2], [58.295, 3.95]]
+
+[[line]]
+layer = "B.Mask"
+width = 0.6
+points = [[58.295, 3.7], [58.295, 3.95]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.4
+net = "GND"
+points = [[62.105, 3.2], [62.105, 3.95]]
+
+[[line]]
+layer = "B.Mask"
+width = 0.6
+points = [[62.105, 3.7], [62.105, 3.95]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.4
+net = "GND"
+points = [[65.915, 3.2], [65.915, 3.95]]
+
+[[line]]
+layer = "B.Mask"
+width = 0.6
+points = [[65.915, 3.7], [65.915, 3.95]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.4
+net = "GND"
+points = [[69.725, 3.2], [69.725, 3.95]]
+
+[[line]]
+layer = "B.Mask"
+width = 0.6
+points = [[69.725, 3.7], [69.725, 3.95]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.4
+net = "GND"
+points = [[78.335, 3.2], [78.335, 3.95]]
+
+[[line]]
+layer = "B.Mask"
+width = 0.6
+points = [[78.335, 3.7], [78.335, 3.95]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.4
+net = "GND"
+points = [[82.145, 3.2], [82.145, 3.95]]
+
+[[line]]
+layer = "B.Mask"
+width = 0.6
+points = [[82.145, 3.7], [82.145, 3.95]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.4
+net = "GND"
+points = [[89.765, 3.2], [89.765, 3.95]]
+
+[[line]]
+layer = "B.Mask"
+width = 0.6
+points = [[89.765, 3.7], [89.765, 3.95]]
+
+[[track]]
+layer = "B.Cu"
+width = 0.4
+net = "GND"
+points = [[97.385, 3.2], [97.385, 3.95]]
+
+[[line]]
+layer = "B.Mask"
+width = 0.6
+points = [[97.385, 3.7], [97.385, 3.95]]
 
 # ADC lines (hardware design, section 8.5: the current waveform may not come near the keep-alive).
 # From the series resistors at the amplifier on B.Cu, east along y = 67, south of everything the

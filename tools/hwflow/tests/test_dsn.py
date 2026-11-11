@@ -45,23 +45,39 @@ TEXT = '''(pcb "x.dsn"
 '''
 
 
-def test_excluded_nets_lose_their_pins_and_stay_declared(tmp_path):
+def test_fixed_nets_move_to_a_class_of_their_own_and_keep_their_pins(tmp_path):
     f = tmp_path / "a.dsn"
     f.write_text(TEXT)
-    assert dsn.exclude_nets(f, ["GND", "/*/T2", "/OUT*"]) == 3
+    assert dsn.fix_nets(f, ["GND", "/*/T2", "/OUT*"]) == (1, ["kicad_default__fixed"])
     out = f.read_text()
-    assert "(pins U1-1" not in out and "F101-2 Q101-2" not in out and "J2-4" not in out
-    assert "(net GND\n    )" in out and '(net "/OUT Z1"\n    )' in out
-    assert "(pins U1-2 R1-1)" in out               # a net that is not listed keeps its pins
-    assert "(net GND)(type protect)" in out        # the pre-routed copper of the net stays
-    assert "(class kicad_default GND /SIG" in out
+    assert "(pins U1-1 U1-9@1" in out and "(pins U1-2 R1-1)" in out      # every net keeps its pins
+    assert "(class kicad_default /SIG\n" in out
+    assert "(class kicad_default__fixed GND\n" in out
+    assert out.count("(width 200)") == 3                                 # the rule went with it
+    assert "(net GND)(type protect)" in out
+    assert out.count("(") == out.count(")")
+
+
+def test_a_class_with_every_net_fixed_is_replaced(tmp_path):
+    f = tmp_path / "a.dsn"
+    f.write_text(TEXT.replace("(class kicad_default GND /SIG", '(class "Odd (x)" GND "/A (b)"'))
+    assert dsn.fix_nets(f, ["GND", "/A*"]) == (2, ["Odd (x)__fixed"])
+    out = f.read_text()
+    assert '(class "Odd (x)__fixed" GND "/A (b)"' in out and '(class "Odd (x)" ' not in out
 
 
 def test_no_pattern_changes_nothing(tmp_path):
     f = tmp_path / "a.dsn"
     f.write_text(TEXT)
-    assert dsn.exclude_nets(f, []) == 0
+    assert dsn.fix_nets(f, []) == (0, [])
+    assert dsn.fix_nets(f, ["/NOPE"]) == (0, [])
     assert f.read_text() == TEXT
+
+
+def test_router_settings_name_the_ignored_classes():
+    s = dsn.router_settings(["F.Cu", "B.Cu"], {}, ["b__fixed", "a__fixed"])
+    assert s["autorouter"] == {"ignore_net_classes": ["a__fixed", "b__fixed"]}
+    assert "autorouter" not in dsn.router_settings(["F.Cu", "B.Cu"], {})
 
 
 def test_keepouts_go_before_the_via_list(tmp_path):
