@@ -3904,5 +3904,5 @@ netlist it ran.
 - **Everything in section 20.** No bench work has been done. Risks 32 to 34 are new, and risks 27 and 30 are rewritten.
 - **The processor at 5 V.** Accepted, not solved. Section 9.5.
 - **An open bleed resistor of detector B on a new board.** Firmware cannot find it. Bring-up step 1 can.
-- **The firmware.** It implements section 19 as review A2 left it. The list of changes is in the answers document and in the issue opened with it.
+- **The firmware.** It implements section 19 as review A2 left it. The list of changes is in the answers document and in [issue #41](https://github.com/syntroniks/zoneflow/issues/41).
 

@@ -404,7 +404,8 @@ section 3.
 ## 7. What the firmware must change
 
 The firmware on `main` implements section 19 as review A2 left it. These
-are the differences, in the order of the section. Names in brackets are the
+are the differences, in the order of the section.
+[Issue #41](https://github.com/syntroniks/zoneflow/issues/41) tracks them. Names in brackets are the
 constants and checks of `zf/hw/output_stage.hpp` as they are today.
 
 **Changed values.**
@@ -451,7 +452,8 @@ otherwise.
 | `ngspice -b vin_mon.cir`, 22 corners | Section 2.2 |
 | `make -C hardware design-check` | Passes: 353 components, 99 BOM lines, the committed schematic netlist equals `netlist.yaml` pin for pin |
 | `make` in `hardware/zoneflow-a/` | Passes the netlist comparison, the page lint and ERC |
-| `uv run mkdocs build --strict`, `tools/docs/check_links.py` | See the pull request |
+| `uv run mkdocs build --strict`, `tools/docs/check_links.py site` | Passes. 6206 internal links in 56 pages, 0 broken |
+| `tools/cost`: `pytest`, `ruff check`, `zfcost render --check` | 18 tests pass. The cost page is current with the TPS3701 and the five new placements counted |
 
 **Not run.** The corner grid, the Monte Carlo set, the duty sweep and the
 warm-up sweep of review A2 were not repeated. Their committed results are
