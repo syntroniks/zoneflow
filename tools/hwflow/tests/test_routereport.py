@@ -6,10 +6,11 @@ from hwflow import routereport
 
 def data():
     row = {"net": "/A", "class": "Default", "class_width": 0.2, "length": 40.0, "auto_length": 40.0, "vias": 2,
-           "patch_length": 0.0, "patch_vias": 0, "patch_min_width": None,
+           "patch_length": 0.0, "patch_vias": 0, "patch_min_width": None, "narrow_length": 0.0,
            "layers": ["B.Cu", "F.Cu"], "min_width": 0.2, "span": 10.0, "plane_length": 0.0}
     return {"rows": [row,
-                     dict(row, net="/THIN", **{"class": "Power"}, class_width=0.4, min_width=0.2, length=12.0),
+                     dict(row, net="/THIN", **{"class": "Power"}, class_width=0.4, min_width=0.2, length=12.0,
+                          narrow_length=3.5),
                      dict(row, net="/SLOT", length=8.0, plane_length=3.5, layers=["In2.Cu"]),
                      dict(row, net="/LATE", length=9.0, auto_length=0.0, patch_length=9.0, patch_vias=2,
                           patch_min_width=0.2)],
@@ -21,7 +22,8 @@ def data():
 
 def test_each_thing_to_look_at_is_listed():
     text = routereport.markdown(data(), ["In2.Cu"])
-    assert "- `/THIN` (Power): 0.2 mm, class width 0.4 mm" in text
+    assert "- `/THIN` (Power): 3.5 mm of track, narrowest 0.2 mm, class width 0.4 mm" in text
+    assert "Total: 3.5 mm in 1 nets." in text
     assert "- `/A`: a via in pad 2 of R1" in text
     assert "- `/A`: 40 mm of track for 10 mm" in text          # four times as long as its pins are apart
     assert "`/THIN`: 12 mm of track" not in text               # under the length worth a look

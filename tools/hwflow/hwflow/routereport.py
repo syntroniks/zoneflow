@@ -55,12 +55,19 @@ def collect(board, plane_layers: list[str], patches: tuple[set, set] = (frozense
 
     nets: dict[str, dict] = defaultdict(lambda: {"auto_len": 0.0, "hand_len": 0.0, "auto_vias": 0, "hand_vias": 0,
                                                  "patch_len": 0.0, "patch_vias": 0, "patch_min_w": None,
-                                                 "layers": set(), "min_w": None, "plane_len": 0.0})
+                                                 "layers": set(), "min_w": None, "plane_len": 0.0,
+                                                 "narrow_len": 0.0})
     per_layer: dict[str, dict] = defaultdict(lambda: {"hand": 0.0, "patch": 0.0, "auto": 0.0})
     patch_segs, patch_vias = patches
+    class_width: dict[str, float] = {}
 
     def at(v):
         return round(pcbnew.ToMM(v.x), 2), round(pcbnew.ToMM(v.y), 2)
+
+    def asked(net):
+        if net not in class_width:
+            class_width[net] = pcbnew.ToMM(settings.GetEffectiveNetClass(net).GetTrackWidth())
+        return class_width[net]
 
     settings = board.GetDesignSettings().m_NetSettings
     smd = []
@@ -87,7 +94,10 @@ def collect(board, plane_layers: list[str], patches: tuple[set, set] = (frozense
         length = pcbnew.ToMM(t.GetLength())
         layer = t.GetLayerName()
         w = pcbnew.ToMM(t.GetWidth())
-        if (str(layer), frozenset([at(t.GetStart()), at(t.GetEnd())])) in patch_segs:
+        is_patch = (str(layer), frozenset([at(t.GetStart()), at(t.GetEnd())])) in patch_segs
+        if (is_patch or not hand) and w < asked(t.GetNetname()) - 1e-6:
+            n["narrow_len"] += length
+        if is_patch:
             per_layer[layer]["patch"] += length
             n["patch_len"] += length
             n["layers"].add(layer)
@@ -122,6 +132,7 @@ def collect(board, plane_layers: list[str], patches: tuple[set, set] = (frozense
                      "auto_length": round(n["auto_len"], 1), "patch_length": round(n["patch_len"], 1),
                      "vias": n["auto_vias"], "patch_vias": n["patch_vias"], "layers": sorted(n["layers"]),
                      "min_width": min(widths) if widths else None, "patch_min_width": n["patch_min_w"],
+                     "narrow_length": round(n["narrow_len"], 1),
                      "span": round(span.get(net, 0.0), 1), "plane_length": round(n["plane_len"], 1)})
     layers = {k: {a: round(b, 1) for a, b in v.items()} for k, v in sorted(per_layer.items())}
     return {"rows": rows, "per_layer": layers,
@@ -155,8 +166,10 @@ def markdown(data: dict, plane_layers: list[str]) -> str:
 
     narrow = [r for r in rows if r["min_width"] is not None and r["min_width"] < r["class_width"] - 1e-6]
     out += ["## Tracks narrower than their net class asks", ""]
-    out += [f"- `{r['net']}` ({r['class']}): {r['min_width']:g} mm, class width {r['class_width']:g} mm"
-            for r in narrow] or ["None."]
+    out += [f"- `{r['net']}` ({r['class']}): {r['narrow_length']:g} mm of track, narrowest {r['min_width']:g} mm, "
+            f"class width {r['class_width']:g} mm" for r in narrow] or ["None."]
+    if narrow:
+        out += ["", f"Total: {sum(r['narrow_length'] for r in narrow):.1f} mm in {len(narrow)} nets."]
     out += ["", "## Autorouted vias inside a surface-mount pad", ""]
     out += [f"- `{net}`: a via in pad {num} of {ref}" for net, ref, num, _ in data["vias_in_pads"]] or ["None."]
     wander = [r for r in rows if r["span"] > 0 and r["length"] > WANDER_MIN and r["length"] > WANDER * r["span"]]
