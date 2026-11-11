@@ -7,6 +7,8 @@ on:
       - "docs/design/hardware-design.md"
       - "tools/designsync/**"
       - "tools/hwflow/**"
+      - "tools/reviewwalk/**"
+      - "docs/hardware/review/data/**"
       - ".github/workflows/hardware.yml"
   push:
     branches: [main]
@@ -15,6 +17,8 @@ on:
       - "docs/design/hardware-design.md"
       - "tools/designsync/**"
       - "tools/hwflow/**"
+      - "tools/reviewwalk/**"
+      - "docs/hardware/review/data/**"
       - ".github/workflows/hardware.yml"
   workflow_dispatch:
 
@@ -119,6 +123,17 @@ jobs:
       - uses: actions/checkout@v7
 
       - uses: astral-sh/setup-uv@v10.3.3
+
+      # The pictures of the review walkthrough (docs/hardware/review/) are committed. Draw them
+      # again from the committed board, before the next step saves the board anew, and compare:
+      # a step that names a part the board no longer has stops here, and so does a picture that
+      # is not what the board gives.
+      - name: The review pictures are those of the committed board
+        run: make -C hardware/zoneflow-a review-check
+
+      - name: reviewwalk tests with KiCad
+        working-directory: tools/reviewwalk
+        run: uv run --locked pytest -q
 
       # Places and pre-routes the board from the sources, checks that the stored
       # autorouter session was made from exactly that board, imports it, and runs
