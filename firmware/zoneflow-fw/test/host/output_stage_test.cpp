@@ -125,7 +125,9 @@ TEST(OutputStage, KeepAliveLowTwoSecondsBeforeAnyTest)
 {
     StageRig r;
     r.run(1500);
-    EXPECT_TRUE(r.board.log.empty()); // step 0 still waiting
+    // Step 0 still waiting. The only transaction is the start-up probe for
+    // outputs left driven, which a healthy board does not acknowledge.
+    EXPECT_EQ(r.board.log, std::vector<std::string>{"probe"});
     EXPECT_FALSE(r.board.kaHigh());
 }
 
@@ -529,6 +531,41 @@ TEST(OutputStage, FaultFromBeforeARestartIsRestored)
     EXPECT_EQ(r.phase(), StagePhase::Fault);
     EXPECT_EQ(r.fault(), HwCheck::StopRelayRelease);
     EXPECT_FALSE(r.board.kaHigh());
+}
+
+// Soak finding (test/soak, halt seeds 20 and 47): a valve was on, the
+// keep-alive net was bridged to a net that toggles by itself (review A2
+// appendix A, "KA bridged to TFT_BL"), and the firmware froze. Neither
+// detector lets go, so the expander keeps the valve driven. After the
+// restart the new firmware left it driven through the 2.5 s of step 0
+// before step 1 found the bridge. It now turns every pin back to input on
+// the first tick of the start-up test.
+TEST(OutputStage, RestartWithTheKeepAliveBridgedSwitchesAValveOffAtOnce)
+{
+    StageRig r;
+    startUp(r);
+    powerUp(r, 2);
+    r.stage.setZone(2, true);
+    ASSERT_TRUE(r.board.valveDriven(2));
+    r.board.kaNet = KaNet::ToggleStrong;
+
+    // A new boot: a new guard and a new output stage on the same board.
+    OutputEnableGuard guard{OutputEnableMode::Toggle, 500};
+    r.board.attach(guard);
+    hw::OutputStage stage(r.board, guard, r.clock, revALayout(), hw::OutputStageConfig{}, &r.reference);
+    uint64_t driven = 0;
+    for (uint64_t t = 0; t < 3000; t += 5) {
+        r.clock.advanceMs(5);
+        r.board.step5ms();
+        if (r.clock.mono % 50 == 0) {
+            guard.heartbeat(static_cast<uint32_t>(r.clock.mono));
+            stage.tick(r.input());
+        }
+        driven += r.board.valveDriven(2) ? 5 : 0;
+    }
+    EXPECT_LE(driven, 100u); // two ticks, not the 2.5 s of step 0
+    EXPECT_EQ(stage.status().phase, StagePhase::Fault);
+    EXPECT_EQ(r.board.valvesLow(), 0);
 }
 
 TEST(OutputStage, TrippedGuardHaltsWithoutBusTraffic)

@@ -709,6 +709,18 @@ void OutputStage::doPrecheck(const KeepAliveReadbacks &rb)
     // low for 2.5 s, the latch is clear. 2.5 s covers the relay detector's
     // slowest release, 2.19 s with the pin high (review A2 m10).
     guard_.setRequest(KeepAliveRequest::Off);
+    if (!bootScrubDone_) {
+        bootScrubDone_ = true;
+        // After a restart with valves on, the expander can still hold its
+        // outputs: the detectors take up to 0.83 s to let go, and with the
+        // keep-alive net bridged to a net that toggles by itself (review A2
+        // appendix A) they never do. Every pin back to input now rather
+        // than after the 2.5 s below; step 1 then judges the board.
+        if (bus_.probe() == BusStatus::Ok) {
+            (void)bus_.write(reg::kConfig0, 0xFF);
+            (void)bus_.write(reg::kConfig1, 0xFF);
+        }
+    }
     if (rb.overCurrentLatched) {
         onTrip();
         return;
