@@ -441,9 +441,9 @@ of 10 mm3/s, a current fast printer. They are calculated, not sliced, and count 
 | `zoneflow-button-back.stl` | 1 | 20.0 x 12.0 x 5.1 | 0.7 | 0.9 | 0.04 | 0.02 | 1 | 992 | yes | yes |
 | `zoneflow-button-home.stl` | 1 | 20.0 x 12.0 x 5.1 | 0.7 | 0.9 | 0.04 | 0.02 | 1 | 1480 | yes | yes |
 | `zoneflow-lightpipe.stl` | 1 | 92.4 x 11.0 x 2.4 | 1.0 | 1.2 | 0.05 | 0.03 | 1 | 316 | yes | yes |
-| `test-fit/zoneflow-testfit-board.stl` | 1 | 114.0 x 117.0 x 26.1 | 35.9 | 45.6 | 2.00 | 1.00 | 1 | 64456 | yes | yes |
-| `test-fit/zoneflow-testfit-c1.stl` | 1 | 14.0 x 13.0 x 27.5 | 4.0 | 5.1 | 0.22 | 0.11 | 1 | 652 | yes | yes |
-| `test-fit/zoneflow-testfit-k1.stl` | 1 | 7.2 x 20.5 x 16.3 | 2.3 | 2.9 | 0.13 | 0.06 | 1 | 134 | yes | yes |
+| `test-fit/zoneflow-testfit-board.stl` | 1 | 114.0 x 117.0 x 26.1 | 36.0 | 45.7 | 2.00 | 1.00 | 1 | 64456 | yes | yes |
+| `test-fit/zoneflow-testfit-c1.stl` | 1 | 13.7 x 13.0 x 27.5 | 4.0 | 5.1 | 0.22 | 0.11 | 1 | 652 | yes | yes |
+| `test-fit/zoneflow-testfit-k1.stl` | 1 | 7.2 x 20.5 x 16.0 | 2.3 | 2.9 | 0.13 | 0.06 | 1 | 134 | yes | yes |
 | `test-fit/zoneflow-testfit-plug-2p.stl` | 1 | 8.4 x 11.6 x 15.4 | 1.1 | 1.4 | 0.06 | 0.03 | 1 | 1012 | yes | yes |
 | `test-fit/zoneflow-testfit-plug-4p.stl` | 1 | 16.0 x 11.6 x 15.4 | 2.0 | 2.6 | 0.11 | 0.06 | 1 | 572 | yes | yes |
 | `test-fit/zoneflow-testfit-plug-7p.stl` | 2 | 27.5 x 11.6 x 15.4 | 3.5 | 4.5 | 0.20 | 0.10 | 1 | 704 | yes | yes |

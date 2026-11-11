@@ -510,7 +510,6 @@ def clearances(s: dict[str, m3.Manifold], bp: dict, tf: dict) -> tuple[list[dict
             note="`window_margin`. The groove on the panel stand-in fills this strip")
     align(sec, "Middle of the window to the middle of the active area",
           P.offset(win, ([ax0, ay0, 0], [ax1, ay1, 0])))
-    j7 = pbox(prims["J7"][0])
     gap(sec, "Display connector J7 to the underside of the carrier deck, beside the cable opening",
         P.axis(standin("J7"), P.part("bridge", [dx0, dy0, 3], [dx1, dy1, zb]), 2, +1), 5.65, ("print",))
     for hid in ("A", "B"):
@@ -522,7 +521,6 @@ def clearances(s: dict[str, m3.Manifold], bp: dict, tf: dict) -> tuple[list[dict
         h = holes[hid]
         gap(sec, f"Carrier foot {hid} on the board",
             P.axis(slab, P.part("bridge", [h[1] - 3, h[2] - 3, -0.5], [h[1] + 3, h[2] + 3, 2]), 2, +1), 0.0, kind="contact")
-    _ = j7
 
     # ---- Buttons -------------------------------------------------------------------------
     sec = "Buttons"

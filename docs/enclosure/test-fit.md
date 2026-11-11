@@ -48,8 +48,8 @@ single files below and tell us in the issue.
 | Piece | Files | Quantity | Size on the bed, mm | Volume, cm³ | Hours at 5 mm³/s | Hours at 10 mm³/s |
 |---|---|---|---|---|---|---|
 | Board | [STL](print/test-fit/zoneflow-testfit-board.stl), [3MF](print/test-fit/zoneflow-testfit-board.3mf) | 1 | 114.0 x 117.0 x 26.1 | 35.9 | 2.0 | 1.0 |
-| C1, the capacitor | [STL](print/test-fit/zoneflow-testfit-c1.stl), [3MF](print/test-fit/zoneflow-testfit-c1.3mf) | 1 | 14.0 x 13.0 x 27.5 | 4.0 | 0.2 | 0.1 |
-| K1, the relay | [STL](print/test-fit/zoneflow-testfit-k1.stl), [3MF](print/test-fit/zoneflow-testfit-k1.3mf) | 1 | 7.2 x 20.5 x 16.3 | 2.3 | 0.1 | 0.1 |
+| C1, the capacitor | [STL](print/test-fit/zoneflow-testfit-c1.stl), [3MF](print/test-fit/zoneflow-testfit-c1.3mf) | 1 | 13.7 x 13.0 x 27.5 | 4.0 | 0.2 | 0.1 |
+| K1, the relay | [STL](print/test-fit/zoneflow-testfit-k1.stl), [3MF](print/test-fit/zoneflow-testfit-k1.3mf) | 1 | 7.2 x 20.5 x 16.0 | 2.3 | 0.1 | 0.1 |
 | Plug piece, 2-way | [STL](print/test-fit/zoneflow-testfit-plug-2p.stl), [3MF](print/test-fit/zoneflow-testfit-plug-2p.3mf) | 1 | 8.4 x 11.6 x 15.4 | 1.1 | 0.1 | 0.0 |
 | Plug piece, 4-way | [STL](print/test-fit/zoneflow-testfit-plug-4p.stl), [3MF](print/test-fit/zoneflow-testfit-plug-4p.3mf) | 1 | 16.0 x 11.6 x 15.4 | 2.0 | 0.1 | 0.1 |
 | Plug piece, 7-way | [STL](print/test-fit/zoneflow-testfit-plug-7p.stl), [3MF](print/test-fit/zoneflow-testfit-plug-7p.3mf) | **2** | 27.5 x 11.6 x 15.4 | 3.5 each | 0.2 each | 0.1 each |
@@ -100,7 +100,7 @@ A model of that needs supports. I changed five things so that it does not.
 - **Header overhang.** The terminal headers hang 2 mm over the board edge. On the kit, that 2 mm is on the plug piece. The plug piece pushes in from the wiring side as a real plug does, and its prongs go into pockets in the header block.
 - **USB-C mouth.** It hangs 1 mm over the edge. Its underside rises at 45 degrees, so the lowest 1 mm of the mouth is missing.
 - **Antenna end.** The module's antenna hangs 6 mm over the top edge. The space under it is filled down to the bed. That space is free in the enclosure.
-- **C1 and K1.** They are on the bottom side. Each is a separate piece with a rail that fits a blind slot in the underside of the board. Push them in. If they are loose, use a drop of glue or a strip of tape.
+- **C1 and K1.** They are on the bottom side. Each is a separate piece with a rail 0.7 mm high that fits a blind slot in the underside of the board. The slot leaves 0.8 mm of board over it. Push them in. If they are loose, use a drop of glue or a strip of tape.
 - **Panel cable.** It is a flat strip 0.4 mm thick, two layers, at the back face of the panel. The real cable leaves the panel 0.75 mm higher, by a figure scaled from the drawing.
 
 The top face says TEST FIT with the board revision and the contract

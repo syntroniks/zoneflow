@@ -27,8 +27,8 @@ tf_mark      = 0.4;    // depth of engraved markings, two layers
 tf_min_wall  = 0.8;    // nothing printed is thinner than this, the panel's cable apart
 // Bottom-side pieces: a rail on the piece, a blind slot under the board.
 tf_rail_w    = 2.4;
-tf_rail_h    = 1.0;
-tf_slot_d    = 1.1;    // leaves 0.5 mm of board over the slot
+tf_rail_h    = 0.7;
+tf_slot_d    = 0.8;    // leaves 0.8 mm of board over the slot
 tf_rail_fit  = 0.15;   // per side
 tf_rail_short = 4.0;   // the rail stops this far before the far end of the part
 // Plug pieces: prongs into pockets in the face of each header block.
@@ -48,7 +48,8 @@ tf_t = tf_thickness;
 tf_groups = [for (i = [0 : len(tf_prims) - 1])
                  if (tf_prims[i][1] != "top" && (i == 0 || tf_prims[i - 1][1] != tf_prims[i][1])) tf_prims[i][1]];
 
-assert(tf_slot_d < tf_t - 0.4, "the slot for a bottom-side piece goes through the board");
+assert(tf_t - tf_slot_d >= tf_min_wall - eps, "too little board is left over the slot of a bottom-side piece");
+assert(tf_rail_h < tf_slot_d, "the rail of a bottom-side piece is taller than its slot is deep");
 assert(tf_pocket_z[1] < header_h - tf_min_wall, "the roof over a header pocket is too thin");
 
 // ---- Helpers ----------------------------------------------------------------
