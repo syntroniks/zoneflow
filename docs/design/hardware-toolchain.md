@@ -73,7 +73,7 @@ Three checks make the generated files trustworthy.
 | `lib/` | Generated project-local symbol and footprint libraries | No |
 | `../rules/jlcpcb.toml`, `../rules/jlcpcb.kicad_dru` | Source, fab limits | Yes, with a citation |
 | `../rules/jlcpcb-cpl-rotations.csv` | Source, rotation corrections | Yes |
-| `route/<name>.ses`, `.dsn.sha256`, `.freerouting.json` | Routing cache | No. `make reroute` replaces it |
+| `route/<name>.ses`, `.dsn.sha256`, `.dsn.novalues.sha256`, `.freerouting.json` | Routing cache | No. `make reroute` replaces it |
 | `*.kicad_sch`, `*.kicad_pcb`, `*.kicad_pro`, `*.kicad_dru`, `sym-lib-table`, `fp-lib-table` | Generated | No. The next `make` overwrites them |
 | `output/` | Generated | No |
 | `build/` | Scratch, not committed | No |
@@ -399,7 +399,8 @@ again before an order.
   Marking the inner layers `(type power)` in the DSN, or exporting the planes,
   did not keep Freerouting 2.5.0 off them.
 - **Routing changes completely when placement changes.** The cache keeps a
-  rebuild stable only while the DSN is byte-identical. A KiCad patch release
+  rebuild stable only while the DSN is byte-identical, or differs only in the
+  value text of parts (section 13.8). A KiCad patch release
   changes the DSN header and forces a new route.
 - **Freerouting may not be deterministic.** Its optimiser ran with 15 threads.
   I did not test whether two runs on the same DSN agree.
@@ -931,6 +932,30 @@ schematic parity, the mechanical contract, the layout rules. It makes no
 renders and needs no display. `ROUTE_FLAGS=--stored-only` makes the route step
 fail, instead of starting the autorouter, when the stored session does not
 belong to the sources.
+
+**A new value on a part is not a new board to route.** KiCad writes the
+value text of every placed part into the Specctra file:
+`(place C28 129800 -95600 front 0 (PN "220p C0G"))`. The autorouter does not
+route by it, but the hash covered it, so changing a capacitor from 220 pF to
+330 pF in the same footprint made the stored session "not from these
+sources" and asked for a routing run of two hours that would not give the
+same copper. Since the BOM consolidation, `hwflow.route` keeps a second
+hash in `route/<name>.dsn.novalues.sha256`: the same file and router
+settings with that value text left out of the placements, and nothing else
+left out. The stored session is reused when the first hash matches, or when
+the second one does; the route step then prints that the file differs only
+in the value text of parts. A part that is added, removed, moved, turned,
+put on the other side or given another footprint, a pad, a net, a rule or a
+keep-out still changes both hashes. A test in `tests/test_dsn.py` holds
+that. The first hash stays what names the session, because the patches of
+13.10 carry it.
+
+For the session of revision A the second hash was not written by a routing
+run. It was calculated from the Specctra file of the commit before the
+consolidation, whose first hash is the committed one,
+`13cc4d6f...c4130`. The file after the consolidation differs from it in two
+lines, the value text of C28 and C29, and putting the old text back gives
+the committed hash again.
 
 I could not run the container on the build machine, which has neither Docker
 nor Podman. The job was run by GitHub for the first time on the pull request

@@ -5,6 +5,13 @@ Freerouting's optimiser is multi-threaded and its result can differ between
 runs. The session file is therefore kept in ``<project>/route/`` together with
 the hash of the DSN it was made from. If the DSN has not changed the stored
 session is reused; ``--force`` routes again.
+
+KiCad writes the value text of every placed part into the DSN, as ``(PN ...)``.
+The autorouter does not route by it. A second hash, of the DSN without that
+text, is kept beside the first, so that a change of a part's value alone (a
+220 pF capacitor that becomes 330 pF in the same footprint) reuses the stored
+session too. Anything else that differs still fails the comparison: a part,
+a position, a rotation, a footprint, a pad, a net, a rule, a keep-out.
 """
 
 from __future__ import annotations
@@ -34,9 +41,20 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def dsn_hash(path: Path, settings: str = "") -> str:
-    """Hash of the DSN without its first line, which holds the file's own path, and of the router settings."""
+# A placement as KiCad writes it: (place C28 129800 -95600 front 0 (PN "220p C0G")). The second
+# group is the value text, quoted when it has a space in it.
+PLACE_VALUE = re.compile(r'^(\s*\(place \S+ -?[\d.]+ -?[\d.]+ \S+ -?[\d.]+) \(PN (?:"[^"]*"|[^\s()"]+)\)\)$', re.M)
+
+
+def dsn_hash(path: Path, settings: str = "", values: bool = True) -> str:
+    """Hash of the DSN without its first line, which holds the file's own path, and of the router settings.
+
+    With ``values=False`` the value text of the placed parts is left out as well: the hash of
+    what the autorouter routes.
+    """
     text = path.read_text(encoding="utf-8").split("\n", 1)[1]
+    if not values:
+        text = PLACE_VALUE.sub(r"\1)", text)
     return hashlib.sha256((text + settings).encode("utf-8")).hexdigest()
 
 
@@ -131,11 +149,20 @@ def main(argv=None) -> int:
     stats_file = route_dir / f"{name}.freerouting.json"
     router_file = project / "build" / "router.json"
     router = json.loads(router_file.read_text(encoding="utf-8")) if router_file.exists() else {}
-    digest = dsn_hash(dsn, json.dumps(router, sort_keys=True) if router else "")
+    settings = json.dumps(router, sort_keys=True) if router else ""
+    digest = dsn_hash(dsn, settings)
+    # The same without the value text of the parts. The first stamp stays the name of the stored
+    # session, which the patches of board.toml carry; this one only widens what may reuse it.
+    stamp_novalues = route_dir / f"{name}.dsn.novalues.sha256"
+    digest_novalues = dsn_hash(dsn, settings, values=False)
 
-    if not args.force and ses.exists() and stamp.exists() and stamp.read_text().strip() == digest:
-        print(f"route: DSN unchanged, reusing {ses}")
-        return 0
+    if not args.force and ses.exists() and stamp.exists():
+        if stamp.read_text().strip() == digest:
+            print(f"route: DSN unchanged, reusing {ses}")
+            return 0
+        if stamp_novalues.exists() and stamp_novalues.read_text().strip() == digest_novalues:
+            print(f"route: the DSN differs from the routed one only in the value text of parts, reusing {ses}")
+            return 0
     if args.stored_only:
         stored = stamp.read_text().strip() if stamp.exists() else "none"
         sys.stderr.write(f"route: the session stored in {route_dir} was not made from the board these sources give.\n"
@@ -168,6 +195,7 @@ def main(argv=None) -> int:
     stats["wall_seconds"] = round(time.time() - t0, 1)
     shutil.copyfile(out, ses)
     stamp.write_text(digest + "\n")
+    stamp_novalues.write_text(digest_novalues + "\n")
     stats_file.write_text(json.dumps(stats, indent=1, sort_keys=True) + "\n")
     print(f"route: Freerouting {VERSION} finished in {stats['wall_seconds']} s: {stats}")
     return 0

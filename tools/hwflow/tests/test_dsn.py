@@ -162,3 +162,31 @@ def test_the_autorouter_settings_file_turns_usage_reporting_off(tmp_path):
     assert s["profile"]["email"] == ""
     assert s["version"] == route.VERSION
     assert s["router"] == {"fanout": {"enabled": False}}
+
+
+def test_the_routing_hash_ignores_the_value_text_of_a_part_and_nothing_else(tmp_path):
+    from hwflow import route
+
+    def dsn(*places, net="(net /A (pins C28-1 R43-2))"):
+        f = tmp_path / "board.dsn"
+        head = ['(pcb "/somewhere/board.dsn"', "  (placement", '    (component "Capacitor_SMD:C_0603_1608Metric"']
+        f.write_text("\n".join([*head, *places, "    )", "  )", f"  (network {net})", ")", ""]), encoding="utf-8")
+        return f
+
+    c28 = '      (place C28 129800 -95600 front 0 (PN "220p C0G"))'
+    r21 = "      (place R21 128199.999 -82400 front -90 (PN 2.2k))"
+    exact = route.dsn_hash(dsn(c28, r21), "s")
+    blind = route.dsn_hash(dsn(c28, r21), "s", values=False)
+    # A new value on the same part in the same place: another DSN, the same routing problem.
+    other = '      (place C28 129800 -95600 front 0 (PN "330p C0G"))'
+    assert route.dsn_hash(dsn(other, r21), "s") != exact
+    assert route.dsn_hash(dsn(other, r21), "s", values=False) == blind
+    assert route.dsn_hash(dsn(c28, r21.replace("2.2k", '"2.2k (1 %)"')), "s", values=False) == blind
+    # Everything else still counts: a position, a rotation, a side, a designator, a net, the router settings.
+    for changed in (c28.replace("-95600", "-95700"), c28.replace("front 0", "front 90"), c28.replace("front", "back"),
+                    c28.replace("C28", "C29")):
+        assert route.dsn_hash(dsn(changed, r21), "s", values=False) != blind
+    assert route.dsn_hash(dsn(c28, r21, net="(net /B (pins C28-1 R43-2))"), "s", values=False) != blind
+    assert route.dsn_hash(dsn(c28, r21), "t", values=False) != blind
+    # A value is only left out where KiCad writes it: at the end of a placement.
+    assert route.dsn_hash(dsn(c28, r21, net='(net /A (pins C28-1 R43-2) (PN "x"))'), "s", values=False) != blind
