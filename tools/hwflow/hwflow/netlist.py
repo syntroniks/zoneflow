@@ -22,6 +22,7 @@ class NetlistComp:
     lib: str
     part: str
     dnp: bool = False
+    in_bom: bool = True
 
 
 @dataclass
@@ -59,6 +60,7 @@ def read(path: Path) -> Netlist:
             lib=find(ls, "lib")[1],
             part=find(ls, "part")[1],
             dnp="dnp" in props,
+            in_bom="exclude_from_bom" not in props,
         )
     for n in find_all(find(root, "nets"), "net"):
         name = find(n, "name")[1]

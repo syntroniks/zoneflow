@@ -301,6 +301,8 @@ class Builder:
             fp.SetSheetfile(f"{sheet_of[ref]['sheet']}.kicad_sch")
             if comp.dnp:
                 fp.SetDNP(True)
+            # As the symbol says, whatever the library footprint says: DRC's parity check compares the two.
+            fp.SetExcludedFromBOM(not comp.in_bom)
             x, y, rot, side = place[ref]
             fp.SetPosition(self.pt(x, y))
             for pad in fp.Pads():
