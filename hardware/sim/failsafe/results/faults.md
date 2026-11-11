@@ -105,10 +105,10 @@ The two columns on the right are for the self-test sequence of design section 19
 | U7 pin 13 4B (DRV_EN_N) open, leaks low | 0.50 / 0.76 / 0.50 | Q1 stays on | 9 stop: expander still answers 3 s after the stop | 1 idle: expander answers with no keep-alive |
 | U7 pin 14 VCC (3V3) open *The model powers U7 through the clamp diodes of its inputs, from the pull-ups R36 and R53, at about 2.7 V, and it keeps working. A real 74HC132 on such a supply is a bench question.* | 0.50 / 0.76 / 0.50 |  |  |  |
 | U7 pins 1 1A and 2 1B bridged (OC_TRIP_N to FAULT_N) | 0.50 / 0.76 / 0.50 |  |  |  |
-| U7 pins 2 1B and 3 1Y bridged (FAULT_N to FAULT) *A gate output tied to its own input: the model oscillates and the runs did not finish. Judged by hand in review A2, section 3.4: drive cannot stay enabled.* | never on / never on / never on (run not finished: T0 Tm Cm-low Cm-high Cm-hiz) |  |  |  |
+| U7 pins 2 1B and 3 1Y bridged (FAULT_N to FAULT) *A gate output tied to its own input: the model oscillates and the runs did not finish. Judged by hand in review A2, section 3.4: drive cannot stay enabled.* | never on / never on / never on (run not finished: T0 Cm-low Cm-high Cm-hiz) |  | valve current: no valve current during the run |  |
 | U7 pins 3 1Y and 4 2A bridged (FAULT to KA_OK) | never on / never on / never on |  | 7 run: gate-drive read-back low during the run | 3 start: within 150 ms no gate-drive read-back high, no expander acknowledge |
 | U7 pins 4 2A and 5 2B bridged (KA_OK to FAULT) | never on / never on / never on |  | 7 run: gate-drive read-back low during the run | 3 start: within 150 ms no gate-drive read-back high, no expander acknowledge |
-| U7 pins 5 2B and 6 2Y bridged (FAULT to FAULT_N) *As pins 2 and 3: the same two nets.* | never on / never on / never on (run not finished: T0 Tm Cm-low Cm-high Cm-hiz) |  |  |  |
+| U7 pins 5 2B and 6 2Y bridged (FAULT to FAULT_N) *As pins 2 and 3: the same two nets.* | never on / never on / never on (run not finished: T0 Cm-high) |  | valve current: no valve current during the run |  |
 | U7 pins 6 2Y and 7 GND bridged (FAULT_N to GND) | never on / never on / never on |  | 7 run: gate-drive read-back low during the run | 3 start: within 150 ms no gate-drive read-back high, no expander acknowledge |
 | U7 pins 8 3Y and 9 3A bridged (DRV_EN_N to KA_OK) *A gate output tied to its own input: the model oscillates and the runs did not finish. Judged by hand in review A2, section 3.4: drive cannot stay enabled.* | never on / never on / never on (run not finished: T0 Tm Cm-low Cm-high Cm-hiz) |  |  |  |
 | U7 pins 9 3A and 10 3B bridged (KA_OK to FAULT_N) *The gate output and the comparator output fight over the node, and which one wins at power-up depends on the two parts. Either way detector A stays on once it has been enabled.* | 0.50 / 0.76 / 0.50 | gate drive stays, Q1 stays on | 9 stop: gate-drive read-back does not release within 3 s | 9 stop: gate-drive read-back does not release within 3 s |
@@ -125,7 +125,7 @@ The two columns on the right are for the self-test sequence of design section 19
 | U7 output 4 (DRV_EN) stuck low | never on / never on / never on |  | 7 run: expander stops answering during the run | 3 start: within 150 ms no expander acknowledge |
 | C20 open | 0.50 / 0.76 / 0.50 |  |  |  |
 | C20 short | never on / never on / never on |  | 7 run: gate-drive read-back low during the run | 3 start: within 150 ms no gate-drive read-back high, no relay read-back low, no expander acknowledge |
-| R53 open | 0.50 / 0.76 / 0.50 |  |  | 3 start: within 150 ms no gate-drive read-back high, no expander acknowledge |
+| R53 open | never on / never on / never on |  | 8 end: expander does not answer at the end of the run | 3 start: within 150 ms no gate-drive read-back high, no expander acknowledge |
 | R53 short | 0.50 / 0.76 / 0.50 |  |  |  |
 | R87 open | 0.50 / 0.76 / 0.50 |  |  | (7 run: level not defined) |
 | R87 short | 0.50 / 0.76 / 0.50 |  |  |  |
@@ -133,6 +133,26 @@ The two columns on the right are for the self-test sequence of design section 19
 | R54 short | 0.50 / 0.76 / 0.50 |  |  |  |
 | D8 open | 0.50 / 0.76 / 0.50 |  |  |  |
 | D8 short | 0.50 / 0.76 / 0.50 |  |  |  |
+| **3V3 over-voltage detector** | | | | |
+| U13 pin 2 GND (GND) open *As simulated. A real TPS3701 without ground is not defined. It can only pull the latch input low, which removes drive.* | 0.50 / 0.76 / 0.50 |  |  |  |
+| U13 pin 3 INA (GND) open | 0.50 / 0.76 / 0.50 |  |  |  |
+| U13 pin 4 INB (OV_DIV) open, holds its last level | 0.50 / 0.76 / 0.50 |  |  |  |
+| U13 pin 4 INB (OV_DIV) open, leaks high | never on / never on / never on |  | 7 run: gate-drive read-back low during the run | 3 start: within 150 ms no gate-drive read-back high, no expander acknowledge |
+| U13 pin 4 INB (OV_DIV) open, leaks low | 0.50 / 0.76 / 0.50 |  |  |  |
+| U13 pin 5 VDD (3V3) open | 0.50 / 0.76 / 0.50 |  |  |  |
+| U13 pin 6 OUTB (OC_TRIP_N) open | 0.50 / 0.76 / 0.50 |  |  |  |
+| U13 pins 4 INB and 5 VDD bridged (OV_DIV to 3V3) | never on / never on / never on |  | 7 run: gate-drive read-back low during the run | 3 start: within 150 ms no gate-drive read-back high, no expander acknowledge |
+| U13 pins 5 VDD and 6 OUTB bridged (3V3 to OC_TRIP_N) *The set input of the latch is tied to the rail: neither U13 nor the over-current comparators can set the latch. The same as R53 shorted.* | 0.50 / 0.76 / 0.50 |  |  |  |
+| U13 output B (OC_TRIP_N) shorted low | never on / never on / never on |  | 7 run: gate-drive read-back low during the run | 3 start: within 150 ms no gate-drive read-back high, no expander acknowledge |
+| U13 output B never pulls low | 0.50 / 0.76 / 0.50 |  |  |  |
+| R13 open | 0.50 / 0.76 / 0.50 |  |  |  |
+| R13 short | never on / never on / never on |  | 7 run: gate-drive read-back low during the run | 3 start: within 150 ms no gate-drive read-back high, no expander acknowledge |
+| R100 open | never on / never on / never on |  | 7 run: gate-drive read-back low during the run | 3 start: within 150 ms no gate-drive read-back high, no expander acknowledge |
+| R100 short | 0.50 / 0.76 / 0.50 |  |  |  |
+| C55 open | 0.50 / 0.76 / 0.50 |  |  |  |
+| C55 short | 0.50 / 0.76 / 0.50 |  |  |  |
+| C56 open | 0.50 / 0.76 / 0.50 |  |  |  |
+| C56 short | never on / never on / never on |  | 7 run: gate-drive read-back low during the run | 3 start: within 150 ms no gate-drive read-back high, no relay read-back low, no expander acknowledge |
 | **LED supply switch** | | | | |
 | Q3 pin G (DRV_EN_N) open, holds its last level | 0.50 / 0.76 / 0.50 |  | 9 stop: gate-drive read-back does not release within 3 s | 3 start: within 150 ms no gate-drive read-back high |
 | Q3 pin G (DRV_EN_N) open, leaks high | never on / never on / never on |  | 7 run: gate-drive read-back low during the run | 3 start: within 150 ms no gate-drive read-back high |
@@ -344,6 +364,8 @@ The two columns on the right are for the self-test sequence of design section 19
 | net OLA_MV shorted to 3V3 | 0.50 / 0.76 / 0.50 |  | 9 stop: gate-drive read-back does not release within 3 s | 1 idle: gate-drive read-back high with no keep-alive |
 | net OLA_Z1 shorted to GND | never on / never on / never on |  | valve current: no valve current during the run | valve current: no valve current during the run |
 | net OLA_Z1 shorted to 3V3 | 0.50 / 0.76 / 0.50 |  | 9 stop: gate-drive read-back does not release within 3 s | 1 idle: gate-drive read-back high with no keep-alive |
+| net OV_DIV shorted to GND | 0.50 / 0.76 / 0.50 |  |  |  |
+| net OV_DIV shorted to 3V3 | never on / never on / never on |  | 7 run: gate-drive read-back low during the run | 3 start: within 150 ms no gate-drive read-back high, no expander acknowledge |
 | net RLY_A shorted to GND | 0.67 / 1.01 / 0.67 | relay stays closed | 9 stop: relay read-back does not release within 3 s | 1 idle: relay read-back not high with no keep-alive |
 | net RLY_A shorted to 3V3 *The coil then sees V_BUCK less 3V3, about 2 V, whatever Q1 and Q2 do. That cannot pull the relay in and may hold it: Omron gives 40 % of the rated voltage as a holding figure. With Q1 and Q2 on, the bridge also shorts 3V3 to ground, and the supervisor resets the processor.* | 0.14 / 0.14 / 0.14 | relay stays closed | 9 stop: gate-drive read-back releases after 0.18 s, this board's own value is 0.67 s | valve current: no valve current during the run |
 | net RLY_B shorted to GND | 0.67 / 1.01 / 0.67 | Q2 stays on | 9 stop: relay read-back does not release within 3 s | 1 idle: relay read-back not high with no keep-alive |
@@ -388,7 +410,7 @@ The two columns on the right are for the self-test sequence of design section 19
 | leak of 100 kohm from 3V3 to KB_N1 | 0.67 / 1.01 / 0.67 | Q2 stays on | 9 stop: relay read-back does not release within 3 s | 2 pin-high: relay read-back not high with the pin held high |
 | leak of 100 kohm from 3V3 to KA_N1 | 0.50 / 0.76 / 0.50 | gate drive stays, Q1 stays on | 9 stop: gate-drive read-back does not release within 3 s | 9 stop: gate-drive read-back does not release within 3 s |
 | **supplies** | | | | |
-| U3 shorted input to output: 3V3 at V5, 4.95 V. The processor is taken to keep running until the stop *Both detectors let go at 4.95 V, if the keep-alive stops. The processor is outside its ratings and whether it stops is not known: finding M5.* | 0.69 / 1.03 / 0.69 |  | 9 stop: relay read-back does not release within 3 s | 9 stop: relay read-back does not release within 3 s |
+| U3 shorted input to output: 3V3 at V5, 4.95 V. The processor is taken to keep running until the stop *U13 holds the set input of the latch low above 4.04 V, so drive is removed whatever the keep-alive does. Without U13 both detectors let go only if the keep-alive stops, which a processor outside its ratings may not do: finding M5 of review A2, design section 9.5, and the run `ldo`.* | never on / never on / never on |  | 7 run: gate-drive read-back low during the run | 3 start: within 150 ms no gate-drive read-back high, no expander acknowledge |
 | 3V3 falls to 2.0 V: the supervisor holds the processor in reset | 0.00 / 0.00 / 0.00 |  | 9 stop: relay read-back releases after 0.09 s, this board's own value is 0.57 s | 3 start: within 150 ms no gate-drive read-back high, no relay read-back low, no expander acknowledge |
 | 3V3 falls to 0 V | never on / never on / never on |  | 7 run: gate-drive read-back low during the run | 3 start: within 150 ms no gate-drive read-back high, no relay read-back low, no expander acknowledge |
 | V_BUCK falls to 3.0 V, V5 and 3V3 with it | 0.01 / 0.01 / 0.01 |  | 9 stop: relay read-back releases after 0.18 s, this board's own value is 0.57 s | 3 start: within 150 ms no gate-drive read-back high, no relay read-back low, no expander acknowledge |

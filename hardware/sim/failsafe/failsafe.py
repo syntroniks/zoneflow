@@ -325,14 +325,22 @@ def main() -> int:
     d.add_argument("--out", default="deck.cir")
     d.set_defaults(fn=cmd_deck)
     import bridges  # noqa: PLC0415
+    import commission  # noqa: PLC0415
     import corners  # noqa: PLC0415
     import duty  # noqa: PLC0415
+    import floatload  # noqa: PLC0415
+    import ldo  # noqa: PLC0415
+    import sequence  # noqa: PLC0415
     import warmup  # noqa: PLC0415
 
     corners.register(sub)
     bridges.register(sub)
     duty.register(sub)
     warmup.register(sub)
+    commission.register(sub)
+    ldo.register(sub)
+    sequence.register(sub)
+    floatload.register(sub)
     args = ap.parse_args()
     return args.fn(args)
 

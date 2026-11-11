@@ -25,6 +25,7 @@ NETLIST = REPO / "hardware" / "netlist.yaml"
 SCOPE = {
     "detector A": "R33 R29 C22 D7 C23 R30 R91 R31 R32 C24 R34 R35 R36".split(),
     "logic": "U6 C19 U7 C20 R53 R87 R54 D8".split(),
+    "3V3 over-voltage detector": "U13 R13 R100 C55 C56".split(),
     "LED supply switch": "Q3 R25 R26 C21".split(),
     "read-back": "R92 R93 R94 R95".split(),
     "expander": "U5 C18 RN1 R96".split(),
@@ -45,8 +46,10 @@ def a_readback(comps: dict) -> str:
     return next(n for n in A_READBACK if n in nets)
 
 
-def scope_refs() -> list[str]:
-    return [r for refs in SCOPE.values() for r in refs]
+def scope_refs(comps: dict | None = None) -> list[str]:
+    """Every part of the analysis. With a netlist, only the parts it has: the
+    netlist of pull request #20 and the one of review A2 have no U13."""
+    return [r for refs in SCOPE.values() for r in refs if comps is None or r in comps]
 
 
 def load_netlist(path: Path = NETLIST) -> dict[str, dict]:
@@ -138,6 +141,14 @@ class Params:
     # down to 0.5 V / 137.5 ohm = 3.6 mA. Inductance assumed, Omron gives none.
     k1_r: float = 125.0
     k1_l: float = 0.2
+    # TPS3701 (TI SBVS240C): INB positive threshold 397 / 400 / 403 mV,
+    # hysteresis 5.2 mV typical, input current +/-25 nA at most (positive
+    # here is into the pin), output low 250 mV at most at 5 mA with 5 V of
+    # supply, output off below the under-voltage lock-out of 1.3 to 1.7 V.
+    ov_vit: float = 0.400
+    ov_hys: float = 5.2e-3
+    ov_ib: float = 1e-9
+    ov_uvlo: float = 1.7
     # MOC3023 LED: 1.15 V typical at 10 mA (onsemi rev 3)
     led_is: float = 6.9e-13
     led_n: float = 1.9
@@ -202,7 +213,8 @@ class Deck:
         self.stuck: set[tuple[str, str]] = set()
         self.rails: dict[str, float] = {}
         self.n = 0
-        for ref in scope_refs():
+        self.refs = scope_refs(comps)
+        for ref in self.refs:
             for key, net in comps[ref]["pins"].items():
                 if net != "NC":
                     self.pins[(ref, pin_id(key))] = node_of(net)
@@ -393,6 +405,27 @@ class Deck:
             if self.is_stuck(ref, f"{name}_high"):
                 self.add(f"S{ref}F{name} {node} {vcc} flt 0 FSWC20")
 
+    def tps3701(self, ref: str) -> None:
+        """Comparator B only: OUTB sinks while INB is above the threshold.
+        Comparator A is not used on this board; its output is not connected."""
+        vdd, gnd, inb, outb = self.at(ref, "5"), self.at(ref, "2"), self.at(ref, "4"), self.at(ref, "6")
+        t = ref.lower()
+        self.add(f"R{ref}Q {vdd} {gnd} 500k")   # 8 uA typical, 11 uA at most
+        self.add(f"I{ref}B {inb} {gnd} {self.p.ov_ib:g}")
+        self.add(f"C{ref}I {inb} {gnd} 3p")
+        self.add(f"S{ref}C {t}_c one {inb} {gnd} OVCMP")
+        self.add(f"R{ref}C {t}_c 0 1k")
+        on = f"V({t}_c)*0.5*(1+tanh((V({vdd})-V({gnd})-{self.p.ov_uvlo:g})/0.05))"
+        if self.is_stuck(ref, "outb_off"):
+            on = f"({on})*(1-V(flt))"
+        # 10 us in the data sheet; 22 us here, as for the comparators of U6.
+        self.add(f"B{ref}D {t}_dx 0 V = {on}")
+        self.add(f"R{ref}D {t}_dx {t}_d 1k")
+        self.add(f"C{ref}D {t}_d 0 22n")
+        self.add(f"S{ref}O {outb} {gnd} {t}_d 0 OVOUT")
+        if self.is_stuck(ref, "outb_low"):
+            self.add(f"S{ref}F {outb} {gnd} flt 0 FSWC20")
+
     def opto_led(self, ref: str, tag: str) -> None:
         self.add(f"V{tag} {self.at(ref, '1')} {ref.lower()}_a 0")
         self.add(f"D{ref} {ref.lower()}_a {self.at(ref, '2')} DOPTO")
@@ -502,7 +535,7 @@ class Deck:
         add("RISN n_isense_lo_s n_isense_lo 50")
         stim.emit(self)
         # parts
-        for ref in scope_refs():
+        for ref in self.refs:
             c = self.comps[ref]
             value = c["value"]
             if ref == "U4":
@@ -529,6 +562,8 @@ class Deck:
                 self.hc132(ref)
             elif value.startswith("TCA9539"):
                 self.tca9539(ref)
+            elif value.startswith("TPS3701"):
+                self.tps3701(ref)
             elif value.startswith("MOC3023"):
                 self.opto_led(ref, "LEDZ1" if ref == "U101" else "LEDMV")
             elif value.startswith("G5NB"):
@@ -575,6 +610,8 @@ class Deck:
         vtp, vtm = p.hc_vtp * p.v33, p.hc_vtm * p.v33
         add(f".model HCSCH SW(VT={(vtp + vtm) / 2:g} VH={(vtp - vtm) / 2:g} RON=1 ROFF=1e9)")
         add(f".model GPIOSW SW(VT=0.5 VH=0 RON={p.gpio_ro:g} ROFF=1e11)")
+        add(f".model OVCMP SW(VT={p.ov_vit - p.ov_hys / 2:g} VH={p.ov_hys / 2:g} RON=1 ROFF=1e9)")
+        add(".model OVOUT SW(VT=0.5 VH=0 RON=30 ROFF=1e11)")
         add(".model FSWC SW(VT=0.5 VH=0 RON=10m ROFF=1e13)")
         add(".model FSWC20 SW(VT=0.5 VH=0 RON=20 ROFF=1e13)")
         add(".model FSWO SW(VT=0.5 VH=0 RON=1m ROFF=1e13)")

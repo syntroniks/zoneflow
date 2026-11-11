@@ -1,0 +1,59 @@
+* ZoneFlow supply monitor: what GPIO3 (VIN_MON) reads over the supply corners
+* (docs/design/hardware-design.md sections 4.5, 11 and 19.10)
+*
+* The input stage of supply.cir with the monitor divider added: R9 300k and
+* R10 10k from VIN_DC, C9 100 nF on the tap. Firmware takes the mean of the
+* tap over a 100 ms window, so each line gives the mean and the lowest and
+* highest value inside one window.
+*
+* Run:  ngspice -b vin_mon.cir
+*
+* vrms is the open-circuit voltage of the transformer and rt its series
+* resistance: 0.92, 2.1 and 3.45 ohm stand for 75, 40 and 20 VA units by
+* the 69 / VA ohm of design section 6.6. Both are assumptions, not measured
+* transformers. The load is the constant power the buck converter draws:
+* 0.6 W with the display dark and no valve, 1.75 W typical, 5 W with every
+* consumer at its limit (design section 4.2). Valve current does not pass
+* through the rectifier; what it does is lower the transformer voltage, so
+* a running valve looks like a lower vrms here.
+
+.param vrms=24 freq=50 rt=2.1 pload=1.75 cbulk=470u
+VAC  ac_l 0 SIN(0 {vrms*1.41421356} {freq})
+RT   ac_l ac_x {rt}
+D2   ac_x n1 M7
+R1   n1 vin 3.0
+C1   vin 0 {cbulk} IC={vrms*1.2}
+VIL  vin vld DC 0
+BL   vld 0 I = {pload}/max(V(vld), 3)
+R9   vin mon 300k
+R10  mon 0 10k
+C9   mon 0 100n
+.model M7 D(IS=5e-9 N=1.7 RS=0.04 BV=1000 CJO=15p)
+.options method=gear reltol=1e-4
+.tran 20u 0.5 0.4 20u uic
+
+.control
+set noaskquit
+foreach case 21.6:50:3.45:5.0 21.6:50:3.45:1.75 21.6:50:2.1:5.0 21.6:50:2.1:1.75 21.6:60:2.1:1.75 21.6:50:0.92:0.6 24:50:3.45:1.75 24:50:2.1:5.0 24:50:2.1:1.75 24:60:2.1:1.75 24:50:2.1:0.6 24:50:0.92:0.6 26.4:50:3.45:5.0 26.4:50:2.1:1.75 26.4:50:0.92:0.6 32:50:2.1:1.75 32:50:0.92:0.6 32:50:0.92:0.05 18:50:2.1:5.0 16:50:2.1:1.75 16:50:2.1:3.0 12:50:2.1:1.75
+  set v = `echo $case | cut -d: -f1`
+  set f = `echo $case | cut -d: -f2`
+  set r = `echo $case | cut -d: -f3`
+  set p = `echo $case | cut -d: -f4`
+  alterparam vrms = $v
+  reset
+  alterparam freq = $f
+  reset
+  alterparam rt = $r
+  reset
+  alterparam pload = $p
+  reset
+  run
+  meas tran vdcavg avg v(vin) from=0.4 to=0.5
+  meas tran monavg avg v(mon) from=0.4 to=0.5
+  meas tran monmin min v(mon) from=0.4 to=0.5
+  meas tran monmax max v(mon) from=0.4 to=0.5
+  echo "RESULT $v VAC $f Hz, transformer $r ohm, $p W: VIN_DC mean {$&vdcavg} V, VIN_MON mean {$&monavg} V, lowest {$&monmin} V, highest {$&monmax} V"
+end
+quit
+.endc
+.end
