@@ -68,13 +68,20 @@ The enclosure is generated from text. Read `docs/design/mechanical.md` before
 touching `hardware/mechanical.yaml` or anything under `enclosure/`.
 
 - `hardware/mechanical.yaml` is the mechanical contract between the board
-  and the enclosure. Edit it, `enclosure/params.scad` and
-  `enclosure/zoneflow.scad`. Run `make` in `enclosure/`. It fails if the
-  interference check fails.
-- `enclosure/board_params.scad`, `enclosure/output/` and
+  and the enclosure. Edit it, `enclosure/params.scad`,
+  `enclosure/zoneflow.scad`, `enclosure/testfit.scad` (the printable
+  test-fit kit) and `enclosure/plates.toml`. Run `make` in `enclosure/`. It
+  fails if the board file and the contract disagree, or if the interference
+  and clearance check fails.
+- `enclosure/board_params.scad`, `enclosure/board_layout.json`,
+  `enclosure/testfit_params.scad`, `enclosure/output/` and
   `docs/assets/enclosure/` are generated and committed, so that someone can
   print the parts and read the site without the tools. Never edit them by
   hand.
+- `enclosure/board_layout.json` and the view-only board model need KiCad 10.
+  After the board file changes, run `make` in `enclosure/` on a machine that
+  has it. `enclosure/tools/check.py` holds the gaps that
+  `docs/enclosure/test-fit.md` quotes: change both together.
 - `make` needs an OpenSCAD with the Manifold backend. The packaged 2021.01
   does not have it. `make openscad` in `enclosure/` fetches a snapshot into
   `enclosure/.cache/`, which is not committed.

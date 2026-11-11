@@ -1,0 +1,53 @@
+# Print plates: which parts go on the bed together. `make` turns each into
+# output/<name>.3mf with tools/threemf.py and fails if one does not fit.
+#
+# Files are relative to output/, without the extension. Every part is already
+# in print orientation. `turn` is degrees about the vertical, a multiple of 90.
+# The plates hold positions only: no slicer settings.
+
+bed = [220, 220]
+margin = 5      # free strip around the bed, for a skirt
+gap = 6         # between parts
+
+# What the test fit adds to the enclosure. Any colour; see docs/enclosure/test-fit.md.
+[[plate]]
+name = "plates/zoneflow-plate-1-test-fit-kit"
+title = "ZoneFlow test-fit kit: board, C1, K1, four plug pieces, display panel"
+parts = [
+    { file = "test-fit/zoneflow-testfit-board" },
+    { file = "test-fit/zoneflow-testfit-panel" },
+    { file = "test-fit/zoneflow-testfit-plug-7p", count = 2 },
+    { file = "test-fit/zoneflow-testfit-plug-4p" },
+    { file = "test-fit/zoneflow-testfit-plug-2p" },
+    { file = "test-fit/zoneflow-testfit-c1" },
+    { file = "test-fit/zoneflow-testfit-k1" },
+]
+
+# Body colour.
+[[plate]]
+name = "plates/zoneflow-plate-2-body"
+title = "ZoneFlow enclosure, body colour: base, display carrier, knob, two button caps"
+parts = [
+    { file = "zoneflow-base" },
+    { file = "zoneflow-bridge", turn = 90 },
+    { file = "zoneflow-knob" },
+    { file = "zoneflow-button-back" },
+    { file = "zoneflow-button-home" },
+]
+
+# Front colour.
+[[plate]]
+name = "plates/zoneflow-plate-3-front"
+title = "ZoneFlow enclosure, front colour: fascia and wiring cover"
+parts = [
+    { file = "zoneflow-fascia" },
+    { file = "zoneflow-cover", turn = 90 },
+]
+
+# Clear.
+[[plate]]
+name = "plates/zoneflow-plate-4-clear"
+title = "ZoneFlow enclosure, clear: light-pipe comb"
+parts = [
+    { file = "zoneflow-lightpipe" },
+]
