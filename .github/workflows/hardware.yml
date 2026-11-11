@@ -134,8 +134,14 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: zoneflow-a-board
+          # The Specctra file and the router settings are what the stored routing is checked
+          # against: if this KiCad writes them differently from the one that made the routing,
+          # the difference can be read here.
           path: |
             hardware/zoneflow-a/output/reports/
             hardware/zoneflow-a/build/kicad-cli.stderr
             hardware/zoneflow-a/build/silk.json
+            hardware/zoneflow-a/build/route-stats.json
+            hardware/zoneflow-a/build/zoneflow-a.dsn
+            hardware/zoneflow-a/build/router.json
           if-no-files-found: warn
