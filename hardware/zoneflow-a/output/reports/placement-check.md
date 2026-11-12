@@ -1,13 +1,13 @@
 # Placement file against JLCPCB's library footprints
 
-`zoneflow-a-cpl-jlcpcb.csv`: 312 placements compared, 0 do not fit.
+`zoneflow-a-cpl-jlcpcb.csv`: 307 placements compared, 0 do not fit.
 
 Library footprints: JLCEDA/EasyEDA Official Library (<https://lceda.cn/>, <https://easyeda.com>), one per LCSC number.
 
 | Footprint | LCSC | Library footprint | Parts | Compared | Rotation added to KiCad's | Largest pad offset, mm | Fits |
 |---|---|---|---|---|---|---|---|
 | `BatteryHolder_QJ_CR2032-BS-6-1` | C70377 | `BAT-TH_CR2032-BS-6-1` | 1: BT1 | set | 0 | 0.11 | yes |
-| `C_0603_1608Metric` | C14663 | `C0603` | 21: C12 ... | set | 0 | 0.07 | yes |
+| `C_0603_1608Metric` | C14663 | `C0603` | 18: C12 ... | set | 0 | 0.07 | yes |
 | `C_0603_1608Metric` | C14858 | `C0603` | 1: C8 | set | 0 | 0.07 | yes |
 | `C_0603_1608Metric` | C15849 | `C0603` | 5: C16 ... | set | 0 | 0.07 | yes |
 | `C_0603_1608Metric` | C1588 | `C0603` | 2: C26 ... | set | 0 | 0.07 | yes |
@@ -61,7 +61,7 @@ Library footprints: JLCEDA/EasyEDA Official Library (<https://lceda.cn/>, <https
 | `R_0603_1608Metric` | C23228 | `R0603` | 10: R102 ... | set | 0 | 0.07 | yes |
 | `R_0603_1608Metric` | C23234 | `R0603` | 4: R38 ... | set | 0 | 0.07 | yes |
 | `R_0603_1608Metric` | C25803 | `R0603` | 10: R12 ... | set | 0 | 0.07 | yes |
-| `R_0603_1608Metric` | C25804 | `R0603` | 24: R10 ... | set | 0 | 0.07 | yes |
+| `R_0603_1608Metric` | C25804 | `R0603` | 22: R10 ... | set | 0 | 0.07 | yes |
 | `R_0603_1608Metric` | C25805 | `R0603` | 3: R100 ... | set | 0 | 0.07 | yes |
 | `R_0603_1608Metric` | C25811 | `R0603` | 3: R6 ... | set | 0 | 0.07 | yes |
 | `R_0603_1608Metric` | C25819 | `R0603` | 1: R2 | set | 0 | 0.07 | yes |

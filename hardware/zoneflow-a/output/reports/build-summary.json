@@ -1,11 +1,11 @@
 {
  "board": {
   "copper_layers": 4,
-  "footprints": 356,
-  "smd": 314,
+  "footprints": 351,
+  "smd": 309,
   "through_hole": 7,
-  "track_segments": 3346,
-  "vias": 641,
+  "track_segments": 3341,
+  "vias": 639,
   "zones": 24
  },
  "drc": {
@@ -37,10 +37,10 @@
   "Default": {
    "class_clearance_mm": 0.2,
    "class_track_width_mm": 0.2,
-   "length_mm": 5967.4,
+   "length_mm": 5959.6,
    "routed_width_max_mm": 2.0,
    "routed_width_min_mm": 0.1,
-   "segments": 2188
+   "segments": 2183
   },
   "Field": {
    "class_clearance_mm": 0.5,
@@ -94,19 +94,30 @@
  "project": "zoneflow-a",
  "routing": {
   "autoroute_passes": 29,
-  "autorouted_items_taken_out": 18,
+  "autorouted_items_taken_out": 25,
   "connections_to_route": 403,
   "dangling_stubs_removed": 23,
   "freerouting_unrouted": 168,
   "freerouting_version": "2.5.0",
   "freerouting_violations": 1232,
-  "items_after_session_import": 3624,
-  "patch_segments": 328,
-  "pre_routed_items": 1639,
-  "track_length_mm": 9469.1,
-  "track_segments": 3346,
+  "items_after_session_import": 3619,
+  "patch_segments": 333,
+  "pre_routed_items": 1634,
+  "session_nets_renamed": {
+   "/Display/BTN_HOME_SW": "/BTN_HOME",
+   "/Display/ENC_SW_SW": "/ENC_SW"
+  },
+  "session_placements_left_out": [
+   "C41",
+   "C42",
+   "C43",
+   "R71",
+   "R73"
+  ],
+  "track_length_mm": 9461.3,
+  "track_segments": 3341,
   "unused_escape_items_removed": 16,
-  "vias": 641,
+  "vias": 639,
   "wall_seconds": 2381.4,
   "width_pass": {
    "kept_narrow_mm": 1.0,
@@ -117,7 +128,7 @@
   }
  },
  "schematic": {
-  "nets": 200,
-  "parts": 356
+  "nets": 198,
+  "parts": 351
  }
 }

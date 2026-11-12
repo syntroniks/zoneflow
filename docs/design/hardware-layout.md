@@ -42,14 +42,14 @@ Top copper and silkscreen:
 
 | Check | Program | Result |
 |---|---|---|
-| Schematic against the design netlist, pin for pin | `hwflow sch` | 353 components and 200 nets match pin for pin; the fitted parts of both builds match |
+| Schematic against the design netlist, pin for pin | `hwflow sch` | 348 components and 198 nets match pin for pin; the fitted parts of both builds match |
 | Electrical rules of the schematic | `kicad-cli sch erc` | No error, no warning |
 | Design rules of the board, with the zones filled again, errors and warnings | `kicad-cli pcb drc` | No error, no warning |
 | Board against schematic: every footprint, every pad's net | `kicad-cli pcb drc --schematic-parity` | No difference |
 | Connections not routed | the same DRC run | None |
-| Mechanical contract, revision 3 | `hwflow mech` | Agrees: outline, 4 holes, 26 placed parts, height zones for 294 parts, keep-outs, bottom side, edge, soldering access |
-| Layout rules of the fail-safe analysis | `hwflow.layoutrules` | Hold: 278 keep-away distances, one spacing, one angle, one pad ban |
-| Placement files against JLCPCB's library footprints, on demand | `make cpl-check` | 312 and 267 placements, none misfits |
+| Mechanical contract, revision 3 | `hwflow mech` | Agrees: outline, 4 holes, 26 placed parts, height zones for 289 parts, keep-outs, bottom side, edge, soldering access |
+| Layout rules of the fail-safe analysis | `hwflow.layoutrules` | Hold: 276 keep-away distances, one spacing, one angle, one pad ban |
+| Placement files against JLCPCB's library footprints, on demand | `make cpl-check` | 307 and 262 placements, none misfits |
 
 Two settings shape the DRC result, and a reviewer should know them:
 
@@ -126,7 +126,7 @@ limit.
 | x 58 to 79, y 68 to 77 | Real-time clock | Next to the positive contact of the cell holder |
 | x 79 to 113, y 57 to 74 | Coin cell holder | The only place that is not under the display carrier and takes a 32 x 16 mm part |
 | x 93 to 113, y 74 to 90 | Keep-alive detector A, the comparators, the ADC filter capacitors | Under the module. The keep-alive enters at the corner next to module pin 10 |
-| x 79 to 93, y 102 to 109 | Module support: 3.3 V decoupling, reset network, supervisor, encoder switch filter | The only free ground beside the module |
+| x 79 to 93, y 102 to 109 | Module support: 3.3 V decoupling, reset network, supervisor, encoder switch pull-up | The only free ground beside the module |
 | Bottom, x 1 to 9, y 17 to 38 | K1 | See section 4 |
 | Bottom, x 10 to 37, y 23 to 37 | C1 | Fixed |
 
@@ -251,7 +251,7 @@ anode pad of D4 and the pins of U3.
 Everything in this section is written out in `design/layout.py` as tracks,
 vias and zones, laid before the autorouter runs and locked. These nets are
 taken out of the autorouter's netlist (`[route] exclude`), so it can neither
-add to them nor move them. They are 104 of the 200 nets.
+add to them nor move them. They are 104 of the 198 nets.
 
 ### 7.1 24 VAC entry
 
@@ -759,13 +759,14 @@ Track on the finished board, in millimetres:
 
 | Layer | By hand | Patches | Autorouter |
 |---|---|---|---|
-| F.Cu | 1811 | 334 | 2733 |
+| F.Cu | 1808 | 343 | 2720 |
 | In1.Cu | 0 | 0 | 0 |
 | In2.Cu | 444 | 113 | 0 |
 | B.Cu | 1903 | 480 | 1650 |
 
-641 vias: 386 by hand or beside a plane pad, 164 by the autorouter, 91 in
-patches.
+639 vias: 384 by hand or beside a plane pad, 164 by the autorouter, 91 in
+patches. These are the figures since five parts left the board (section
+16); the routing itself is the one described here.
 
 What it did badly, and what was done:
 
@@ -834,9 +835,12 @@ What it did badly, and what was done:
 
 7. **Vias in pads.** None: no autorouted via has its centre inside a
    surface-mount pad.
-8. **Wandering tracks.** Three nets are more than 2.5 times as long as their
-   pins are apart, measured along the axes: `ENC_SW_SW`, 58 mm for 11 mm;
-   `SP_B`, 39 mm for 7 mm; `ZD_Z1_N`, 105 mm for 42 mm. `ZC_DIV`, the
+8. **Wandering tracks.** Two nets are more than 2.5 times as long as their
+   pins are apart, measured along the axes: `SP_B`, 39 mm for 7 mm;
+   `ZD_Z1_N`, 105 mm for 42 mm. A third was `ENC_SW_SW`, 58 mm for 11 mm,
+   from the encoder switch round the display connector to its pull-up. That
+   copper is still there. Since section 16 it is part of `ENC_SW`, which is
+   93 mm long for pins 39 mm apart. `ZC_DIV`, the
    zero-cross signal, is 152 mm from the 24 VAC input to the comparator
    under the module.
 9. **Planes.** In1.Cu has no track. In2.Cu has no autorouted track, and the
@@ -884,7 +888,7 @@ I did not follow each of the 96 autorouted nets from pin to pin.
 - **Board name, revision, licence, status.** `ZoneFlow rev A`,
   `ENGINEERING PROTOTYPE`, `Not built, not tested`, `CERN-OHL-P-2.0`, in the
   open area under the display, and again in one line on the bottom side.
-- **Reference designators.** 356 footprints, 354 of them on one side: the designators of the
+- **Reference designators.** 351 footprints, 349 of them on one side: the designators of the
   resistors, small capacitors, diodes and transistors do not fit between them.
   They are left off the silkscreen and are on the
   [assembly drawing](../hardware/zoneflow-a/zoneflow-a-assembly-top.pdf)
@@ -938,8 +942,8 @@ that footprint's origin on the coordinate of the placement file. The check
 takes that footprint from the JLCEDA/EasyEDA Official Library
 (<https://lceda.cn/>, <https://easyeda.com>), puts it on the board as the
 file says, and compares where its pads land: every pad on a pad, pad 1 on
-pad 1, the cathode on pad 1 of a diode or an LED. On this build all 312
-placements of the 8-zone file and all 267 of the 4-zone file fit. With the table as
+pad 1, the cathode on pad 1 of a diode or an LED. On this build all 307
+placements of the 8-zone file and all 262 of the 4-zone file fit. With the table as
 it was, 26 placements were wrong, the nine triacs and the nine opto-triacs
 among them ([review](hardware-layout-review.md), section 5). The check needs
 the network once and is not part of `make`; its report is
@@ -1147,3 +1151,76 @@ made from, and reused while that does not change. Routing again takes
 about 40 minutes and does not give the same tracks twice: the patches of
 `design/patches.toml` belong to the stored routing and have to be made again
 for a new one, and sections 8 to 10 of this page describe the stored one.
+
+## 16. Five parts removed without routing again
+
+On 2026-11-12 the debounce filters of the three push contacts left the board
+([hardware design](hardware-design.md), section 28): R71 and C41 at the
+encoder switch, R73 and C43 at Manual/Home, C42 at Back. Back keeps its
+series resistor R72. The board was not routed again. Sections 1 to 15
+describe the routing that the layout review read, and it is still that
+routing: this section lists every piece of copper that is different.
+[Toolchain](hardware-toolchain.md), section 13.15, says how the build was
+made to accept the stored routing, and why that is safe to accept.
+
+| Where | Before | Now |
+|---|---|---|
+| Five footprints | R71 (81.7, 103.6), C41 (80.2, 103.6), R73 (47.2, 66.1), C43 (50.4, 66.1), C42 (13.9, 61.4) | Gone. No other part moved or turned. |
+| `ENC_SW`, left of the module | The contact net came to pad 2 of R66 and on to pad 1 of R71. The pin net left pad 2 of R71, ran through pad 1 of C41 and turned east under R66. | One track, 7.3 mm, 0.2 mm wide: from pad 2 of R66 down the same diagonal, 0.5 mm straight down where pad 1 of R71 was, a 45 degree corner and east on the old line at y = 102.06. Six pieces of autorouted track, 10.9 mm, were taken out for it: the two ends at R71, the two through C41, the diagonal and the 5.3 mm going east. |
+| `BTN_HOME`, above SW5 | Pads 1 and 2 of R73 were 1.65 mm apart, each with its track. | One track of 1.65 mm between the two ends. The track that went on through pad 1 of C43 to the via stays. |
+| `BTN_BACK`, left of SW4 | 2.3 mm from pad 2 of R72 to pad 1 of C42. | Taken out. R67 and R72 and their tracks are as they were. |
+| Ground | A via beside the ground pad of each of the three capacitors. The left ground land of SW4 reached the plane through the via of C42. | The three vias are gone. The land of SW4 has a via of its own at (15.6, 59.25), 1.7 mm to its left. |
+| The 58 mm of autorouted `ENC_SW_SW` and the 13 mm of `BTN_HOME_SW` | Nets of their own. | The same copper, now part of `ENC_SW` and `BTN_HOME`: 39 of 40 tracks and vias. The fortieth was 0.15 mm inside a pad of R71. |
+| Silkscreen | The designator `SW4` stood in the middle of the switch, under its cap. | Left of the switch, where C42 was: the builder's first free place (section 11). |
+| Top ground pour | An island at the ground pad of C41. Round C42, a gap for its pads. | The island is gone with the via that fed it. The pour closes over the place of C42. |
+
+In all: 10 tracks and 3 vias gone, 5 tracks and 1 via new, against 3,341
+tracks and 639 vias on the board. Counted by a script that compares every
+footprint, track and via of the board file before and after.
+
+**What the checks say.** DRC with the zones filled again: no violation, no
+unconnected item, no difference from the schematic. The layout rules of
+section 9 hold, 276 distances where there were 278: the two contact nets
+that no longer exist had a row each. `BTN_BACK` and `ENC_B` are still the
+nearest signals to the keep-alive, 1.04 mm, at pins 11 and 9 of the module,
+on copper that did not change. The merged `ENC_SW` comes no nearer than
+6.39 mm and `BTN_HOME` than 12.05 mm. The mechanical contract agrees, with
+height zones for 289 parts. `make cpl-check`: 307 and 262 placements, none
+misfits.
+
+**What I looked at.** The three places, before and after, as pictures drawn
+from the two board files with the same program as the review walkthrough.
+The new `ENC_SW` track passes 0.21 mm under the 3.3 V pad of R66, where the
+old one passed at the same height. The join of `BTN_HOME` lies where the
+body of R73 was. Nothing else in the three pictures differs but the top
+ground pour and the designator of SW4, as the table says.
+
+Each pair is the same crop of the top copper and silkscreen, before and
+after, with the net in question in yellow. The pictures were drawn on
+2026-11-12 from the board file of the commit before the change and from the
+one after it. They are copies, kept here because the site can only serve
+files under `docs/`.
+
+![Encoder switch pull-up, before](hardware-layout/debounce-enc-sw-before.png)
+![Encoder switch pull-up, after](hardware-layout/debounce-enc-sw-after.png)
+
+![Manual/Home, before](hardware-layout/debounce-btn-home-before.png)
+![Manual/Home, after](hardware-layout/debounce-btn-home-after.png)
+
+![Back, before](hardware-layout/debounce-btn-back-before.png)
+![Back, after](hardware-layout/debounce-btn-back-after.png)
+
+The controls on the schematic sheet, before and after:
+
+![Controls on the schematic, before](hardware-layout/debounce-schematic-before.png)
+![Controls on the schematic, after](hardware-layout/debounce-schematic-after.png)
+
+**What it does to the earlier sections.** Section 7.9 and rule 1 of section
+9 are untouched: the keep-alive net, its guard and the two tracks beside it
+are the same copper. Section 10 item 8 names one long net fewer. The counts
+in sections 1, 7, 10, 11 and 12 are those of the board as it is now.
+
+**A person should look at** the three places in KiCad, or in the pictures of
+the pull request: that each join is one clean track, and that nothing stands
+where a part used to be. It is a small look. The pre-order review steps that
+show these places are listed in the pull request.

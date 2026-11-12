@@ -2,8 +2,9 @@
 
 Status: **proven on a 40-part test board, 2026-11-10**, and used for the
 schematic and the layout of the revision A board (sections 12 and 13). That
-board had 346 components when it was captured, 348 after hardware review A2
-and has 353 since the hardware answers A2.
+board had 346 components when it was captured, 348 after hardware review A2,
+353 after the hardware answers A2, and has 348 since the debounce of its
+push contacts moved into firmware.
 Nothing here has been built as hardware. Every result below names the command
 that produced it.
 
@@ -78,6 +79,7 @@ Three checks make the generated files trustworthy.
 | `../rules/jlcpcb.toml`, `../rules/jlcpcb.kicad_dru` | Source, fab limits | Yes, with a citation |
 | `../rules/jlcpcb-cpl-rotations.csv` | Source, rotation corrections | Yes |
 | `route/<name>.ses`, `.dsn.sha256`, `.dsn.novalues.sha256`, `.freerouting.json` | Routing cache | No. `make reroute` replaces it |
+| `route/<name>.dsn.delta` | What the board has less and more than the board that was routed, if parts were taken off since (section 13.15) | No. `hwflow.route --write-delta` writes it, `make reroute` removes it |
 | `*.kicad_sch`, `*.kicad_pcb`, `*.kicad_pro`, `*.kicad_dru`, `sym-lib-table`, `fp-lib-table` | Generated | No. The next `make` overwrites them |
 | `output/` | Generated | No |
 | `build/` | Scratch, not committed | No |
@@ -403,8 +405,9 @@ again before an order.
   Marking the inner layers `(type power)` in the DSN, or exporting the planes,
   did not keep Freerouting 2.5.0 off them.
 - **Routing changes completely when placement changes.** The cache keeps a
-  rebuild stable only while the DSN is byte-identical, or differs only in the
-  value text of parts (section 13.8). A KiCad patch release
+  rebuild stable only while the DSN is byte-identical, differs only in the
+  value text of parts (section 13.8), or differs by a committed list of
+  lines after parts were taken off (section 13.15). A KiCad patch release
   changes the DSN header and forces a new route.
 - **Freerouting may not be deterministic.** Its optimiser ran with 15 threads.
   I did not test whether two runs on the same DSN agree.
@@ -540,7 +543,7 @@ routing will take more effort than every other step combined.
 ## 12. Capture from a design netlist
 
 The revision A board, `hardware/zoneflow-a/`, was designed on paper first.
-`hardware/netlist.yaml` lists its 353 components, the part number of each and
+`hardware/netlist.yaml` lists its 348 components, the part number of each and
 the net on every pin, and it was reviewed before any schematic existed. The
 schematic must therefore be that netlist, drawn. `hwflow.capture` makes it so.
 This section describes what was added to the flow for it and what was checked.
@@ -602,11 +605,12 @@ a changed value, a changed part number, a part added, a part removed, a pin
 map the wrong way round, a renamed net) and checks that each one is
 reported: `tools/hwflow/tests/test_capture_parity.py`.
 
-Result on revision A, `make schematic`, 2026-11-11, after the two parts and
-one net that hardware review A2 added and the five parts and one net of
-[hardware answers A2](hardware-answers-a2.md): "353 components and 200
-nets of the design netlist match KiCad's netlist pin for pin; fitted parts
-match in 2 build(s)".
+Result on revision A, `make schematic`, 2026-11-12, after the two parts and
+one net that hardware review A2 added, the five parts and one net of
+[hardware answers A2](hardware-answers-a2.md), and the five parts and two
+nets that left with the debounce filters of the push contacts: "348
+components and 198 nets of the design netlist match KiCad's netlist pin for
+pin; fitted parts match in 2 build(s)".
 
 ### 12.3 What else the generator learned
 
@@ -745,6 +749,7 @@ layout itself is described in [hardware layout](hardware-layout.md).
 | `[route] prune = true` | After the import, remove a hand-placed escape via or stub that nothing came to use (13.10) |
 | `[route] widen = true` | After the import, give every autorouted track the width of its net class where DRC allows (13.11) |
 | `[[unroute]]`, `[[patch]]`, `[patches]` | Changes to the routed board that do not disturb the stored routing (13.10) |
+| `[patches.renamed]` | For a net that left the board with a part since it was routed: the net its copper belongs to now (13.15) |
 | `[[route.keepout]]` | Rectangles of some layers where the autorouter may put neither track nor via. The patch router keeps out of them too, unless the rectangle is marked `stands_for_copper = true`: that mark is for planes and islands that are added as zones after the Specctra file is written, which only the autorouter cannot see |
 | `[route.patch_last_resort] layer, cost, keepout` | A plane layer that the patch router may use for a connection with no path on the routing layers (13.13) |
 | `[route.layer_cost]` | A cost factor for a layer, to make the autorouter use it less |
@@ -951,7 +956,7 @@ the second one does; the route step then prints that the file differs only
 in the value text of parts. A part that is added, removed, moved, turned,
 put on the other side or given another footprint, a pad, a net, a rule or a
 keep-out still changes both hashes. A test in `tests/test_dsn.py` holds
-that. The first hash stays what names the session, because the patches of
+that. Section 13.15 has the one other case: parts taken off the board. The first hash stays what names the session, because the patches of
 13.10 carry it.
 
 For the session of revision A the second hash was not written by a routing
@@ -1219,3 +1224,83 @@ under `docs/design/reviews/`.
 
 `tools/reviewwalk/README.md` says how a step and a picture are written, and
 what the hand-off file holds.
+
+### 13.15 Parts taken off a routed board
+
+On 2026-11-12 five parts left revision A: the debounce filters of the three
+push contacts ([hardware design](hardware-design.md), section 28). A part
+that is removed changes the Specctra file, so by 13.8 the stored session was
+"not from these sources", and the next step would have been two hours of
+autorouter and a board on which every track lies somewhere else. That is the
+wrong answer to five parts fewer: the copper that was routed round them is
+still good copper, and it is the copper the layout review read. Two things
+were added so that the session can stay and the build still proves which
+board it belongs to.
+
+**The delta.** `route/<name>.dsn.delta` lists what the Specctra file of the
+board as it is now has less and more than the file the session was routed
+from: a unified diff with no context lines. `hwflow.route` takes those lines
+back out of the file it has, and reuses the session only if the result has
+the stored hash, or the second hash of 13.8. So the delta cannot be
+approximately right. A line it does not name, on a part that stayed, fails
+the comparison as before. It is written by
+
+```
+python -m hwflow.route . --cache ../.cache --write-delta <the Specctra file of the routed board>
+```
+
+which refuses a file that does not have the stored hash. The routed file is
+`build/<name>.dsn` of a build of the commit before the change. For revision
+A the delta has 30 lines that are gone and 13 that are new: five placements,
+the pins of the five parts in their nets, two nets that merged into two
+others, the three ground vias of the capacitors with their stubs, and one
+via that moved, because the ground pad of SW4 had shared the via of C42.
+Every one of those lines is something the autorouter saw differently from
+the board that is built. Read them in a review: that is what the file is
+for. A routing run writes a new session from the file it was given and
+deletes the delta.
+
+The delta says what differs. It does not say the old copper fits. DRC says
+that, with schematic parity and the count of unconnected items, as it does
+for the patches of 13.10.
+
+**Nets that went with a part.** Where a series resistor is removed, the nets
+on its two pads become one, under one of the two names, and the session
+still has copper under the other. KiCad 10.0.8 imports such copper without a
+word and gives it the net of the pad it touches. I saw it do that on this
+board. The flow does not build on it: `[patches.renamed]` in `board.toml`
+names, for each net that the session has and the board has not, the net its
+copper now belongs to, and `pcbbuild finish` gives the import a copy of the
+session with those names changed (`hwflow/session.py`). The file in `route/`
+stays as the autorouter wrote it. A net of the session that is neither on
+the board nor in the table stops the build. So does an entry for a net that
+is still on the board, for one the session has no copper of, and for a
+target that does not exist. The placements of the removed parts are left
+out of the copy; KiCad would skip them with a warning.
+
+**The joins.** The two ends that a removed part leaves are joined by
+`[[patch]]` tracks in `design/patches-hand.toml`, and copper that led only to
+a removed pad is taken out with `[[unroute]]`, each with its reason. They
+are laid after the import like every other patch.
+
+**What it is for, and what not.** Taking parts off. A part that moves, turns
+or changes its footprint leaves copper that ends where its pads were, and a
+delta would hide that this board was never routed. Do not use it for that:
+route again. Nothing in the program enforces this limit. A reviewer reads
+the delta in the pull request, and DRC still judges the copper.
+
+Thirteen tests in `tests/test_route_delta.py` hold both parts: a delta taken
+back gives the routed file line for line; a change the delta does not name
+is refused, in the function and through the command; a delta is written only
+from the routed file; renamed copper keeps every wire; no net is guessed.
+
+On revision A, `make` with `ROUTE_FLAGS=--stored-only`: "the DSN differs
+from the routed one by route/zoneflow-a.dsn.delta and the value text of
+parts (30 lines gone, 13 new)", "copper of /Display/ENC_SW_SW imported as
+/ENC_SW; copper of /Display/BTN_HOME_SW imported as /BTN_HOME; 5 placements
+of parts that are no longer on the board left out", then DRC with 0
+violations, 0 unconnected items and 0 parity issues. Compared with the board
+before, by a script that lists every footprint, track and via of both files:
+five footprints gone and none moved; 39 of the 40 tracks and vias of the two
+merged nets the same copper under the new name; 10 tracks and 3 vias gone;
+5 tracks and 1 via new. Nothing else differs.

@@ -264,10 +264,13 @@ gpio:
     signal: BTN_BACK
     direction: in
     active: low
-    pull: 3.3k up to 3V3 (R67), 10k + 100 nF filter
+    pull: 3.3k up to 3V3 (R67), 10k in series (R72), no capacitor
     reset_state: high impedance
     powerup_glitch: low level then high level, 60 us each
-    notes: Back button SW4.
+    notes: >-
+      Back button SW4. Debounced in firmware. R72 stays because this pin is
+      beside the keep-alive pin (hardware design 8.5); it also limits the
+      high-level glitch into a held button to 0.33 mA.
 
   - gpio: 19
     signal: USB_DM
@@ -302,21 +305,26 @@ gpio:
     signal: ENC_SW
     direction: in
     active: low
-    pull: 3.3k up to 3V3 (R66), 10k + 100 nF filter
+    pull: 3.3k up to 3V3 (R66), bare contact to GND
     reset_state: high impedance
     powerup_glitch: none
     notes: >-
       Encoder push switch (select). Moved here from GPIO17 by review A2, in
-      exchange for the keep-alive.
+      exchange for the keep-alive. No filter since 2026-11-12: debounced in
+      firmware. Input only; driving it high with the switch pressed shorts
+      the pin to ground.
 
   - gpio: 39
     signal: BTN_HOME
     direction: in
     active: low
-    pull: 3.3k up to 3V3 (R68), 10k + 100 nF filter
+    pull: 3.3k up to 3V3 (R68), bare contact to GND
     reset_state: high impedance; weak pull-up after reset (MTCK)
     powerup_glitch: none
-    notes: Manual/Home button SW5.
+    notes: >-
+      Manual/Home button SW5. No filter since 2026-11-12: debounced in
+      firmware. Input only; driving it high with the button pressed shorts
+      the pin to ground.
 
   - gpio: 40
     signal: OC_FAULT_N

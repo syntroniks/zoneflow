@@ -20,15 +20,17 @@ inner_copper_oz = 0.5
 # 0.3 mm since the layout review (finding L9): the twelve vias in the ground
 # pad of the module U4 were 0.2 mm and are drilled 0.3 mm now.
 smallest_hole_mm = 0.3
-footprints = 356
+footprints = 351
 # Parts in the placement file (SMT, top side only), per build. The five SMT
 # parts of the 3V3 over-voltage detector (U13, R13, R100, C55, C56; hardware
-# design section 9.5) are on the board and in these counts.
-placements = { "8-zone" = 312, "4-zone" = 267 }
+# design section 9.5) are on the board and in these counts. Five 0603 parts
+# left both builds on 2026-11-12, when the debounce of the three push contacts
+# moved into firmware (hardware design section 28): R71, R73, C41, C42, C43.
+placements = { "8-zone" = 307, "4-zone" = 262 }
 # Distinct soldered pins of the placed parts, counted from the pads of each
 # placed footprint in zoneflow-a.kicad_pcb (a pin with several pads, such as
 # the module's ground pad and its via pads, counts once).
-smt_joints = { "8-zone" = 850, "4-zone" = 740 }
+smt_joints = { "8-zone" = 840, "4-zone" = 730 }
 # Through-hole parts left out of the placement file. C1 and K1 sit on the
 # bottom side and are soldered from the top; the four headers are on top.
 tht_refs = ["J1", "J2", "J3", "J4", "C1", "K1"]

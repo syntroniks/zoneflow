@@ -73,7 +73,7 @@ and what it could not verify.
 
 ## How it was routed
 
-104 of the 200 nets are written out by hand in the source: the 24 VAC
+104 of the 198 nets are written out by hand in the source: the 24 VAC
 paths, the valve outputs, the shunt return, the buck converter, the 5 V and
 USB supplies, the USB pair, the display bus, the monitor lines into the ADC
 and everything the fail-safe analysis has a rule for. An autorouter laid the

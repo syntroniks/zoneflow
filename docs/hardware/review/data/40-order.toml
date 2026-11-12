@@ -25,10 +25,10 @@ good = '''
 ```
 $ make -C hardware/zoneflow-a cpl-check
 ...
-zoneflow-a-cpl-jlcpcb.csv: 312 placements compared, 0 do not fit.
+zoneflow-a-cpl-jlcpcb.csv: 307 placements compared, 0 do not fit.
 ```
 
-and for the 4-zone file 267 placements, 0 do not fit. Then
+and for the 4-zone file 262 placements, 0 do not fit. Then
 
 ```
 $ grep '^T.*C0\\.[012]' hardware/zoneflow-a/output/gerbers/*.drl
@@ -245,8 +245,8 @@ Deselected:
 | J3, 4-way header | C441184 |
 | DS1, display panel | C5329582 |
 
-- **8-zone build:** 89 lines remain, and the placement count is 312.
-- **4-zone build,** which has no J3: 89 lines remain, and the count is 267.
+- **8-zone build:** 89 lines remain, and the placement count is 307.
+- **4-zone build,** which has no J3: 89 lines remain, and the count is 262.
 - **No substitution.** If JLCPCB proposes another part for a line that is short, compare it with
   the [BOM](doc:hardware/bom.md) before you accept. The display has no confirmed second source.
 '''

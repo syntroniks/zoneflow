@@ -50,6 +50,18 @@ request #20:
     uv run hardware/sim/failsafe/failsafe.py compare --tag asfound
     uv run hardware/sim/failsafe/failsafe.py bridges --netlist /tmp/asfound.yaml --tag asfound-bridges
 
+The neighbours of the keep-alive pin on the module edge are contact inputs.
+`faults.py` reads each one's circuit from the netlist: the pull-up, the
+series resistor if there is one, the capacitor if there is one. When the
+debounce of the push contacts moved into firmware (design section 28) the
+Back button, on the pin beside the keep-alive, was to lose its 10 kohm
+series resistor R72. The result for a netlist without it is kept as
+`results/back-without-r72.md`, and it is the reason R72 stayed:
+
+    # a copy of hardware/netlist.yaml without R72, its two nets joined as BTN_BACK
+    uv run hardware/sim/failsafe/failsafe.py faults --ids KA~ENC_B KA~ENC_B.20Hz KA~BTN_BACK KA~BTN_BACK.20Hz \
+        --netlist /tmp/no-r72.yaml --tag back-without-r72
+
 `deck` writes the ngspice file of one fault in one scenario, to look at a
 single result by hand. `faults --ids <id> --update` runs single faults again
 and replaces their rows in the result file. It is for runs that hit the

@@ -290,3 +290,44 @@ width = 0.2
 stay = true
 points = [[35.9, 72.29], [35.9, 74.49], [36.8, 75.39], [37.9, 75.39]]
 
+
+# ---- Firmware debounce: five parts taken off the routed board (owner's decision, 2026-11-12) ----
+#
+# R71 and C41 at the encoder switch, R73 and C43 at Manual / Home and C42 at Back are gone. The
+# board was not routed again: route/zoneflow-a.dsn.delta lists what its Specctra file has less
+# and more than the routed one. Where a series resistor went, the contact net and the pin net
+# are one net now, under the pin's name. The copper the autorouter laid for the contact net is
+# imported under that name.
+[patches.renamed]
+"/Display/ENC_SW_SW" = "/ENC_SW"
+"/Display/BTN_HOME_SW" = "/BTN_HOME"
+
+# ENC_SW. The contact net came to R66 pad 2 and went on to pad 1 of R71; the pin net left pad 2
+# of R71 through pad 1 of C41 and turned east under R66. With the two parts gone that is a detour
+# through three pads that are not there. Taken out: the two pieces at R71, the piece through C41
+# and the 5.3 mm that went east at y = 102.06. Laid again as one track: from R66 pad 2 down the
+# same diagonal, straight down where pad 1 of R71 was, and east on the old line.
+[[unroute]]
+net = "/ENC_SW"
+box = [80.0, 102.0, 86.3, 104.5]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ENC_SW"
+width = 0.2
+stay = true
+points = [[83.2, 104.425], [81.7, 102.925], [81.7, 102.4], [82.039, 102.061], [86.261, 102.061]]
+
+# BTN_HOME. One track where R73 was, from its pad 1 to its pad 2: 1.65 mm. The track that went
+# on from pad 2 through pad 1 of C43 to the via stays as it is.
+[[patch]]
+layer = "F.Cu"
+net = "/BTN_HOME"
+width = 0.2
+stay = true
+points = [[46.375, 66.1], [48.025, 66.1]]
+
+# BTN_BACK keeps R72. The 2.3 mm from pad 2 of R72 to pad 1 of C42 led to that capacitor only.
+[[unroute]]
+net = "/BTN_BACK"
+box = [13.0, 61.3, 14.8, 63.1]

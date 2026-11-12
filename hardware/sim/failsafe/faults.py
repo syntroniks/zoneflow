@@ -177,15 +177,47 @@ EXT_SOURCES = {
     "x_dqs": "VXDQS {node}_s 0 PULSE(0 3.3 1m 5u 5u 1m 2m)\nRXDQS {node}_s {node} 30",
     # Backlight PWM on GPIO21, LEDC. 1 to 20 kHz on the board, 500 Hz here.
     "x_bl": "VXBL {node}_s 0 PULSE(0 3.3 1m 5u 5u 1m 2m)\nRXBL {node}_s {node} 30",
-    # A button or encoder net at the module pin: 3.3 kohm pull-up, 10 kohm in
-    # series and 100 nF (for example R68, R73, C43). A closed contact pulls
-    # the pin low through the 10 kohm.
-    "x_btn": "RXBTN n3v3 {node} 13.3k\nCXBTN {node} 0 100n",
     # UART0 TXD: the ROM prints its boot log at 115200 baud after every
     # reset. Idle high; 500 Hz here stands in for the bit stream of a log
     # that repeats in a reset loop.
     "x_txd": "VXTXD {node}_s 0 PULSE(3.3 0 1m 5u 5u 1m 2m)\nRXTXD {node}_s {node} 30",
 }
+
+
+def _ohms(value: str) -> float:
+    m = re.match(r"([\d.]+)\s*([kM]?)", value)
+    return float(m.group(1)) * {"": 1.0, "k": 1e3, "M": 1e6}[m.group(2)]
+
+
+def contact_source(comps: dict, net: str) -> tuple[str, str]:
+    """A button or encoder net at the module pin, as the netlist has it.
+
+    Returns the ngspice lines of the net with its contact open, and the lines
+    that work the contact at 20 Hz. Two circuits exist on the board. An
+    encoder phase has a pull-up to 3V3 on the contact, a resistor in series
+    to the pin and a capacitor at the pin (R65, R70, C40): a closed contact
+    pulls the pin low through the series resistor. A push contact has the
+    pull-up alone (R67), since the debounce moved into firmware: a closed
+    contact is a dead short from the pin to ground.
+    """
+    def two_pin(prefix: str, a: str, b: str) -> list[dict]:
+        return [c for ref, c in comps.items() if ref.startswith(prefix) and len(c["pins"]) == 2 and set(c["pins"].values()) == {a, b}]
+
+    series = two_pin("R", net, f"{net}_SW")
+    contact = f"{net}_SW" if series else net
+    pull = two_pin("R", "3V3", contact)
+    caps = two_pin("C", net, "GND")
+    if len(pull) != 1 or len(series) > 1 or len(caps) > 1:
+        raise ValueError(f"cannot read the contact circuit of {net} from the netlist")
+    r_pull = _ohms(pull[0]["value"])
+    r_series = _ohms(series[0]["value"]) if series else 0.0
+    idle = f"RXBTN n3v3 {{node}} {r_pull + r_series:g}"
+    if caps:
+        farad = re.match(r"([\d.]+)\s*nF", caps[0]["value"])
+        idle += f"\nCXBTN {{node}} 0 {farad.group(1)}n"
+    # the switch model has 10 mohm when closed
+    worked = idle + f"\nVXBTNP {{node}}_p 0 PULSE(0 1 1m 5u 5u 25m 50m)\nSXBTN {{node}} {{node}}_r {{node}}_p 0 FSWC\nRXBTNR {{node}}_r 0 {max(r_series, 0.01):g}"
+    return idle, worked
 
 
 def board_faults(comps: dict) -> list[Fault]:
@@ -213,9 +245,10 @@ def board_faults(comps: dict) -> list[Fault]:
                 out.append(Fault(f"KA~{key.split()[1]}.{ohms:g}", g, "U4", f"KA bridged to module pin {key} (octal PSRAM line, toggling), {ohms:g} ohm",
                                  [Prim("bridge", ("KA", "x_dqs", ohms))], ext={"x_dqs": EXT_SOURCES["x_dqs"]}))
         elif net.startswith(("BTN_", "ENC_")):
-            out.append(Fault(f"KA~{net}", g, "U4", f"KA bridged to module pin {key} ({net}, contact open)", [Prim("bridge", ("KA", "x_btn", 0.01))], ext={"x_btn": EXT_SOURCES["x_btn"]}))
+            idle, worked = contact_source(comps, net)
+            out.append(Fault(f"KA~{net}", g, "U4", f"KA bridged to module pin {key} ({net}, contact open)", [Prim("bridge", ("KA", "x_btn", 0.01))], ext={"x_btn": idle}))
             out.append(Fault(f"KA~{net}.20Hz", g, "U4", f"KA bridged to module pin {key} ({net}, contact worked at 20 Hz)", [Prim("bridge", ("KA", "x_btn", 0.01))],
-                             ext={"x_btn": EXT_SOURCES["x_btn"] + "\nVXBTNP {node}_p 0 PULSE(0 1 1m 5u 5u 25m 50m)\nSXBTN {node} {node}_r {node}_p 0 FSWC\nRXBTNR {node}_r 0 10k"}))
+                             ext={"x_btn": worked}))
         elif net in ("OC_FAULT_N", "AC_ZC", "DRV_EN_RB", "V_DRV_RB"):
             out.append(Fault(f"KA~{net}", g, "U4", f"KA bridged to module pin {key} ({net})", [Prim("bridge", ("KA", net, 0.01))], ac=net == "AC_ZC"))
         else:

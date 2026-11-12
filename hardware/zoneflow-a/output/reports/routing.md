@@ -7,19 +7,21 @@ written in `design/layout.py` or `design/board.toml`; "patch router" is the `[[p
 | Layer | By hand | Patch router | Autorouter |
 |---|---|---|---|
 | B.Cu | 1903 | 480 | 1650 |
-| F.Cu | 1811 | 334 | 2733 |
+| F.Cu | 1808 | 343 | 2720 |
 | In2.Cu | 444 | 113 | 0 |
 
-104 nets are routed by hand alone, 97 have autorouted or patched copper. 386 vias were placed by hand or by the plane fan-out, 164 by the autorouter and 91 by the patch router.
+104 nets are routed by hand alone, 95 have autorouted or patched copper. 384 vias were placed by hand or by the plane fan-out, 164 by the autorouter and 91 by the patch router.
 
 ## Copper laid by the patch router
 
 A maze router closed these after the autorouter. It keeps the clearances and knows nothing else:
 look at each one.
 
+- `/BTN_HOME` (Default): 1.6 mm, 0 vias, narrowest 0.2 mm (class width 0.2 mm)
 - `/Connectors/U0TXD` (Default): 15.8 mm, 3 vias, narrowest 0.2 mm (class width 0.2 mm)
 - `/CurrentSense/SA_N` (Default): 11.8 mm, 3 vias, narrowest 0.2 mm (class width 0.2 mm)
 - `/CurrentSense/SA_P` (Default): 2 mm, 0 vias, narrowest 0.2 mm (class width 0.2 mm)
+- `/ENC_SW` (Default): 7.3 mm, 0 vias, narrowest 0.2 mm (class width 0.2 mm)
 - `/Expander/RLY_A` (Power): 70.8 mm, 10 vias, narrowest 0.4 mm (class width 0.4 mm)
 - `/Expander/RLY_ON` (Default): 3 mm, 1 vias, narrowest 0.2 mm (class width 0.2 mm)
 - `/I2C0_SDA` (Default): 58.1 mm, 8 vias, narrowest 0.2 mm (class width 0.2 mm)
@@ -54,7 +56,6 @@ None.
 
 The distance is half the perimeter of the box round the pins of the net.
 
-- `/Display/ENC_SW_SW`: 57.6 mm of track for 10.9 mm
 - `/Sensors/SP_B`: 39.1 mm of track for 6.6 mm
 - `/ZD_Z1_N`: 105.2 mm of track for 41.5 mm
 
@@ -82,8 +83,8 @@ Total: 113 mm in 11 nets.
 |---|---|---|---|---|---|---|
 | `/AC_ZC` | Default | 36.4 | 32.3 | 0 | F.Cu | 0.2 |
 | `/BOOT` | Default | 140.7 | 89.8 | 2 | B.Cu, F.Cu | 0.2 |
-| `/BTN_BACK` | Default | 151.9 | 115.5 | 1 | B.Cu, F.Cu | 0.2 |
-| `/BTN_HOME` | Default | 96.5 | 96 | 2 | B.Cu, F.Cu | 0.2 |
+| `/BTN_BACK` | Default | 149.7 | 112.3 | 1 | B.Cu, F.Cu | 0.2 |
+| `/BTN_HOME` | Default | 111.6 | 103 | 2 | B.Cu, F.Cu | 0.2 |
 | `/Connectors/QW_3V3` | Power | 27.7 | 16.7 | 2 | B.Cu, F.Cu | 0.4 |
 | `/Connectors/U0TXD` | Default | 15.8 | 16.2 | 0 | B.Cu, F.Cu, In2.Cu | 0.2 |
 | `/CurrentSense/SA_N` | Default | 15.1 | 10.9 | 0 | B.Cu, F.Cu, In2.Cu | 0.2 |
@@ -95,13 +96,11 @@ Total: 113 mm in 11 nets.
 | `/DRV_EN` | Default | 27 | 19.7 | 1 | B.Cu, F.Cu | 0.2 |
 | `/Display/BL_G` | Default | 9.7 | 7.7 | 0 | F.Cu | 0.2 |
 | `/Display/BTN_BACK_SW` | Default | 14.7 | 15.2 | 0 | F.Cu | 0.2 |
-| `/Display/BTN_HOME_SW` | Default | 13.4 | 11.7 | 0 | F.Cu | 0.2 |
 | `/Display/ENC_A_SW` | Default | 5.8 | 6.9 | 0 | F.Cu | 0.2 |
 | `/Display/ENC_B_SW` | Default | 8.8 | 6.9 | 0 | F.Cu | 0.2 |
-| `/Display/ENC_SW_SW` | Default | 57.6 | 10.9 | 4 | B.Cu, F.Cu | 0.2 |
 | `/EN` | Default | 83.5 | 73.3 | 1 | B.Cu, F.Cu | 0.2 |
 | `/ENC_A` | Default | 56.7 | 35.9 | 4 | B.Cu, F.Cu | 0.2 |
-| `/ENC_SW` | Default | 38.6 | 38.9 | 2 | B.Cu, F.Cu | 0.2 |
+| `/ENC_SW` | Default | 92.6 | 38.7 | 6 | B.Cu, F.Cu | 0.2 |
 | `/EXP_INT_N` | Default | 6.4 | 7.5 | 0 | F.Cu | 0.2 |
 | `/Expander/KB_N0` | Default | 1.9 | 1.9 | 0 | F.Cu | 0.2 |
 | `/Expander/KB_N1` | HiZ | 8 | 4.5 | 0 | F.Cu | 0.25 |

@@ -1865,7 +1865,7 @@ components:
       "A": "ENC_A_SW"
       "B": "ENC_B_SW"
       "C": "GND"
-      "switch 1": "ENC_SW_SW"
+      "switch 1": "ENC_SW"
       "switch 2": "GND"
   - ref: SW4
     value: "Tactile switch 6x6 mm, 10 mm high"
@@ -1885,7 +1885,7 @@ components:
     variant: "all"
     note: "Manual / Home"
     pins:
-      "1": "BTN_HOME_SW"
+      "1": "BTN_HOME"
       "2": "GND"
   - ref: R64
     value: "3.3k 1%"
@@ -1952,25 +1952,7 @@ components:
     note: "Pull-up, 1 mA contact current"
     pins:
       "1": "3V3"
-      "2": "ENC_SW_SW"
-  - ref: R71
-    value: "10k 1%"
-    package: "0603"
-    lcsc: C25804
-    block: "K controls"
-    variant: "all"
-    pins:
-      "1": "ENC_SW_SW"
       "2": "ENC_SW"
-  - ref: C41
-    value: "100 nF 50 V X7R"
-    package: "0603"
-    lcsc: C14663
-    block: "K controls"
-    variant: "all"
-    pins:
-      "1": "ENC_SW"
-      "2": "GND"
   - ref: R67
     value: "3.3k 1%"
     package: "0603"
@@ -1990,15 +1972,6 @@ components:
     pins:
       "1": "BTN_BACK_SW"
       "2": "BTN_BACK"
-  - ref: C42
-    value: "100 nF 50 V X7R"
-    package: "0603"
-    lcsc: C14663
-    block: "K controls"
-    variant: "all"
-    pins:
-      "1": "BTN_BACK"
-      "2": "GND"
   - ref: R68
     value: "3.3k 1%"
     package: "0603"
@@ -2008,25 +1981,7 @@ components:
     note: "Pull-up, 1 mA contact current"
     pins:
       "1": "3V3"
-      "2": "BTN_HOME_SW"
-  - ref: R73
-    value: "10k 1%"
-    package: "0603"
-    lcsc: C25804
-    block: "K controls"
-    variant: "all"
-    pins:
-      "1": "BTN_HOME_SW"
       "2": "BTN_HOME"
-  - ref: C43
-    value: "100 nF 50 V X7R"
-    package: "0603"
-    lcsc: C14663
-    block: "K controls"
-    variant: "all"
-    pins:
-      "1": "BTN_HOME"
-      "2": "GND"
   - ref: J4
     value: "Header 7-way 3.81 mm pluggable, right angle"
     package: "THT"

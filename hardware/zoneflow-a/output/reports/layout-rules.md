@@ -71,10 +71,8 @@ Written by `hwflow.layoutrules`. Distances in millimetres, from the board file. 
 | `/KA` | `/DRV_EN` | same layer | 1 | 12.25 | (32.14, 74.78) |
 | `/KA` | `/Display/BL_G` | same layer | 1 | 15.80 | (50.82, 93.6) |
 | `/KA` | `/Display/BTN_BACK_SW` | same layer | 1 | 22.55 | (26.7, 63.75) |
-| `/KA` | `/Display/BTN_HOME_SW` | same layer | 1 | 12.12 | (44.82, 66.1) |
 | `/KA` | `/Display/ENC_A_SW` | same layer | 1 | 14.69 | (82.5, 77.58) |
 | `/KA` | `/Display/ENC_B_SW` | same layer | 1 | 10.51 | (87.5, 78.73) |
-| `/KA` | `/Display/ENC_SW_SW` | same layer | 1 | 11.53 | (82.5, 95) |
 | `/KA` | `/Display/TFT_LEDA` | same layer | 1 | 15.58 | (56, 90.18) |
 | `/KA` | `/Display/TFT_LEDK` | same layer | 1 | 16.32 | (57.57, 90.68) |
 | `/KA` | `/EN` | same layer | 1 | 4.51 | (74.2, 83.34) |
