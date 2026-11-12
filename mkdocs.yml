@@ -151,6 +151,7 @@ nav:
       - Hardware layout: design/hardware-layout.md
       - Hardware layout review: design/hardware-layout-review.md
       - Review records: design/reviews/index.md
+      - Repository audit: design/repository-audit.md
       - Hardware toolchain: design/hardware-toolchain.md
       - Mechanical design: design/mechanical.md
       - Firmware architecture: design/firmware-architecture.md

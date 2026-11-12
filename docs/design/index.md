@@ -24,10 +24,15 @@ so earlier decisions it describes as replaced are kept on purpose.
 - [Hardware answers A2](hardware-answers-a2.md): the hardware answers to the nine questions the firmware raised on the self-test of review A2, the decision on a shorted 3.3 V regulator with the detector it added, and the list of what the firmware must change.
 - [Hardware layout](hardware-layout.md): the rev A board: stack-up, floor plan, what is routed by hand and why, the current calculations, the layout rules of the fail-safe analysis, what the autorouter did, and what its author thinks is weak.
 - [Hardware layout review](hardware-layout-review.md): the independent review of the rev A layout. Findings by severity, what was fixed, the placement files against the assembler's library, what was verified and how, and the checklist a person must go through before an order.
+- [Review records](reviews/index.md): the records of the reviews a person made with the pre-order review walkthrough. None has been made yet.
+- [Firmware security](firmware-security.md): the network surface of the standalone firmware: provisioning, the REST API and its sessions, updates, MQTT, what a review of it found and which risks remain.
 - [Web UI contract](../firmware/web-ui-contract.md): what the standalone firmware's web interface may rely on from the REST API and event stream.
+- [Repository audit](repository-audit.md): a fresh reading of the whole repository on 2026-11-12: where it disagreed with itself, what was corrected, what is left, and which checks no workflow runs.
 
 The independent design review before fabrication is tracked in
-[issue #11](https://github.com/syntroniks/zoneflow/issues/11).
+[issue #11](https://github.com/syntroniks/zoneflow/issues/11). The reviews of
+the circuit and of the layout are written. What is open is the part a person
+does: the [pre-order review walkthrough](../hardware/review/index.md).
 
 New design documents go in `docs/design/`. Add each one to the `nav` section
 of `mkdocs.yml` and to this list.
