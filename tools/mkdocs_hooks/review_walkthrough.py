@@ -13,6 +13,7 @@ the board file by ``make -C hardware/zoneflow-a review`` into
   one. The build has no KiCad; ``reviewwalk.check`` reads the board file as text.
 """
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -47,6 +48,21 @@ def _content():
     return _state["spec"], _state["manifest"]
 
 
+def _commit():
+    """The commit this site is built from, for the hand-off file: an agent has to know what was reviewed."""
+    def git(*args):
+        return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, timeout=20)
+
+    try:
+        head = git("rev-parse", "HEAD")
+        if head.returncode != 0:
+            return "unknown"
+        dirty = git("status", "--porcelain", "--untracked-files=no").stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return "unknown"
+    return head.stdout.strip() + (" with local changes" if dirty else "")
+
+
 def on_pre_build(config):
     _state.clear()
 
@@ -63,7 +79,9 @@ def on_page_markdown(markdown, page, config, files):
             continue
         content, manifest = _content()
         root = "../" * page.url.rstrip("/").count("/") + ("../" if page.url else "")
-        builder = pagemod.Builder(content, manifest, root)
+        if "commit" not in _state:
+            _state["commit"] = _commit()
+        builder = pagemod.Builder(content, manifest, root, commit=_state["commit"])
         html = builder.walkthrough() if what == "walkthrough" else builder.bench_sheet(PIN1)
         # One block of raw HTML: no blank lines, so that Markdown leaves it alone.
         html = "\n".join(line for line in html.splitlines() if line.strip())

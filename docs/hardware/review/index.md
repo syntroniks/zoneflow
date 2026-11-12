@@ -38,6 +38,21 @@ and text to outlines. The build of this site fails if a step names a part or
 a net that is no longer on the board, or if the pictures were drawn from
 another board file than the one in the repository.
 
+Each shape in a picture carries the net, the part and the pad number that the
+board file gives it. When you enlarge a picture and select a shape, the page
+reads those and shows them. It works nothing out by itself, so it cannot name
+a pad that the board does not have. The layer switches hide and show what the
+picture already holds.
+
+## What happens to your answers
+
+They stay in your browser. The page sends nothing. Two things leave it, and
+only when you take them out: the report, and the hand-off file for a coding
+agent. The hand-off file follows
+[a schema](handoff.schema.json). `reviewwalk record` checks a file against the
+schema and the board and writes it into
+[the review records](../../design/reviews/index.md) of the repository.
+
 The pictures show the board file. They are not KiCad's window, and they do
 not show solder mask, paste or the inner structure of a via. Where a step
 depends on something a picture cannot show, the step says so.

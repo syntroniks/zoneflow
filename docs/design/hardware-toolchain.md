@@ -1204,4 +1204,14 @@ can be wrong, and each one was looked at when it was written.
   before it builds the board anew: it draws the pictures again and compares
   them with the committed ones, numbers within 0.02 of a picture unit.
 
-`tools/reviewwalk/README.md` says how a step and a picture are written.
+Each shape in a picture carries the net, the part and the pad number that
+the board file gives it, as attributes. The page shows them when a shape of
+an enlarged picture is selected.
+
+The page also writes the owner's decisions into a hand-off file for a coding
+agent. `uv run --project tools/reviewwalk reviewwalk record FILE` checks such
+a file against its schema and against the board, and writes a dated record
+under `docs/design/reviews/`.
+
+`tools/reviewwalk/README.md` says how a step and a picture are written, and
+what the hand-off file holds.

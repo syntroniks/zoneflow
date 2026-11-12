@@ -7,6 +7,11 @@ title = "Run the two commands that guard the order"
 source = "Layout review, section 17, items 2 and 5"
 findings = ["L1", "L9"]
 minutes = 5
+files = ["hardware/rules/jlcpcb-cpl-rotations.csv", "hardware/rules/jlcpcb.toml", "hardware/zoneflow-a/design/footprints.py"]
+remedies = [
+  { id = "fix-rotation", text = "Correct the row of the part that does not fit in `hardware/rules/jlcpcb-cpl-rotations.csv`." },
+  { id = "fix-hole", text = "Find the hole under 0.3 mm and correct its footprint in `design/footprints.py`." },
+]
 check = '''
 Run the placement check and the search for small holes on the files you are about to upload.
 '''
@@ -54,6 +59,10 @@ title = "Board options that match the calculations"
 source = "Layout review, section 17, item 2. Finding L12"
 findings = ["L12", "L9"]
 minutes = 6
+files = ["hardware/rules/jlcpcb.toml"]
+remedies = [
+  { id = "update-rules", text = "Record what JLCPCB's page charges for in `hardware/rules/jlcpcb.toml` and on the ordering page, with the date." },
+]
 check = '''
 Upload the Gerber and drill files and set the board options. Then read the price breakdown.
 '''
@@ -95,6 +104,9 @@ title = "The four copper layers in the right order"
 source = "Layout review, section 11, \"Job file, L12\""
 findings = ["L12"]
 minutes = 4
+remedies = [
+  { id = "state-order", text = "Write the layer order on the ordering page, as text for the remark field of the order." },
+]
 check = '''
 In JLCPCB's Gerber viewer, confirm that the two inner layers are in the right order: the ground
 plane directly under the top side, the 3.3 V plane directly above the bottom side.
@@ -151,6 +163,10 @@ title = "Assembly options: top side only, rails on the two long sides"
 source = "Layout review, section 17, item 3. Finding L20"
 findings = ["L20"]
 minutes = 5
+files = ["hardware/zoneflow-a/design/layout.py"]
+remedies = [
+  { id = "fiducials", text = "Add three fiducial marks to the board in `design/layout.py`, so that placement does not depend on rails." },
+]
 check = '''
 Select assembly for the top side only, and ask JLCPCB to add process edges with tooling holes and
 fiducial marks on the left and right sides.
@@ -204,6 +220,10 @@ title = "Take six lines out of the assembly"
 source = "Layout review, section 17, item 4. Finding L13"
 findings = ["L13"]
 minutes = 5
+files = ["tools/hwflow/hwflow/fab.py"]
+remedies = [
+  { id = "mark-lines", text = "Have the BOM generator leave out or mark the hand-fitted parts, in `tools/hwflow/hwflow/fab.py`." },
+]
 check = '''
 In JLCPCB's BOM step, deselect the six lines that are fitted by hand. Then check the two counts.
 '''
@@ -262,6 +282,10 @@ title = "Placement preview: D25, cathode bar at the left"
 source = "Layout review, section 17, item 5, and section 16"
 findings = ["L23", "L1"]
 minutes = 3
+files = ["hardware/rules/jlcpcb-cpl-rotations.csv"]
+remedies = [
+  { id = "fix-rotation", text = "Add or correct the row for this part number in `hardware/rules/jlcpcb-cpl-rotations.csv`, then run `make cpl-check`." },
+]
 check = '''
 In JLCPCB's placement preview, find D25 at (12.9, 36.8). The cathode bar of the part must point
 left, towards the board edge.
@@ -311,6 +335,10 @@ title = "Placement preview: the eleven LEDs, cathode at the left"
 source = "Layout review, section 17, item 5"
 findings = ["L1"]
 minutes = 4
+files = ["hardware/rules/jlcpcb-cpl-rotations.csv"]
+remedies = [
+  { id = "fix-rotation", text = "Add or correct the row for this part number in `hardware/rules/jlcpcb-cpl-rotations.csv`, then run `make cpl-check`." },
+]
 check = '''
 Find the ten LEDs along y = 42 and the fault LED D8 at (9.9, 79.2). On each, the cathode mark must
 be at the left.
@@ -377,6 +405,10 @@ title = "Placement preview: the nine triacs, tab towards the terminals"
 source = "Layout review, section 17, item 5. Finding L1"
 findings = ["L1"]
 minutes = 3
+files = ["hardware/rules/jlcpcb-cpl-rotations.csv"]
+remedies = [
+  { id = "fix-rotation", text = "Add or correct the row for this part number in `hardware/rules/jlcpcb-cpl-rotations.csv`, then run `make cpl-check`." },
+]
 check = '''
 Find the nine triacs Q901, Q101 to Q801 in a row at y = 30. On each, the large tab must point down,
 towards the terminals, and the two leads up, towards the LEDs.
@@ -429,6 +461,10 @@ title = "Placement preview: the nine opto-triacs, pin 1 at the lower left"
 source = "Layout review, section 17, item 5. Finding L1"
 findings = ["L1"]
 minutes = 3
+files = ["hardware/rules/jlcpcb-cpl-rotations.csv"]
+remedies = [
+  { id = "fix-rotation", text = "Add or correct the row for this part number in `hardware/rules/jlcpcb-cpl-rotations.csv`, then run `make cpl-check`." },
+]
 check = '''
 Find the nine opto-triacs U901, U101 to U801 in a row at y = 50.8. On each, the notch or the dot
 that marks pin 1 must be at the lower left.
@@ -481,6 +517,10 @@ title = "Placement preview: the module, the display connector and the cell holde
 source = "Layout review, section 17, item 5. Finding L1"
 findings = ["L1"]
 minutes = 4
+files = ["hardware/rules/jlcpcb-cpl-rotations.csv"]
+remedies = [
+  { id = "fix-rotation", text = "Add or correct the row for this part number in `hardware/rules/jlcpcb-cpl-rotations.csv`, then run `make cpl-check`." },
+]
 check = '''
 Three large parts. U4: the antenna end beyond the top edge. J7: the mouth towards the right. BT1:
 the + mark at the left.
@@ -551,6 +591,10 @@ title = "Placement preview: every other polarised part against the pin 1 table"
 source = "Layout review, section 17, item 5, and section 5, \"What this does not prove\""
 findings = ["L1", "L23"]
 minutes = 12
+files = ["hardware/rules/jlcpcb-cpl-rotations.csv"]
+remedies = [
+  { id = "fix-rotation", text = "Add or correct the row for this part number in `hardware/rules/jlcpcb-cpl-rotations.csv`, then run `make cpl-check`." },
+]
 check = '''
 With the pin 1 table beside the preview, go through the remaining polarised parts: the other
 diodes, the ICs, the three resistor arrays and the two small connectors. Then scroll once over the
@@ -602,6 +646,10 @@ title = "Two questions for JLCPCB that nobody has asked"
 source = "Layout review, section 17, closing paragraph. Layout document, section 14, items 2 and 8"
 findings = ["L6"]
 minutes = 5
+files = ["docs/design/mechanical.md"]
+remedies = [
+  { id = "builder-solders", text = "JLCPCB will not fit C1 and K1: write on the ordering page that the builder solders them." },
+]
 check = '''
 Ask JLCPCB's support two things before you pay, and record the answers in the note.
 '''

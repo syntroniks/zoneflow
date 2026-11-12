@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Command line: ``python -m reviewwalk generate|check|compare``.
+"""Command line: ``python -m reviewwalk generate|check|compare|record``.
 
 generate  draw every picture from the board (needs KiCad's Python)
 check     the content and the committed pictures against the committed board (Python only)
 compare   two directories of pictures, numbers within a tolerance (Python only)
+record    check a hand-off file of the walkthrough and write its record under docs/design/reviews/ (Python only)
 """
 
 from __future__ import annotations
@@ -94,6 +95,20 @@ def compare(args):
     print(f"reviewwalk: {len(names_a)} pictures, the same in both")
 
 
+def record(args):
+    from . import handoff
+
+    try:
+        page, raw = handoff.record(args.file, args.out, args.board, args.data, args.force, args.allow_other_board)
+    except handoff.HandoffError as e:
+        for line in str(e).splitlines():
+            print(f"reviewwalk: {line}", file=sys.stderr)
+        sys.exit(1)
+    except OSError as e:
+        sys.exit(f"reviewwalk: {e}")
+    print(f"reviewwalk: recorded in {page} and {raw.name}")
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="reviewwalk", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="command", required=True)
@@ -109,6 +124,15 @@ def main(argv=None):
     s.add_argument("b")
     s.add_argument("--tolerance", type=float, default=0.02)
     s.set_defaults(fn=compare)
+    s = sub.add_parser("record")
+    s.add_argument("file", help="the hand-off file the walkthrough page wrote, Markdown or its JSON alone")
+    s.add_argument("--out", default=None, help="where the record goes; docs/design/reviews by default")
+    s.add_argument("--data", default=str(specmod.DATA))
+    s.add_argument("--board", default=str(specmod.BOARD))
+    s.add_argument("--force", action="store_true", help="write over a record of the same date")
+    s.add_argument("--allow-other-board", action="store_true",
+                   help="record a review of another board file than the one in the repository, and say so in the record")
+    s.set_defaults(fn=record)
     args = p.parse_args(argv)
     args.fn(args)
 

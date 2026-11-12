@@ -8,6 +8,10 @@ title = "D25, the 6 V clamp: which pad is the cathode"
 source = "Finding L23, \"one not verified\". Layout review, section 4, row D25, and section 16"
 findings = ["L23"]
 minutes = 4
+files = ["hardware/rules/jlcpcb-cpl-rotations.csv"]
+remedies = [
+  { id = "rotation-row", text = "The netlist is right and the part lies the wrong way in the placement: add a row for C83270 to `hardware/rules/jlcpcb-cpl-rotations.csv`." },
+]
 check = '''
 D25 is a one-way clamp, SMBJ6.0A. Its cathode must be on `V_BUCK` and its anode on ground. Confirm
 that pad 1 is on `V_BUCK`, and that the maker marks the cathode with a band.

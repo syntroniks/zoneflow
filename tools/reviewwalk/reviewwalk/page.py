@@ -21,7 +21,9 @@ from .boardtext import sha256
 
 REPO_URL = "https://github.com/syntroniks/zoneflow"
 _LINK = re.compile(r"\]\((doc|out|repo):([^)#\s]+)(#[^)\s]*)?\)")
-ANSWERS = (("pass", "Pass"), ("fail", "Fail"), ("unsure", "Not sure"))
+# The value an answer is stored under, and what it is called on a check and on a decision.
+ANSWERS = {"check": (("pass", "Pass"), ("fail", "Fail"), ("unsure", "Not sure")),
+           "decision": (("pass", "Accept"), ("fail", "Reject"), ("unsure", "Not sure"))}
 SECTIONS = (("check", "What to check"), ("why", "Why it matters"), ("good", "What correct looks like"),
             ("bad", "What a failure looks like"), ("fact", "From the datasheet"), ("how", "How to do it"),
             ("cannot", "What the picture cannot show"))
@@ -32,10 +34,16 @@ def esc(text) -> str:
     return html.escape(str(text), quote=True)
 
 
+def plain(text) -> str:
+    """Markdown code marks off, for a place that shows text only."""
+    return str(text).replace("`", "")
+
+
 class Builder:
     """Renders for one page. ``root`` is the relative URL from that page to the site root."""
 
-    def __init__(self, spec, manifest, root, board=specmod.BOARD):
+    def __init__(self, spec, manifest, root, board=specmod.BOARD, commit="unknown"):
+        self.commit = commit
         self.spec = spec
         self.manifest = manifest
         self.root = root
@@ -73,7 +81,9 @@ class Builder:
             name = specmod.figure_name(owner, fig)
             meta = self.manifest["figures"][name]
             w, h = meta["width"], meta["height"]
-        return (f'<figure class="zf-fig"><button type="button" class="zf-zoom" aria-label="Enlarge the picture: {esc(fig["alt"])}">'
+        # A drawn picture can be read again as SVG when it is enlarged: its shapes carry their nets and parts.
+        svg = "" if "asset" in fig else f' data-svg="{self.img}{name}"'
+        return (f'<figure class="zf-fig"><button type="button" class="zf-zoom"{svg} aria-label="Enlarge the picture: {esc(fig["alt"])}">'
                 f'<img src="{self.img}{name}" alt="{esc(fig["alt"])}" width="{w}" height="{h}" loading="lazy"></button>'
                 f'<figcaption>{self.inline(fig["caption"])}</figcaption></figure>')
 
@@ -132,11 +142,21 @@ class Builder:
         if not figs:
             parts.append('<p class="zf-nofig">No picture for this step. The text says why.</p>')
         parts.append("</div></div>")
+        kind = step.get("kind", "check")
         radios = "".join(
             f'<label class="zf-radio zf-radio-{value}"><input type="radio" name="answer-{sid}" value="{value}"> {label}</label>'
-            for value, label in ANSWERS)
-        parts.append(f'<fieldset class="zf-answer"><legend>Your answer for this step</legend><div class="zf-radios">{radios}'
+            for value, label in ANSWERS[kind])
+        options = "".join(f'<option value="{esc(r["id"])}">{esc(plain(r["text"]))}</option>' for r in specmod.step_remedies(self.spec, step))
+        legend = "Your decision on this step" if kind == "decision" else "Your answer for this step"
+        failed = "rejected" if kind == "decision" else "failed"
+        parts.append(f'<fieldset class="zf-answer"><legend>{legend}</legend><div class="zf-radios">{radios}'
                      f'<button type="button" class="zf-clear-one" hidden>Clear</button></div>'
+                     f'<div class="zf-remedy" hidden><label class="zf-note-label" for="remedy-{sid}">This step {failed}. What should be '
+                     f'done about it? This goes to the agent with the hand-off file</label>'
+                     f'<select id="remedy-{sid}" class="zf-remedy-select"><option value="">Let the agent propose a remedy</option>'
+                     f'{options}<option value="own">Something else, in my own words</option></select>'
+                     f'<div class="zf-remedy-own" hidden><label class="zf-note-label" for="remedy-text-{sid}">The remedy in your words</label>'
+                     f'<input type="text" id="remedy-text-{sid}" class="zf-remedy-text" maxlength="1000"></div></div>'
                      f'<label class="zf-note-label" for="note-{sid}">Note, for the report</label>'
                      f'<textarea id="note-{sid}" class="zf-note" rows="2" '
                      f'placeholder="What you saw, what you measured, what you want changed"></textarea></fieldset>')
@@ -190,8 +210,12 @@ class Builder:
         minutes = sum(int(g.get("minutes", 0)) for g in spec["group"])
         counts = {s: sum(1 for f in spec["finding"] if f["severity"] == s) for s in specmod.SEVERITIES}
         fixed = sum(1 for f in spec["finding"] if f["status"] == "fixed")
-        meta = {"issue": spec["meta"]["issue"], "repo": spec["meta"]["repo"], "board": self.board_hash,
-                "steps": [{"id": s["id"], "title": s["title"], "group": self.groups[s["group"]]["title"]} for s in steps]}
+        # What the page's script needs for the report and for the hand-off to a coding agent: every step
+        # with the parts, nets, position, pictures, files and remedies an implementer would need.
+        origin = self.manifest["board"]["kicad_origin"]
+        meta = {"issue": spec["meta"]["issue"], "repo": spec["meta"]["repo"], "revision": "A", "board": self.board_hash,
+                "board_file": "hardware/zoneflow-a/zoneflow-a.kicad_pcb", "commit": self.commit,
+                "steps": [specmod.step_context(spec, s, origin) for s in steps]}
         # "</" may not appear inside a script element.
         meta_json = json.dumps(meta).replace("</", "<\\/")
         out = [f'<link rel="stylesheet" href="{self.root}hardware/review/review.css">',
@@ -248,9 +272,16 @@ can be done in any order and on different days.</li>
 <li><strong>Your answers stay in this browser.</strong> Nothing is sent anywhere. If the browser cannot store them,
 the page says so and still works until you close it.</li>
 <li><strong>Pass means</strong> you looked at the place, and it is as the step says under "what correct looks
-like". If you are not certain, answer Not sure. That is a useful answer.</li>
+like". If you are not certain, answer Not sure. That is a useful answer: the agent then asks you and does not guess.</li>
+<li><strong>Some steps are decisions.</strong> The review left a few things as they are and asks whether you accept
+them. Those steps are answered with Accept or Reject.</li>
+<li><strong>When a step fails</strong> you can say what should be done: pick one of the remedies the step offers,
+write your own, or leave it to the agent.</li>
+<li><strong>Enlarge a picture</strong> to switch its layers on and off, and select a pad, a track or a zone to read
+its part and its net from the board file.</li>
 <li><strong>At the end</strong> the page writes a report for
-<a href="{REPO_URL}/issues/{spec["meta"]["issue"]}">issue #{spec["meta"]["issue"]}</a>, the prototype build.</li>
+<a href="{REPO_URL}/issues/{spec["meta"]["issue"]}">issue #{spec["meta"]["issue"]}</a>, the prototype build, and a
+<a href="#result">hand-off file</a> that a coding agent can record and act on.</li>
 <li><strong>For the bench,</strong> print the <a href="{self.url("doc", "hardware/review/bench-sheet.md")}">bench
 sheet</a>: both sides at true size, the pin 1 table and every step as a tick box.</li>
 </ul>
@@ -278,7 +309,8 @@ sheet</a>: both sides at true size, the pin 1 table and every step as a tick box
 <div class="zf-progress" aria-live="polite"><div class="zf-bar" role="progressbar" aria-label="Steps answered" aria-valuemin="0"
 aria-valuemax="{len(steps)}" aria-valuenow="0"><span class="zf-bar-pass"></span><span class="zf-bar-unsure"></span><span class="zf-bar-fail"></span></div>
 <p class="zf-progress-text">No step answered yet.</p></div>
-<p class="zf-storage-note" hidden></p>
+<div class="zf-storage-note" hidden><p class="zf-storage-text"></p>
+<button type="button" class="md-button zf-confirm-board" hidden>I have checked these answers against this board</button></div>
 <div class="zf-layout">
 <nav class="zf-list" aria-label="All steps"><ol>{"".join(nav)}</ol></nav>
 <div class="zf-stage">{"".join(body)}
@@ -352,6 +384,32 @@ a new comment on issue #{spec["meta"]["issue"]}</a></p>
 <p class="zf-report-status" role="status" aria-live="polite"></p>
 <label for="zf-report" class="zf-note-label">The report</label>
 <textarea id="zf-report" class="zf-report" rows="16" readonly placeholder="Select &quot;Write the report&quot;."></textarea>
+<h3 id="hand-off">Hand off to an agent</h3>
+<p>One file with everything a coding agent needs to record this review in the repository and to make the changes it
+calls for. It starts with instructions for the agent. Then come your decisions as data, with the parts, nets, positions
+and source files of every step that is not passed, and the remedy you chose. Then the same as text. Passed and
+accepted steps are listed in short, so that the record is complete. The page does not send the file: you give it to
+the agent.</p>
+<p class="zf-actions"><button type="button" class="md-button md-button--primary zf-handoff-copy">Copy the hand-off file</button>
+<button type="button" class="md-button zf-handoff-save">Save the hand-off file</button></p>
+<p class="zf-report-status zf-handoff-status" role="status" aria-live="polite"></p>
+<details class="zf-handoff-show"><summary>Read the file before you hand it over</summary>
+<label for="zf-handoff-file" class="zf-note-label">The hand-off file</label>
+<textarea id="zf-handoff-file" class="zf-report" rows="18" readonly></textarea></details>
+<p>An agent, or you, records the file in the repository with one command. It checks the decisions against
+<a href="{self.root}hardware/review/handoff.schema.json">the schema</a> and against the board file, and writes a dated
+record under <code>docs/design/reviews/</code> with the data beside it:</p>
+<pre><code>uv run --project tools/reviewwalk reviewwalk record zoneflow-rev-a-review-handoff-YYYY-MM-DD.md</code></pre>
+<h3 id="bring-in">Bring answers in from a hand-off file</h3>
+<p>To go on with a review on another machine, or to look again after an agent has changed the board, give the page a
+hand-off file. It replaces the answers on this page. If the file is a review of another board file than the one this
+page shows, the page says so and keeps the answers for you to check.</p>
+<p class="zf-actions"><label class="md-button zf-file-label">Choose a hand-off file
+<input type="file" class="zf-import-file" accept=".md,.markdown,.json,.txt,text/markdown,application/json,text/plain"></label></p>
+<label for="zf-import-text" class="zf-note-label">Or paste the file here</label>
+<textarea id="zf-import-text" class="zf-report" rows="5" placeholder="Paste the whole hand-off file, or its JSON block alone."></textarea>
+<p class="zf-actions"><button type="button" class="md-button zf-import-go">Bring the answers in</button></p>
+<div class="zf-import-status" role="status" aria-live="polite"></div>
 <p class="zf-actions"><button type="button" class="md-button zf-reset">Delete all my answers</button></p>
 </section>''')
         out.append('''<dialog id="zf-lightbox" class="zf-lightbox" aria-label="Enlarged picture">
@@ -360,6 +418,8 @@ a new comment on issue #{spec["meta"]["issue"]}</a></p>
 <button type="button" class="zf-lb-in" aria-label="Zoom in">+</button>
 <button type="button" class="zf-lb-fit">Fit</button>
 <button type="button" class="zf-lb-close">Close</button></div>
+<div class="zf-lb-tools" hidden><span class="zf-lb-layers" role="group" aria-label="Layers shown"></span>
+<span class="zf-lb-info" role="status" aria-live="polite"></span></div>
 <div class="zf-lb-view" tabindex="0" aria-label="Picture. Drag to move, wheel or plus and minus to zoom."><div class="zf-lb-content"></div></div>
 </dialog>''')
         out.append(f'</div>\n<script src="{self.root}hardware/review/review.js" defer></script>')
@@ -386,7 +446,8 @@ a new comment on issue #{spec["meta"]["issue"]}</a></p>
                    f'and from below for the bottom side. Positions in millimetres from the lower left corner.</p>'
                    f'<table class="zf-pin1"><thead><tr><th>Part</th><th>Side</th><th>Centre x, y</th><th>Pad</th><th>Pad is at</th>'
                    f'<th>Seen</th></tr></thead><tbody>{table}</tbody></table></section>')
-        out.append('<section class="zf-sheet-page"><h2>The steps as tick boxes</h2><p>P is pass, F is fail, ? is not sure. '
+        out.append('<section class="zf-sheet-page"><h2>The steps as tick boxes</h2><p>P is pass, F is fail, ? is not sure. For a '
+                   'step that asks "accept or reject", P is accept and F is reject. '
                    "The walkthrough has the pictures and the reasons.</p>")
         number = 0
         for g in self.spec["group"]:

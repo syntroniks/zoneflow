@@ -8,6 +8,13 @@
 #
 # Every reference designator named in a step or a finding must be a part on
 # the board: `python -m reviewwalk check` and the site build fail otherwise.
+#
+# For the hand-off to a coding agent a step also says what an implementer
+# needs: `kind = "decision"` for a step that is answered "accepted" or
+# "rejected" instead of pass or fail; `files`, the sources a change would be
+# made in (a group gives the files that all its steps share); and `remedies`,
+# the few likely cures the owner can pick from when the step fails. Every
+# file named must exist in the repository.
 
 [meta]
 issue = 33
@@ -88,6 +95,7 @@ id = "kicad"
 title = "In KiCad"
 tool = "KiCad 10 with `hardware/zoneflow-a/zoneflow-a.kicad_pro` open"
 minutes = 60
+files = ["hardware/zoneflow-a/design/layout.py", "docs/design/hardware-layout.md"]
 intro = """
 Nobody has looked at this board in the KiCad window. The author and the reviewer both worked through
 `kicad-cli` and scripts. These steps are that first look, and the six places on the copper that the
@@ -99,6 +107,11 @@ id = "sheets"
 title = "With the datasheets"
 tool = "A browser for the makers' datasheets"
 minutes = 40
+files = ["hardware/netlist.yaml", "hardware/zoneflow-a/design/parts.toml", "hardware/bom-preliminary.csv", "docs/design/hardware-design.md"]
+remedies = [
+  { id = "netlist", text = "Correct the pin numbers of this part in `hardware/netlist.yaml`, run `make -C hardware design-sync`, then `make` in the board directory." },
+  { id = "other-part", text = "Keep the netlist and choose a part whose pinout is the one the netlist has. New part number in `design/parts.toml` and the BOM, from a datasheet that was read." },
+]
 intro = """
 The reviewer compared eleven part types with JLCPCB's library symbol or from memory, and did not open
 the maker's sheet. One more, the clamp D25, could not be checked in the library at all. Each step
@@ -111,6 +124,11 @@ id = "print"
 title = "On the 1:1 print"
 tool = "The [bench sheet](doc:hardware/review/bench-sheet.md) printed at 100 %, callipers, and the parts if you have them"
 minutes = 40
+files = ["hardware/zoneflow-a/design/footprints.py", "hardware/zoneflow-a/design/footprints.md", "hardware/mechanical.yaml"]
+remedies = [
+  { id = "footprint", text = "Correct the footprint in `design/footprints.py` and its row in `design/footprints.md`, from the maker's drawing." },
+  { id = "contract", text = "The footprint is right and the position is wrong: change `hardware/mechanical.yaml` first. The enclosure follows it." },
+]
 intro = """
 A footprint that is wrong by a millimetre passes every check on this board, because the checks
 compare the board with its own footprints. A part laid on a true-size print finds it in seconds.
@@ -122,6 +140,7 @@ id = "hand"
 title = "With parts in hand"
 tool = "The sample display panel, callipers, the parts KiCad has no model for"
 minutes = 20
+files = ["hardware/mechanical.yaml", "docs/design/mechanical.md"]
 intro = """
 Two things rest on a reading of a drawing and on nothing else: how the display's flat cable meets
 its connector, and how tall some parts are.
@@ -132,6 +151,7 @@ id = "order"
 title = "On JLCPCB's order pages"
 tool = "A JLCPCB account. Upload the files and stop before payment"
 minutes = 45
+files = ["docs/hardware/ordering.md"]
 intro = """
 Nobody has uploaded these files. You can go through JLCPCB's order pages up to the payment step
 without ordering. I did not open those pages, so these steps name the options and cannot show you

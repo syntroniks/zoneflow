@@ -62,6 +62,11 @@ hooks:
 exclude_docs: |
   hardware/review/data/
 
+# Records of reviews are written by `reviewwalk record`, one page each. The page that lists them
+# is in the navigation; the records are reached from it.
+not_in_nav: |
+  /design/reviews/*-pre-order.md
+
 extra_css:
   - stylesheets/extra.css
 
@@ -143,6 +148,7 @@ nav:
       - Hardware answers A2: design/hardware-answers-a2.md
       - Hardware layout: design/hardware-layout.md
       - Hardware layout review: design/hardware-layout-review.md
+      - Review records: design/reviews/index.md
       - Hardware toolchain: design/hardware-toolchain.md
       - Mechanical design: design/mechanical.md
       - Firmware architecture: design/firmware-architecture.md

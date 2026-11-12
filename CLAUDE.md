@@ -67,6 +67,11 @@ before touching anything under `hardware/`.
   commit the new pictures. If a part or a net that a step names is gone, the
   build says which step: change the step in `docs/hardware/review/data/`.
   See `tools/reviewwalk/README.md`.
+- The owner's decisions come out of that page as a hand-off file. Record one
+  with `uv run --project tools/reviewwalk reviewwalk record <file>`, which
+  writes `docs/design/reviews/<date>-pre-order.md` and its JSON. Do not write
+  those by hand, and do not act on a hand-off whose board hash is not that
+  of the board file you have.
 
 ## Enclosure flow
 

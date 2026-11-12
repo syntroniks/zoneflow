@@ -26,6 +26,7 @@ MANIFEST = "manifest.json"
 SHARED = ("assembly-top.svg", "assembly-bottom.svg", "overview-overlay.svg")
 STEP_TEXT = ("check", "why", "good", "bad", "how", "fact", "cannot")
 STEP_REQUIRED = ("id", "group", "title", "source", "check", "why", "good", "bad", "how")
+KINDS = ("check", "decision")
 SEVERITIES = ("Blocking", "Major", "Minor", "Note")
 STATUSES = ("fixed", "open", "accepted", "no-defect")
 _ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
@@ -71,6 +72,18 @@ def validate(spec):
         seen.add(s["id"])
         if s["group"] not in groups:
             raise SpecError(f"step {s['id']}: no group {s['group']}")
+        if s.get("kind", "check") not in KINDS:
+            raise SpecError(f"step {s['id']}: kind must be one of {', '.join(KINDS)}")
+    for owner in spec["step"] + spec["group"]:
+        ids = set()
+        for r in owner.get("remedies", []):
+            if not _ID.match(str(r.get("id", ""))) or not str(r.get("text", "")).strip():
+                raise SpecError(f"{owner['id']}: a remedy needs an id of lower-case letters, digits and hyphens, and a text")
+            if r["id"] in ids or r["id"] in ("agent", "own"):
+                raise SpecError(f"{owner['id']}: remedy id {r['id']} is taken")
+            ids.add(r["id"])
+        if not all(isinstance(f, str) and f and not f.startswith("/") for f in owner.get("files", [])):
+            raise SpecError(f"{owner['id']}: files are paths from the root of the repository")
     finding_ids = set()
     for f in spec["finding"]:
         for k in ("id", "severity", "where", "found", "action", "status", "check"):
@@ -202,6 +215,74 @@ def named_refs(spec):
             scan(f.get(k, ""), f"finding {f['id']}, {k}")
     for b in spec["block"]:
         scan(b.get("text", ""), f"block {b['name']}")
+    return out
+
+
+def _unique(items):
+    seen, out = set(), []
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            out.append(item)
+    return out
+
+
+def step_remedies(spec, step):
+    """The remedies a step offers: its own, then those of its group."""
+    group = next(g for g in spec["group"] if g["id"] == step["group"])
+    own = list(step.get("remedies", []))
+    shared = group.get("remedies", []) if step.get("group_remedies", True) else []
+    taken = {r["id"] for r in own}
+    return own + [r for r in shared if r["id"] not in taken]
+
+
+def step_context(spec, step, kicad_origin):
+    """What a coding agent needs to act on a step with no other context.
+
+    The parts and nets the step is about, where on the board, the pictures, the source files a change
+    would be made in, the remedies offered, and where the step comes from.
+    """
+    group = next(g for g in spec["group"] if g["id"] == step["group"])
+    kicad = step.get("kicad", {})
+    refs, nets = list(kicad.get("find", [])), list(kicad.get("nets", []))
+    if "ref" in step.get("ibom", {}):
+        refs.append(step["ibom"]["ref"])
+    pictures = []
+    for fig in step.get("figure", []):
+        if "asset" in fig:
+            pictures.append({"file": f"hardware/zoneflow-a/output/review/{fig['asset']}"})
+            continue
+        refs += fig.get("around", []) + fig.get("pad_labels", [])
+        for m in fig.get("marks", []):
+            refs += m.get("refs", [])
+            nets += m.get("nets", [])
+        picture = {"file": f"hardware/zoneflow-a/output/review/{figure_name(step['id'], fig)}",
+                   "view": fig.get("view", "top")}
+        if "box" in fig:
+            picture["box_mm"] = [float(v) for v in fig["box"]]
+        pictures.append(picture)
+    position = None
+    if "at" in kicad:
+        x, y = (float(v) for v in kicad["at"])
+        position = {"x_mm": x, "y_mm": y, "kicad_x_mm": round(kicad_origin[0] + x, 3), "kicad_y_mm": round(kicad_origin[1] - y, 3)}
+    return {
+        "id": step["id"], "title": step["title"], "group": group["id"], "group_title": group["title"],
+        "kind": step.get("kind", "check"), "designators": _unique(refs), "nets": _unique(nets), "position": position,
+        "pictures": pictures, "files": _unique(list(step.get("files", [])) + list(group.get("files", []))),
+        "remedies": [{"id": r["id"], "text": r["text"]} for r in step_remedies(spec, step)],
+        "source": step["source"], "findings": list(step.get("findings", [])),
+    }
+
+
+def named_files(spec):
+    """Files of the repository that steps and groups name for an implementer: {path: where}."""
+    out = {}
+    for g in spec["group"]:
+        for f in g.get("files", []):
+            out.setdefault(f, f"group {g['id']}")
+    for s in spec["step"]:
+        for f in s.get("files", []):
+            out.setdefault(f, f"step {s['id']}")
     return out
 
 

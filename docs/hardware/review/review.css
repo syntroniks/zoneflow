@@ -527,6 +527,24 @@ a[data-answer="unsure"] .zf-dot { background: var(--zf-unsure); border-color: va
   font-size: 0.7rem;
 }
 
+.zf-remedy {
+  margin-top: 0.2rem;
+}
+
+.zf-remedy-select,
+.zf-remedy-text {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  padding: 0.45rem 0.6rem;
+  border: 0.05rem solid var(--md-default-fg-color--lighter);
+  border-radius: 0.2rem;
+  background: var(--md-default-bg-color);
+  color: var(--md-default-fg-color);
+  font: inherit;
+  font-size: 0.78rem;
+}
+
 .zf-pager {
   display: none;
 }
@@ -680,6 +698,63 @@ a[data-answer="unsure"] .zf-dot { background: var(--zf-unsure); border-color: va
   font-size: 0.72rem;
 }
 
+.md-typeset .zf-result-remedy {
+  margin: 0.1rem 0 0.5rem;
+  font-size: 0.7rem;
+  color: var(--md-default-fg-color--light);
+}
+
+.md-typeset .zf-handoff-show {
+  margin: 0.4rem 0 1rem;
+  padding: 0.4rem 0.8rem;
+  border: 0.05rem solid var(--zf-line);
+  border-radius: 0.2rem;
+}
+
+.md-typeset .zf-handoff-show summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.md-typeset .zf-file-label {
+  cursor: pointer;
+}
+
+/* The file field is reached through its label, which looks like the other buttons. */
+.zf-file-label input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.zf-file-label:focus-within {
+  outline: 0.15rem solid var(--md-accent-fg-color);
+  outline-offset: 0.1rem;
+}
+
+.zf-import-status:not(:empty) {
+  margin: 0.6rem 0;
+  padding: 0.1rem 0.9rem;
+  border-left: 0.25rem solid var(--zf-line);
+  background: var(--zf-soft);
+  font-size: 0.75rem;
+}
+
+.zf-import-status[data-state="pass"] { border-left-color: var(--zf-pass); }
+.zf-import-status[data-state="warn"] { border-left-color: var(--zf-unsure); }
+.zf-import-status[data-state="fail"] { border-left-color: var(--zf-fail); }
+
+.md-typeset .zf-storage-note .zf-storage-text {
+  margin: 0.2rem 0;
+}
+
+.md-typeset .zf-storage-note .md-button {
+  margin: 0.2rem 0 0.4rem;
+  font-size: 0.7rem;
+}
+
 /* The enlarged picture ----------------------------------------------------------------------- */
 
 .zf-lightbox {
@@ -724,6 +799,52 @@ a[data-answer="unsure"] .zf-dot { background: var(--zf-unsure); border-color: va
   border-color: #6b7482;
   color: #e6e9ef;
   min-width: 2rem;
+}
+
+.zf-lb-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1rem;
+  align-items: center;
+  padding: 0.3rem 0.6rem;
+  background: #10141b;
+  border-top: 0.05rem solid #2a313c;
+  font-size: 0.68rem;
+}
+
+.zf-lb-tools[hidden] {
+  display: none;
+}
+
+.zf-lb-layers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.8rem;
+}
+
+.zf-lb-layer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+}
+
+.zf-lb-info {
+  flex: 1 1 16rem;
+  font-weight: 700;
+  color: #ffe100;
+}
+
+.zf-lb-content svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+}
+
+/* The shape that was selected: lit, with a white edge. */
+.zf-lb-content .zf-picked {
+  filter: brightness(1.6) drop-shadow(0 0 2px #ffffff) drop-shadow(0 0 2px #ffffff);
 }
 
 .zf-lb-view {
@@ -837,6 +958,9 @@ a[data-answer="unsure"] .zf-dot { background: var(--zf-unsure); border-color: va
   .zf-actions,
   .zf-lightbox,
   .zf-storage-note,
+  .zf-handoff-show,
+  .zf-import-status,
+  .zf-remedy[hidden],
   .zf-clear-one,
   .zf-report,
   .zf-progress {

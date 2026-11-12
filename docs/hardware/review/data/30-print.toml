@@ -6,6 +6,7 @@ group = "print"
 title = "Print both sides at true size and check the scale"
 source = "Layout review, section 17, item 1"
 minutes = 5
+group_remedies = false
 check = '''
 Print the [bench sheet](doc:hardware/review/bench-sheet.md) at 100 %. Measure the two scale bars and
 the board edge on each drawing with callipers.
@@ -365,6 +366,12 @@ title = "The display panel's flat cable against J7"
 source = "Layout review, section 16, \"The panel and its tail\". Mechanical design, section 10"
 findings = ["L23"]
 minutes = 10
+files = ["hardware/netlist.yaml", "hardware/zoneflow-a/design/parts.toml", "hardware/zoneflow-a/design/footprints.py"]
+remedies = [
+  { id = "top-contact", text = "The contacts are on the back face: fit the top-contact version of the connector on the same footprint. New part number in `design/parts.toml` and the BOM, from a datasheet that was read." },
+  { id = "reverse-pins", text = "Pin 1 is at the other end: reverse the twelve nets of J7 in `hardware/netlist.yaml`." },
+  { id = "move-j7", text = "The cable does not reach: move J7 along x in `hardware/mechanical.yaml`." },
+]
 check = '''
 With the sample panel: find which face of the cable's end has the contacts, find pin 1, measure
 the cable, and check that it reaches J7 when folded under the panel.
@@ -428,6 +435,10 @@ title = "Measure the parts KiCad has no model for"
 source = "Layout review, section 13, \"What it does not\", and section 16"
 findings = ["L24"]
 minutes = 10
+files = ["hardware/zoneflow-a/design/heights.toml", "enclosure/params.scad"]
+remedies = [
+  { id = "enter-height", text = "Enter the measured height in `hardware/mechanical.yaml` and run the enclosure's interference check." },
+]
 check = '''
 Measure the height of each part in the table with callipers and compare it with the height the
 enclosure was designed for.

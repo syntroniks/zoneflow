@@ -25,6 +25,9 @@ def problems(spec, board=specmod.BOARD, out_dir=specmod.OUT, top_render=specmod.
     for net, where in sorted(specmod.named_nets(spec).items()):
         if not bt.has_net(net):
             found.append(f"{where} names net {net}, and the board has no such net")
+    for path, where in sorted(specmod.named_files(spec).items()):
+        if not (specmod.ROOT / path).is_file():
+            found.append(f"{where} names the file {path}, and the repository has no such file")
     out_dir = Path(out_dir)
     manifest_path = out_dir / specmod.MANIFEST
     if not manifest_path.is_file():

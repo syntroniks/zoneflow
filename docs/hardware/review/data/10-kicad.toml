@@ -6,6 +6,7 @@ group = "kicad"
 title = "Open the board and run the design rule check yourself"
 source = "Layout review, section 17, last paragraph: \"a look at the board in the KiCad window, which neither the author nor I had\""
 minutes = 10
+files = ["docs/design/hardware-toolchain.md"]
 check = '''
 Open the project in KiCad 10. Confirm that the board opens without a warning, that it looks like the
 picture, and that KiCad's own design rule check finds nothing.
@@ -58,6 +59,9 @@ title = "Look at one valve output on all four layers"
 source = "Layout document, section 14, item 1. Findings L6 and L14"
 findings = ["L6", "L14"]
 minutes = 8
+remedies = [
+  { id = "restore-vias", text = "Restore four 0.3 mm vias at the end of each fan-out lane and remove any neck, in `design/layout.py`. Then `make`, and commit the generated files." },
+]
 check = '''
 Follow the output of zone 1 from its terminal to its triac, on each copper layer in turn. The other
 eight columns are copies of this one.
@@ -131,6 +135,10 @@ title = "The keep-alive track from module pin 10 to R33 and R29"
 source = "Layout review, section 17, item 7, first place"
 findings = ["L22"]
 minutes = 6
+files = ["hardware/zoneflow-a/design/patches-hand.toml"]
+remedies = [
+  { id = "clear-strip", text = "Move the track or via that is inside the 1 mm strip, in `design/layout.py` or `design/patches-hand.toml`. If the autorouter laid it, add a keep-out and route again." },
+]
 check = '''
 Follow net `KA` from pad 10 of the module U4 down to the resistors R33 and R29. Beside it, for 1 mm
 on each side, there must be nothing but ground, on F.Cu and on B.Cu.
@@ -192,6 +200,11 @@ title = "Two I2C conductors 0.2 mm from the node behind R29"
 source = "Layout review, section 17, item 7, second place, and section 6"
 findings = ["L22"]
 minutes = 5
+kind = "decision"
+remedies = [
+  { id = "move-both", text = "Move the `QW_SDA` track and the `I2C0_SCL` via at least 1 mm from `KA_N0`, and add both nets to the keep-away list of that node. This needs a new routing and a new look at it." },
+  { id = "rule-first", text = "Add the two I2C nets to the keep-away list of `KA_N0` first, and let the build show what has to move." },
+]
 check = '''
 Look at the node `KA_N0` between R29 and C22. A `QW_SDA` track passes 0.22 mm from the pad of C22,
 and an `I2C0_SCL` via stands 0.23 mm from the node's track. Decide whether you accept them there.
@@ -248,6 +261,9 @@ title = "Ground round the gate node of Q2"
 source = "Layout review, section 17, item 7, third place"
 findings = ["L22"]
 minutes = 5
+remedies = [
+  { id = "clear-rail", text = "Move the rail copper that is within 1 mm of `RLY_G2`, by hand in `design/layout.py`." },
+]
 check = '''
 Look at net `RLY_G2`: the gate of Q2, pad 1 of C50, pad 2 of D22 and one pad each of the bleed
 resistors R14 and R90. Ground must surround it, and no supply rail may come within 1 mm.
@@ -297,6 +313,9 @@ title = "Six vias under the buck converter"
 source = "Layout review, section 17, item 7, fourth place"
 findings = ["L2", "L8"]
 minutes = 3
+remedies = [
+  { id = "add-vias", text = "Add the missing vias under the pad of U1, and the tie from pin 1 to the pad, in `design/layout.py`." },
+]
 check = '''
 Count the vias in the exposed pad of U1, and check that pin 1, GND, joins that pad.
 '''
@@ -338,6 +357,9 @@ title = "No copper under the two screw heads"
 source = "Layout review, section 17, item 7, fifth place"
 findings = ["L7", "L29"]
 minutes = 4
+remedies = [
+  { id = "widen-keepout", text = "Widen the keep-out square at the hole on F.Cu and make the patches again." },
+]
 check = '''
 At the mounting holes C, at (4.5, 12), and D, at (109.5, 12), no track may be within 3 mm of the
 centre on the top side.
@@ -391,6 +413,10 @@ title = "Five tracks under the display carrier's leg at hole B"
 source = "Finding L30"
 findings = ["L30"]
 minutes = 3
+kind = "decision"
+remedies = [
+  { id = "keepout-b", text = "Keep tracks out from under the leg at hole B on F.Cu, as at holes C and D, and route again." },
+]
 check = '''
 Look at the copper round hole B at (75, 106). Five autorouted nets pass under the plastic leg of
 the display carrier, the nearest 0.47 mm from the wall of the hole. Decide whether you accept that.
@@ -433,6 +459,11 @@ title = "The 17 connections the autorouter could not close"
 source = "Layout review, section 17, item 7, sixth place"
 findings = ["L27", "L28"]
 minutes = 15
+files = ["hardware/zoneflow-a/design/patches-hand.toml", "hardware/zoneflow-a/design/patches.toml"]
+remedies = [
+  { id = "hand-route", text = "Route the net named in the note by hand, in `design/patches-hand.toml`." },
+  { id = "next-routing", text = "Leave the board as it is and record the net for the next routing." },
+]
 check = '''
 Open `output/reports/routing.md` beside the board. Under "Copper laid by the patch router" it lists
 19 nets. Highlight each in turn and follow it from pin to pin.
@@ -505,6 +536,11 @@ title = "Accept or reject: R33 is 12 mm from the pin it should sit at"
 source = "Finding L16. Layout document, section 14, item 4"
 findings = ["L16"]
 minutes = 3
+kind = "decision"
+files = ["docs/design/hardware-design.md", "hardware/mechanical.yaml"]
+remedies = [
+  { id = "move-r33", text = "Put R33 at module pin 10. The encoder or the module has to move, so the mechanical contract and the enclosure change first." },
+]
 check = '''
 Fail-safe rule 1 says "put R33 at the module pin". R33 is at the corner of the module, 12.3 mm of
 track and two vias from pad 10. Read the argument and decide.
@@ -549,6 +585,12 @@ title = "Accept or reject: the display bus is 61 to 72 mm long"
 source = "Finding L17. Layout document, section 14, item 4"
 findings = ["L17"]
 minutes = 3
+kind = "decision"
+files = ["hardware/netlist.yaml", "hardware/mechanical.yaml"]
+remedies = [
+  { id = "series-resistors", text = "Add series resistors at the module on the five bus lines, in `hardware/netlist.yaml`, and place them." },
+  { id = "firmware-only", text = "Leave the board. Lower the drive strength of the display pins in the firmware and check the edges on the bench." },
+]
 check = '''
 The hardware design asks for "about 40 mm" of track from the module to the display connector J7.
 The five bus lines are 61 to 72 mm. Read the argument and decide.
@@ -599,6 +641,11 @@ title = "Accept or reject: the ADC filter capacitors are 19 mm from their pins"
 source = "Finding L18. Layout document, section 14, item 4"
 findings = ["L18"]
 minutes = 3
+kind = "decision"
+files = ["hardware/pinmap.yaml", "hardware/netlist.yaml"]
+remedies = [
+  { id = "pin-map", text = "Move `ADC_LO` and `ADC_HI` to GPIO4 to 7 on the module's left side, with the capacitors at the pins. The pin map, the netlist, the firmware's board header and the routing change." },
+]
 check = '''
 C30 and C31 filter the two current-measurement lines into the ADC. The design wants them at the
 module pins. They are 19 mm of track away. Read the argument and decide.
@@ -643,6 +690,11 @@ title = "Three risks the review left open: see each and accept it"
 source = "Findings L19, L21 and L25"
 findings = ["L19", "L21", "L25"]
 minutes = 8
+kind = "decision"
+remedies = [
+  { id = "narrow-ptc-link", text = "L25: narrow the link between each PTC and its triac tab to 1.2 mm." },
+  { id = "move-sense-pair", text = "L19: route the sense pair another way than under U1." },
+]
 check = '''
 The reviewer left three things as they are and gave a reason for each. Look at each place once.
 Ordering the board means accepting all three.
@@ -717,6 +769,9 @@ title = "The terminal labels as the installer reads them"
 source = "Layout review, section 17, item 6"
 findings = ["L10", "L15"]
 minutes = 5
+remedies = [
+  { id = "fix-label", text = "Move or narrow the label named in the note, in `design/layout.py`." },
+]
 check = '''
 Read the top silkscreen along the terminal edge. Each of the twenty terminals must have its own
 label directly behind it, and each label must read as one word.
