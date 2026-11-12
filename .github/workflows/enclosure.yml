@@ -93,10 +93,21 @@ jobs:
           make -j4 OPENSCAD="$PWD/.cache/squashfs-root/AppRun" \
             -o board_layout.json -o $keep/zoneflow-a-board-detailed-view-only.stl
 
-      # Text, STL and 3MF are the same bytes on every machine. Pictures and the
-      # PDF are not: they depend on the graphics library and carry a date.
+      # Text and STL are the same bytes on every machine. A 3MF is a zip: its
+      # compressed bytes depend on the zlib that wrote it, so each rebuilt 3MF
+      # is compared with the committed one by what it holds, and put back if
+      # that is the same. Pictures and the PDF are not compared: they depend on
+      # the graphics library and carry a date.
       - name: The committed files are what the sources generate
         run: |
+          { git diff --name-only -- enclosure | grep '\.3mf$' || true; } | while read -r f; do
+            git show "HEAD:$f" > "$RUNNER_TEMP/committed.3mf"
+            if python3 enclosure/tools/threemf.py same "$RUNNER_TEMP/committed.3mf" "$f"; then
+              git checkout -- "$f"
+            else
+              echo "::error file=$f::holds something else than the committed file"
+            fi
+          done
           git status --short -- enclosure docs/assets/enclosure
           git diff --exit-code --stat -- enclosure docs/assets/enclosure \
             ':(exclude)*.png' ':(exclude)*.pdf' ':(exclude)*.svg'

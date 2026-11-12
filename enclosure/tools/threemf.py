@@ -1,19 +1,28 @@
-"""Write 3MF files and print plates from STL files, the same bytes every time.
+"""Write 3MF files and print plates from STL files, the same contents every time.
 
     python3 tools/threemf.py single part.stl part.3mf --title "ZoneFlow base"
     python3 tools/threemf.py binary ascii.stl binary.stl
     python3 tools/threemf.py plates plates.toml output
     python3 tools/threemf.py scenes plates.toml output build/plates
+    python3 tools/threemf.py same a.3mf b.3mf
 
 OpenSCAD's own 3MF export stamps each file with the time and fresh random
 identifiers, so a rebuild changed every committed 3MF although no triangle
-had moved. This writes the mesh of the STL and nothing that varies.
+had moved. This writes the mesh of the STL and nothing that varies. On one
+machine the files come out the same byte for byte. Between machines the
+compressed bytes can differ with the zlib in use; what the archive holds
+does not. `same` compares that.
 
 `plates` reads plates.toml: for each plate, the parts to print together. It
 lays them out in rows on the bed, each already in print orientation, and
 writes one 3MF with one object per part. It fails if a plate does not fit
 its bed with the margin and the gap plates.toml gives. A plate is plain 3MF:
 positions only, no slicer settings.
+
+`same` compares what two 3MF files hold. A 3MF is a zip archive, and the
+compressed bytes depend on the zlib of the machine that wrote it, so two
+builds of one model can differ as files and hold the same thing. It exits 0
+if every member is the same, 1 if not.
 
 `scenes` writes one OpenSCAD file per plate that shows the same layout on
 its bed, with the bed outline and the margin drawn, for a picture from above.
@@ -251,6 +260,15 @@ def cmd_scenes(args) -> int:
     return 0
 
 
+def contents(path: Path) -> dict[str, bytes]:
+    with zipfile.ZipFile(path) as z:
+        return {name: z.read(name) for name in z.namelist()}
+
+
+def cmd_same(args) -> int:
+    return 0 if contents(args.a) == contents(args.b) else 1
+
+
 def cmd_single(args) -> int:
     write_3mf(args.dest, [(Path(args.src).stem, read_stl(args.src), (0.0, 0.0, 0.0))], args.title or Path(args.src).stem,
               args.description)
@@ -280,6 +298,10 @@ def main(argv=None) -> int:
     s.add_argument("config", type=Path)
     s.add_argument("root", type=Path, help="directory the part files and the plates are in")
     s.set_defaults(fn=cmd_plates)
+    s = sub.add_parser("same", help="exit 0 if two 3MF files hold the same members")
+    s.add_argument("a", type=Path)
+    s.add_argument("b", type=Path)
+    s.set_defaults(fn=cmd_same)
     s = sub.add_parser("scenes", help="one OpenSCAD scene per plate of plates.toml, with the bed drawn")
     s.add_argument("config", type=Path)
     s.add_argument("root", type=Path, help="directory the part files are in")
