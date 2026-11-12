@@ -148,6 +148,7 @@ nav:
       - Hardware review A1: design/hardware-review-a1.md
       - Hardware review A2: design/hardware-review-a2.md
       - Hardware answers A2: design/hardware-answers-a2.md
+      - Fail-safe reduction study: design/failsafe-reduction-study.md
       - Hardware layout: design/hardware-layout.md
       - Hardware layout review: design/hardware-layout-review.md
       - Review records: design/reviews/index.md

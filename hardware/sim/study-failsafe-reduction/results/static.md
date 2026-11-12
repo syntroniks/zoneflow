@@ -1,0 +1,61 @@
+# No keep-alive: supply ramps, a steady pin, one edge
+
+Study, not the product. Written by `study.py`; do not edit.
+
+Nothing is written to the expander in these runs, as on a board whose firmware is not running.
+`DRV_EN` high with no valve bit set lights no LED and closes no relay: the last two columns show it.
+
+| case | corner | one-shot output below its supply range | highest DRV_EN, V | DRV_EN high for, ms | highest V_DRV, V | highest LED current, mA | highest coil current, mA |
+|---|---|---|---|---|---|---|---|
+| ramp 1 ms, pin high impedance | short, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 1 ms, pin high impedance | long, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 1 ms, pin high impedance | short, 3.3 V | taken as high below 1.65 V | 3.27 | 173 | 3.30 | 0.000 | 0.000 |
+| ramp 1 ms, pin high impedance | long, 3.3 V | taken as high below 1.65 V | 3.27 | 331 | 3.30 | 0.000 | 0.000 |
+| ramp 1 ms, pin tied to 3V3 through 100 ohm | short, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 1 ms, pin tied to 3V3 through 100 ohm | long, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 1 ms, pin tied to 3V3 through 100 ohm | short, 3.3 V | taken as high below 1.65 V | 3.27 | 173 | 3.30 | 0.000 | 0.000 |
+| ramp 1 ms, pin tied to 3V3 through 100 ohm | long, 3.3 V | taken as high below 1.65 V | 3.27 | 331 | 3.30 | 0.000 | 0.000 |
+| ramp 1 ms, pin driven low | short, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 1 ms, pin driven low | long, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 1 ms, pin driven low | short, 3.3 V | taken as high below 1.65 V | 3.27 | 173 | 3.30 | 0.000 | 0.000 |
+| ramp 1 ms, pin driven low | long, 3.3 V | taken as high below 1.65 V | 3.27 | 331 | 3.30 | 0.000 | 0.000 |
+| ramp 100 ms, pin high impedance | short, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 100 ms, pin high impedance | long, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 100 ms, pin high impedance | short, 3.3 V | taken as high below 1.65 V | 3.27 | 132 | 3.30 | 0.000 | 0.000 |
+| ramp 100 ms, pin high impedance | long, 3.3 V | taken as high below 1.65 V | 3.27 | 289 | 3.30 | 0.000 | 0.000 |
+| ramp 100 ms, pin tied to 3V3 through 100 ohm | short, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 100 ms, pin tied to 3V3 through 100 ohm | long, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 100 ms, pin tied to 3V3 through 100 ohm | short, 3.3 V | taken as high below 1.65 V | 3.27 | 132 | 3.30 | 0.000 | 0.000 |
+| ramp 100 ms, pin tied to 3V3 through 100 ohm | long, 3.3 V | taken as high below 1.65 V | 3.27 | 289 | 3.30 | 0.000 | 0.000 |
+| ramp 100 ms, pin driven low | short, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 100 ms, pin driven low | long, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 100 ms, pin driven low | short, 3.3 V | taken as high below 1.65 V | 3.27 | 132 | 3.30 | 0.000 | 0.000 |
+| ramp 100 ms, pin driven low | long, 3.3 V | taken as high below 1.65 V | 3.27 | 289 | 3.30 | 0.000 | 0.000 |
+| ramp 1 s, pin high impedance | short, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 1 s, pin high impedance | long, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 1 s, pin high impedance | short, 3.3 V | taken as high below 1.65 V | 0.69 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 1 s, pin high impedance | long, 3.3 V | taken as high below 1.65 V | 0.69 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 1 s, pin tied to 3V3 through 100 ohm | short, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 1 s, pin tied to 3V3 through 100 ohm | long, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 1 s, pin tied to 3V3 through 100 ohm | short, 3.3 V | taken as high below 1.65 V | 0.69 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 1 s, pin tied to 3V3 through 100 ohm | long, 3.3 V | taken as high below 1.65 V | 0.69 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 1 s, pin driven low | short, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 1 s, pin driven low | long, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 1 s, pin driven low | short, 3.3 V | taken as high below 1.65 V | 0.69 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 1 s, pin driven low | long, 3.3 V | taken as high below 1.65 V | 0.69 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 10 s, pin high impedance | short, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 10 s, pin high impedance | long, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 10 s, pin high impedance | short, 3.3 V | taken as high below 1.65 V | 0.69 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 10 s, pin high impedance | long, 3.3 V | taken as high below 1.65 V | 0.69 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 10 s, pin tied to 3V3 through 100 ohm | short, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 10 s, pin tied to 3V3 through 100 ohm | long, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 10 s, pin tied to 3V3 through 100 ohm | short, 3.3 V | taken as high below 1.65 V | 0.69 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 10 s, pin tied to 3V3 through 100 ohm | long, 3.3 V | taken as high below 1.65 V | 0.69 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 10 s, pin driven low | short, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 10 s, pin driven low | long, 3.3 V | low below 1.0 V | 0.00 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 10 s, pin driven low | short, 3.3 V | taken as high below 1.65 V | 0.69 | 0 | 0.00 | 0.000 | 0.000 |
+| ramp 10 s, pin driven low | long, 3.3 V | taken as high below 1.65 V | 0.69 | 0 | 0.00 | 0.000 | 0.000 |
+| one rising edge, then high | short, 3.3 V | low below 1.0 V | 3.27 | 149 | 3.30 | 0.000 | 0.000 |
+| one rising edge, then high | long, 3.3 V | low below 1.0 V | 3.27 | 291 | 3.30 | 0.000 | 0.000 |
+| one pulse of 1 ms | short, 3.3 V | low below 1.0 V | 3.27 | 149 | 3.30 | 0.000 | 0.000 |
+| one pulse of 1 ms | long, 3.3 V | low below 1.0 V | 3.27 | 291 | 3.30 | 0.000 | 0.000 |

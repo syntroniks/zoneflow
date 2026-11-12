@@ -1,0 +1,7 @@
+lcsc,manufacturer,mpn,package,library,preferred,stock,least_patch_number,loss_number,min_purchase,price_breaks,date_checked,source
+C513291,Nexperia,"74LVC1G123DP,125",TSSOP-8,extended,no,3442,5,0,1,1:0.5578;10:0.4449;30:0.3877;100:0.3304;500:0.2977;1000:0.2797,2026-11-12,"JLCPCB parts search, selectSmtComponentList"
+C123302,Texas Instruments,SN74LVC1G123DCTR,SSOP-8,extended,no,8164,5,0,1,1:1.0927;10:0.9716;30:0.8849;100:0.8146;500:0.7917;1000:0.7786,2026-11-12,"JLCPCB parts search, selectSmtComponentList"
+C2066812,Texas Instruments,TPS3852H33DRBR,SON-8-EP(3x3),extended,no,3176,0,0,1,1:1.6635;10:1.4639;30:1.3249;100:1.1973;500:1.1384;1000:1.1139,2026-11-12,"JLCPCB parts search, selectSmtComponentList"
+C130064,Texas Instruments,TPS3820-33DBVR,SOT-23-5,extended,no,9019,0,0,1,1:0.6069;10:0.4956;30:0.4384;100:0.3484;500:0.3157;1000:0.2977,2026-11-12,"JLCPCB parts search, selectSmtComponentList"
+C5152526,SGMICRO,SGM820B-3.0XTDB8G/TR,TDFN-8L(3x3),extended,no,3981,0,0,1,1:1.3952;10:1.1139;30:0.9585;100:0.7835;500:0.7835;1000:0.7835,2026-11-12,"JLCPCB parts search, selectSmtComponentList"
+C20032,Texas Instruments,TPS3828-33DBVR,SOT-23-5,extended,no,39159,5,0,1,1:0.3748;50:0.2943;150:0.26;500:0.2168;3000:0.1976;6000:0.1862,2026-11-12,"JLCPCB parts search, selectSmtComponentList"
