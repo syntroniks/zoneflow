@@ -66,14 +66,18 @@ This design has never been built.
 
 | Path | Contents |
 |---|---|
-| `hardware/` | KiCad 10 project. Generated outputs go in `hardware/output/` |
+| `hardware/` | KiCad 10 projects generated from text, one directory for each board. Generated outputs go in the board's `output/`, for example `hardware/zoneflow-a/output/` |
 | `firmware/zoneflow-fw/` | ESP-IDF firmware. Pin numbers live in one board header only |
 | `firmware/esphome/` | ESPHome package |
 | `enclosure/` | OpenSCAD source. Exports in `enclosure/output/` |
 | `docs/` | This site's source. `docs/design/` holds design documents |
 
-Do not commit build output unless the repository says it is a release
-artefact.
+Do not commit build output, with one exception: the generated files that
+let a reader open the project, order boards or print parts without the
+tools. Those are committed and rebuilt by `make`: the KiCad project and
+`output/` of each board, `enclosure/output/` and the files beside it that
+`enclosure/README.md` names, `docs/assets/enclosure/`, and
+`firmware/esphome/zoneflow/board-rev-a.yaml`. Never edit them by hand.
 
 ## Working on this site
 

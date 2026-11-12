@@ -30,7 +30,9 @@ request and say so in the description.
 
 ## Layout
 
-- `hardware/` KiCad 10 project. Generated outputs go in `hardware/output/`.
+- `hardware/` KiCad 10 projects, one directory for each board. Generated
+  outputs go in the board's `output/`, for example
+  `hardware/zoneflow-a/output/`.
 - `firmware/zoneflow-fw/` ESP-IDF firmware. Pin numbers live in one board
   header only.
 - `firmware/esphome/` ESPHome package.
@@ -44,8 +46,13 @@ before touching anything under `hardware/`.
 
 - Edit only the files in `design/` in a board directory (`circuit.py`,
   `board.toml`, `rules.kicad_dru` and, on the product board, `parts.toml`,
-  `symbols.py`, `footprints.py`, `footprints.md`), and the files in
-  `hardware/rules/`. Run `make` there. It fails if ERC or DRC fail.
+  `symbols.py`, `footprints.py`, `footprints.md`, `heights.toml`), and the
+  files in `hardware/rules/`. Run `make` there. It fails if ERC or DRC fail.
+- On the product board `design/board.toml` is itself generated: `make`
+  writes it from `design/layout.py`, `design/patches.toml` and
+  `design/patches-hand.toml`. Change the placement, the hand-routed tracks,
+  the zones and the layout rules in `layout.py`. `make patches` writes
+  `patches.toml`; `patches-hand.toml` is written by hand.
 - The `.kicad_sch`, `.kicad_pcb`, `.kicad_pro`, library tables, `lib/`,
   `route/` and `output/` in a board directory are generated and committed, so
   that a reviewer can open the project and see the outputs without the tools.
@@ -56,7 +63,10 @@ before touching anything under `hardware/`.
   the circuit, change `netlist.yaml` (and `parts.toml` for a new part
   number), run `make -C hardware design-sync`, then `make` in the board
   directory, and commit the generated files with the change. CI regenerates
-  them and fails on a difference.
+  the schematic half and fails on a difference. It rebuilds the board from
+  the sources and runs its checks, but does not compare the board file or
+  the fabrication outputs with the committed ones: `git status` after
+  `make` must show only the changes you mean.
 - A new or changed footprint needs its row in `design/footprints.md`: the
   maker's drawing you read and the dimensions you compared.
 - `hardware/toolchain-test/` is a test of the flow, not the product. Do not
