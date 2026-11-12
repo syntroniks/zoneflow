@@ -30,7 +30,9 @@ permissions:
 
 concurrency:
   group: firmware-${{ github.ref }}
-  cancel-in-progress: true
+  # A new push to a pull request replaces its run. A run on main is left to finish, so that every
+  # commit on main has a result.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   host-tests:
