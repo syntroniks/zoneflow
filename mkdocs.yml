@@ -139,6 +139,7 @@ nav:
   - FAQ: faq.md
   - Glossary: glossary.md
   - Contributing: contributing.md
+  - Third-party material: third-party.md
   - Design documents:
       - design/index.md
       - System specification: design/system-spec.md
