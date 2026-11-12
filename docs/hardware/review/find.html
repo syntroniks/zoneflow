@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZoneFlow rev A: find a part or a net</title>
+<style>
+  html, body { height: 100%; margin: 0; font: 15px/1.4 system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; }
+  p { margin: 0; padding: 0.5em 0.8em; background: #e8f1f1; color: #102020; border-bottom: 1px solid #9bb; }
+  a { color: #00695c; }
+  iframe { flex: 1; border: 0; width: 100%; }
+</style>
+</head>
+<body>
+<!-- A link into the interactive BOM. The BOM page takes no address parameters, so this page
+     loads it in a frame and types the part or the net into its search field. -->
+<p id="note">The interactive BOM of the revision A board.
+<a href="../zoneflow-a/zoneflow-a-ibom.html">Open it on its own</a>.
+<a href="./">Back to the walkthrough</a>.</p>
+<iframe id="ibom" src="../zoneflow-a/zoneflow-a-ibom.html" title="Interactive BOM"></iframe>
+<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var ref = params.get("ref"), net = params.get("net");
+  var note = document.getElementById("note");
+  var frame = document.getElementById("ibom");
+  function say(text) { note.insertBefore(document.createTextNode(text + " "), note.firstChild); }
+  frame.addEventListener("load", function () {
+    try {
+      var w = frame.contentWindow, d = frame.contentDocument;
+      if (ref && /^[A-Za-z0-9]+$/.test(ref)) {
+        var field = d.getElementById("reflookup");
+        field.value = ref;
+        w.updateRefLookup(ref);
+        say("Searched for part " + ref + ": select its row to mark it on the board.");
+      } else if (net && /^[A-Za-z0-9_\/+~-]+$/.test(net)) {
+        w.changeBomMode("netlist");
+        var filter = d.getElementById("filter");
+        filter.value = net;
+        w.updateFilter(net);
+        say("Searched for net " + net + ": select its row to mark it on the board.");
+      }
+    } catch (e) {
+      say("Could not search for you. Type " + (ref || net || "the name") + " into the search field.");
+    }
+  });
+})();
+</script>
+</body>
+</html>

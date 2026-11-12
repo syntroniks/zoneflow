@@ -918,6 +918,13 @@ and six debug pads J8.
 
 ## 17. Human pre-order checklist
 
+!!! tip "There is a guided version of this list"
+    The [pre-order review walkthrough](../hardware/review/index.md) takes
+    these seven items, and the things section 16 says were not verified, one
+    step at a time. Each step shows the place on the board, drawn from the
+    board file, and takes a pass, a fail or a "not sure". It was written
+    after this review, by another hand.
+
 Seven things a person must do with eyes or hands before files go to a fab.
 Each says where to look and what correct looks like.
 

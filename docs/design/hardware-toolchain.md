@@ -1173,3 +1173,45 @@ It needs the network the first time and is not part of `make`. Five tests in
   that carries current or heat: on revision A the tab of the 3.3 V regulator
   was joined to a capacitor's via 3.8 mm away and had no via of its own.
   Name such a pad in `skip` and write its vias in the `[[via]]` list.
+
+### 13.14 Pictures of the board for the review walkthrough
+
+`tools/reviewwalk`, `make review`, `make review-check`. Added with the
+[pre-order review walkthrough](../hardware/review/index.md), a page that
+leads the owner through the checks the layout review leaves to a person.
+
+Each step of that page shows a crop of the board with the parts and nets in
+question marked. The crops are drawn from the saved board file, not from a
+plot: KiCad's `pcbnew` module turns every pad, track, via, zone fill, drawing
+and text into outlines, and `reviewwalk/render.py` writes those as SVG with
+the marking and the labels. So a picture cannot show a pad that the board
+does not have. What it adds is its own: the crop, the colours and the labels
+can be wrong, and each one was looked at when it was written.
+
+- **`make`** on a board whose Makefile sets `REVIEW := 1` ends with
+  `make review`, which draws the pictures into `output/review/` with a
+  manifest. They are generated and committed, like the other outputs.
+- **A part that is gone.** The steps name parts and nets, in their pictures
+  and in their text. `make review` fails if one is not on the board, and
+  says which step names it.
+- **Stale pictures.** The manifest holds one hash over the board file, the
+  picture descriptions, the drawing code and the place of the board in the
+  top render. The render's bytes do not count: a build that only renders it
+  again leaves the manifest as it was. The
+  documentation build has no KiCad. It reads the board file as text, checks
+  the names and the hash, and fails on a difference.
+- **CI.** The board job runs `make review-check` on the committed board
+  before it builds the board anew: it draws the pictures again and compares
+  them with the committed ones, numbers within 0.02 of a picture unit.
+
+Each shape in a picture carries the net, the part and the pad number that
+the board file gives it, as attributes. The page shows them when a shape of
+an enlarged picture is selected.
+
+The page also writes the owner's decisions into a hand-off file for a coding
+agent. `uv run --project tools/reviewwalk reviewwalk record FILE` checks such
+a file against its schema and against the board, and writes a dated record
+under `docs/design/reviews/`.
+
+`tools/reviewwalk/README.md` says how a step and a picture are written, and
+what the hand-off file holds.

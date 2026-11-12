@@ -1,0 +1,823 @@
+# Steps done in the KiCad window.
+
+[[step]]
+id = "k-open"
+group = "kicad"
+title = "Open the board and run the design rule check yourself"
+source = "Layout review, section 17, last paragraph: \"a look at the board in the KiCad window, which neither the author nor I had\""
+minutes = 10
+files = ["docs/design/hardware-toolchain.md"]
+check = '''
+Open the project in KiCad 10. Confirm that the board opens without a warning, that it looks like the
+picture, and that KiCad's own design rule check finds nothing.
+'''
+why = '''
+Every check so far ran through `kicad-cli` on a build machine. If your KiCad reads the files
+differently, for example because a library is missing, you would be reviewing another board than the
+one that was checked. This step ties what you see to what the programs saw.
+'''
+good = '''
+- **The board opens** with no message about missing libraries or a newer file version.
+- **Size.** The outline measures 114.0 x 110.0 mm.
+- **DRC.** Inspect, Design Rules Checker, with "Refill all zones before performing DRC" and "Test for
+  parity between PCB and schematic" ticked. Result: 0 errors, 0 warnings, 0 unconnected items, 0
+  schematic parity problems.
+'''
+bad = '''
+- **Any DRC error or warning.** Note its text and position and stop. The build claims there is none.
+- **A message about a missing footprint library or symbol.** Your checkout is incomplete.
+- **Zones that look different after refill.** If KiCad asks to save after DRC, do not save. Note it.
+'''
+how = '''
+1. Open `hardware/zoneflow-a/zoneflow-a.kicad_pro`, then the PCB editor.
+2. Make KiCad show the coordinates this walkthrough uses. Preferences, PCB Editor, Origins & Axes.
+   Set the display origin to the drill/place file origin and the Y axis to increase upwards. The
+   bottom-left corner of the board is then (0, 0), as on every picture here. I took these menu
+   names from KiCad's manual and did not open the window myself.
+3. If you leave the default, every step also gives the page coordinates KiCad shows out of the box.
+4. To find a part, press Ctrl+F and type its designator. To follow a net, select the net
+   highlighter in the right toolbar and click a track of that net.
+5. Do not save the board. The files in the repository are generated, and the next build overwrites
+   them.
+'''
+kicad = { layers = ["F.Cu", "In1.Cu", "In2.Cu", "B.Cu"] }
+
+[[step.figure]]
+id = "board"
+alt = "The whole board: top copper, top silkscreen and outline"
+caption = "What the PCB editor shows with the front layers on: top copper in red, silkscreen in pale yellow. The module at the top right reaches beyond the board edge."
+box = [-2, -4, 116, 118]
+layers = ["F.Cu", "F.Silkscreen", "Edge.Cuts"]
+minimap = "none"
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "k-valve"
+group = "kicad"
+title = "Look at one valve output on all four layers"
+source = "Layout document, section 14, item 1. Findings L6 and L14"
+findings = ["L6", "L14"]
+minutes = 8
+remedies = [
+  { id = "restore-vias", text = "Restore four 0.3 mm vias at the end of each fan-out lane and remove any neck, in `design/layout.py`. Then `make`, and commit the generated files." },
+]
+check = '''
+Follow the output of zone 1 from its terminal to its triac, on each copper layer in turn. The other
+eight columns are copies of this one.
+'''
+why = '''
+This is the only path on the board that carries valve current, and the path a shorted valve wire
+heats. The review found two vias where four are needed and doubled them. If the path necks down
+somewhere, a short in the garden burns the board before the fuse acts.
+'''
+good = '''
+- **B.Cu, the fan-out.** A 0.9 mm track runs from pin 4 of J2 sideways to the column at x = 49.95.
+  It ends in a row of four vias, 0.8 mm apart.
+- **In2.Cu.** The same track again, on the same path, and under the triac a wide plane on net
+  `ISNS`.
+- **F.Cu.** From the four vias a 1.2 mm track into the lower pad of the PTC F101. A 5 mm wide link
+  from the upper PTC pad to the triac tab. Four small vias in the tab land, two larger ones beside
+  the PTC pad.
+- **B.Cu, the island.** A filled area 6.6 x 23 mm under the triac, on the same net as the tab.
+'''
+bad = '''
+- **Fewer than four vias** at the end of the fan-out lane.
+- **A neck.** Any piece of this path visibly narrower than the rest.
+- **A thermal-relief spoke pattern** on the PTC pads or the tab. They must join their copper solid.
+'''
+how = '''
+Find Q101 with Ctrl+F. Show one copper layer at a time in the Appearance panel. Highlight net
+`/Z1/T2`, then net `/OUT_Z1`.
+
+**L14, for the day the boards arrive.** The four vias in the tab land are open on the top and
+covered by mask on the bottom, so solder runs in. The review left them. Look at the tab joints of
+the first boards.
+'''
+kicad = { find = ["Q101", "F101"], nets = ["/Z1/T2", "/OUT_Z1"], layers = ["F.Cu", "In2.Cu", "B.Cu"], at = [49.95, 24.0] }
+ibom = { ref = "Q101" }
+
+[[step.figure]]
+id = "front"
+alt = "Top copper of the zone 1 output column"
+caption = "F.Cu. Yellow is the output net from the four vias up to the PTC. Cyan is the tab net T2, from the PTC to the triac tab."
+box = [45.5, 7.5, 54.5, 37.5]
+layers = ["F.Cu", "Edge.Cuts"]
+pad_labels = ["Q101", "F101"]
+marks = [{ nets = ["/OUT_Z1"], label = "OUT_Z1" }, { nets = ["/Z1/T2"], label = "T2 of zone 1" }]
+callouts = [
+  { at = [50.4, 14.6], text = "four vias, 0.3 mm", dx = -3.4, dy = -2.6, ring = 1.6 },
+  { at = [51.48, 30.86], text = "four vias in the tab land", dx = 2.0, dy = 2.6 },
+]
+
+[[step.figure]]
+id = "back"
+alt = "Bottom copper of the zone 1 output column, seen from above"
+caption = "B.Cu, seen from above as KiCad shows it. Yellow is the fan-out lane from the terminal. Cyan is the heat island under the triac."
+box = [38.0, 3.0, 56.0, 37.5]
+layers = ["B.Cu", "Edge.Cuts"]
+marks = [{ nets = ["/OUT_Z1"], label = "OUT_Z1" }, { nets = ["/Z1/T2"], label = "T2 of zone 1" }]
+
+[[step.figure]]
+id = "inner"
+alt = "Inner layer 2 under the zone 1 output column"
+caption = "In2.Cu. Yellow is the copy of the fan-out lane. Cyan is the shunt return plane, net ISNS, under all nine triacs."
+box = [38.0, 3.0, 56.0, 37.5]
+layers = ["In2.Cu", "Edge.Cuts"]
+marks = [{ nets = ["/OUT_Z1"], label = "OUT_Z1" }, { nets = ["/ISNS"], label = "ISNS" }]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "k-ka-pin10"
+group = "kicad"
+title = "The keep-alive track from module pin 10 to R33 and R29"
+source = "Layout review, section 17, item 7, first place"
+findings = ["L22"]
+minutes = 6
+files = ["hardware/zoneflow-a/design/patches-hand.toml"]
+remedies = [
+  { id = "clear-strip", text = "Move the track or via that is inside the 1 mm strip, in `design/layout.py` or `design/patches-hand.toml`. If the autorouter laid it, add a keep-out and route again." },
+]
+check = '''
+Follow net `KA` from pad 10 of the module U4 down to the resistors R33 and R29. Beside it, for 1 mm
+on each side, there must be nothing but ground, on F.Cu and on B.Cu.
+'''
+why = '''
+The firmware toggles this net to say that it is alive. Both fail-safe detectors listen to it. A
+solder bridge or a flux track from a neighbour that toggles by itself can imitate a live firmware,
+and then a crashed controller leaves a valve open. Review A2 found exactly that fault on the
+earlier pin and moved the net here.
+'''
+good = '''
+- **On F.Cu** a 2 mm stub leaves pad 10 under the module and ends in a via.
+- **On B.Cu** the track runs down the inside of the module's left pad row to a via between R33 and
+  R29 at (96.5, 87.6).
+- **Beside the track** only the ground pour. The nearest other track is more than 1 mm away. Both
+  the author's check and the reviewer's own script measured 1.03 to 1.04 mm as the smallest
+  distance on the same layer.
+- **The two pads beside pad 10**, `ENC_B` above and `BTN_BACK` below, are 0.37 mm from it. That is
+  the module's pad pitch and cannot be more.
+'''
+bad = '''
+- **A track or a via of another net** inside the 1 mm strip on either side.
+- **A break in the ground pour** beside the track, with another net showing through.
+'''
+how = '''
+Find U4, zoom to its left pad row, and highlight net `/KA`. Look once with only F.Cu shown and once
+with only B.Cu shown. The machine check of this rule is `output/reports/layout-rules.md`.
+'''
+kicad = { find = ["U4", "R33", "R29"], nets = ["/KA"], layers = ["F.Cu", "B.Cu"], at = [94.25, 97.08] }
+ibom = { net = "/KA" }
+
+[[step.figure]]
+id = "back"
+alt = "Bottom copper under the module's left pad row with the keep-alive net marked"
+caption = "B.Cu, seen from above. Yellow is the keep-alive net. It comes down from the via at pad 10 to the via between R33 and R29, then leaves to the left towards detector B."
+box = [89.5, 84.5, 101.5, 99.5]
+layers = ["B.Cu", "Edge.Cuts"]
+marks = [{ nets = ["/KA"], label = "KA" }]
+callouts = [
+  { pad = "U4.10", text = "module pad 10 is above here, on F.Cu", dx = -1.2, dy = 1.8 },
+  { at = [96.45, 87.6], text = "via between R33 and R29", dx = -2.2, dy = -1.7 },
+]
+
+[[step.figure]]
+id = "front"
+alt = "Top copper at module pad 10, R33 and R29"
+caption = "F.Cu. Yellow is the keep-alive net: pad 10 with its stub, and the pads of R33 and R29. The pads above and below pad 10 are ENC_B and BTN_BACK."
+box = [89.5, 84.5, 101.5, 99.5]
+layers = ["F.Cu", "F.Silkscreen", "Edge.Cuts"]
+marks = [{ nets = ["/KA"], label = "KA" }]
+pad_labels = ["U4", "R33", "R29"]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "k-ka-n0"
+group = "kicad"
+title = "Two I2C conductors 0.2 mm from the node behind R29"
+source = "Layout review, section 17, item 7, second place, and section 6"
+findings = ["L22"]
+minutes = 5
+kind = "decision"
+remedies = [
+  { id = "move-both", text = "Move the `QW_SDA` track and the `I2C0_SCL` via at least 1 mm from `KA_N0`, and add both nets to the keep-away list of that node. This needs a new routing and a new look at it." },
+  { id = "rule-first", text = "Add the two I2C nets to the keep-away list of `KA_N0` first, and let the build show what has to move." },
+]
+check = '''
+Look at the node `KA_N0` between R29 and C22. A `QW_SDA` track passes 0.22 mm from the pad of C22,
+and an `I2C0_SCL` via stands 0.23 mm from the node's track. Decide whether you accept them there.
+'''
+why = '''
+To a solder bridge, `KA_N0` is the keep-alive net: only 220 ohm separate the two. The layout rule
+keeps a list of nets 1 mm away from it. I2C lines are not on that list, because they move only
+while firmware runs. The reviewer left both conductors in place and asked for the owner's decision.
+A bridge here would need a second fault, a firmware that hangs while it still clocks I2C, to matter.
+'''
+good = '''
+You see what the review describes and no more: one `QW_SDA` track beside pad 1 of C22, one
+`I2C0_SCL` via beside the yellow track, both with a visible gap. Pass means "I have seen them and I
+accept them for revision A".
+'''
+bad = '''
+- **Any third net** that close to the yellow copper.
+- **You do not accept it.** Mark Fail and say so in the note. The cure is to move the track and the
+  via in `design/layout.py`, which means a new routing and a new review of it.
+'''
+how = '''
+Find C22 and highlight net `/Failsafe/KA_N0`. Measure with the ruler tool (Ctrl+Shift+M) from the
+edge of pad 1 of C22 to the nearest track.
+'''
+kicad = { find = ["C22", "R29"], nets = ["/Failsafe/KA_N0", "/QW_SDA", "/I2C0_SCL"], layers = ["F.Cu"], at = [104.9, 88.3] }
+ibom = { ref = "C22" }
+
+[[step.figure]]
+id = "node"
+alt = "Top copper at R29 and C22 with three nets marked"
+caption = "F.Cu. Yellow is the node KA_N0 from R29 to C22. Cyan is QW_SDA. Pink is I2C0_SCL."
+box = [96.0, 84.4, 107.2, 91.4]
+layers = ["F.Cu", "Edge.Cuts"]
+marks = [
+  { nets = ["/Failsafe/KA_N0"], label = "KA_N0" },
+  { nets = ["/QW_SDA"], label = "QW_SDA" },
+  { nets = ["/I2C0_SCL"], label = "I2C0_SCL" },
+]
+pad_labels = ["R29", "C22"]
+pad_label_mode = "number"
+callouts = [
+  { at = [105.75, 88.85], text = "QW_SDA, 0.22 mm from the pad", dx = -2.0, dy = 2.1, colour = "b" },
+  { at = [99.78, 89.08], text = "I2C0_SCL via, 0.23 mm from the track", dx = 2.6, dy = 1.9, colour = "c" },
+  { pad = "R29.2", text = "R29", dx = -0.4, dy = -1.6 },
+  { pad = "C22.1", text = "C22", dx = 1.4, dy = -1.2 },
+]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "k-q2-gate"
+group = "kicad"
+title = "Ground round the gate node of Q2"
+source = "Layout review, section 17, item 7, third place"
+findings = ["L22"]
+minutes = 5
+remedies = [
+  { id = "clear-rail", text = "Move the rail copper that is within 1 mm of `RLY_G2`, by hand in `design/layout.py`." },
+]
+check = '''
+Look at net `RLY_G2`: the gate of Q2, pad 1 of C50, pad 2 of D22 and one pad each of the bleed
+resistors R14 and R90. Ground must surround it, and no supply rail may come within 1 mm.
+'''
+why = '''
+This node holds the relay transistor on between keep-alive edges. It is high-impedance: 50 kohm to
+ground. A leak from a supply rail, through flux or a whisker, charges it and holds the relay closed
+with no keep-alive. The autorouter twice laid a `V_DRV` bar 0.86 mm from it, and the build stopped
+both times.
+'''
+good = '''
+- **The yellow node** is five pads and the short tracks between them, and nothing else.
+- **Ground pour** fills the space round it.
+- **The nearest rail** is `V_DRV` at the four right-hand pads of RN2, 1.48 mm away by both
+  measurements. `3V3` is further.
+'''
+bad = '''
+- **A cyan track or via** inside 1 mm of the yellow copper.
+- **A test pad** on the yellow net. Layout rule 2 forbids one.
+'''
+how = '''
+Find Q2 and highlight `/Expander/RLY_G2`. Then highlight `V_DRV` and `3V3` in turn and look for
+copper of either near the node.
+'''
+kicad = { find = ["Q2", "D22", "C50"], nets = ["/Expander/RLY_G2", "V_DRV", "3V3"], layers = ["F.Cu"], at = [53.6, 72.2] }
+ibom = { ref = "Q2" }
+
+[[step.figure]]
+id = "gate"
+alt = "Top copper round Q2, C50 and D22 with the gate node and the supply rails marked"
+caption = "F.Cu. Yellow is the gate node RLY_G2. Cyan is every supply rail in the picture: V_DRV at RN2 on the left, 3V3 elsewhere."
+box = [40.5, 68.5, 58.5, 81.0]
+layers = ["F.Cu", "F.Silkscreen", "Edge.Cuts"]
+marks = [
+  { nets = ["/Expander/RLY_G2"], label = "RLY_G2" },
+  { nets = ["V_DRV", "3V3"], label = "V_DRV and 3V3" },
+]
+pad_labels = ["Q2", "D22", "C50", "RN2"]
+callouts = [{ at = [44.3, 74.5], text = "nearest rail: 1.48 mm", dx = 0.6, dy = -4.6 }]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "k-u1-vias"
+group = "kicad"
+title = "Six vias under the buck converter"
+source = "Layout review, section 17, item 7, fourth place"
+findings = ["L2", "L8"]
+minutes = 3
+remedies = [
+  { id = "add-vias", text = "Add the missing vias under the pad of U1, and the tie from pin 1 to the pad, in `design/layout.py`." },
+]
+check = '''
+Count the vias in the exposed pad of U1, and check that pin 1, GND, joins that pad.
+'''
+why = '''
+As first laid out the pad had no via and hung on four thin spokes. The converter loses 0.2 to 0.5 W
+through that pad. Without vias it runs hot, and its ground pin has a long way to the plane, which
+makes the 5 V rail noisy. TI's data sheet asks for both in section 7.4.1.
+'''
+good = '''
+- **Six vias** in the pad, in two columns of three.
+- **A wide yellow link** from pad 1, at the lower right, to the exposed pad.
+- **A gap of 0.4 mm** between the ground pour and pads 2 and 8. It was 0.2 mm before finding L8.
+'''
+bad = '''
+- **Fewer than six vias**, or a pad joined to the pour by spokes only.
+'''
+how = '''
+Find U1. Show F.Cu only. Click a via in the pad: the properties must say net `GND`, hole 0.3 mm.
+'''
+kicad = { find = ["U1"], nets = ["GND"], layers = ["F.Cu"], at = [21.5, 33.0] }
+ibom = { ref = "U1" }
+
+[[step.figure]]
+id = "pad"
+alt = "Top copper at the buck converter U1 with ground marked"
+caption = "F.Cu at U1. Yellow is ground. The six black dots in the centre pad are the vias."
+box = [16.0, 29.0, 27.0, 38.0]
+layers = ["F.Cu", "Edge.Cuts"]
+marks = [{ nets = ["GND"], label = "GND" }]
+pad_labels = ["U1"]
+callouts = [{ at = [21.5, 33.0], text = "six vias in the pad", dx = 0, dy = -4.3, ring = 1.9 }]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "k-screws"
+group = "kicad"
+title = "No copper under the two screw heads"
+source = "Layout review, section 17, item 7, fifth place"
+findings = ["L7", "L29"]
+minutes = 4
+remedies = [
+  { id = "widen-keepout", text = "Widen the keep-out square at the hole on F.Cu and make the patches again." },
+]
+check = '''
+At the mounting holes C, at (4.5, 12), and D, at (109.5, 12), no track may be within 3 mm of the
+centre on the top side.
+'''
+why = '''
+These two holes take pan-head M3 screws from the top. A head is up to 5.6 mm across. If it bites
+through the solder mask it joins whatever copper is under it to the screw. Before the review a USB
+data line ran 0.44 mm from hole C, and the Qwiic supply under the head at hole D.
+'''
+good = '''
+- **Inside the yellow circle**, 3 mm in radius, there is no red track and no via. Ground pour may be
+  there.
+- **Nearest top-side copper of a signal**, measured by the reviewer: 3.25 mm from the centre of hole
+  C and 3.55 mm from hole D.
+'''
+bad = '''
+- **Any track or via inside the circle** on F.Cu.
+'''
+how = '''
+Find H3, then H4. Show F.Cu only. Use the ruler tool from the hole centre to the nearest track.
+The bottom side does not matter here: the board rests on plastic bosses.
+'''
+kicad = { find = ["H3", "H4"], layers = ["F.Cu"], at = [4.5, 12.0] }
+
+[[step.figure]]
+id = "hole-c"
+alt = "Top copper round mounting hole C"
+caption = "Hole C at the lower left, F.Cu with the ground pour in yellow. The circle is 3 mm from the centre."
+box = [-1.5, 6.0, 11.5, 18.0]
+layers = ["F.Cu", "Edge.Cuts"]
+marks = [{ nets = ["GND"], label = "GND" }]
+callouts = [{ at = [4.5, 12.0], text = "3 mm round hole C", dx = 3.6, dy = 4.6, ring = 3.0 }]
+minimap = "none"
+
+[[step.figure]]
+id = "hole-d"
+alt = "Top copper round mounting hole D"
+caption = "Hole D at the lower right, F.Cu with the ground pour in yellow."
+box = [103.0, 6.0, 116.0, 18.0]
+layers = ["F.Cu", "Edge.Cuts"]
+marks = [{ nets = ["GND"], label = "GND" }]
+callouts = [{ at = [109.5, 12.0], text = "3 mm round hole D", dx = -3.6, dy = 4.6, ring = 3.0 }]
+minimap = "none"
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "k-hole-b"
+group = "kicad"
+title = "Five tracks under the display carrier's leg at hole B"
+source = "Finding L30"
+findings = ["L30"]
+minutes = 3
+kind = "decision"
+remedies = [
+  { id = "keepout-b", text = "Keep tracks out from under the leg at hole B on F.Cu, as at holes C and D, and route again." },
+]
+check = '''
+Look at the copper round hole B at (75, 106). Five autorouted nets pass under the plastic leg of
+the display carrier, the nearest 0.47 mm from the wall of the hole. Decide whether you accept that.
+'''
+why = '''
+The leg is plastic and the copper is under solder mask, so nothing shorts. The risk is mechanical: a
+screw driven hard into a leg that sits on tracks can crack the mask and, in time, a track. The
+reviewer left it, because the contract's keep-out here is for parts and bare copper only.
+'''
+good = '''
+Tracks pass inside the circle and none touches the hole. No pad, no via with an open top and no bare
+copper is inside the circle. Pass means you accept tracks under a plastic leg.
+'''
+bad = '''
+- **A pad or a test point** inside the circle.
+- **A track that touches the edge of the hole.**
+'''
+how = '''
+Find H2. Show F.Cu only. The circle on the picture is 4.5 mm in radius, the contract's keep-out for
+parts at this hole.
+'''
+kicad = { find = ["H2"], layers = ["F.Cu"], at = [75.0, 106.0] }
+
+[[step.figure]]
+id = "hole-b"
+alt = "Top copper round mounting hole B"
+caption = "Hole B, F.Cu with the ground pour in yellow. The circle is the 9 mm keep-out for parts. Red tracks inside it are the five nets."
+box = [68.5, 99.5, 81.5, 110.8]
+layers = ["F.Cu", "Edge.Cuts"]
+marks = [{ nets = ["GND"], label = "GND" }]
+callouts = [{ at = [75.0, 106.0], text = "leg of the display carrier", dx = -3.4, dy = -5.2, ring = 4.5 }]
+minimap = "bl"
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "k-patches"
+group = "kicad"
+title = "The 17 connections the autorouter could not close"
+source = "Layout review, section 17, item 7, sixth place"
+findings = ["L27", "L28"]
+minutes = 15
+files = ["hardware/zoneflow-a/design/patches-hand.toml", "hardware/zoneflow-a/design/patches.toml"]
+remedies = [
+  { id = "hand-route", text = "Route the net named in the note by hand, in `design/patches-hand.toml`." },
+  { id = "next-routing", text = "Leave the board as it is and record the net for the next routing." },
+]
+check = '''
+Open `output/reports/routing.md` beside the board. Under "Copper laid by the patch router" it lists
+19 nets. Highlight each in turn and follow it from pin to pin.
+'''
+why = '''
+A small maze router and the reviewer closed these by hand after the autorouter gave up. That router
+keeps clearances and knows nothing else. Some results are long: `N_RAIN` is 156 mm with 13 vias.
+Eleven of the nets pass under an obstacle on the 3.3 V plane and cut a slot in it. All are static or
+slow signals, and the reviewer expects them to work. Nobody has looked at each one on a screen.
+'''
+good = '''
+- **Each net is complete.** With the net highlighted, every pad of it is joined. DRC already says
+  so. You are looking for what DRC cannot judge.
+- **No detour beside a noisy part.** None of them runs along the inductor L1 or the switch node of
+  U1, at the lower left.
+- **On In2.Cu the slots are short.** The longest single slot is 21 mm. None is near the keep-alive
+  net or under the current-sense pair.
+'''
+bad = '''
+- **A patched net that runs beside `KA`** on any layer for more than a few millimetres.
+- **A net you cannot follow** from one end to the other.
+- **`SA_N`.** This is the inverting input of the current-sense amplifier, and the reviewer liked it
+  least: 7.1 mm on In2.Cu under the amplifier with three vias. Look at it at U8. If it looks worse
+  than described, say so.
+'''
+how = '''
+The interactive BOM is quicker than KiCad for this. Open it in netlist mode, type the net name in
+the filter and click the row. The picture below marks the whole of each net, not only the patched
+piece.
+
+The nets: `U0TXD`, `SA_N`, `SA_P`, `RLY_A`, `RLY_ON`, `I2C0_SDA`, `ISENSE_LO`, `STATUS_LED`,
+`PGOOD`, `SENS_5V`, `SENS_PWR_EN`, `N_RAIN`, `T_RAIN`, `VB`, `ZD_MV_N`, `ZD_Z1_N`, `ZD_Z2_N`,
+`ZD_Z8_N`, `V_DRV`.
+'''
+kicad = { nets = ["/Sensors/N_RAIN", "/SENS_PWR_EN", "/MCU/STATUS_LED", "/Expander/RLY_A", "/ZD_Z8_N", "/I2C0_SDA", "/CurrentSense/SA_N"], layers = ["F.Cu", "In2.Cu", "B.Cu"] }
+ibom = { net = "/Sensors/N_RAIN" }
+
+[[step.figure]]
+id = "all"
+alt = "The whole board with the 19 patched nets marked on the outer layers"
+caption = "F.Cu over B.Cu, pours left out. Yellow is every net that has patched copper. Click to enlarge."
+box = [-2, -4, 116, 118]
+layers = ["B.Cu", "F.Cu", "Edge.Cuts"]
+zones = false
+minimap = "none"
+marks = [{ label = "nets with patched copper", nets = [
+  "/Connectors/U0TXD", "/CurrentSense/SA_N", "/CurrentSense/SA_P", "/Expander/RLY_A", "/Expander/RLY_ON",
+  "/I2C0_SDA", "/ISENSE_LO", "/MCU/STATUS_LED", "/PGOOD", "/SENS_5V", "/SENS_PWR_EN", "/Sensors/N_RAIN",
+  "/T_RAIN", "/VB", "/ZD_MV_N", "/ZD_Z1_N", "/ZD_Z2_N", "/ZD_Z8_N", "V_DRV",
+] }]
+
+[[step.figure]]
+id = "plane"
+alt = "Inner layer 2 of the whole board with the slots of patched nets marked"
+caption = "In2.Cu. Orange is the 3.3 V plane and, at the bottom, the shunt plane and the copies of the valve lanes. Yellow is the eleven patched nets that cut slots in the plane."
+box = [-2, -4, 116, 118]
+layers = ["In2.Cu", "Edge.Cuts"]
+minimap = "none"
+marks = [{ label = "patched nets on this layer", nets = [
+  "/Connectors/U0TXD", "/CurrentSense/SA_N", "/Expander/RLY_A", "/I2C0_SDA", "/MCU/STATUS_LED", "/SENS_5V",
+  "/Sensors/N_RAIN", "/VB", "/ZD_MV_N", "/ZD_Z2_N", "/ZD_Z8_N",
+] }]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "k-dev-r33"
+group = "kicad"
+title = "Accept or reject: R33 is 12 mm from the pin it should sit at"
+source = "Finding L16. Layout document, section 14, item 4"
+findings = ["L16"]
+minutes = 3
+kind = "decision"
+files = ["docs/design/hardware-design.md", "hardware/mechanical.yaml"]
+remedies = [
+  { id = "move-r33", text = "Put R33 at module pin 10. The encoder or the module has to move, so the mechanical contract and the enclosure change first." },
+]
+check = '''
+Fail-safe rule 1 says "put R33 at the module pin". R33 is at the corner of the module, 12.3 mm of
+track and two vias from pad 10. Read the argument and decide.
+'''
+why = '''
+R33 pulls the keep-alive net low when the processor does not drive it. The author could not put it
+at the pin: the encoder is 0.1 mm away on that side. The reviewer argues that the place it has is
+the better one. A break between the pin and R33 leaves both detectors on the pull-down, off. With
+R33 at the pin the same break would leave both detectors floating. The 12 mm of track is 24
+milliohm against 2200 ohm.
+'''
+good = '''
+You agree that a pull-down at the far end of the track is at least as safe as one at the pin. The
+reviewer would change the wording of the rule, not the board.
+'''
+bad = '''
+You want R33 at the pin as the rule says. That needs the encoder or the module to move, and both
+positions are fixed by the enclosure. Mark Fail and say what you want instead.
+'''
+how = '''
+Nothing new to look at: this is the yellow track of the step before last, between pad 10 and R33.
+The numbers are in the [layout review, section 13](doc:design/hardware-layout-review.md#13-mechanical-and-the-three-rules-not-met-as-written).
+'''
+kicad = { find = ["R33", "U4"], nets = ["/KA"], layers = ["F.Cu", "B.Cu"], at = [94.9, 87.6] }
+
+[[step.figure]]
+id = "r33"
+alt = "Both outer layers between module pad 10 and R33"
+caption = "F.Cu over B.Cu. Yellow is the keep-alive net. R33 is the lower left of the two resistors at the corner of the module, 12.3 mm of track from pad 10."
+box = [89.5, 84.5, 101.5, 99.5]
+layers = ["B.Cu", "F.Cu", "Edge.Cuts"]
+zones = false
+marks = [{ nets = ["/KA"], refs = ["R33"], label = "KA, and R33" }]
+callouts = [{ pad = "U4.10", text = "pad 10", dx = -2.2, dy = 0 }]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "k-dev-j7"
+group = "kicad"
+title = "Accept or reject: the display bus is 61 to 72 mm long"
+source = "Finding L17. Layout document, section 14, item 4"
+findings = ["L17"]
+minutes = 3
+kind = "decision"
+files = ["hardware/netlist.yaml", "hardware/mechanical.yaml"]
+remedies = [
+  { id = "series-resistors", text = "Add series resistors at the module on the five bus lines, in `hardware/netlist.yaml`, and place them." },
+  { id = "firmware-only", text = "Leave the board. Lower the drive strength of the display pins in the firmware and check the edges on the bench." },
+]
+check = '''
+The hardware design asks for "about 40 mm" of track from the module to the display connector J7.
+The five bus lines are 61 to 72 mm. Read the argument and decide.
+'''
+why = '''
+A long unterminated line rings. The reviewer's numbers: with the 21 mm tail of the panel the line is
+about 100 mm, a delay of 0.6 ns one way. The bus runs at 15 MHz, a half-period of 33 ns. Clock and
+data differ by 3 mm, which is 18 ps. The straight distance is 42 mm and the keep-alive net lies
+between, so 40 mm of track cannot be had where the enclosure puts the two parts.
+'''
+good = '''
+You accept 61 to 72 mm at 15 MHz. If the edges ring on the bench, the firmware can lower the pin
+drive strength.
+'''
+bad = '''
+You see the bus take a detour that the picture does not explain, or you want series resistors at
+the module. Mark Fail and say which.
+'''
+how = '''
+Highlight `/TFT_SCLK`. The bus leaves pads 18 to 22 at the bottom row of the module, goes under the
+module on B.Cu and left to J7.
+'''
+kicad = { find = ["J7", "U4"], nets = ["/TFT_SCLK", "/TFT_MOSI", "/TFT_CS", "/TFT_DC", "/TFT_RST"], layers = ["F.Cu", "B.Cu"], at = [80.0, 90.0] }
+ibom = { net = "/TFT_SCLK" }
+
+[[step.figure]]
+id = "bus"
+alt = "The display bus from the module to J7 on both outer layers"
+caption = "F.Cu over B.Cu, pours left out. Yellow is the five lines of the display bus. Cyan is the keep-alive net, which the bus has to go round."
+box = [54.0, 76.0, 106.0, 102.0]
+layers = ["B.Cu", "F.Cu", "Edge.Cuts"]
+zones = false
+marks = [
+  { nets = ["/TFT_SCLK", "/TFT_MOSI", "/TFT_CS", "/TFT_DC", "/TFT_RST"], label = "display bus" },
+  { nets = ["/KA"], label = "KA" },
+]
+callouts = [
+  { ref = "J7", text = "J7", dx = -2.5, dy = 7 },
+  { pad = "U4.19", text = "module pads 18 to 22", dx = 1, dy = 6.5 },
+]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "k-dev-adc"
+group = "kicad"
+title = "Accept or reject: the ADC filter capacitors are 19 mm from their pins"
+source = "Finding L18. Layout document, section 14, item 4"
+findings = ["L18"]
+minutes = 3
+kind = "decision"
+files = ["hardware/pinmap.yaml", "hardware/netlist.yaml"]
+remedies = [
+  { id = "pin-map", text = "Move `ADC_LO` and `ADC_HI` to GPIO4 to 7 on the module's left side, with the capacitors at the pins. The pin map, the netlist, the firmware's board header and the routing change." },
+]
+check = '''
+C30 and C31 filter the two current-measurement lines into the ADC. The design wants them at the
+module pins. They are 19 mm of track away. Read the argument and decide.
+'''
+why = '''
+For what the capacitors are there to do, a 1.6 kHz filter and a charge reservoir for the ADC's
+sampling capacitor, 19 mm of track is 9 nH and 56 milliohm and changes nothing. What the distance
+does cost is radio-frequency pick-up at the pin itself, 2 cm from a transmitting antenna. The
+reviewer could not put a number on that. It is a bench item: measure ADC noise with WiFi on.
+'''
+good = '''
+You accept it for a prototype and note the bench item. The cure, if it shows, is in the pin map:
+GPIO4 to 7 on the module's left side have room for a capacitor at the pin.
+'''
+bad = '''
+You want the pin map changed before the first board. Mark Fail. That reopens the circuit, the
+firmware pin definitions and the routing.
+'''
+how = '''
+Find C30. Highlight `/ADC_LO`, then `/ADC_HI`. The module pads are 38 and 39, on the right-hand pad
+row 1.5 mm from the board edge.
+'''
+kicad = { find = ["C30", "C31", "U4"], nets = ["/ADC_LO", "/ADC_HI"], layers = ["F.Cu", "B.Cu"], at = [109.6, 88.2] }
+ibom = { ref = "C30" }
+
+[[step.figure]]
+id = "adc"
+alt = "The two ADC lines from C30 and C31 to the module pads"
+caption = "F.Cu over B.Cu, pours left out. Yellow is ADC_LO, cyan is ADC_HI. The capacitors are at the bottom, the module pads at the right edge."
+box = [99.0, 84.0, 115.0, 110.5]
+layers = ["B.Cu", "F.Cu", "Edge.Cuts"]
+zones = false
+marks = [{ nets = ["/ADC_LO"], refs = ["C30"], label = "ADC_LO, C30" }, { nets = ["/ADC_HI"], refs = ["C31"], label = "ADC_HI, C31" }]
+minimap = "tl"
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "k-open-risks"
+group = "kicad"
+title = "Three risks the review left open: see each and accept it"
+source = "Findings L19, L21 and L25"
+findings = ["L19", "L21", "L25"]
+minutes = 8
+kind = "decision"
+remedies = [
+  { id = "narrow-ptc-link", text = "L25: narrow the link between each PTC and its triac tab to 1.2 mm." },
+  { id = "move-sense-pair", text = "L19: route the sense pair another way than under U1." },
+]
+check = '''
+The reviewer left three things as they are and gave a reason for each. Look at each place once.
+Ordering the board means accepting all three.
+'''
+why = '''
+None of these stops a prototype. Each is a place where the first measurements may disappoint, and
+you should know where they are before the boards arrive.
+
+- **L25, the PTC beside each triac.** The upper land of each PTC is part of the triac's heat copper.
+  The triac heats it. At 85 °C the PTC holds 0.50 A, which is exactly the largest valve the
+  specification allows. With three outputs on in a hot enclosure, a 0.5 A valve may trip its PTC.
+  That closes the valve, which is the safe direction. Ordinary valves draw 0.2 to 0.3 A.
+- **L19, the sense pair under the buck converter.** The two tracks that read the shunt run on B.Cu
+  under U1 and beside the inductor, with the ground plane between. The reviewer estimates 0.2 mV of
+  pick-up at 281 kHz before two filters.
+- **L21, the encoder near the antenna.** The encoder's metal frame ends 12.5 mm from the antenna
+  area. Espressif asks for 15 mm. Both positions are fixed by the enclosure.
+'''
+good = '''
+Each place looks as described. Pass means you accept all three for revision A and will measure
+them: PTC body temperature at 0.5 A, noise on the low current range, and radio range.
+'''
+bad = '''
+You find one of them worse than described, or you do not accept one. Mark Fail and name it.
+'''
+how = '''
+- **L25.** Find F101. The wide link between the PTC's upper pad and the triac tab is 5 mm. The
+  current needs 1.2 mm.
+- **L19.** Find U1, show B.Cu only, and look for two parallel tracks 0.6 mm apart passing under it.
+- **L21.** Find SW3 and U4. The antenna is the part of the module beyond the top board edge.
+'''
+kicad = { find = ["F101", "U1", "SW3"], layers = ["F.Cu", "B.Cu"] }
+
+[[step.figure]]
+id = "ptc"
+alt = "The PTC F101 and the triac Q101 on top copper with the tab net marked"
+caption = "L25. F.Cu. Yellow is the tab net of zone 1. The upper PTC pad and the triac tab are one piece of copper."
+box = [45.5, 15.5, 54.5, 33.0]
+layers = ["F.Cu", "F.Silkscreen", "Edge.Cuts"]
+marks = [{ nets = ["/Z1/T2"], refs = ["F101"], label = "T2 of zone 1, and the PTC F101" }]
+callouts = [{ at = [49.95, 25.6], text = "5 mm wide link", dx = 2.8, dy = -3.2 }]
+
+[[step.figure]]
+id = "kelvin"
+alt = "Bottom copper under the buck converter with the sense pair marked"
+caption = "L19. B.Cu, seen from above. Yellow is the pair of sense tracks from the shunt R37 on its way to the amplifier. The box is U1 on the other side of the board, and L1 is to its left."
+box = [7.0, 15.0, 40.0, 40.0]
+layers = ["B.Cu", "Edge.Cuts"]
+zones = false
+marks = [{ nets = ["/ISNS"], refs = ["U1", "L1"], label = "ISNS sense track; boxes: U1 and L1" }, { nets = ["GND"], label = "ground, with its sense track" }]
+
+[[step.figure]]
+id = "antenna"
+alt = "The module, the encoder and the top board edge"
+caption = "L21. Top side. The module U4 reaches 6 mm beyond the top edge, and its antenna is in that part. The large lands left of it are the encoder SW3."
+box = [74.0, 76.0, 116.0, 118.0]
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+marks = [{ refs = ["SW3"], label = "encoder SW3" }]
+callouts = [
+  { at = [103.0, 113.0], text = "antenna, beyond the board edge", dx = -9, dy = 2.5 },
+  { at = [90.0, 95.9], text = "frame land of SW3", dx = -7.5, dy = 5.5 },
+]
+minimap = "bl"
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "k-silk"
+group = "kicad"
+title = "The terminal labels as the installer reads them"
+source = "Layout review, section 17, item 6"
+findings = ["L10", "L15"]
+minutes = 5
+remedies = [
+  { id = "fix-label", text = "Move or narrow the label named in the note, in `design/layout.py`." },
+]
+check = '''
+Read the top silkscreen along the terminal edge. Each of the twenty terminals must have its own
+label directly behind it, and each label must read as one word.
+'''
+why = '''
+The installer wires the valves by these labels. As first laid out, `FLOW` and `GND` stood 0.1 mm
+apart and read as one word, and six designators lay beyond the board edge. A label behind the wrong
+terminal puts 24 VAC on a sensor input.
+'''
+good = '''
+- **Left to right:** `24V~` `24V~`, then `COM` `COM` `MV` `Z1` `Z2` `Z3` `Z4`, then `Z5` `Z6` `Z7`
+  `Z8`, then `5V` `FLOW` `GND` `RAIN` `GND` `AUX` `GND`.
+- **Each label** stands above the pin it names, with a clear gap to its neighbours.
+- **The ground symbol** is right of the second `24V~`.
+- **`F4 3A T` and `F1 3A T`** stand above the two fuse holders.
+- **Elsewhere:** `USB`, `QWIIC`, `RESET`, `BOOT`, `BACK`, `HOME`, `CR2032` and `+` at the cell.
+'''
+bad = '''
+- **Two labels that touch** or read as one word.
+- **A label between two pins**, so that you cannot say which pin it names.
+- **Text cut by the board edge.**
+'''
+how = '''
+Show F.Silkscreen, F.Cu pads and Edge.Cuts. Or open [the top render](out:zoneflow-a-top.png), which
+shows the silkscreen on the finished board. In JLCPCB's Gerber viewer you see the same layer again
+later.
+
+Nine designators are hidden because no place was free: TP9, TP11, TP13, TP14, TP22, TP27, TP28,
+TP29 and U1. That is finding L15 and is accepted. The interactive BOM finds them.
+'''
+kicad = { find = ["J1", "J2", "J3", "J4"], layers = ["F.Silkscreen", "F.Cu"], at = [57.0, 8.0] }
+
+[[step.figure]]
+id = "left"
+alt = "Top silkscreen behind the terminal headers J1 and J2"
+caption = "Left half of the terminal edge: silkscreen in pale yellow over the pads. The headers are J1 with two pins and J2 with seven."
+box = [1.0, -2.5, 58.0, 17.5]
+layers = ["F.Cu", "F.Silkscreen", "Edge.Cuts"]
+zones = false
+minimap = "none"
+
+[[step.figure]]
+id = "right"
+alt = "Top silkscreen behind the terminal headers J3 and J4"
+caption = "Right half: J3 with four pins, J4 with seven, and the Qwiic connector J6."
+box = [55.0, -2.5, 114.5, 17.5]
+layers = ["F.Cu", "F.Silkscreen", "Edge.Cuts"]
+zones = false
+minimap = "none"

@@ -6,7 +6,9 @@
     [independent review](../design/hardware-layout-review.md) of the files
     found faults, fixed them, and leaves seven things for a person to check.
     **Do not order boards before that is done**: see
-    [ordering boards](ordering.md).
+    [ordering boards](ordering.md). The
+    [review walkthrough](review/index.md) leads a person through those
+    checks, with pictures of each place.
 
 The board is 114 x 110 mm, four copper layers, 1.6 mm, with every part on the
 top side except the bulk capacitor and the relay. It is in

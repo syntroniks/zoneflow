@@ -1,0 +1,489 @@
+# Steps done on the true-size print, and the two done with parts in hand.
+
+[[step]]
+id = "p-scale"
+group = "print"
+title = "Print both sides at true size and check the scale"
+source = "Layout review, section 17, item 1"
+minutes = 5
+group_remedies = false
+check = '''
+Print the [bench sheet](doc:hardware/review/bench-sheet.md) at 100 %. Measure the two scale bars and
+the board edge on each drawing with callipers.
+'''
+why = '''
+Every step in this group lays a part on the paper. A printer that scales by 2 % moves the last pin
+of a 7-way header by half a millimetre, and you would reject a good footprint or accept a bad one.
+'''
+good = '''
+- **Each scale bar** measures 100.0 mm, within 0.3 mm.
+- **The board edge** measures 114.0 mm across and 110.0 mm up, within 0.3 mm.
+- **Both directions agree.** Some printers scale the feed direction only.
+'''
+bad = '''
+- **Either bar is off by more than 0.5 mm.** Find the "actual size" setting in the print dialog,
+  turn "fit to page" off and print again. Do not go on with a wrong print.
+'''
+how = '''
+The bench sheet has the top and the bottom drawing, each on its own page with a horizontal and a
+vertical bar. The same drawings exist as PDF from KiCad: [top](out:zoneflow-a-assembly-top.pdf) and
+[bottom](out:zoneflow-a-assembly-bottom.pdf). Those have no scale bar, so measure the board edge.
+'''
+cannot = '''
+No picture can show you your own print. The drawing below is the top page of the bench sheet, shown
+small.
+'''
+
+[[step.figure]]
+id = "sheet"
+alt = "The top side of the board as part outlines, with two scale bars"
+caption = "The top page of the bench sheet, shown small: lands, part outlines and designators, with a 100 mm bar along each direction."
+asset = "assembly-top.svg"
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "p-headers"
+group = "print"
+title = "The four terminal headers J1 to J4"
+source = "Layout review, section 17, item 1"
+findings = ["L23"]
+minutes = 6
+check = '''
+Lay a KF2EDGR-3.81 header on each of J1 to J4 on the top print: 2-way on J1, 7-way on J2 and J4,
+4-way on J3.
+'''
+why = '''
+This footprint was written for this project from the maker's drawing, because the usual substitute
+has smaller holes. Nobody has held the part against it. If the pitch or the row position is wrong,
+the headers do not go in, or they go in and the plugs foul the enclosure wall.
+'''
+good = '''
+- **Every pin** stands on the centre of a hole circle. The last pin of a 7-way header is 22.86 mm
+  from the first.
+- **The back of the body** is flush with the line at y = 7.2, 1.3 mm behind the pin row.
+- **The mating face** hangs 2.0 mm over the bottom board edge.
+- **J2 and J3** stand end to end with a gap of about 0.6 mm and do not push each other.
+'''
+bad = '''
+- **Pins drift off the holes** along the row. The pitch is wrong, or the print scale is.
+- **The body covers a terminal label** or the pads of F4 and F1 behind it.
+- **J2 and J3 collide.**
+'''
+how = '''
+Without the parts, measure on the print. Pitch 3.81 mm. Hole 1.4 mm, drawn as a circle. Pin row to
+the rear face 1.3 mm. Body depth 9.2 mm. Body length 8.42, 16.04 and 27.47 mm for 2, 4 and 7 ways.
+These are the figures of the Kefa drawing as `design/footprints.md` records them.
+'''
+fact = '''
+**Cixi Kefa KF2EDGR-3.81 drawing, revision A, 2021-03-13**, as recorded in
+[`design/footprints.md`](repo:hardware/zoneflow-a/design/footprints.md), section 1.1. I did not
+open this drawing again. The drawing does not say which end is pin 1, and only the labels depend
+on it.
+'''
+kicad = { find = ["J1", "J2", "J3", "J4"], layers = ["F.Cu", "F.Fab"], at = [57.0, 5.9] }
+
+[[step.figure]]
+id = "left"
+alt = "The lands and outlines of headers J1 and J2"
+caption = "J1 and J2: holes, lands and the body outline from the fabrication layer. The body reaches 2 mm beyond the board edge, the pale line at y = 0."
+box = [13.5, -3.5, 57.5, 10.5]
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["J1", "J2"]
+minimap = "none"
+
+[[step.figure]]
+id = "right"
+alt = "The lands and outlines of headers J3 and J4"
+caption = "J3 and J4."
+box = [54.5, -3.5, 105.5, 10.5]
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["J3", "J4"]
+minimap = "none"
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "p-j7"
+group = "print"
+title = "The display connector J7"
+source = "Layout review, section 17, item 1. Footprint notes, open point 1"
+findings = ["L23"]
+minutes = 5
+check = '''
+Lay an FPC-05F-12PH20 connector on J7: the twelve contact tails on the twelve narrow lands, the
+mouth towards the right.
+'''
+why = '''
+The maker's drawing does not say where the body sits against the lands. The author took that one
+figure from JLCPCB's library and asked for a check against a part. The enclosure fixes where the
+mouth must be, x = 63.0, so a body that sits elsewhere moves the flat cable by the same amount.
+'''
+good = '''
+- **The twelve tails** sit on the twelve lands, 0.5 mm apart, at the left, closed side of the body.
+- **The two solder tabs** sit on the two large lands above and below.
+- **The mouth,** where the cable enters, faces right and is at the right edge of the outline.
+- **Pad 1** is the lowest of the twelve.
+'''
+bad = '''
+- **The tabs miss their lands** while the tails are on theirs. The body position is wrong.
+- **The mouth faces left.** The footprint would be turned half round.
+'''
+how = '''
+Without the part, measure the print. Signal lands 0.30 x 1.25 mm at 0.50 mm pitch. Tab lands 2.00 x
+2.50 mm. Body 10.40 mm along the row and 5.12 mm deep.
+'''
+fact = '''
+**XUNPU FPC-05F-NPH20 drawing, revision A**, as recorded in
+[`design/footprints.md`](repo:hardware/zoneflow-a/design/footprints.md), section 1.2. I did not
+open this drawing again. The distributor lists the part as bottom contact with a flip lock.
+'''
+kicad = { find = ["J7"], layers = ["F.Cu", "F.Fab"], at = [60.44, 88.43] }
+ibom = { ref = "J7" }
+
+[[step.figure]]
+id = "lands"
+alt = "The lands of J7 with the net on each"
+caption = "J7 on F.Cu with the body outline. The twelve narrow lands are at the left. Pad 1 is the lowest."
+around = ["J7"]
+margin = 1.6
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["J7"]
+callouts = [
+  { pad = "J7.1", text = "pad 1", dx = -2.6, dy = -1.5 },
+  { at = [63.0, 88.43], text = "mouth: the cable enters here", dx = 3.3, dy = 3.6 },
+]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "p-sw3"
+group = "print"
+title = "The encoder SW3"
+source = "Layout review, section 17, item 1. Footprint notes, open point 2"
+findings = ["L23"]
+minutes = 5
+check = '''
+Lay an EC11J15 encoder on SW3: five terminals on five lands, the metal frame on its six lands, the
+two plastic pegs in the two holes.
+'''
+why = '''
+The footprint was drawn from a 512-pixel image of the maker's drawing. The library footprint the
+reviewer compared it with has the three encoder terminals on a 2.54 mm pitch where this one has
+2.5 mm. A frame land is 0.25 mm from the pad row of the module, which is close for reflow.
+'''
+good = '''
+- **Three terminals** on the lower three lands, **two** on the upper two.
+- **The frame's six feet** on the four corner lands and the two side lands.
+- **The centre boss and the locating peg** in the 2.1 mm and 1.6 mm holes.
+- **Nothing of the encoder** reaches over the module's pads at the right.
+'''
+bad = '''
+- **A terminal beside its land.**
+- **The peg has no hole,** or the hole is on the other side of the centre.
+- **The frame touches the module's pad row.**
+'''
+how = '''
+Without the part, measure the print. Terminal lands 1.3 x 2.4 mm. The three lower lands on a 2.5 mm
+pitch, the two upper ones 5.0 mm apart. Locating hole 1.6 mm, 4.5 mm from the shaft axis.
+'''
+fact = '''
+**ALPS ALPINE "EC11J Series" product sheet, 2018-03-30**, as recorded in
+[`design/footprints.md`](repo:hardware/zoneflow-a/design/footprints.md), section 1.4. I did not
+open this sheet again. The author could not read the extent of the four "do not solder and wiring"
+areas beside the side lands and estimated them.
+'''
+kicad = { find = ["SW3"], layers = ["F.Cu", "F.Fab"], at = [85.0, 88.0] }
+ibom = { ref = "SW3" }
+
+[[step.figure]]
+id = "lands"
+alt = "The lands and holes of the encoder SW3"
+caption = "SW3 on F.Cu with its outline. Terminals A, C, B at the bottom, S1 and S2 at the top. The large lands hold the frame. The module's pad row is at the right."
+around = ["SW3"]
+margin = 1.0
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["SW3"]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "p-bt1"
+group = "print"
+title = "The coin cell holder BT1"
+source = "Layout review, section 17, item 1"
+findings = ["L23"]
+minutes = 3
+check = '''
+Lay a CR2032-BS-6-1 holder on BT1 with its + mark at the left.
+'''
+why = '''
+A holder fitted the other way round puts the cell in backwards. The clock then never runs from the
+cell and loses the time at every power cut.
+'''
+good = '''
+- **The two solder tabs** on the two lands, 32 mm over their outer edges.
+- **The + mark** of the holder at the left land, pad 1, net `VBAT`.
+- **The silkscreen** has `+` and `CR2032` at this part.
+'''
+bad = '''
+- **The holder fits only with + at the right.** Then the footprint is the mirror of the part.
+'''
+how = '''
+Without the part, measure the print: 32.0 mm over the lands, 26.0 mm between them, lands 4.2 mm
+wide.
+'''
+fact = '''
+**Q&J drawing BS-6, 2011-02-14**, as recorded in
+[`design/footprints.md`](repo:hardware/zoneflow-a/design/footprints.md), section 1.3, and read
+again by the reviewer: the land marked + is at the right in the drawing's top view, and the part is
+turned half round on the board, so + is at the left.
+'''
+kicad = { find = ["BT1"], nets = ["/RTC/VBAT"], layers = ["F.Cu", "F.Fab", "F.Silkscreen"], at = [95.0, 65.3] }
+ibom = { ref = "BT1" }
+
+[[step.figure]]
+id = "lands"
+alt = "The two lands of the cell holder BT1"
+caption = "BT1 on F.Cu with silkscreen and outline. Yellow is the cell's positive net. Pad 1, at the left, is +."
+box = [77.0, 54.5, 113.0, 76.0]
+layers = ["F.Cu", "F.Silkscreen", "F.Fab", "Edge.Cuts"]
+zones = false
+marks = [{ nets = ["/RTC/VBAT"], label = "VBAT, the + of the cell" }]
+pad_labels = ["BT1"]
+minimap = "bl"
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "p-j5"
+group = "print"
+title = "The USB-C receptacle J5"
+source = "Layout review, section 17, item 1"
+findings = ["L23"]
+minutes = 3
+check = '''
+Lay a TYPE-C-31-M-12 receptacle on J5.
+'''
+why = '''
+The shell's four legs go through slots in the board. If the slots are off, the part does not seat
+and the twelve small lands, 0.3 mm wide, do not line up.
+'''
+good = '''
+- **The four shell legs** in the four slots.
+- **The two plastic pegs** in the two small round holes.
+- **The row of contacts** on the row of lands at the top of the footprint.
+- **The front of the shell** about 1 mm beyond the board edge.
+'''
+bad = '''
+- **A leg beside its slot.**
+- **The shell front inside the board edge.** The plug would not reach.
+'''
+how = '''
+Without the part, measure the print: pegs 5.78 mm apart, slots 8.65 mm apart across the part and
+4.18 mm between the two rows.
+'''
+fact = '''
+**HRO drawing TYPE-C-31-M-12, 2020-12-08**, as recorded in
+[`design/footprints.md`](repo:hardware/zoneflow-a/design/footprints.md), section 2. I did not open
+this drawing again. The reviewer compared the footprint with JLCPCB's library footprint: all lands
+and slots within 0.11 mm.
+'''
+kicad = { find = ["J5"], layers = ["F.Cu", "F.Fab"], at = [8.0, 2.67] }
+ibom = { ref = "J5" }
+
+[[step.figure]]
+id = "lands"
+alt = "The lands, slots and holes of the USB-C receptacle J5"
+caption = "J5 on F.Cu with its outline. Four slots for the shell, two round holes for the pegs, the contact lands at the top."
+box = [1.5, -2.5, 14.5, 9.0]
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+minimap = "none"
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "p-bottom"
+group = "print"
+title = "The relay K1 and the capacitor C1 on the bottom print"
+source = "Layout review, section 4, rows K1 and C1. Layout document, section 14, item 8"
+findings = ["L23"]
+minutes = 6
+check = '''
+Lay the relay and the capacitor on the bottom print, as they are fitted: from the bottom side.
+'''
+why = '''
+A through-hole part fitted from the bottom is the classic place for a mirrored footprint. The
+reviewer read the relay's "bottom view" drawing and found the footprint not mirrored. A relay on a
+print settles it. The capacitor's polarity matters: reversed, a 470 uF electrolytic on 30 to 45 V
+fails within minutes and can vent.
+'''
+good = '''
+- **K1.** All four pins on their holes: three in a row and the fourth beside the first. The body
+  stays inside its outline and inside the board edge.
+- **C1.** With the can lying inside its outline, the two leads reach the two holes. The lead on the
+  can's + side goes to pad 1, the square one, marked `C1 +` on the silkscreen.
+'''
+bad = '''
+- **The relay fits only when you turn the paper over.** The footprint is mirrored.
+- **The capacitor's stripe,** which marks minus, is at the square pad.
+'''
+how = '''
+The bottom print is mirrored, as the board looks from below. Without the parts, measure. K1: four
+1.1 mm holes, the two coil pins 4.7 mm apart, the contact pins 11.5 and 18.5 mm from the coil. C1:
+leads 5.0 mm apart, can 13.0 x 22.0 mm at most.
+'''
+fact = '''
+**Omron G5NB data sheet**, "PCB mounting holes (bottom view)", and the **Rubycon ZLJ series sheet**,
+both as recorded in [`design/footprints.md`](repo:hardware/zoneflow-a/design/footprints.md),
+sections 1.6 and 2. I did not open these again. The relay has no coil polarity.
+'''
+kicad = { find = ["K1", "C1"], nets = ["VIN_DC"], layers = ["B.Cu", "B.Fab", "B.Silkscreen"], at = [20.0, 28.0] }
+
+[[step.figure]]
+id = "parts"
+alt = "The holes and outlines of K1 and C1 seen from below"
+caption = "Seen from below, as the bottom print shows it. Yellow is the positive net of C1, at the square pad. K1 is at the right in this view, under the left edge of the board."
+box = [-1.5, 15.5, 41.0, 41.0]
+view = "bottom"
+layers = ["B.Cu", "B.Silkscreen", "B.Fab", "Edge.Cuts"]
+zones = false
+marks = [{ nets = ["VIN_DC"], label = "VIN_DC, the + of C1" }]
+pad_labels = ["K1", "C1"]
+minimap = "none"
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "h-display"
+group = "hand"
+title = "The display panel's flat cable against J7"
+source = "Layout review, section 16, \"The panel and its tail\". Mechanical design, section 10"
+findings = ["L23"]
+minutes = 10
+files = ["hardware/netlist.yaml", "hardware/zoneflow-a/design/parts.toml", "hardware/zoneflow-a/design/footprints.py"]
+remedies = [
+  { id = "top-contact", text = "The contacts are on the back face: fit the top-contact version of the connector on the same footprint. New part number in `design/parts.toml` and the BOM, from a datasheet that was read." },
+  { id = "reverse-pins", text = "Pin 1 is at the other end: reverse the twelve nets of J7 in `hardware/netlist.yaml`." },
+  { id = "move-j7", text = "The cable does not reach: move J7 along x in `hardware/mechanical.yaml`." },
+]
+check = '''
+With the sample panel: find which face of the cable's end has the contacts, find pin 1, measure
+the cable, and check that it reaches J7 when folded under the panel.
+'''
+why = '''
+Four things about this cable were read from one drawing and never seen: the contact side, the pin 1
+end, where the cable leaves the panel, and its length. The connector is a bottom-contact type and
+the netlist puts panel pin 1 on pad 1. If the contacts face the other way the display stays dark.
+If pin 1 is at the other end, the backlight supply lands on the logic pins.
+'''
+good = '''
+- **Contacts.** With the screen facing you and the cable hanging down, you see the twelve gold
+  fingers. The back of the cable's end has a stiffener.
+- **Pin 1.** In that same view pin 1 is the leftmost finger.
+- **Size.** The cable is 6.5 mm wide and reaches 20.7 mm, within 0.5 mm, beyond the panel's edge.
+  Its near edge is 15.28 mm from one long edge of the panel.
+- **Fit.** With the panel 8.85 mm above the print and the cable folded back under it in a C, the
+  end reaches the mouth of J7 with about 3 mm to go in.
+'''
+bad = '''
+- **Fingers on the back face.** J7 must then be the top-contact version of the same connector. The
+  footprint stays.
+- **Pin 1 at the right.** The netlist of J7 has to be reversed.
+- **The cable does not reach.** J7 moves along x, and it is the only part that moves.
+'''
+how = '''
+The panel is used turned a quarter, with its cable edge at the right, so in the board's frame the
+cable enters J7 from the right and pin 1 is the lowest pad. Hold the panel over the top print at
+its place to try the fold. Compare the pin list in the panel's own sheet with what the board puts
+on J7: 1 ground, 2 chip select, 3 data/command, 4 clock, 5 data, 6 reset, 7 not connected, 8 and 9
+the 3.3 V supply, 10 backlight anode, 11 backlight cathode, 12 ground.
+'''
+fact = '''
+**Hansheng HS20HS072RX outline drawing**, as read by the mechanical design, section 7, the hardware
+design, section 16.4, and the reviewer. I did not open it. The contact side is "not stated in
+words" in the drawing: all three readers took it from how the two views are drawn.
+'''
+cannot = '''
+I cannot show the panel: the repository has no drawing of it that I may copy, and nobody has a
+sample yet. The picture shows the board's side of the joint.
+'''
+kicad = { find = ["J7"], layers = ["F.Cu", "F.Fab"], at = [60.44, 88.43] }
+
+[[step.figure]]
+id = "j7"
+alt = "J7 with the display signals on its twelve lands"
+caption = "J7 with the net on each land. Pad 1, the lowest, is panel pin 1. The cable enters from the right."
+around = ["J7"]
+margin = 1.4
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+pad_labels = ["J7"]
+callouts = [{ pad = "J7.1", text = "pad 1 = panel pin 1, GND", dx = -1.5, dy = -2.2 }]
+
+# ---------------------------------------------------------------------------------------------------
+
+[[step]]
+id = "h-heights"
+group = "hand"
+title = "Measure the parts KiCad has no model for"
+source = "Layout review, section 13, \"What it does not\", and section 16"
+findings = ["L24"]
+minutes = 10
+files = ["hardware/zoneflow-a/design/heights.toml", "enclosure/params.scad"]
+remedies = [
+  { id = "enter-height", text = "Enter the measured height in `hardware/mechanical.yaml` and run the enclosure's interference check." },
+]
+check = '''
+Measure the height of each part in the table with callipers and compare it with the height the
+enclosure was designed for.
+'''
+why = '''
+The reviewer tested the enclosure against the real 3D model of the board. KiCad has no model for
+these parts, so for them the check used boxes from the mechanical contract. A part that is taller
+than its box meets the fascia or the display carrier, and you find out when the first enclosure
+does not close.
+'''
+good = '''
+Each part is no taller than its figure:
+
+| Part | Designed height, mm |
+|---|---|
+| Fuse holders F1 and F4, with a fuse fitted | 3.81 |
+| Resettable fuses F101 to F901 | 2.1 |
+| Display connector J7 | 2.0 |
+| Buttons SW4 and SW5 | 10.0 |
+| Encoder SW3, to the top of the shaft | 24.5 |
+| Cell holder BT1 | 5.5 |
+| USB-C receptacle J5 | 3.26 |
+| Terminal headers J1 to J4 | 7.0 |
+| Relay K1, bottom side | 15.3 |
+| Capacitor C1, lying down, bottom side | 13.0 |
+'''
+bad = '''
+A part more than 0.3 mm taller than its figure. Note which, and by how much.
+'''
+how = '''
+The figures are the `heights` list of `hardware/mechanical.yaml`. If you have no parts yet, mark
+this step "not sure" and do it when the parts for hand assembly arrive. It does not hold up the
+board order, because the board is the same either way. It holds up printing the enclosure.
+'''
+cannot = '''
+A picture cannot show a height. The picture shows where these parts are.
+'''
+
+[[step.figure]]
+id = "where"
+alt = "The parts without a 3D model marked on the top side"
+caption = "Top side. The marked parts have no 3D model in KiCad: fuse holders, one of the nine resettable fuses, display connector, buttons, encoder, cell holder, USB-C."
+box = [-3, -4, 117, 112]
+layers = ["F.Cu", "F.Fab", "Edge.Cuts"]
+zones = false
+text = false
+minimap = "none"
+marks = [{ refs = ["F1", "F4", "F101", "J7", "SW4", "SW5", "SW3", "BT1", "J5"], label = "no 3D model" }]

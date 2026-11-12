@@ -57,6 +57,17 @@ jobs:
           uv run --locked pytest -q
           uv run --locked zfcost render ../../docs/hardware/cost.md --check
 
+      # docs/hardware/review/: the pre-order review walkthrough. Its steps may name only parts and
+      # nets that are on the committed board, and its pictures must have been drawn from that board.
+      # This job has no KiCad: the tests that draw are skipped here and run in the board job of the
+      # hardware workflow. The page logic is tested under Node.
+      - name: Review walkthrough tests
+        working-directory: tools/reviewwalk
+        run: |
+          uv run --locked ruff check .
+          uv run --locked pytest -q
+
+      # The build fails too if the walkthrough and the board disagree.
       - name: Build site
         run: uv run mkdocs build --strict
 

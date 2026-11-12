@@ -31,6 +31,7 @@ In words:
 - [Bill of materials](bom.md): every part, with LCSC numbers and data sheets.
 - [The 4-zone build](four-zone.md): what is left off.
 - [Ordering boards](ordering.md): the fabrication files, and what is missing before anyone should order.
+- [Pre-order review walkthrough](review/index.md): the checks a person must make before the first order, one step at a time with pictures. It has a [bench sheet](review/bench-sheet.md) to print.
 - [What a controller costs](cost.md): landed cost for 5 to 100 units, both builds.
 - [Design notes](design-notes.md): where the calculations are.
 
