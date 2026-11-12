@@ -8,6 +8,10 @@
 // switches and runs the decoders of zf_ui/input.hpp; the UI task only
 // receives finished events.
 //
+// The three switch pins see the bare contacts: rev A has no RC filter on
+// them (hardware design 15.4), and ButtonDecoder does all the debouncing.
+// The two encoder phases keep their 10 kohm and 100 nF.
+//
 // Never run on hardware.
 #include "driver/gpio.h"
 #include "driver/pulse_cnt.h"
@@ -21,7 +25,7 @@ namespace zf::display::port {
 namespace {
 
 constexpr const char *kTag = "zf.display";
-constexpr uint64_t kSamplePeriodUs = 5000;
+constexpr uint64_t kSamplePeriodUs = ui::kButtonSamplePeriodMs * 1000ULL;
 // PCNT counts in 16 bits; with accum_count the driver extends it across
 // these limits.
 constexpr int kPcntLimit = 30000;

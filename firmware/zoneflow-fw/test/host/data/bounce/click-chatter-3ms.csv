@@ -1,0 +1,21 @@
+# An ordinary click of 150 ms with 3 ms of chatter at each end.
+# Made up by make_waveforms.py to the limits above. Not a recording.
+time_us,pin
+0,1
+100000,0
+100734,1
+100900,0
+101800,1
+102634,0
+102941,1
+103000,0
+253000,1
+253131,0
+253724,1
+253810,0
+254261,1
+254413,0
+254913,1
+255065,0
+255326,1
+655326,1

@@ -39,8 +39,10 @@ struct ButtonRig {
 TEST(UiButton, PressFiresOnceWhenTheButtonGoesDown)
 {
     ButtonRig rig(ButtonTiming{});
-    rig.hold(true, 15);
-    EXPECT_TRUE(rig.edges.empty()) << "shorter than the debounce time";
+    rig.hold(true, 5);
+    EXPECT_TRUE(rig.edges.empty()) << "one sample is not a press";
+    rig.hold(true, 5);
+    EXPECT_EQ(rig.edges.size(), 1u) << "two samples in a row are";
     rig.hold(true, 200);
     rig.hold(false, 100);
     ASSERT_EQ(rig.edges.size(), 1u);
@@ -90,7 +92,7 @@ TEST(UiButton, RepeatsWhileHeld)
     rig.hold(true, 1250);
     rig.hold(false, 100);
     EXPECT_EQ(rig.count(ButtonEdge::Press), 1);
-    // Down at about 20 ms; repeats at 620, 820, 1020, 1220.
+    // Down at 10 ms, the second sample; repeats at 610, 810, 1010, 1210.
     EXPECT_EQ(rig.count(ButtonEdge::Repeat), 4);
 }
 

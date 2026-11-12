@@ -1160,11 +1160,72 @@ queue state.
   edge (4 per cycle), so no step is lost while `zf_ui` draws. A 5 ms
   `esp_timer` reads the count and the three switches, runs the decoders of
   `zf_ui/input.hpp`, and queues finished events (32 entries). A turn or
-  press wakes `zf_ui` at once.
+  press wakes `zf_ui` at once. The three switches reach their pins with no
+  filter; "Button debounce" below is all the debouncing there is.
 - **Drawing.** LVGL renders the changed area in stripes of 320 x 24 pixels
   into one of two buffers and hands each to `esp_lcd`, which sends it by
   DMA while LVGL renders the next. Nothing is drawn while the backlight is
   off.
+
+### Button debounce
+
+Since 2026-11-12 the rev A board has no RC filter on the encoder switch,
+Back and Manual/Home ([hardware design](hardware-design.md), sections 15.4
+and 28). The pin follows every closure and opening of a chattering contact.
+The encoder phases keep their filters and go to the pulse counter as before.
+
+The firmware already debounced, behind the filters: a new level had to hold
+for 20 ms, press and release alike, sampled every 5 ms. On a bare contact
+that timing loses short presses. A contact that chatters for 10 ms and is
+then closed for 20 ms is seen closed on five samples in a row only if the
+samples fall well, and in the host test 514 of 2,000 such presses gave no
+event at all. So the timing changed, and the method did not:
+`ButtonDecoder` in `zf_ui/input.hpp`, polled, never blocking, with no
+interrupt on the pins.
+
+| | Was | Is | On the device |
+|---|---|---|---|
+| A press is believed after the contact has read closed for | 20 ms | `pressMs`, 4 ms | Two samples in a row |
+| A release is believed after it has read open without a break for | 20 ms | `releaseMs`, 20 ms | Five samples in a row |
+| Sample period | 5 ms | 5 ms, `kButtonSamplePeriodMs` | `esp_timer`, as before |
+
+Quick to believe a press and slow to believe a release. The arithmetic,
+with each sample up to 1 ms late and time kept in whole milliseconds as
+`inputs.cpp` does:
+
+- **No press of 30 ms is lost.** Samples are at most 6 ms apart, so two in a row fall into any closure of 12 ms; 10 ms with the timer on time. A 30 ms press with 10 ms of chatter at its start is closed for 20 ms.
+- **No second event from chatter.** Once down, the decoder needs 20 ms of open samples to let go, and no burst of chatter under 20 ms holds that many. At the release it lets go 20 ms after the first sample that read open, which is at least 17 ms after the chatter began. Chatter under 17 ms is over by then, and nothing is left to read as a new press. The brief asks for 10 ms.
+- **One sample is not a press.** `pressMs` is under the sample period only so that the second sample counts, never the first alone. A spike on the unfiltered line that one sample catches is ignored.
+- **Unchanged:** Press on the way down for the encoder switch and Back, Press on release for Manual/Home, the 0.8 s hold of Manual/Home, the repeat of Back from 0.6 s every 0.4 s, the 3 s hold of the encoder switch, and a button held at power-up is not a press. All are counted from the moment the press is believed, which is now about 10 ms earlier. Any input event still wakes a dimmed or dark screen and does nothing else (`Ui::handleInput`).
+
+**Tests.** `test/host/ui_debounce_test.cpp`, 14 tests. They play a waveform
+of the pin, edge by edge in microseconds, to a sampler that does what
+`inputs.cpp` does.
+
+| Test | What it shows |
+|---|---|
+| Seven waveform files in `test/host/data/bounce/`, each through the timing of all three controls, at 20 sample phases, with the timer on time and with three patterns of late samples | A 30 ms press with 10 ms of chatter at each end, the same with both bursts inside the 30 ms, a click with 3 ms and one with 14 ms of chatter, a 1 s hold (one Press and two Repeats on Back, one LongPress on Manual/Home), a double click, and 60 spikes of 5 to 300 us with nobody pressing: the events are the same in all 240 runs of each file |
+| 2,000 random presses, 0 to 10 ms of chatter at each end, closed 20 to 60 ms | One Press each, on all three controls |
+| 20,000 random presses, up to 16 ms of chatter, closed 12 ms or more, samples late | One Press each |
+| 20,000 with exactly 10 ms closed, timer on time | One Press each |
+| A release believed as quickly as a press | 50 of 2,000 presses with 16 ms of chatter give two events; with `releaseMs` at 20 the same waveforms give one |
+| 20 ms both ways, the old timing, on the bare contact | 514 of 2,000 short presses give no event |
+| A closure of 4.9 ms | No event at any phase |
+| The simulator's 10 ms sampling | The same events as the device for the waveforms it can resolve |
+
+The waveforms are made up, by `data/bounce/make_waveforms.py`, to the limits
+in their headers. They are not recordings: no board exists, and neither
+switch has a bounce time in its data sheet. The file format is that of a
+logic analyser on the pin, so that a recording from the first board can be
+added as it is. To measure there: the longest chatter of each contact
+(hardware design, risk 35), and whether an unfiltered line ever shows a
+spike that two samples 5 ms apart both catch (risk 36).
+
+The simulator and the browser demo use the same decoder and timings
+(`sim/controls.hpp`) and needed no change. They sample every 10 ms, so a
+click there is believed one sample earlier than before. The ESPHome package
+has the same two times as binary sensor filters, `delayed_on: 5ms` and
+`delayed_off: 20ms` ([ESPHome guide](../firmware/esphome.md#display-and-controls)).
 
 ### Memory and size
 

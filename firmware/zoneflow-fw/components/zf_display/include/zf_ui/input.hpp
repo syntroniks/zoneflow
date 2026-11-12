@@ -45,8 +45,32 @@ struct InputEvent {
 
 // ---- buttons -------------------------------------------------------------------
 
+// Debounce. Since the owner's decision of 2026-11-12 the three push contacts
+// of the rev A board have no RC filter (hardware design 15.4): the pin sees
+// the bare contact, and all of the debouncing is here. A tactile switch
+// chatters when it closes and again when it opens. The decoder is therefore
+// quick to believe a press and slow to believe a release:
+//
+//  - Down after the contact has read closed for pressMs. At the device's
+//    5 ms sample period that is two samples in a row, so a single sample
+//    that catches an interference spike is not a press. Two samples in a
+//    row fall into any closure of 10 ms, and of 12 ms when each sample may
+//    be 1 ms late: a contact closed for that long is never missed.
+//  - Up after the contact has read open for releaseMs without a break. The
+//    release is believed at least releaseMs after the chatter of the opening
+//    contact began, less 3 ms for late samples and whole-millisecond time:
+//    chatter shorter than 17 ms cannot end a press or start a second one.
+//
+// pressMs must stay under the sample period less the jitter, and releaseMs
+// well over the longest chatter. kButtonSamplePeriodMs is the device's
+// period; the host tests play waveforms of the bare contact to the decoder
+// at it (test/host/ui_debounce_test.cpp). The waveforms are made up to
+// stated limits. Nothing was measured on a switch: no board exists.
+inline constexpr uint16_t kButtonSamplePeriodMs = 5;
+
 struct ButtonTiming {
-    uint16_t debounceMs = 20;
+    uint16_t pressMs = 4;
+    uint16_t releaseMs = 20;
     // 0: no long press; Press is sent when the button goes down.
     // Otherwise Press is sent on release, and only if LongPress was not sent.
     uint16_t longPressMs = 0;
@@ -95,7 +119,8 @@ class ButtonDecoder {
 public:
     explicit ButtonDecoder(const ButtonTiming &timing = {}) : timing_(timing) {}
 
-    // Call at a steady rate (10 ms or faster). Returns at most one edge.
+    // Call at a steady rate (10 ms or faster; the device calls every
+    // kButtonSamplePeriodMs). Never blocks. Returns at most one edge.
     ButtonEdge update(bool pressedRaw, MonoMs now);
     bool down() const { return down_; }
 
