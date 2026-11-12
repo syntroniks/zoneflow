@@ -28,6 +28,7 @@ The enclosure is for indoor or garage walls. It is not weatherproof. See
 | Printed parts | 8: base, fascia, wiring cover, display carrier, knob, two button caps, light-pipe comb |
 | Largest part | Base, 120.2 x 172.0 x 32.2 mm in print orientation |
 | Supports | None |
+| Files | OpenSCAD source, STL and 3MF for each part. No STEP file: OpenSCAD 2021.01 refuses to export one, and the newer build the enclosure is made with was not tried |
 | Screws | 7 M3 screws and 7 M3 heat-set inserts, or self-tapping bosses |
 | Wall fixing | Two keyholes 75 mm apart and a third screw 123 mm below |
 

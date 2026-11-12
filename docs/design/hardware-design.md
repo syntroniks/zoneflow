@@ -2957,7 +2957,7 @@ at the left end and the Qwiic socket at the right. No conflict.
 
 | Item | Contract, revision 2 | Circuit design | Open |
 |---|---|---|---|
-| Board | 114 x 110 mm, four layers, every surface-mount part on the top side | 346 components. Nothing in the circuit needs a second assembly side. | Nothing |
+| Board | 114 x 110 mm, four layers, every surface-mount part on the top side | 353 components. Nothing in the circuit needs a second assembly side. | Nothing |
 | Fuse holders | F4 at (15.0, 12.6) and F1 at (27.0, 12.6), in a walled well behind J1 that opens under the wiring cover. Body 9.73 x 5.03 x 3.81 mm from the Littelfuse drawing. | F4 is in the leg of J1 pin 1 and F1 in the leg of pin 2, as the contract places them. Section 4.3 asks for both next to J1. | Nothing. The height that this document could not read is 3.81 mm. |
 | C1 | Through-hole, on the bottom side, lying down, fixed at (21, 30) with pads at (36.0, 27.5) and (36.0, 32.5). Named as the Rubycon PX part, 21.5 mm long at most. | Rubycon 63ZLJ470M12.5X20: the same case and lead pitch, five times the endurance. Section 4.5. | The ZLJ can may be 22.0 mm long. It stays inside zone B_C1. The contract's part name and length are for its owner to update. |
 | K1 | Through-hole, inserted from the bottom, soldered by hand on the top. Suggested at (50, 22). | Through-hole because no surface-mount relay meets the ratings, section 7.2. | Whether the assembler hand-solders parts on the side opposite the SMT has not been asked. If not, the builder solders K1 and C1. |

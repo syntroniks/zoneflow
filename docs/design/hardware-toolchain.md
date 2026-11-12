@@ -1,8 +1,9 @@
 # Hardware toolchain
 
 Status: **proven on a 40-part test board, 2026-11-10**, and used for the
-schematic and the layout of the revision A board, 346 parts then and 348
-since hardware review A2, on the same day (sections 12 and 13).
+schematic and the layout of the revision A board (sections 12 and 13). That
+board had 346 components when it was captured, 348 after hardware review A2
+and has 353 since the hardware answers A2.
 Nothing here has been built as hardware. Every result below names the command
 that produced it.
 
@@ -15,7 +16,8 @@ ZoneFlow design and its part choices must not be reused.
 
 - **Source of truth.** Two text files per board. `design/circuit.py` holds the
   circuit as Python. `design/board.toml` holds the outline, placement, net
-  classes, pours and pre-routed tracks.
+  classes, pours and pre-routed tracks. On the revision A board a program,
+  `design/layout.py`, writes `board.toml` (section 13.1).
 - **Generator.** `tools/hwflow`, a Python package in this repository. Its one
   third-party runtime dependency is PyYAML, to read the design netlist. It
   writes `.kicad_sch` files directly.
@@ -66,7 +68,9 @@ Three checks make the generated files trustworthy.
 | Path in a board directory | Kind | Edit by hand? |
 |---|---|---|
 | `design/circuit.py` | Source | Yes |
-| `design/board.toml` | Source | Yes |
+| `design/board.toml` | Source. On a board that has `design/layout.py` it is generated from that and committed | Yes, unless the board has `design/layout.py` |
+| `design/layout.py`, `design/patches-hand.toml` | Source of `board.toml` on the revision A board (sections 13.1 and 13.10) | Yes |
+| `design/patches.toml` | Written by `make patches` (section 13.10) | No. `make patches` replaces it |
 | `design/heights.toml` | Source, component heights for the mechanical check (section 13.2) | Yes |
 | `design/rules.kicad_dru` | Source, board-specific DRC rules | Yes |
 | `design/parts.toml`, `design/symbols.py`, `design/footprints.py`, `design/footprints.md` | Source, on a board drawn from a design netlist (section 12) | Yes |
