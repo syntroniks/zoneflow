@@ -13,7 +13,7 @@ sprinkler timer and use a multimeter. Do the steps in this order:
 2. [What you need](what-you-need.md): transformer, cable, valves, tools.
 3. [Mounting](mounting.md): put the enclosure on the wall with the drilling template.
 4. [Wiring](wiring.md): terminal by terminal, with a diagram.
-5. [Installing firmware](../firmware/web-installer.md): only if the board has no firmware yet.
+5. [Installing firmware](../firmware/web-installer.md): only if the board has no firmware yet. No firmware release has been published, so for now this step means [building it yourself](../firmware/web-installer.md#until-the-first-release-build-it-yourself).
 6. [First power-up](first-power-up.md): what the display and the lights should show.
 7. [Joining your network](provisioning.md): standalone firmware or ESPHome.
 8. [First schedule](first-schedule.md): from the display, the web interface or Home Assistant.

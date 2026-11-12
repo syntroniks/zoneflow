@@ -4,9 +4,10 @@ Status: **phase 3, aligned with the rev A hardware design** (section 20).
 Covers the standalone ESP-IDF firmware of system spec section 4.1
 (`firmware/zoneflow-fw/`). No board exists and nothing described here has
 run on one. Checks done so far: host unit tests (GoogleTest, ASan and
-UBSan), the display simulator, and `idf.py build` with ESP-IDF v5.5.6.
+UBSan), the system soak simulation on a simulated board (section 22), the
+display simulator, and `idf.py build` with ESP-IDF v5.5.6.
 Section 11 lists what the phase 2 core hardening changed, section 20 what
-the rev A board changed.
+the rev A board, hardware review A2 and the hardware answers changed.
 
 Phase 1 delivered the structure, the safety-critical core and tests. Phase 2
 hardens the core (section 11) and adds WiFi and provisioning (`zf_net`,
@@ -15,7 +16,8 @@ section 13), OTA with rollback (`zf_ota`, section 14) and the local display
 interface (`zf_display`, section 17, and
 [display interface](display-ui.md)). The network security design is in
 [firmware security](firmware-security.md). MQTT with Home Assistant
-discovery is `zf_mqtt` (section 18). The web UI itself is later work. Every module plugs into the interfaces in section 4 and does
+discovery is `zf_mqtt` (section 18). The web UI was written after this text, in phase 3: it is in
+`firmware/zoneflow-fw/web/`, and [web UI contract](../firmware/web-ui-contract.md) says what it relies on. Every module plugs into the interfaces in section 4 and does
 not reach around them.
 
 ## 1. Modules

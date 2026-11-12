@@ -72,7 +72,15 @@ packages:
 ```
 
 Keep `zoneflow_ref` and the `@` tag the same: the first picks the C++ components, the
-second the YAML. Then:
+second the YAML.
+
+!!! note "No release has been tagged yet"
+    `v0.2.0` stands for the tag of a release, and the project has published none
+    ([issue #8](https://github.com/syntroniks/zoneflow/issues/8)). Until it has, a tag
+    cannot be fetched: write `main` in both places. `main` moves with every merge, so a
+    build from it is not a fixed version.
+
+Then:
 
 ```sh
 esphome run garden.yaml
@@ -451,7 +459,7 @@ standalone firmware's generator functions, and CI fails if the file is out of da
 | `esphome config` and `esphome compile`, ESPHome 2026.10.2, ESP-IDF 5.5.6 | Pass for `examples/zoneflow-8zone.yaml`, `examples/zoneflow-4zone.yaml` and `factory.yaml`. The 8-zone application is 1,387,659 bytes (17 % of its 7.75 MB app partition); static RAM 166,019 of 341,760 bytes. |
 | Keep-alive interrupt in the linked ELF | `on_timer` at 0x40376664 (IRAM), 338 instructions with the float test; no call instruction between its entry and `retw.n` |
 | Rule 16 | `esphome config` refuses a `logger:` with `hardware_uart: UART1` (checked with a scratch copy of the 8-zone example) |
-| Host tests, `firmware/esphome/test/host/run.sh` (ASan, UBSan) | 41 tests pass: 23 on the supervisor (start-up self-test, a run with master and relay, the maximum run time and rest across runs and a restart, open and shorted valves, three trips, a detector fault that needs a confirmed repair, a stalled main loop, loss of 24 VAC, OTA maintenance, at most three valve bits low, a 4-zone board, the leak alarm, the fault texts, and from review A2 the float test, the gate bleed check, commissioning and rule 16) and 18 on the schedule logic (day rules, missed starts, DST, clock set back, edits, zone lists, next start) |
+| Host tests, `firmware/esphome/test/host/run.sh` (ASan, UBSan) | 45 tests pass: 27 on the supervisor (start-up self-test, a run with master and relay, the maximum run time and rest across runs and a restart, open and shorted valves, three trips, a detector fault that needs a confirmed repair, a stalled main loop, loss of 24 VAC, OTA maintenance, at most three valve bits low, a 4-zone board, the leak alarm, the fault texts, from review A2 the float test, the gate bleed check, commissioning and rule 16, and from the firmware follow-up to the hardware answers an open valve that is stopped and reported without a lock-out, a DC component in the valve current, an output that failed short during another zone's run, a low supply and a lost measurement, and the run budget kept through a power cut) and 18 on the schedule logic (day rules, missed starts, DST, clock set back, edits, zone lists, next start) |
 | `tools/gen_board_yaml.py --check` | The pin substitutions match `hardware/pinmap.yaml` |
 | `zfrelease` tests, installer page test | Pass with the ESPHome flavour enabled |
 | Release path, run locally | `zfrelease package-prebuilt` on the factory build (project name `zoneflow` checked in the image), `assemble` and `verify`: every check passes. The standalone half of a release was not built locally; CI builds both. |
