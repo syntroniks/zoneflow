@@ -18,7 +18,7 @@ outline and thickness. Each part on it that comes near the enclosure is a
 solid block at the position the board file gives, with the body size from the
 [mechanical contract](../design/mechanical.md).
 
-**[Download every print file as one zip](print/zoneflow-test-fit-print-files.zip)**, 6 MB.
+**[Download every print file as one zip](print/zoneflow-test-fit-print-files.zip)**, 7 MB.
 
 Record what you find in
 [issue #9](https://github.com/syntroniks/zoneflow/issues/9). The last section
@@ -36,12 +36,67 @@ no slicer settings. I wrote them with a script and read them back with a
 second library. No slicer has opened them, so if yours rejects one, use the
 single files below and tell us in the issue.
 
-| Plate | What is on it |
-|---|---|
-| [Plate 1, test-fit kit](print/plates/zoneflow-plate-1-test-fit-kit.3mf) | Board, C1, K1, four plug pieces, display panel |
-| [Plate 2, body colour](print/plates/zoneflow-plate-2-body.3mf) | Base, display carrier, knob, two button caps |
-| [Plate 3, front colour](print/plates/zoneflow-plate-3-front.3mf) | Fascia, wiring cover |
-| [Plate 4, clear](print/plates/zoneflow-plate-4-clear.3mf) | Light-pipe comb |
+There is a set for a 220 x 220 mm bed and a set for a 250 x 250 mm bed. Both
+keep the same two distances, and the build fails if a plate does not fit its
+bed with them:
+
+- **5 mm free at every bed edge.** A skirt 2 to 3 mm off the parts with a couple of loops takes about 4 mm. A 5 mm brim fits.
+- **6 mm between parts.** A slicer draws one skirt round the whole plate, so the gap only has to keep neighbours apart. It takes a 3 mm brim on each.
+
+A wider brim, or a skirt further out, needs the parts moved in the slicer.
+
+Each picture shows a plate from straight above, all at one scale. The dark
+frame is the edge of the bed, the red line is 5 mm inside it, and the grid is
+50 mm.
+
+#### For a 220 x 220 mm bed
+
+| Plate | What is on it | Volume, cm³ | Hours at 5 and at 10 mm³/s |
+|---|---|---|---|
+| [Plate 1, test-fit kit](print/plates/zoneflow-plate-1-test-fit-kit.3mf) | Board, C1, K1, four plug pieces, display panel | 56.2 | 3.1 and 1.6 |
+| [Plate 2, body colour](print/plates/zoneflow-plate-2-body.3mf) | Base, display carrier, knob, two button caps | 81.6 | 4.5 and 2.3 |
+| [Plate 3, front colour](print/plates/zoneflow-plate-3-front.3mf) | Fascia, wiring cover | 61.0 | 3.4 and 1.7 |
+| [Plate 4, clear](print/plates/zoneflow-plate-4-clear.3mf) | Light-pipe comb | 1.0 | 0.1 and 0.0 |
+
+![Plate 1 on a 220 mm bed](../assets/enclosure/plates/zoneflow-plate-1-test-fit-kit.png){ width="340" }
+![Plate 2 on a 220 mm bed](../assets/enclosure/plates/zoneflow-plate-2-body.png){ width="340" }
+![Plate 3 on a 220 mm bed](../assets/enclosure/plates/zoneflow-plate-3-front.png){ width="340" }
+![Plate 4 on a 220 mm bed](../assets/enclosure/plates/zoneflow-plate-4-clear.png){ width="340" }
+
+#### For a 250 x 250 mm bed
+
+Three plates, not one or two.
+
+| Plate | What is on it | Volume, cm³ | Hours at 5 and at 10 mm³/s |
+|---|---|---|---|
+| [Plate A1, enclosure](print/plates/zoneflow-plate-250-a1-base-and-small-parts.3mf) | Base, display carrier, knob, two button caps, light-pipe comb | 82.6 | 4.6 and 2.3 |
+| [Plate A2, enclosure](print/plates/zoneflow-plate-250-a2-fascia-and-cover.3mf) | Fascia, wiring cover | 61.0 | 3.4 and 1.7 |
+| [Plate B, test-fit kit](print/plates/zoneflow-plate-250-b-test-fit-kit.3mf) | Board, C1, K1, four plug pieces, display panel | 56.2 | 3.1 and 1.6 |
+
+![Plate A1 on a 250 mm bed](../assets/enclosure/plates/zoneflow-plate-250-a1-base-and-small-parts.png){ width="340" }
+![Plate A2 on a 250 mm bed](../assets/enclosure/plates/zoneflow-plate-250-a2-fascia-and-cover.png){ width="340" }
+![Plate B on a 250 mm bed](../assets/enclosure/plates/zoneflow-plate-250-b-test-fit-kit.png){ width="340" }
+
+**Everything on one plate does not fit.** The footprints of the sixteen
+prints add up to 68,023 mm². The bed is 62,500 mm².
+
+**The whole enclosure on one plate does not fit either**, not with room for a
+skirt. The base is 120.2 x 172.0 mm and the fascia 120.2 x 131.7 mm. Whichever
+way they are turned, the two need 240.4 mm along one side of the bed. That
+leaves 9.6 mm of a 250 mm bed for two edge margins and the gap between them.
+With 5 mm at each edge they are 0.4 mm over before any gap, and 6.4 mm over
+with the 6 mm gap. The arithmetic allows it with 3 mm at each edge and 3.6 mm
+between the two. That leaves no room for a brim and next to none for a skirt,
+so I did not make that plate.
+
+So the base and the fascia each get a plate. The wiring cover goes with the
+fascia and the small parts with the base. That is also the split by colour:
+A1 is the body colour and A2 the front colour, if you print in two.
+
+**The light-pipe comb wants clear filament.** It is on plate A1 so that one
+material makes the whole enclosure, which is enough for a fit check. For a
+unit whose lights you want to see, delete the comb from plate A1 in the
+slicer and print plate 4. Plates 1 to 4 fit a 250 mm bed as they are.
 
 ### The test-fit kit
 
@@ -356,6 +411,7 @@ file and the contract, and fails if a check fails.
 - **KiCad's model.** All 338 bodies of KiCad's detailed export of the board against every printed part. None overlaps.
 - **Gaps.** 89 gaps and 20 alignments measured on the meshes and compared with the numbers on this page.
 - **Print files.** Each is one closed solid, sits on the bed and fits 220 x 220 mm.
+- **Plates.** Each of the seven holds its parts on its own bed, 5 mm from every edge and 6 mm apart. The check also proves from the footprints that the two layouts above do not fit a 250 mm bed.
 
 KiCad's export lacks 22 parts. Their model files are missing from the
 library on the build machine, or their footprints name none: the fuse
