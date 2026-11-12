@@ -316,6 +316,16 @@ the first fault, no 24 VAC, rain, rain delay, or "Ready".
 The backlight dims to 30 % after a minute without input and turns off after five. Any
 input wakes it, and an input while it is off only wakes it.
 
+The encoder push and the two buttons have no filter on the board; the package debounces
+them with two filters on each binary sensor, `delayed_on: 5ms` and `delayed_off: 20ms`.
+That is the timing of the standalone firmware: a press counts once the contact has read
+closed for 5 ms, and a release 20 ms after it first read open, so the chatter of a
+contact gives one press. There is one difference. ESPHome looks at a pin on each pass of
+its main loop, about every 16 ms and less often while it draws the display, where the
+standalone firmware samples every 5 ms from a timer. A press that begins and ends
+between two passes is not seen, and a spike that a pass happens to catch counts as a
+press. Neither is new with this change, and neither has been tried on a board.
+
 The panel's mirroring and colour inversion are copied from the standalone firmware,
 which marks them as a guess until a panel has been seen. The display runs at 10 MHz SPI:
 the ST7789V is guaranteed to 15 MHz, the ESP32-S3 divider cannot make that, and the next
@@ -466,8 +476,8 @@ standalone firmware's generator functions, and CI fails if the file is out of da
 
 Not checked, because it needs a board: everything about real timing (the I2C bus, the ADC
 windows, the detector times), the display orientation, Improv over BLE and USB, the
-encoder direction, the flow meter, and how long ESPHome's main loop really stalls on
-this hardware. If a component in your YAML blocks the loop for more than 500 ms, the
+encoder direction, how the push contacts chatter, the flow meter, and how long
+ESPHome's main loop really stalls on this hardware. If a component in your YAML blocks the loop for more than 500 ms, the
 valves stop and the output stage latches a fault.
 
 ## For developers

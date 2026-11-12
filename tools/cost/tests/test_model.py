@@ -93,12 +93,15 @@ def test_extended_type_count(inp):
     assert m.fee_types(inp, "8-zone") == m.fee_types(inp, "4-zone") == 35
 
 
-def test_before_consolidation_is_the_board_as_it_was_published(inp):
+def test_before_consolidation_is_the_board_with_the_old_part_numbers(inp):
     was = m.before_consolidation(inp)
     assert m.fee_types(was, "8-zone") == 40
-    # The totals of docs/hardware/cost.md before the five part numbers changed.
-    assert m.batch_cost(5, "8-zone", was).total == pytest.approx(627.30, abs=0.005)
-    assert m.batch_cost(100, "4-zone", was).total == pytest.approx(4800.02, abs=0.005)
+    # Today's board with the five part numbers changed back. docs/hardware/cost.md published 627.30
+    # and 4,800.02 for it before the consolidation. Since 2026-11-12 the board has five 0603 parts
+    # fewer (the debounce filters of the three push contacts, hardware design section 28), which
+    # takes 0.27 and 4.23 off those two totals.
+    assert m.batch_cost(5, "8-zone", was).total == pytest.approx(627.03, abs=0.005)
+    assert m.batch_cost(100, "4-zone", was).total == pytest.approx(4795.79, abs=0.005)
     saved = m.batch_cost(5, "8-zone", was).extended_fee - m.batch_cost(5, "8-zone", inp).extended_fee
     assert saved == pytest.approx(5 * inp.sourced["assembly"]["economic_feeder_extended"])
     # Every replaced number is gone from the BOM and its replacement is on it.
@@ -120,7 +123,7 @@ def test_economic_fees_by_hand(inp):
     a = inp.sourced["assembly"]
     c = m.batch_cost(10, "8-zone", inp)
     expect = a["economic_setup"] + a["economic_stencil"] + a["confirm_placement"]
-    expect += 850 * 10 * a["economic_joint"] + 35 * a["economic_feeder_extended"]
+    expect += 840 * 10 * a["economic_joint"] + 35 * a["economic_feeder_extended"]
     assert c.assembly == pytest.approx(expect)
     assert c.extended_fee == pytest.approx(35 * 3.07)
 
@@ -155,7 +158,7 @@ def test_scenarios_save_money_and_issue31_removes_parts(inp):
     alt = m.scenario_issue31(inp)
     removed = sum(ln.qty["8-zone"] for ln in inp.lines) - sum(ln.qty["8-zone"] for ln in alt.lines)
     assert removed == 27
-    assert alt.joints["8-zone"] == 850 - 54
+    assert alt.joints["8-zone"] == 840 - 54
 
 
 def test_unit_cost_falls_with_quantity(inp):

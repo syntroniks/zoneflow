@@ -9,7 +9,7 @@ status = "fixed"
 where = "Placement files"
 found = "26 of 307 placements were wrong against JLCPCB's own footprints: nine triacs and nine opto-triacs a quarter turn off, both USB ESD arrays a quarter turn off, the display connector a quarter turn off and 1.6 mm from its lands, the module 3.6 mm from its lands, the USB-C receptacle 1.5 mm, the three resistor arrays half a turn round."
 action = "The correction table `hardware/rules/jlcpcb-cpl-rotations.csv` is rewritten per part number, with offsets."
-check = "`make cpl-check` places JLCPCB's library footprint for every part as the file says and compares pads: 312 of 312 and 267 of 267 fit. It needs the network and is run on demand, not on every build."
+check = "`make cpl-check` places JLCPCB's library footprint for every part as the file says and compares pads: 307 of 307 and 262 of 262 fit. It needs the network and is run on demand, not on every build."
 section = "5-the-placement-file-against-jlcpcbs-library"
 images = [{ file = "placement.png", caption = "The review's picture. Top row: JLCPCB's footprint in red, placed as the first file said, over the board's pads in grey. Bottom row: the corrected file." }]
 steps = ["o-commands", "o-prev-triacs", "o-prev-optos", "o-prev-big3", "o-prev-rest"]

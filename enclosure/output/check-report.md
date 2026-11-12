@@ -134,7 +134,7 @@ The panel's folded cable is a guessed box.
 
 `output/test-fit/view-only/zoneflow-a-board-detailed-view-only.stl` is `kicad-cli pcb export stl --subst-models` of the board file: the
 same export as `hardware/zoneflow-a/output/zoneflow-a.step`, as triangles. It has
-117312 triangles in 338 bodies. 337 are closed solids and are used as they
+116116 triangles in 333 bodies. 332 are closed solids and are used as they
 are. 1 are open and are replaced by their convex hull, which can only be larger.
 0 are flat, have no volume and are left out. Every body is intersected with every
 printed part and with the display panel stand-in; the limit is 0.5 mm3 per body.
@@ -148,7 +148,7 @@ its bosses and carries the feet of the display carrier.
 | base | 0 | 0.00 | J1 | 0.30 | pass |
 | fascia | 0 | 0.00 | J1 | 0.10 | pass |
 | cover | 0 | 0.00 | J4 | 2.46 | pass |
-| bridge | 0 | 0.00 | C41 | 1.06 | pass |
+| bridge | 0 | 0.00 | D19 | 1.47 | pass |
 | knob | 0 | 0.00 | none within 3 mm |  | pass |
 | buttons | 0 | 0.00 | none within 3 mm |  | pass |
 | lightpipe | 0 | 0.00 | D6 | 0.41 | pass |

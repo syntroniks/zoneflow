@@ -267,7 +267,18 @@ sensor:
       - script.execute: zf_ui_input
 
 binary_sensor:
-  # Controls are active low with external pull-ups and RC filters on the board.
+  # Controls are active low with external pull-ups. The two encoder phases have RC filters on the
+  # board. The three push contacts have none since 2026-11-12 (hardware design 15.4): the pin sees
+  # the bare contact, which chatters when it closes and when it opens, and the two filters below do
+  # the debouncing. They are the timing of the standalone firmware (zf_ui/input.hpp): quick to
+  # believe a press, slow to believe a release.
+  #   delayed_on 5 ms   a press counts once the contact has read closed for 5 ms
+  #   delayed_off 20 ms a release counts 20 ms after the contact first read open, unless it reads
+  #                     closed for 5 ms again in between: chatter under 20 ms neither ends a
+  #                     press nor starts a second one
+  # ESPHome looks at the pin on each pass of its main loop, about every 16 ms and less often while
+  # it draws. A press that begins and ends between two passes is not seen. The RC filters did not
+  # change that either.
   - platform: gpio
     id: zf_button_select
     internal: true
@@ -276,7 +287,8 @@ binary_sensor:
       mode: input
       inverted: true
     filters:
-      - delayed_on: 20ms
+      - delayed_on: 5ms
+      - delayed_off: 20ms
     on_press:
       - lambda: |-
           const int zones = ${zone_count};
@@ -295,7 +307,8 @@ binary_sensor:
       mode: input
       inverted: true
     filters:
-      - delayed_on: 20ms
+      - delayed_on: 5ms
+      - delayed_off: 20ms
     on_press:
       - lambda: |-
           if (id(zf_ui_backlight_state) == 2) return;
@@ -311,9 +324,11 @@ binary_sensor:
       mode: input
       inverted: true
     filters:
-      - delayed_on: 20ms
+      - delayed_on: 5ms
+      - delayed_off: 20ms
     on_click:
-      - min_length: 20ms
+      # The release filter adds 20 ms to every press, so no debounced press is shorter than that.
+      - min_length: 10ms
         max_length: 1s
         then:
           - lambda: id(zf_ui_sel) = -1;

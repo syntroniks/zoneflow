@@ -32,7 +32,7 @@ and the owner decides.
 ## What only a prototype can answer
 
 The [hardware design](design/hardware-design.md#20-design-risk-register)
-keeps a register of 34 risks that only a bench test can close, and a
+keeps a register of 36 risks that only a bench test can close, and a
 [bring-up plan](design/hardware-design.md#21-bring-up-test-plan) of 18 steps
 for the first board. In short:
 

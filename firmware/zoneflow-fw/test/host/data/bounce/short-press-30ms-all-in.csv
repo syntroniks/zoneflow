@@ -1,0 +1,47 @@
+# The same press read the hard way: 30 ms from the first contact to the last,
+# with both bursts of chatter inside it. 9 ms closing, 12 ms closed, 9 ms
+# opening. 12 ms is what two samples in a row need when each may be 1 ms late.
+# Made up by make_waveforms.py to the limits above. Not a recording.
+time_us,pin
+0,1
+100000,0
+100075,1
+100517,0
+101303,1
+101967,0
+102660,1
+102964,0
+103159,1
+103620,0
+103709,1
+103936,0
+104631,1
+105324,0
+105917,1
+106806,0
+107627,1
+107726,0
+108090,1
+108725,0
+121000,1
+121289,0
+121544,1
+121852,0
+122097,1
+122851,0
+123537,1
+123689,0
+124358,1
+124381,0
+124528,1
+125117,0
+125687,1
+125954,0
+126593,1
+127096,0
+127585,1
+128091,0
+128779,1
+128842,0
+129301,1
+529301,1

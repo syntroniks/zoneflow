@@ -309,7 +309,7 @@ at("C30", 109.6, 88.2, 90)
 at("R23", 111.3, 88.2, 90)
 
 # ---- left of the module, top edge ---------------------------------------------------------------
-block("Left of the module, at the top edge: 3.3 V bulk and decoupling at pin 2, reset network and\nsupervisor at pin 3, ADC filters, encoder switch filter. Everything here is under 3.5 mm. The\ndisplay bus passes under the lower edge of this block on the bottom side.")
+block("Left of the module, at the top edge: 3.3 V bulk and decoupling at pin 2, reset network and\nsupervisor at pin 3, ADC filters, encoder switch pull-up. Everything here is under 3.5 mm. The\ndisplay bus passes under the lower edge of this block on the bottom side.")
 at("C15", 92.2, 106.8, 270)
 at("C14", 89.1, 107.0, 180)
 at("R18", 92.2, 103.6, 90)
@@ -317,8 +317,6 @@ at("C16", 90.6, 103.6, 270)
 at("U12", 87.6, 103.9, 180)
 at("C54", 84.8, 103.6, 90)
 at("R66", 83.2, 103.6, 90)
-at("R71", 81.7, 103.6, 90)
-at("C41", 80.2, 103.6, 90)
 
 # ---- encoder ------------------------------------------------------------------------------------
 block("Encoder pull-ups and filters, below the encoder.")
@@ -403,9 +401,9 @@ at("R99", 77.6, 100.4, 0)       # boot-log series resistor, on the way to the de
 row("R21 R22", 38.2, 77.6, 3.2)
 block("Status LED resistor, in the light-pipe strip beside the LED.")
 at("R20", 15.1, 42.0, 180)
-block("Button pull-ups and filters.")
-col("R67 R72 C42", 13.9, 64.6, -1.6)
-row("R68 R73 C43", 44.0, 66.1, 3.2)
+block("Button pull-ups, and the series resistor of Back, whose pin is beside the keep-alive pin.")
+col("R67 R72", 13.9, 64.6, -1.6)
+at("R68", 44.0, 66.1, 0)
 block("Remaining test pads.")
 at("TP5", 31.5, 20.5, 0)
 at("TP6", 25.9, 80.4, 0)
@@ -1409,7 +1407,7 @@ distance = 10.0
 parts = ["C22", "C51"]
 
 # ---- silkscreen -----------------------------------------------------------------------------------
-# 354 of the 356 footprints are on one side: the designators of the small parts do not fit between them. They are left
+# 349 of the 351 footprints are on one side: the designators of the small parts do not fit between them. They are left
 # off the silkscreen and are on the assembly drawing (F.Fab) instead. Connectors, ICs, switches,
 # fuses, test pads and the bottom-side parts keep theirs. "clean" lets the builder take away what
 # DRC then still finds wrong: an outline over a neighbour's pad, a designator with no free place.

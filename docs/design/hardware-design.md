@@ -1,10 +1,11 @@
 # ZoneFlow hardware design, revision A
 
-Status: **paper design, 2026-11-11, after
+Status: **paper design, 2026-11-12, after
 [hardware review A1](hardware-review-a1.md), the decisions taken on its
 findings, [hardware review A2](hardware-review-a2.md) of the fail-safe
-circuits, and the [answers to the firmware's questions](hardware-answers-a2.md)
-on section 19**. No board exists. Nothing in
+circuits, the [answers to the firmware's questions](hardware-answers-a2.md)
+on section 19, and the owner's decision to debounce the push contacts in
+firmware (section 28)**. No board exists. Nothing in
 this document has been measured. Every number is a datasheet figure, a calculation from
 datasheet figures, or a simulation result, and the text says which. Section 20
 lists what only a bench can confirm. Section 22 lists what I could not confirm
@@ -32,7 +33,9 @@ Section 24 lists what changed after review A1 and where I did something
 other than what the reviewer proposed. Section 25 lists what review A2
 changed. Section 26 lists what the answers to the firmware's questions
 changed: one part of the circuit and most of section 19. Section 27 lists
-the five part numbers that the BOM consolidation replaced.
+the five part numbers that the BOM consolidation replaced. Section 28 lists
+the five parts that left when the debounce of the encoder switch and the two
+buttons moved into firmware.
 
 ## 1. The design in brief
 
@@ -1750,7 +1753,7 @@ Nets that toggle with no control loop:
 
 Three things were done.
 
-1. **The pin moved.** GPIO17, module pin 10. Its neighbours are `ENC_B` and `BTN_BACK`, and the next pins out are `ENC_A` and `I2C0_SDA`. A contact behind 13 kohm cannot run either detector: the fault injection bridges `KA` to a contact that opens and closes at 20 Hz and both detectors stay off.
+1. **The pin moved.** GPIO17, module pin 10. Its neighbours are `ENC_B` and `BTN_BACK`, and the next pins out are `ENC_A` and `I2C0_SDA`. A contact behind 13 kohm cannot run either detector: the fault injection bridges `KA` to a contact that opens and closes at 20 Hz and both detectors stay off. The 13 kohm are the 3.3 kohm pull-up and the 10 kohm series resistor of each contact, and the series resistor is the part that matters: with the pin stopped high, a closed contact must not be able to pull `KA` low. That is why `BTN_BACK` kept R72 when the debounce filters of the push contacts were taken out (section 28). Without it the same run leaves the valve on with the pin stopped high, `hardware/sim/failsafe/results/back-without-r72.md`.
 2. **R33 went from 10 kohm to 2.2 kohm.** A net behind a 10 kohm pull-up, such as `AC_ZC`, now lifts `KA` to 0.6 V at most. With the `AC_ZC` bridge and 2.2 kohm, `hardware/sim/ka_bridge.cir` puts A's reservoir at 0.40 V at most and the gate of Q2 at 0.36 V, where they reached 1.03 and 0.95 V. A push-pull output still gets through. A bridge from `TFT_BL` of up to about 3.3 kohm holds both detectors while the pin is high-impedance. The pull-down costs 1.5 mA while the pin is high.
 3. **The self-test floats the pin.** Step 2b makes the pin an input for half a second with the display, the backlight and the PSRAM in use, and fails if the pin reads high or either read-back moves. In the fault injection it finds the 1 kohm bridges that every other step misses.
 
@@ -1826,7 +1829,7 @@ of these kinds.
 - **Hysteresis and filters.** R31 shorted, R32 or R36 open, and the filter and decoupling capacitors open. Detector A then lets go 0.05 to 0.08 s earlier with typical parts, inside every limit.
 - **U7 with its supply pin open.** The model powers U7 through the clamp diodes of its inputs, from R36 and R53, at about 2.7 V, and both detectors still release. Before review A2 the read-back on `DRV_EN` saw the reduced level. The read-back on `V_DRV` does not. What a real 74HC132 does there is a bench question.
 - **Series resistors shorted.** R29, R89, R11, R52 and R53. The pin and the gates limit the current without them.
-- **Harmless bridges.** `KA` to `ENC_B` or `BTN_BACK` holds no detector. The firmware would see key presses whenever the keep-alive runs. `KA` to `AC_ZC` holds no detector either, now that R33 is 2.2 kohm, and loads the zero-cross signal to 0.6 V, which stops step 0.
+- **Harmless bridges.** `KA` to `ENC_B` or `BTN_BACK` holds no detector: each is a contact behind 3.3 kohm of pull-up and 10 kohm in series, R65 and R70, R67 and R72. Neither series resistor may be removed (section 28). The firmware would see key presses whenever the keep-alive runs. `KA` to `AC_ZC` holds no detector either, now that R33 is 2.2 kohm, and loads the zero-cross signal to 0.6 V, which stops step 0.
 - **Small leaks.** 330 kohm from `3V3` or 1 Mohm from `V_BUCK` onto the gate of Q2 make it let go about a fifth later, inside the band of step 9.
 - **No effect.** R95 open: GPIO7 still reads both levels, with 15 uA into its clamp diode.
 
@@ -1883,10 +1886,11 @@ here:
 | GPIO8, GPIO9 | I2C0 | High impedance | Driven low for 60 us | Not a valid I2C write. The expander is in reset anyway. |
 | GPIO7 | Relay detector read-back | High impedance | Driven low for 60 us | 100 kohm in series. It cannot move the node it reads. |
 | GPIO42 | Gate-drive read-back | High impedance | None | 4.7 kohm in series to `V_DRV`. Section 8.6. |
-| GPIO38 | Encoder switch | High impedance | None | Input only |
+| GPIO38 | Encoder switch | High impedance | None | Input only. The contact is straight on the pin since section 28. |
+| GPIO39 | Manual/Home button | High impedance, weak pull-up after reset | None | Input only. The contact is straight on the pin since section 28. |
 | GPIO45 | Sensor supply enable | Weak pull-down | None | R86 holds it low. Supply stays off, and the strap reads 0. |
 | GPIO21 | Backlight | High impedance | None | R62 holds the MOSFET off |
-| GPIO18 | Back button | High impedance | Low, then high, 60 us each | Input only. Harmless. |
+| GPIO18 | Back button | High impedance | Low, then high, 60 us each | Input only. R72, 10 kohm, stays between the pin and the button: the high level into a held button is 3.3 V / 10 kohm = 0.33 mA. |
 | GPIO19, GPIO20 | USB | USB pull-up on D+ | High pulses | USB only |
 | GPIO0, 3, 46 | Strapping | See section 12.3 | None listed for 0 and 46 | No valve function |
 
@@ -2792,8 +2796,10 @@ There are no series resistors. Add pads for them if the layout has room.
 
 SW3 is an ALPS EC11J1525402, a reflow-solderable encoder with 30 detents, 15
 pulses per turn and a push switch with 1.5 mm travel. Its contacts are rated
-10 mA at 5 V with a minimum of 1 mA. The datasheet gives 3 ms of chatter and
-2 ms of bounce at most.
+10 mA at 5 V with a minimum of 1 mA. For the two phases the datasheet gives
+3 ms of chatter and 2 ms of bounce at most, measured with 5 kohm. For the
+push switch it gives a rating, 0.1 A at 5 V with 1 mA minimum, and no bounce
+time.
 
 SW4, Back, and SW5, Manual or Home, are 6 x 6 mm tactile switches with a 10 mm
 actuator. The actuator height is a placeholder. It must be chosen together
@@ -2804,33 +2810,82 @@ encoder's height from its drawing.
 
 | Ref | Part | Package | LCSC | Connections | Note |
 |---|---|---|---|---|---|
-| SW3 | EC11J1525402 encoder, 30 detents, 15 pulses, push switch | SMD | C209762 | A `ENC_A_SW`, B `ENC_B_SW`, C `GND`, switch 1 `ENC_SW_SW`, switch 2 `GND` |  |
+| SW3 | EC11J1525402 encoder, 30 detents, 15 pulses, push switch | SMD | C209762 | A `ENC_A_SW`, B `ENC_B_SW`, C `GND`, switch 1 `ENC_SW`, switch 2 `GND` |  |
 | SW4 | Tactile switch 6x6 mm, 10 mm high | SMD | C381050 | `BTN_BACK_SW` to `GND` | Back |
-| SW5 | Tactile switch 6x6 mm, 10 mm high | SMD | C381050 | `BTN_HOME_SW` to `GND` | Manual / Home |
+| SW5 | Tactile switch 6x6 mm, 10 mm high | SMD | C381050 | `BTN_HOME` to `GND` | Manual / Home |
 | R64 | 3.3k 1% | 0603 | C22978 | `3V3` to `ENC_A_SW` | Pull-up, 1 mA contact current |
 | R69 | 10k 1% | 0603 | C25804 | `ENC_A_SW` to `ENC_A` |  |
 | C39 | 100 nF 50 V X7R | 0603 | C14663 | `ENC_A` to `GND` |  |
 | R65 | 3.3k 1% | 0603 | C22978 | `3V3` to `ENC_B_SW` | Pull-up, 1 mA contact current |
 | R70 | 10k 1% | 0603 | C25804 | `ENC_B_SW` to `ENC_B` |  |
 | C40 | 100 nF 50 V X7R | 0603 | C14663 | `ENC_B` to `GND` |  |
-| R66 | 3.3k 1% | 0603 | C22978 | `3V3` to `ENC_SW_SW` | Pull-up, 1 mA contact current |
-| R71 | 10k 1% | 0603 | C25804 | `ENC_SW_SW` to `ENC_SW` |  |
-| C41 | 100 nF 50 V X7R | 0603 | C14663 | `ENC_SW` to `GND` |  |
+| R66 | 3.3k 1% | 0603 | C22978 | `3V3` to `ENC_SW` | Pull-up, 1 mA contact current |
 | R67 | 3.3k 1% | 0603 | C22978 | `3V3` to `BTN_BACK_SW` | Pull-up, 1 mA contact current |
 | R72 | 10k 1% | 0603 | C25804 | `BTN_BACK_SW` to `BTN_BACK` |  |
-| C42 | 100 nF 50 V X7R | 0603 | C14663 | `BTN_BACK` to `GND` |  |
-| R68 | 3.3k 1% | 0603 | C22978 | `3V3` to `BTN_HOME_SW` | Pull-up, 1 mA contact current |
-| R73 | 10k 1% | 0603 | C25804 | `BTN_HOME_SW` to `BTN_HOME` |  |
-| C43 | 100 nF 50 V X7R | 0603 | C14663 | `BTN_HOME` to `GND` |  |
+| R68 | 3.3k 1% | 0603 | C22978 | `3V3` to `BTN_HOME` | Pull-up, 1 mA contact current |
 
 <!-- designsync:end -->
 
 The encoder switch is on GPIO38 since review A2, in exchange for the
-keep-alive. Each of the five contacts has a 3.3 kohm pull-up, which gives the 1 mA the
-encoder asks for, then 10 kohm and 100 nF to the GPIO. A closing contact
-discharges the capacitor with a 1.0 ms time constant and an opening one
-charges it with 1.3 ms. At three turns per second the encoder gives 45 pulses
-per second per phase, 11 ms per half-period. All inputs are active low.
+keep-alive. Each of the five contacts has a 3.3 kohm pull-up, which gives the
+1 mA the encoder asks for. All inputs are active low.
+
+**The two encoder phases** then have 10 kohm and 100 nF to the GPIO. A
+closing contact discharges the capacitor with a 1.0 ms time constant and an
+opening one charges it with 1.3 ms. At three turns per second the encoder
+gives 45 pulses per second per phase, 11 ms per half-period. The pulse
+counter counts every edge of both phases, so these two filters stay.
+
+**The three push contacts** have no debounce filter since the owner's
+decision of 2026-11-12. Firmware debounces them, section 19.1 rule 21. What
+is left on each:
+
+| Input | Pin | Between contact and pin | Removed |
+|---|---|---|---|
+| `ENC_SW`, encoder switch | GPIO38 | Nothing. R66 pulls the one net up. | R71, C41 |
+| `BTN_HOME`, Manual/Home | GPIO39 | Nothing. R68 pulls the one net up. | R73, C43 |
+| `BTN_BACK`, Back | GPIO18 | R72, 10 kohm. R67 pulls the contact net `BTN_BACK_SW` up. | C42 |
+
+Five parts went, not six. R72 does something that firmware cannot do: GPIO18
+is beside the keep-alive pin, and the bridge analysis of section 8.5 counts
+on a closed Back contact reaching that pin through 10 kohm. Section 28 has
+the run that shows it. R72 also keeps the high-level glitch of GPIO18 at
+power-up out of a held button, section 8.7.
+
+With the contact open a pin is at `3V3` through 3.3 kohm, 13.3 kohm for Back.
+With it closed the pin is at ground through the contact, 100 mohm at most by
+both data sheets, and through R72 for Back. Nothing slows an edge any more:
+the pin follows every closure and opening of a chattering contact.
+
+**Bounce.** Neither push contact has a bounce time in its data sheet. The
+ALPS figures above are for the phases. The XKB drawing of the tactile switch
+gives a rating of 50 mA at 12 V, a contact resistance and the travel. The
+firmware believes a press after two samples 5 ms apart and a release after
+20 ms, which by its own arithmetic stands chatter of up to 17 ms
+([firmware architecture](firmware-architecture.md), section 17). What the
+switches really do is risk 35.
+
+**A button held at reset.** GPIO18, GPIO38 and GPIO39 are not strapping pins;
+those are GPIO0, 3, 45 and 46, section 12.3. A held button changes nothing
+about how the module boots. GPIO39 is also MTCK. The four JTAG pads carry
+JTAG only on a chip whose eFuses select them (section 12.3, the row of
+GPIO3), and this design burns none. The standalone firmware treats a contact
+that is closed when it starts as not pressed until it has been released
+once. In the ESPHome package a press at start-up does what a press does
+later: Select with nothing chosen does nothing, Back stops all zones.
+
+**Static and interference: what these inputs have now.** This is less than
+they had. It is not equal.
+
+- **Before.** A discharge onto a contact net met 3.3 kohm to the `3V3` rail, and reached the pin only through 10 kohm with 100 nF to ground at the pin. The charge of the human body model at 2 kV, 150 pF x 2 kV = 0.3 uC, raises 100 nF by 3 V. That is an estimate of what the filter did. It was never a tested immunity level, and the design never claimed one for the controls.
+- **`ENC_SW` and `BTN_HOME` now.** Nothing between the contact net and the pin. What stands against a discharge is the protection inside the ESP32-S3 pin, and the 3.3 kohm to the rail and its capacitors. The data sheets give the chip 2 kV human body model and 1 kV charged device model, and the module 2 kV and 500 V (series data sheet v2.2, reliability table; module data sheet v1.8, section 12.2). Those are handling ratings of the part. The test for a finished product, IEC 61000-4-2, discharges 150 pF through 330 ohm at 4 to 8 kV, and a pin rated for 2 kV human body model is not shown to pass it.
+- **`BTN_BACK` now.** 10 kohm in series as before, and no capacitor.
+- **No part was added in exchange.** A clamp diode pair or a TVS on the two bare nets would be the usual replacement. The decision was to remove parts.
+- **What reaches these nets.** The switches are inside the enclosure. The user touches a printed knob and printed button caps. I did not find out whether the shaft of SW3 is metal. Its frame lands are soldered to pads with no net, 1 to 2 mm from the terminals of the push switch.
+- **Interference.** The capacitor at the pin also kept short spikes off it. A spike that the processor happens to sample reads as a closed contact. The standalone firmware asks for two samples in a row before it believes a press. ESPHome reads the pin on each pass of its main loop and has no such second look.
+
+Risk 36 has the bench test for both. Before an order of more than a few
+boards, read that result.
 
 ### 15.5 LEDs
 
@@ -2957,7 +3012,7 @@ at the left end and the Qwiic socket at the right. No conflict.
 
 | Item | Contract, revision 2 | Circuit design | Open |
 |---|---|---|---|
-| Board | 114 x 110 mm, four layers, every surface-mount part on the top side | 353 components. Nothing in the circuit needs a second assembly side. | Nothing |
+| Board | 114 x 110 mm, four layers, every surface-mount part on the top side | 348 components. Nothing in the circuit needs a second assembly side. | Nothing |
 | Fuse holders | F4 at (15.0, 12.6) and F1 at (27.0, 12.6), in a walled well behind J1 that opens under the wiring cover. Body 9.73 x 5.03 x 3.81 mm from the Littelfuse drawing. | F4 is in the leg of J1 pin 1 and F1 in the leg of pin 2, as the contract places them. Section 4.3 asks for both next to J1. | Nothing. The height that this document could not read is 3.81 mm. |
 | C1 | Through-hole, on the bottom side, lying down, fixed at (21, 30) with pads at (36.0, 27.5) and (36.0, 32.5). Named as the Rubycon PX part, 21.5 mm long at most. | Rubycon 63ZLJ470M12.5X20: the same case and lead pitch, five times the endurance. Section 4.5. | The ZLJ can may be 22.0 mm long. It stays inside zone B_C1. The contract's part name and length are for its owner to update. |
 | K1 | Through-hole, inserted from the bottom, soldered by hand on the top. Suggested at (50, 22). | Through-hole because no surface-mount relay meets the ratings, section 7.2. | Whether the assembler hand-solders parts on the side opposite the SMT has not been asked. If not, the builder solders K1 and C1. |
@@ -3009,8 +3064,8 @@ part type, shipping, duty, the coin cell and the enclosure.
 
 | Build | 10 boards | 100 boards |
 |---|---|---|
-| 8-zone | 41.28 USD | 32.21 USD |
-| 4-zone | 35.00 USD | 27.41 USD |
+| 8-zone | 41.26 USD | 32.19 USD |
+| 4-zone | 34.97 USD | 27.39 USD |
 
 Not in the totals, because the line has no price: CR2032 lithium coin cell, 3 V.
 
@@ -3112,6 +3167,7 @@ section is right.
 18. **Over-voltage on `3V3`.** If U3 shorts, U13 removes drive by hardware (section 9.5). Firmware reports it, if it still runs, from two readings. The rest level of both current channels above 0.90 V means `3V3` is above about 3.6 V (section 19.10): stop the keep-alive, report a supply over-voltage fault that needs repair, and refuse runs. And `OC` going low while no valve bit is low is not an over-current (section 19.8).
 19. **Without current readings.** Steps 5, 5b and 6 and rule 6 need the current measurement. If no window arrives, or the rest level of a channel is outside its limits (section 19.10), firmware skips those steps and may still run valves, and it must report that condition as a fault of its own for as long as it lasts, on the display and on every interface. It must never skip them without saying so. The reason it may run: a welded K1, a shorted Q1, an open R12 and a shorted output device each leave the other layer intact, so a valve stays on only with a second hardware fault on top, and a controller that stops watering because its ADC failed does harm for certain. The hardware over-current latch does not depend on the ADC.
 20. **Commissioning.** A board stores its own two release times once, as section 19.7 says under "Commissioning". It is automatic. It is not a button.
+21. **Push contacts.** GPIO38, GPIO18 and GPIO39 see the encoder switch, Back and Manual/Home with no filter (section 15.4), so firmware debounces them: no press of 30 ms or more lost, no second event from chatter of up to 10 ms, without blocking. A contact closed at start-up is not a press. The three pins are inputs for the life of the firmware. On GPIO38 and GPIO39 an output driven high with the button pressed is a short from the pin to ground, limited only by the pin, 40 mA by the data sheet's figure for a high output. The encoder phases on GPIO15 and GPIO16 keep their filters and go to the pulse counter as before.
 
 ### 19.2 Measuring current
 
@@ -3618,6 +3674,8 @@ get its numbers.
 | 32 | A shorted 3.3 V regulator | U13 removes drive above 3.91 to 4.17 V, from its data sheet and a behavioural model. A processor and a display at 4.7 to 5.1 V are not modelled and may be destroyed: accepted by the owner for revision A. Section 9.5. | On every prototype, the U13 test of bring-up step 7. On one board that may be lost: with a valve running on 24 VAC, join the input and output of U3. The valve must stop within a mains cycle and D8 light. Then drive `KA` from a signal generator at 100 Hz through 1 kohm: `DRV_EN` must stay low. Record what the processor and the display did and what survived. |
 | 33 | GPIO7 read as a level and by the ADC | The pin sits behind R94 and R95, 60 kohm. Assumed: the ADC's sampling does not move the pin, and the digital input still works on a pin the ADC samples. The ESP32-S3 data sheet gives no input charge or source resistance for its ADC. If the digital read were lost the pin would read low and step 1 would fail, which is the safe side. | With Q2 off, with Q2 on, and with 1.0 V forced on `RLY_B` through 10 kohm: compare the ADC mean of GPIO7 with a meter, and check the digital read at 5 ms. If the ADC pulls the level, 10 nF at the pin cures it and needs a footprint in the next revision. |
 | 34 | The bleed resistors at assembly | A board built with one bleed resistor open is inside every limit firmware can apply: it looks like a board with large capacitors. Section 19.7. | The two resistance readings of bring-up step 1, on every board that is built. |
+| 35 | Bounce of the encoder switch and the two buttons, which have no filter since section 28 | Chatter of 10 ms at most at closing and at opening, a figure from the owner's brief and from no data sheet. The firmware timing stands 17 ms by its arithmetic and was run on made-up waveforms up to 16 ms. A press is closed for 12 ms or more. | Bring-up step 17: a scope on the three pins, twenty presses each, the longest chatter written down; a hundred presses each and the events counted. Repeat on a switch after some thousand presses. If chatter passes 15 ms, raise `releaseMs` in `zf_ui/input.hpp` and `delayed_off` in the ESPHome package. |
+| 36 | Static discharge and interference on `ENC_SW` and `BTN_HOME`, which reach their pins with no series resistor and no capacitor | The 2 kV human body model rating of the pin is enough behind a printed knob and printed caps, inside the enclosure. No spike on these lines is seen on two samples 5 ms apart. Section 15.4. Neither is shown. | In the closed enclosure: contact and air discharges to the knob, the caps and the fascia by IEC 61000-4-2, 4 kV then 8 kV, watching for a reset, a false press or a dead input. Log every press event over a week of valve runs with nobody at the controls, on both firmwares. If either fails, the remedy is the two series resistors back, or a clamp at each pin: the pads are gone, so that is a new board. |
 
 ## 21. Bring-up test plan
 
@@ -3639,7 +3697,7 @@ For the first prototype. Stop at the first step that fails.
 14. **Fail-safe with a valve running.** Halt the CPU, hold reset, start a USB flash. The valve closes within 0.84 s each time, or 1.25 s if the pin stopped high, and does not reopen. Then the fault-injection runs of risk 23.
 15. **Sensors.** Contact on each input. 200 Hz square wave on FLOW with no lost counts. 24 VAC onto each sensor terminal for ten minutes, then check the input still works. Short and miswire the 5V terminal.
 16. **RTC.** Fit the cell. Measure cell current with `3V3` off: under 1 uA. Check the clock against a reference over a day.
-17. **Display and controls.** Plug the panel in. Backlight current about 59 mA at full duty. Run the SPI at 20 MHz, then higher. Encoder and buttons.
+17. **Display and controls.** Plug the panel in. Backlight current about 59 mA at full duty. Run the SPI at 20 MHz, then higher. Encoder and buttons. With a scope on GPIO38, GPIO39 and on both sides of R72, press and release each contact twenty times, slowly, fast and with a fingernail, and write down the longest chatter at closing and at opening: risk 35. Press each a hundred times and count the events the firmware reports.
 18. **Thermal run, RF and the remaining items of section 20.**
 
 ## 22. What I could not confirm
@@ -3672,7 +3730,10 @@ Still open:
 - **Coin cell.** Capacity and shelf life assumed. The cell is on the BOM with no LCSC number and no data sheet read.
 - **Solenoid inductance and transformer impedance.** Estimates, used in sections 6.5 and 6.6.
 - **Typical values that the datasheets do not give.** Expander output voltage at 13 mA and ADC noise.
-- **Generic capacitors, the tactile switches, the JST connector and the coin-cell holder.** Ratings are from the listing. The switch and JST files are drawings without extractable text and were not read in detail. LCSC has no data sheet for the holder.
+- **Generic capacitors, the JST connector and the coin-cell holder.** Ratings are from the listing. The JST file is a drawing without extractable text and was not read in detail. LCSC has no data sheet for the holder.
+- **The tactile switches.** The XKB drawing was read as a picture for section 28: 50 mA at 12 V DC, 100 mohm contact resistance at most, 0.25 mm travel, -40 to 80 °C. It has no bounce time, no minimum current and no life figure.
+- **Bounce of the three push contacts.** No data sheet figure for the tactile switches or for the push switch of the encoder. Risk 35.
+- **Static discharge and interference at the controls.** Nothing calculated beyond section 15.4, nothing tested. Whether the shaft of the encoder is metal. Risk 36.
 - **Second sources.** PCA9539PW for the expander is named in the BOM note and its datasheet is not read. For the output PTC the BHFUSE part is now the primary and the Littelfuse part the alternative; both data sheets are read.
 - **AO3400A threshold over temperature.** The data sheet gives 0.65 to 1.45 V at 25 °C. The -3 mV/K used in section 7.3 is an assumption.
 - **BAT54S leakage when hot.** The Nexperia data sheet limits it at 25 °C only. It does give typical curves at 85 and 125 °C, figure 2: about 20 uA and 200 uA at a few volts. Review A2 found that the model in the simulations reproduces those curves, and ran its corners at three times typical as well. No maximum above 25 °C exists. Risk 10 measures it. The part fitted since section 27 is Hongjiacheng's. Its sheet has the same limit at 25 °C and typical curves at 25 and 100 °C that lie at or under the Nexperia ones, and no maximum when hot either. The item stands for that maker's part.
@@ -3723,6 +3784,7 @@ is LCSC's copy of the maker's PDF for that LCSC number.
 | SRN6045TA-470M | Bourns SRN6045TA | <https://www.lcsc.com/datasheet/C5151734.pdf> |
 | HS20HS072RX | Hansheng datasheet v1.0, 2020-11-04 | <https://www.lcsc.com/datasheet/C5329582.pdf> |
 | EC11J1525402 | ALPS product sheet | <https://www.lcsc.com/datasheet/C209762.pdf> |
+| TS-1102S-C-M-B, the tactile switch | XKB drawing TS-1102S-C-M-B, revision A1, 2025-06-03, read as a picture (section 28) | <https://www.lcsc.com/datasheet/C381050.pdf> |
 | G5NB-1A-E | Omron G5NB, Chinese edition; English edition read in review A1 | <https://www.lcsc.com/datasheet/C48746.pdf>, <https://omronfs.omron.com/en_US/ecb/products/pdf/en-g5nb.pdf> |
 | AO3401A, SS34, SS210, M7, BAT54S (the Nexperia part of the first BOM), USBLC6-2SC6 | Maker datasheets, key ratings only | LCSC pages for C15127, C8678, C14996, C95872, C47546, C7519 |
 | SMBJ6.0A | Littelfuse SMBJ series, revised 2025 (review A2) | <https://www.lcsc.com/datasheet/C83270.pdf> |
@@ -3965,3 +4027,113 @@ the copper that the layout review checked.
 `hardware/zoneflow-a/` with the autorouter forbidden; `make cpl-check` for
 both builds; the simulations named above and `hardware/sim/isense.cir`. No
 board exists.
+
+## 28. What changed with the firmware debounce
+
+The owner decided on 2026-11-12: "do firmware debounce for two buttons and
+the encoder push". Each of the three push contacts had a 3.3 kohm pull-up, a
+10 kohm series resistor and 100 nF at the pin. The filters were to go and
+the firmware to debounce.
+
+**Parts.** Five went. One that was to go stayed.
+
+| Input | Removed | Kept | Nets |
+|---|---|---|---|
+| Encoder switch | R71, 10 kohm, and C41, 100 nF | R66, the pull-up | `ENC_SW_SW` and `ENC_SW` are one net, `ENC_SW` |
+| Manual/Home | R73, 10 kohm, and C43, 100 nF | R68, the pull-up | `BTN_HOME_SW` and `BTN_HOME` are one net, `BTN_HOME` |
+| Back | C42, 100 nF | R67, the pull-up, and **R72, 10 kohm in series** | `BTN_BACK_SW` and `BTN_BACK`, as before |
+
+The encoder phases keep R69, C39, R70 and C40. The board has 348 components
+where it had 353, and 198 nets where it had 200.
+
+**Why R72 stayed.** Before removing the six parts I looked for anything else
+they do: in this document, in both circuit reviews and in the layout review.
+Five do nothing but filter. R72 is in the fail-safe analysis. GPIO18, the
+Back button, is module pin 11, beside the keep-alive on pin 10, and section
+8.5 calls a bridge between the two harmless because the contact is "behind
+13 kohm". The fault injection reads the circuit from the netlist, so I ran
+its bridge faults on both versions (`hardware/sim/failsafe/`,
+`failsafe.py faults --ids KA~BTN_BACK KA~BTN_BACK.20Hz`, typical parts,
+27 °C). The bridge is 10 mohm from `KA` to the pin net, and the contact is
+worked at 20 Hz. The figures are the time after which valve current ends
+when the processor stops with the pin low, high and high-impedance.
+
+| Netlist | Contact open | Contact worked at 20 Hz |
+|---|---|---|
+| With R72 and C42, as it was | 0.50 / 0.76 / 0.50 s | 0.50 / 0.76 / 0.50 s |
+| With R72, without C42, as it is now | 0.50 / 0.76 / 0.50 s | 0.50 / 0.76 / 0.50 s |
+| Without R72 and C42 | 0.50 / 0.76 / 0.50 s | 0.47 s / **stays on** / 0.52 s |
+
+Without R72, a processor that has stopped with the keep-alive pin high
+drives `KA` through R29, and every closure of the Back contact pulls `KA`
+straight to ground. Each press and release is a pair of keep-alive edges,
+and both detectors hold. With R72 the closed contact pulls through 10 kohm
+and cannot move `KA`. It takes three things at once: a bridge between two
+module pads, a processor stopped with the pin high, and somebody working
+the Back button. That is unlikely. But a button that chatters gives many
+edges for one press, the bridge alone is a single fault, and section 2 of
+the specification allows no single fault in or behind the detectors to
+leave a valve on. The
+result without R72 is committed as `results/back-without-r72.md`. The model
+of the contact net in `faults.py` had the old values written into it; it now
+reads the pull-up, the series resistor and the capacitor of each neighbour
+from the netlist.
+
+Nothing in either circuit review or in the layout review relies on the other
+five parts. Review A2 names C41 and R71 only in the table of the pin swap.
+The layout review names the filtered nets only as nets near `KA` that are
+harmless, and `ENC_SW` and `BTN_HOME` are 6.4 mm and 12 mm from `KA` on the
+board (`output/reports/layout-rules.md`).
+
+**Strapping pins and reset.** None of the three is a strapping pin. A held
+button changes nothing at boot. Section 15.4.
+
+**What was given up.** Section 15.4 says what static protection the three
+inputs have now. In short: `ENC_SW` and `BTN_HOME` reach the processor with
+no series resistance and no capacitance of ours, behind the protection of
+the pin alone, 2 kV human body model by the data sheet; `BTN_BACK` keeps its
+10 kohm. That is less than before. Also given up: the limit on the current
+of a pin driven high by mistake into a pressed button, which is now the
+pin's own 40 mA on GPIO38 and GPIO39; and the filter that kept a short spike
+on these lines from being read as a contact. Risks 35 and 36 are new.
+
+**What it saves.** Five 0603 parts, five placements and ten solder joints on
+both builds. No part type and no extended-part fee: 10 kohm and 100 nF are
+basic parts and still on the board 22 and 18 times. By the parts estimate of
+section 18, 0.02 USD a board at 10 and at 100 boards (41.28 to 41.26 and
+32.21 to 32.19 USD for the 8-zone board). Landed, with assembly and duty,
+0.05 USD a controller at 5, 10 and 25 controllers and 0.04 USD at 100, for
+either build: [what a controller costs](../hardware/cost.md#five-parts-fewer-debounce-in-firmware).
+
+**The board.** Not routed again. The five footprints are gone and no other
+part moved. The copper the autorouter had laid for the two contact nets is
+imported under the pin nets' names. `BTN_HOME` got one 1.65 mm track where
+R73 was. `ENC_SW` went through the pads of R71 and C41 on its way from R66
+to the pin; that piece, 7.3 mm, is laid again without the detour. The 2.3 mm
+of `BTN_BACK` that led to C42 is gone. The ground vias of the three
+capacitors are gone, and the ground pad of SW4 that shared the via of C42
+has one of its own. The designator of SW4 moved into the space C42 left.
+[Hardware layout](hardware-layout.md), section 16, and
+[toolchain](hardware-toolchain.md), section 13.15, say how the stored routing
+was kept. The mechanical contract is unchanged: no part it places moved, and
+the parts that left were 0.55 and 0.95 mm high, far under the limit of
+every zone they stood in. One figure that the enclosure check reads did
+change, for the better: the board part nearest the display bridge was C41,
+1.06 mm away, and is now D19 at 1.47 mm (`enclosure/output/check-report.md`).
+
+**Firmware.** [Firmware architecture](firmware-architecture.md), section 17,
+has the debounce and its tests. The ESPHome package has the same timing as
+two filters.
+
+**The pre-order review.** A hand-off of the review walkthrough names the hash
+of the board file it looked at. This is a new board file, so a hand-off made
+on the old one is not to be acted on. No record was in
+`docs/design/reviews/` when this was written. The steps whose pictures
+changed are listed in the pull request.
+
+**Checks.** `make -C hardware design-check`; `make` in
+`hardware/zoneflow-a/` with the autorouter forbidden: netlist parity, ERC,
+DRC with schematic parity, the mechanical contract, the layout rules;
+`make cpl-check` for both builds; the four bridge faults above on the
+netlist as it is, with the rows of `results/faults.md` unchanged. No board
+exists. Nothing here was measured.

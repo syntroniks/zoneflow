@@ -248,7 +248,7 @@ relay, which hang under the lower left corner.</p>
 <table class="zf-table">
 <thead><tr><th>Check</th><th>What it proves</th><th>What it cannot see</th></tr></thead>
 <tbody>
-<tr><th scope="row">Netlist parity and electrical rules</th><td>The schematic is the design netlist, pin for pin: 353 components, 200 nets.</td><td>Whether the netlist's pin numbers are the maker's. That is the datasheet group.</td></tr>
+<tr><th scope="row">Netlist parity and electrical rules</th><td>The schematic is the design netlist, pin for pin: 348 components, 198 nets.</td><td>Whether the netlist's pin numbers are the maker's. That is the datasheet group.</td></tr>
 <tr><th scope="row">Design rules with schematic parity</th><td>The copper is the schematic. Clearances, widths and holes are inside JLCPCB's published limits. Nothing is unconnected.</td><td>Whether a footprint is the part. A wrong footprint agrees with itself.</td></tr>
 <tr><th scope="row">Mechanical contract</th><td>Outline, holes, 26 placed parts and the height zones agree with the enclosure's contract.</td><td>The real size of a part KiCad has no model for.</td></tr>
 <tr><th scope="row">Fail-safe layout rules</th><td>278 keep-away distances round the keep-alive net and the detector nodes hold.</td><td>What flux or a whisker does. Nets the rule does not list.</td></tr>

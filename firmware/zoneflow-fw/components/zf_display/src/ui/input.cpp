@@ -18,7 +18,8 @@ ButtonEdge ButtonDecoder::update(bool pressedRaw, MonoMs now)
         candidate_ = pressedRaw;
         candidateSinceMs_ = now;
     }
-    const bool stable = now - candidateSinceMs_ >= timing_.debounceMs;
+    // Quick to believe a closed contact, slow to believe an open one: see ButtonTiming.
+    const bool stable = now - candidateSinceMs_ >= (candidate_ ? timing_.pressMs : timing_.releaseMs);
 
     if (ignoreUntilRelease_) {
         if (stable && !candidate_) {

@@ -71,7 +71,7 @@ SHEETS = {
     "sensors": "D12 R74 R75 D15 C44 R76 D13 R77 R78 D16 C45 R79 D14 R80 R81 D17 C46 R82 U11 C47 C49 D24 R83 R85 R86 "
                "D19 R84 D20 C48 F3 D18",
     "rtc": "U10 Y1 C36 C35 D10 D11 R59 BT1",
-    "display": "J7 DS1 R60 Q4 R61 R62 R63 C37 C38 SW3 SW4 SW5 R64 R69 C39 R65 R70 C40 R66 R71 C41 R67 R72 C42 R68 R73 C43",
+    "display": "J7 DS1 R60 Q4 R61 R62 R63 C37 C38 SW3 SW4 SW5 R64 R69 C39 R65 R70 C40 R66 R67 R72 R68",
     "connectors": "J1 J2 J3 J4 J6 F2 C17 R23 R24 U9 J8 R99 " + " ".join(f"TP{i}" for i in range(1, 31)),
 }
 CHANNEL = "F101 D101 Q101 R105 C101 U101 R101 R103 R104 R102 D102"
@@ -518,23 +518,32 @@ def pin_label(s, pin, length=12):
 
 
 # --------------------------------------------------------------------------- display and controls
-def contact_filter(s, y, rpu, rser, cap):
-    """Pull-up for 1 mA of contact current, 10k and 100 nF between a switch contact and its GPIO."""
+def contact_input(s, y, rpu, rser=None, cap=None):
+    """A switch contact and its GPIO: a pull-up for 1 mA of contact current, then what the input keeps.
+
+    The encoder phases keep 10k in series and 100 nF. Back keeps the 10k alone, because its pin is
+    beside the keep-alive pin (hardware design 8.5). The encoder switch and Manual / Home go
+    straight to their pins. The three push contacts are debounced in firmware.
+    """
     s.attach(rpu, 2, P(84, y), UP)
-    rs = s.attach(rser, 1, P(92, y), RIGHT)
-    s.wire(P(84, y), rs[1])
-    s.wire(rs[2], P(120, y))
+    if rser is None:
+        s.wire(P(84, y), P(120, y))
+    else:
+        rs = s.attach(rser, 1, P(92, y), RIGHT)
+        s.wire(P(84, y), rs[1])
+        s.wire(rs[2], P(120, y))
     s.label(P(120, y), RIGHT)
-    c = s.attach(cap, 1, P(106, y + 2), DOWN)
-    s.wire(P(106, y), c[1])
+    if cap is not None:
+        c = s.attach(cap, 1, P(106, y + 2), DOWN)
+        s.wire(P(106, y), c[1])
 
 
 def display(s):
-    s.frame(*P(24, 24), *P(138, 166), "Encoder and buttons: five debounced contacts, active low")
+    s.frame(*P(24, 24), *P(138, 166), "Encoder and buttons: five contacts, active low")
     s.frame(*P(184, 36), *P(316, 114), "Display connector and backlight switch")
-    for y, parts in ((44, ("R64", "R69", "C39")), (70, ("R65", "R70", "C40")), (96, ("R66", "R71", "C41")),
-                     (122, ("R67", "R72", "C42")), (148, ("R68", "R73", "C43"))):
-        contact_filter(s, y, *parts)
+    for y, parts in ((44, ("R64", "R69", "C39")), (70, ("R65", "R70", "C40")), (96, ("R66",)),
+                     (122, ("R67", "R72")), (148, ("R68",))):
+        contact_input(s, y, *parts)
     sw3 = s.place("SW3", P(50, 62), mirror="y")
     s.wire(sw3["A"], P(84, 44), route="vh", label=P(60, 44))
     s.wire(sw3["B"], P(62, 64))
@@ -542,12 +551,12 @@ def display(s):
     s.wire(sw3["C"], P(68, 62))
     s.label(P(68, 62), DOWN)
     s.wire(sw3["S1"], P(36, 60))
-    s.wire(P(36, 60), P(84, 96), route="vh", label=P(40, 96))
+    s.wire(P(36, 60), P(84, 96), route="vh")
     s.wire(sw3["S2"], P(40, 64))
     s.label(P(40, 64), DOWN)
     for ref, y in (("SW4", 122), ("SW5", 148)):
         sw = s.place(ref, P(50, y), mirror="y")
-        s.wire(sw[1], P(84, y), label=P(58, y))
+        s.wire(sw[1], P(84, y), label=P(58, y) if ref == "SW4" else None)
         s.wire(sw[2], P(42, y))
         s.label(P(42, y), DOWN)
     # Display: the panel tail plugs into J7. Pin names on J7 are the panel's.
@@ -599,8 +608,15 @@ def display(s):
     s.note("CONTROLS (section 15.4).\n"
            "SW3 EC11J1525402: 30 detents, 15 pulses per turn, push switch.\n"
            "SW4 Back and SW5 Manual / Home: 6 x 6 mm, 10 mm actuator.\n"
-           "Each contact: 3.3k pull-up (1 mA, the encoder's minimum),\n"
-           "then 10k and 100 nF: 1.0 ms closing, 1.3 ms opening.\n"
+           "Each contact: 3.3k pull-up (1 mA, the encoder's minimum).\n"
+           "Encoder phases A and B: then 10k and 100 nF, 1.0 ms\n"
+           "closing, 1.3 ms opening, for the pulse counter.\n"
+           "The three push contacts have no filter. Firmware\n"
+           "debounces them (owner's decision, 2026-11-12).\n"
+           "ENC_SW and BTN_HOME go straight to the pin.\n"
+           "BTN_BACK keeps R72, 10k in series: its pin is beside\n"
+           "the keep-alive pin, and a bridge between the two must\n"
+           "not let the button work the keep-alive (section 8.5).\n"
            "All five inputs read low when the contact is closed.",
            P(140, 26))
 

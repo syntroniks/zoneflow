@@ -504,7 +504,7 @@ checks after each one that an open valve is shown as open
 
 | Check | Covers |
 |---|---|
-| `test/host/run.sh` (GoogleTest, ASan, UBSan): 83 display tests and 4 fault-text tests | Button debounce, long press, repeat, the encoder switch's hold. Encoder detents at the rev A board's two counts per detent (one turn of 30 detents is 30 steps), lost counts, counter wrap, acceleration. Fault headlines against `zf/fault_text.hpp`. Restart into WiFi setup (asks, Cancel first, works with the network down, Manual/Home hold still stops), Show setup code (press is not enough, hold shows it, hidden after 60 s, on dim and on leaving), the setup access point screen, the spare input on Home and in Sensors. Every picker. Program editor and its mapping into the core configuration, through the stored JSON and back. Next-run forecast including rain delay and a start inside a DST gap. Every time zone entry parses. Navigation: three-input manual run, one-press stop, hold to stop, wake on first input, queue, pause, faults, rain delay, program edit with save, discard and delete, setup, clock, factory reset, wizard, a refused command, a resting zone, a pause that times out. |
+| `test/host/run.sh` (GoogleTest, ASan, UBSan): 97 display tests and 4 fault-text tests | Button debounce on waveforms of the bare contact, with chatter of up to 16 ms and presses down to 12 ms (14 tests; [firmware architecture](firmware-architecture.md#button-debounce)); long press, repeat, the encoder switch's hold. Encoder detents at the rev A board's two counts per detent (one turn of 30 detents is 30 steps), lost counts, counter wrap, acceleration. Fault headlines against `zf/fault_text.hpp`. Restart into WiFi setup (asks, Cancel first, works with the network down, Manual/Home hold still stops), Show setup code (press is not enough, hold shows it, hidden after 60 s, on dim and on leaving), the setup access point screen, the spare input on Home and in Sensors. Every picker. Program editor and its mapping into the core configuration, through the stored JSON and back. Next-run forecast including rain delay and a start inside a DST gap. Every time zone entry parses. Navigation: three-input manual run, one-press stop, hold to stop, wake on first input, queue, pause, faults, rain delay, program edit with save, discard and delete, setup, clock, factory reset, wizard, a refused command, a resting zone, a pause that times out. |
 | Simulator, `sim/run.sh --screenshots` | All 75 scenes draw and write a PNG. Each scene is reached with user inputs against the real controller core; the four valve-board scenes run it on the simulated rev A output stage of the host tests. |
 | `idf.py build`, ESP-IDF v5.5.6, esp32s3 | Builds with no warnings, display included. |
 | Looked at, by the author | All 65 pictures, three rounds. Found and fixed: buttons clipped with four in a row, list rows truncated, weekday labels cut by their frame, the fault too small on Home, no time shown while paused. |
@@ -538,6 +538,10 @@ baseline update to pass, and a reviewer should look at the pictures.
 - **No animation.** A picker replaces the list with no transition. I think
   that is right for a controller, but it has not been tried by a user.
 - **Acceleration thresholds, long-press and repeat times** are guesses.
+- **The debounce times** are set for chatter of up to 10 ms, which is the
+  brief's figure and no data sheet's. The buttons have no filter on the
+  board, so these times are all there is. Measure the chatter on the first
+  board.
 - **Weekday cells use the 16 px font**, the smallest text that takes input.
 - **English, 24-hour and metric only.** The string table makes a translation
   possible. Right-to-left scripts and non-Latin fonts would need work in the

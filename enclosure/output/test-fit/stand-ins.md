@@ -10,7 +10,7 @@ Mechanical contract: `hardware/mechanical.yaml`, revision 3.
   Their bodies are the contract's boxes and cylinders, which name their datasheets.
 - **64 other parts at least 1.5 mm tall.** Each is a box: the outline the footprint
   draws on the fabrication layer, as high as `hardware/zoneflow-a/design/heights.toml` says.
-- **228 parts lower than 1.5 mm are left out**, and so are the test pads and the
+- **223 parts lower than 1.5 mm are left out**, and so are the test pads and the
   unfitted debug header J8. No printed part comes within 1.5 mm of the board except at
   places the contract models: the fuse well, the board edges and the light pipes.
 - **30 soldered lead ends** are in the interference check and are not printed. Each is a

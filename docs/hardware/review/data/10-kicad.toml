@@ -466,7 +466,9 @@ remedies = [
 ]
 check = '''
 Open `output/reports/routing.md` beside the board. Under "Copper laid by the patch router" it lists
-19 nets. Highlight each in turn and follow it from pin to pin.
+21 nets. Highlight each in turn and follow it from pin to pin. Two of the 21 are not connections
+the autorouter left open: `ENC_SW` and `BTN_HOME` each have one short track, laid on 2026-11-12
+where a debounce filter was taken off the board.
 '''
 why = '''
 A small maze router and the reviewer closed these by hand after the autorouter gave up. That router
@@ -497,13 +499,18 @@ piece.
 The nets: `U0TXD`, `SA_N`, `SA_P`, `RLY_A`, `RLY_ON`, `I2C0_SDA`, `ISENSE_LO`, `STATUS_LED`,
 `PGOOD`, `SENS_5V`, `SENS_PWR_EN`, `N_RAIN`, `T_RAIN`, `VB`, `ZD_MV_N`, `ZD_Z1_N`, `ZD_Z2_N`,
 `ZD_Z8_N`, `V_DRV`.
+
+The two joins: `ENC_SW`, 7.3 mm at (82, 103), left of the module, from the pull-up R66 round to
+the old track; `BTN_HOME`, 1.65 mm at (47, 66), above the Manual/Home button. Each should be one
+clean track with nothing standing where a part used to be
+([hardware layout, section 16](doc:design/hardware-layout.md#16-five-parts-removed-without-routing-again) has both places before and after).
 '''
 kicad = { nets = ["/Sensors/N_RAIN", "/SENS_PWR_EN", "/MCU/STATUS_LED", "/Expander/RLY_A", "/ZD_Z8_N", "/I2C0_SDA", "/CurrentSense/SA_N"], layers = ["F.Cu", "In2.Cu", "B.Cu"] }
 ibom = { net = "/Sensors/N_RAIN" }
 
 [[step.figure]]
 id = "all"
-alt = "The whole board with the 19 patched nets marked on the outer layers"
+alt = "The whole board with the 21 nets that have patched copper marked on the outer layers"
 caption = "F.Cu over B.Cu, pours left out. Yellow is every net that has patched copper. Click to enlarge."
 box = [-2, -4, 116, 118]
 layers = ["B.Cu", "F.Cu", "Edge.Cuts"]
@@ -512,7 +519,7 @@ minimap = "none"
 marks = [{ label = "nets with patched copper", nets = [
   "/Connectors/U0TXD", "/CurrentSense/SA_N", "/CurrentSense/SA_P", "/Expander/RLY_A", "/Expander/RLY_ON",
   "/I2C0_SDA", "/ISENSE_LO", "/MCU/STATUS_LED", "/PGOOD", "/SENS_5V", "/SENS_PWR_EN", "/Sensors/N_RAIN",
-  "/T_RAIN", "/VB", "/ZD_MV_N", "/ZD_Z1_N", "/ZD_Z2_N", "/ZD_Z8_N", "V_DRV",
+  "/T_RAIN", "/VB", "/ZD_MV_N", "/ZD_Z1_N", "/ZD_Z2_N", "/ZD_Z8_N", "V_DRV", "/ENC_SW", "/BTN_HOME",
 ] }]
 
 [[step.figure]]

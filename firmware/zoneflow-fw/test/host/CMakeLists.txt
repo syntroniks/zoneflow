@@ -77,6 +77,7 @@ add_executable(zf_host_tests
     time_zone_test.cpp
     ui_format_test.cpp
     ui_input_test.cpp
+    ui_debounce_test.cpp
     ui_navigation_test.cpp
     ui_picker_test.cpp
     ui_program_edit_test.cpp
@@ -101,7 +102,8 @@ target_compile_options(zf_host_tests PRIVATE -Wall -Wextra)
 target_compile_definitions(zf_host_tests PRIVATE
     ZF_OPENAPI_PATH="${CMAKE_CURRENT_LIST_DIR}/../../../../docs/firmware/openapi.json"
     ZF_SCHEDULE_VECTORS_PATH="${CMAKE_CURRENT_LIST_DIR}/../vectors/schedule_preview.json"
-    ZF_HA_SCHEMA_PATH="${CMAKE_CURRENT_LIST_DIR}/data/ha_mqtt_discovery.json")
+    ZF_HA_SCHEMA_PATH="${CMAKE_CURRENT_LIST_DIR}/data/ha_mqtt_discovery.json"
+    ZF_BOUNCE_DIR="${CMAKE_CURRENT_LIST_DIR}/data/bounce")
 target_link_libraries(zf_host_tests PRIVATE zf_ui zf_core zf_ext zf_board cjson GTest::gtest_main)
 
 enable_testing()

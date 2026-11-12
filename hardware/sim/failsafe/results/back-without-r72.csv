@@ -1,0 +1,6 @@
+id,group,part,fault,valve,lost,found_run,found_start,found_run_old,found_start_old,unsafe,note,remark,t_a,t_b,sim,solver
+none,reference,,no fault,0.50 / 0.76 / 0.50,,,,,,,,,0.67,0.57,yes,
+KA~ENC_B,module,U4,"KA bridged to module pin 9 IO16 (ENC_B, contact open)",0.50 / 0.76 / 0.50,,,,,,,,,0.67,0.57,yes,
+KA~ENC_B.20Hz,module,U4,"KA bridged to module pin 9 IO16 (ENC_B, contact worked at 20 Hz)",0.50 / 0.76 / 0.50,,,,,,,,,0.67,0.57,yes,
+KA~BTN_BACK,module,U4,"KA bridged to module pin 11 IO18 (BTN_BACK, contact open)",0.50 / 0.76 / 0.50,,,,,,,,,0.67,0.57,yes,
+KA~BTN_BACK.20Hz,module,U4,"KA bridged to module pin 11 IO18 (BTN_BACK, contact worked at 20 Hz)",0.47 / ON / 0.52,"gate drive stays, relay stays closed",,2 pin-high: gate-drive read-back high with the pin held high,,2 pin-high: gate-drive read-back high with the pin held high,yes,,,0.64,0.53,yes,

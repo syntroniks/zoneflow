@@ -285,7 +285,7 @@ C30 = [109.6, 88.2, 90]
 R23 = [111.3, 88.2, 90]
 
 # Left of the module, at the top edge: 3.3 V bulk and decoupling at pin 2, reset network and
-# supervisor at pin 3, ADC filters, encoder switch filter. Everything here is under 3.5 mm. The
+# supervisor at pin 3, ADC filters, encoder switch pull-up. Everything here is under 3.5 mm. The
 # display bus passes under the lower edge of this block on the bottom side.
 C15 = [92.2, 106.8, 270]
 C14 = [89.1, 107, 180]
@@ -294,8 +294,6 @@ C16 = [90.6, 103.6, 270]
 U12 = [87.6, 103.9, 180]
 C54 = [84.8, 103.6, 90]
 R66 = [83.2, 103.6, 90]
-R71 = [81.7, 103.6, 90]
-C41 = [80.2, 103.6, 90]
 
 # Encoder pull-ups and filters, below the encoder.
 R64 = [81.4, 77.3, 0]
@@ -409,13 +407,10 @@ R22 = [41.4, 77.6, 0]
 # Status LED resistor, in the light-pipe strip beside the LED.
 R20 = [15.1, 42, 180]
 
-# Button pull-ups and filters.
+# Button pull-ups, and the series resistor of Back, whose pin is beside the keep-alive pin.
 R67 = [13.9, 64.6, 0]
 R72 = [13.9, 63, 0]
-C42 = [13.9, 61.4, 0]
 R68 = [44, 66.1, 0]
-R73 = [47.2, 66.1, 0]
-C43 = [50.4, 66.1, 0]
 
 # Remaining test pads.
 TP5 = [31.5, 20.5, 0]
@@ -2669,7 +2664,7 @@ distance = 10.0
 parts = ["C22", "C51"]
 
 # ---- silkscreen -----------------------------------------------------------------------------------
-# 354 of the 356 footprints are on one side: the designators of the small parts do not fit between them. They are left
+# 349 of the 351 footprints are on one side: the designators of the small parts do not fit between them. They are left
 # off the silkscreen and are on the assembly drawing (F.Fab) instead. Connectors, ICs, switches,
 # fuses, test pads and the bottom-side parts keep theirs. "clean" lets the builder take away what
 # DRC then still finds wrong: an outline over a neighbour's pad, a designator with no free place.
@@ -4032,3 +4027,45 @@ net = "/I2C0_SDA"
 width = 0.2
 stay = true
 points = [[35.9, 72.29], [35.9, 74.49], [36.8, 75.39], [37.9, 75.39]]
+
+
+# ---- Firmware debounce: five parts taken off the routed board (owner's decision, 2026-11-12) ----
+#
+# R71 and C41 at the encoder switch, R73 and C43 at Manual / Home and C42 at Back are gone. The
+# board was not routed again: route/zoneflow-a.dsn.delta lists what its Specctra file has less
+# and more than the routed one. Where a series resistor went, the contact net and the pin net
+# are one net now, under the pin's name. The copper the autorouter laid for the contact net is
+# imported under that name.
+[patches.renamed]
+"/Display/ENC_SW_SW" = "/ENC_SW"
+"/Display/BTN_HOME_SW" = "/BTN_HOME"
+
+# ENC_SW. The contact net came to R66 pad 2 and went on to pad 1 of R71; the pin net left pad 2
+# of R71 through pad 1 of C41 and turned east under R66. With the two parts gone that is a detour
+# through three pads that are not there. Taken out: the two pieces at R71, the piece through C41
+# and the 5.3 mm that went east at y = 102.06. Laid again as one track: from R66 pad 2 down the
+# same diagonal, straight down where pad 1 of R71 was, and east on the old line.
+[[unroute]]
+net = "/ENC_SW"
+box = [80.0, 102.0, 86.3, 104.5]
+
+[[patch]]
+layer = "F.Cu"
+net = "/ENC_SW"
+width = 0.2
+stay = true
+points = [[83.2, 104.425], [81.7, 102.925], [81.7, 102.4], [82.039, 102.061], [86.261, 102.061]]
+
+# BTN_HOME. One track where R73 was, from its pad 1 to its pad 2: 1.65 mm. The track that went
+# on from pad 2 through pad 1 of C43 to the via stays as it is.
+[[patch]]
+layer = "F.Cu"
+net = "/BTN_HOME"
+width = 0.2
+stay = true
+points = [[46.375, 66.1], [48.025, 66.1]]
+
+# BTN_BACK keeps R72. The 2.3 mm from pad 2 of R72 to pad 1 of C42 led to that capacitor only.
+[[unroute]]
+net = "/BTN_BACK"
+box = [13.0, 61.3, 14.8, 63.1]

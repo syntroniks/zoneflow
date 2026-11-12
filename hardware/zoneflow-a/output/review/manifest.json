@@ -384,9 +384,11 @@
     "Edge.Cuts"
    ],
    "nets": [
+    "/BTN_HOME",
     "/Connectors/U0TXD",
     "/CurrentSense/SA_N",
     "/CurrentSense/SA_P",
+    "/ENC_SW",
     "/Expander/RLY_A",
     "/Expander/RLY_ON",
     "/I2C0_SDA",
@@ -1552,7 +1554,7 @@
    "width": 1200
   }
  },
- "inputs": "81cecd70cbf8901ee118c0faca5fbd47d9d648a296b43e452cf5bead70a9d3da",
+ "inputs": "43ad3b0c31b7e224799b04bb21daf7039aba3f9a274eced39b47f8c3cc8cc481",
  "overview": {
   "bottom": 1147,
   "height": 1176,
