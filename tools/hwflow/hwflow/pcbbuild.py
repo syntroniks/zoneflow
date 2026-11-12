@@ -972,16 +972,36 @@ def cmd_finish(args) -> int:
     pcb_path = project_dir / f"{model['name']}.kicad_pcb"
     board = pcbnew.LoadBoard(str(pcb_path))
     before = len(list(board.GetTracks()))
+    b = Builder(project_dir, Path(args.design_dir)) if args.design_dir else None
+    translated: dict = {}
     if args.session:
-        if not pcbnew.ImportSpecctraSES(board, str(args.session)):
+        session = Path(args.session)
+        if b is not None:
+            # The session names the nets and parts of the board it was routed for. If parts were taken
+            # off since, [patches.renamed] says which net the copper of each lost net belongs to now;
+            # the file in route/ stays as the autorouter wrote it.
+            from . import session as session_mod
+            try:
+                text, translated = session_mod.translate(
+                    session.read_text(encoding="utf-8"), {str(n) for n in board.GetNetsByName().keys()},
+                    {fp.GetReference() for fp in board.GetFootprints()}, b.cfg.get("patches", {}).get("renamed", {}))
+            except session_mod.SessionError as e:
+                raise BoardError(str(e)) from None
+            if translated["renamed"] or translated["placements_left_out"]:
+                session = project_dir / "build" / f"{model['name']}.imported.ses"
+                session.write_text(text, encoding="utf-8")
+                print("session: " + "; ".join(
+                    [f"copper of {old} imported as {new}" for old, new in translated["renamed"].items()]
+                    + [f"{len(translated['placements_left_out'])} placements of parts that are no longer on the board "
+                       f"left out ({', '.join(translated['placements_left_out'])})"]))
+        if not pcbnew.ImportSpecctraSES(board, str(session)):
             raise BoardError("Specctra session import failed")
     after = len(list(board.GetTracks()))
     unrouted, patched, widened = 0, 0, {}
-    if args.design_dir:
+    if b is not None:
         # [[unroute]] and [[patch]] of board.toml: what the autorouter left open or did badly is
         # taken out and written by hand. This happens after the import, so the stored session
         # stays valid; the patches belong to that session and DRC fails if they no longer fit.
-        b = Builder(project_dir, Path(args.design_dir))
         b.board = board
         b.fps = {fp.GetReference(): fp for fp in board.GetFootprints()}
         import fnmatch
@@ -1054,6 +1074,9 @@ def cmd_finish(args) -> int:
         "vias": sum(1 for t in tracks if t.Type() == pcbnew.PCB_VIA_T),
         "track_length_mm": round(sum(pcbnew.ToMM(t.GetLength()) for t in tracks if t.Type() != pcbnew.PCB_VIA_T), 1),
     }
+    if translated.get("renamed") or translated.get("placements_left_out"):
+        stats["session_nets_renamed"] = translated["renamed"]
+        stats["session_placements_left_out"] = translated["placements_left_out"]
     stamp_copper(board)
     # Zones are filled by `kicad-cli pcb drc --refill-zones --save-board` in the
     # next build step: that is KiCad's own headless fill, and DRC needs the

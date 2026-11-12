@@ -12,11 +12,22 @@ text, is kept beside the first, so that a change of a part's value alone (a
 220 pF capacitor that becomes 330 pF in the same footprint) reuses the stored
 session too. Anything else that differs still fails the comparison: a part,
 a position, a rotation, a footprint, a pad, a net, a rule, a keep-out.
+
+Parts taken off a board after it was routed are a third case. The copper that
+was routed round them is still good copper, and routing the board again would
+move every other track. ``route/<name>.dsn.delta`` then lists, line by line,
+what the DSN of the board as it is now has less and more than the DSN the
+session was routed from. The session is reused only if taking those lines back
+gives a file with the stored hash: so the delta is exact, it is committed, and
+a reviewer reads in it everything the autorouter saw differently. Whether the
+old copper still fits the board is for DRC to say, as for the patches.
+``--write-delta`` writes the file from the DSN of the routed board.
 """
 
 from __future__ import annotations
 
 import argparse
+import difflib
 import hashlib
 import json
 import os
@@ -52,10 +63,75 @@ def dsn_hash(path: Path, settings: str = "", values: bool = True) -> str:
     With ``values=False`` the value text of the placed parts is left out as well: the hash of
     what the autorouter routes.
     """
-    text = path.read_text(encoding="utf-8").split("\n", 1)[1]
+    return text_hash(_body(path), settings, values)
+
+
+def text_hash(text: str, settings: str = "", values: bool = True) -> str:
+    """The same, of a DSN body that is already in memory."""
     if not values:
         text = PLACE_VALUE.sub(r"\1)", text)
     return hashlib.sha256((text + settings).encode("utf-8")).hexdigest()
+
+
+def _body(path: Path) -> str:
+    """A DSN without its first line, which holds the file's own path."""
+    return path.read_text(encoding="utf-8").split("\n", 1)[1]
+
+
+DELTA_HEAD = """\
+# What the Specctra file of the board as it is now has less and more than the file the stored
+# session was routed from. WRITTEN BY hwflow.route --write-delta: do not edit.
+#
+# A line that starts with "-" was in the routed file and is gone. A line that starts with "+" is
+# new. The build takes these lines back and reuses the session only if the result has the hash
+# in {stamp}, {digest},
+# or differs from the file with that hash only in the value text of parts.
+#
+# It is for parts taken off the board after routing. Every line is something the autorouter saw
+# differently from the board that is built: read them all. DRC judges whether the copper fits.
+"""
+HUNK = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
+
+
+def make_delta(routed: str, current: str) -> str:
+    """The lines that differ between two DSN bodies, as a unified diff with no context lines."""
+    diff = difflib.unified_diff(routed.split("\n"), current.split("\n"), n=0, lineterm="")
+    return "\n".join(line for line in diff if not line.startswith(("--- ", "+++ "))) + "\n"
+
+
+def undo_delta(current: str, delta: str) -> str:
+    """The routed DSN body, from the current one and the delta. ValueError if the delta is not of this file."""
+    cur = current.split("\n")
+    out: list[str] = []
+    pos = 0
+    hunks = [line for line in delta.split("\n") if line and not line.startswith("#")]
+    i = 0
+    while i < len(hunks):
+        m = HUNK.match(hunks[i])
+        if not m:
+            raise ValueError(f"not a hunk header: {hunks[i][:60]!r}")
+        i += 1
+        n_cur = int(m.group(4)) if m.group(4) is not None else 1
+        n_old = int(m.group(2)) if m.group(2) is not None else 1
+        # With no line on one side, a unified diff gives the line before the place.
+        start = int(m.group(3)) - 1 if n_cur else int(m.group(3))
+        old = [line[1:] for line in hunks[i:i + n_old]]
+        new = [line[1:] for line in hunks[i + n_old:i + n_old + n_cur]]
+        if (len(old), len(new)) != (n_old, n_cur) or any(not line.startswith("-") for line in hunks[i:i + n_old]) \
+                or any(not line.startswith("+") for line in hunks[i + n_old:i + n_old + n_cur]):
+            raise ValueError(f"hunk at line {m.group(3)} is not complete")
+        i += n_old + n_cur
+        if start < pos or cur[start:start + n_cur] != new:
+            raise ValueError(f"the lines at {m.group(3)} of this DSN are not the ones the delta has")
+        out += cur[pos:start] + old
+        pos = start + n_cur
+    return "\n".join(out + cur[pos:])
+
+
+def delta_counts(delta: str) -> tuple[int, int]:
+    """How many lines the delta says are gone, and how many are new."""
+    lines = [line for line in delta.split("\n") if line and not line.startswith(("#", "@@"))]
+    return sum(line.startswith("-") for line in lines), sum(line.startswith("+") for line in lines)
 
 
 def write_settings(config_home: Path, router: dict) -> Path:
@@ -137,6 +213,9 @@ def main(argv=None) -> int:
     ap.add_argument("--force", action="store_true", help="route again even if the DSN is unchanged")
     ap.add_argument("--stored-only", action="store_true",
                     help="never run the autorouter: fail unless the stored session was made from this DSN (for CI)")
+    ap.add_argument("--write-delta", metavar="ROUTED_DSN",
+                    help="write route/<name>.dsn.delta from the DSN the stored session was routed from, and stop. "
+                         "Refused unless that file has the stored hash")
     args = ap.parse_args(argv)
 
     project = Path(args.project_dir)
@@ -155,14 +234,56 @@ def main(argv=None) -> int:
     # session, which the patches of board.toml carry; this one only widens what may reuse it.
     stamp_novalues = route_dir / f"{name}.dsn.novalues.sha256"
     digest_novalues = dsn_hash(dsn, settings, values=False)
+    # What the board has less and more than the routed one, if parts were taken off it since.
+    delta_file = route_dir / f"{name}.dsn.delta"
 
+    if args.write_delta:
+        routed = Path(args.write_delta)
+        stored = stamp.read_text().strip() if stamp.exists() else "none"
+        # The routed file itself, or one that differs from it only in the value text of parts.
+        same = dsn_hash(routed, settings) == stored or (
+            stamp_novalues.exists() and stamp_novalues.read_text().strip() == dsn_hash(routed, settings, values=False))
+        if not same:
+            sys.stderr.write(f"route: {routed} is not the file the stored session was routed from.\n"
+                             f"  its hash with these router settings: {dsn_hash(routed, settings)}\n"
+                             f"  hash stored with the session:        {stored}\n")
+            return 1
+        delta = make_delta(_body(routed), _body(dsn))
+        delta_file.write_text(DELTA_HEAD.format(stamp=stamp.name, digest=stored) + delta, encoding="utf-8")
+        gone, new = delta_counts(delta)
+        print(f"route: {delta_file} written: {gone} lines of the routed DSN are gone, {new} are new")
+        return 0
+
+    delta_problem = ""
     if not args.force and ses.exists() and stamp.exists():
-        if stamp.read_text().strip() == digest:
+        stored = stamp.read_text().strip()
+        if stored == digest:
             print(f"route: DSN unchanged, reusing {ses}")
             return 0
         if stamp_novalues.exists() and stamp_novalues.read_text().strip() == digest_novalues:
             print(f"route: the DSN differs from the routed one only in the value text of parts, reusing {ses}")
             return 0
+        if delta_file.exists():
+            delta = delta_file.read_text(encoding="utf-8")
+            try:
+                routed = undo_delta(_body(dsn), delta)
+            except ValueError as e:
+                delta_problem = f"{delta_file} does not fit this DSN: {e}"
+            else:
+                if stored == text_hash(routed, settings):
+                    gone, new = delta_counts(delta)
+                    print(f"route: the DSN differs from the routed one by {delta_file} and nothing else "
+                          f"({gone} lines gone, {new} new), reusing {ses}")
+                    return 0
+                blind = text_hash(routed, settings, values=False)
+                if stamp_novalues.exists() and stamp_novalues.read_text().strip() == blind:
+                    gone, new = delta_counts(delta)
+                    print(f"route: the DSN differs from the routed one by {delta_file} and the value text of parts "
+                          f"({gone} lines gone, {new} new), reusing {ses}")
+                    return 0
+                delta_problem = f"{delta_file} fits this DSN, but taking it back does not give the routed file"
+    if delta_problem:
+        sys.stderr.write(f"route: {delta_problem}\n")
     if args.stored_only:
         stored = stamp.read_text().strip() if stamp.exists() else "none"
         sys.stderr.write(f"route: the session stored in {route_dir} was not made from the board these sources give.\n"
@@ -194,6 +315,7 @@ def main(argv=None) -> int:
     stats["freerouting_version"] = VERSION
     stats["wall_seconds"] = round(time.time() - t0, 1)
     shutil.copyfile(out, ses)
+    delta_file.unlink(missing_ok=True)          # the new session was routed from this very DSN
     stamp.write_text(digest + "\n")
     stamp_novalues.write_text(digest_novalues + "\n")
     stats_file.write_text(json.dumps(stats, indent=1, sort_keys=True) + "\n")
