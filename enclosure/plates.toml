@@ -1,0 +1,147 @@
+# Print plates: which parts go on the bed together. `make` turns each into
+# output/<name>.3mf with tools/threemf.py and fails if one does not fit its
+# bed. It also draws each plate from above, output/<name>.png.
+#
+# Files are relative to output/, without the extension. Every part is already
+# in print orientation. `turn` is degrees about the vertical, a multiple of 90.
+# The plates hold positions only: no slicer settings.
+#
+# bed, margin and gap below hold for every plate that does not give its own.
+#
+# margin: 5 mm free at every bed edge. A skirt 2 to 3 mm off the parts with a
+#   couple of loops takes about 4 mm, and a 5 mm brim fits.
+# gap: 6 mm between parts. A slicer draws one skirt round the whole plate, so
+#   the gap only has to keep neighbours apart; it takes a 3 mm brim on each.
+# A wider brim or a skirt further out needs the parts moved in the slicer.
+
+bed = [220, 220]
+margin = 5
+gap = 6
+
+# ---- For a 220 x 220 mm bed ------------------------------------------------
+
+# What the test fit adds to the enclosure. Any colour; see docs/enclosure/test-fit.md.
+[[plate]]
+name = "plates/zoneflow-plate-1-test-fit-kit"
+title = "ZoneFlow test-fit kit: board, C1, K1, four plug pieces, display panel"
+color = "#e8c36a"
+parts = [
+    { file = "test-fit/zoneflow-testfit-board" },
+    { file = "test-fit/zoneflow-testfit-panel" },
+    { file = "test-fit/zoneflow-testfit-plug-7p", count = 2 },
+    { file = "test-fit/zoneflow-testfit-plug-4p" },
+    { file = "test-fit/zoneflow-testfit-plug-2p" },
+    { file = "test-fit/zoneflow-testfit-c1" },
+    { file = "test-fit/zoneflow-testfit-k1" },
+]
+
+# Body colour.
+[[plate]]
+name = "plates/zoneflow-plate-2-body"
+title = "ZoneFlow enclosure, body colour: base, display carrier, knob, two button caps"
+color = "#b9b6ae"
+parts = [
+    { file = "zoneflow-base" },
+    { file = "zoneflow-bridge", turn = 90 },
+    { file = "zoneflow-knob" },
+    { file = "zoneflow-button-back" },
+    { file = "zoneflow-button-home" },
+]
+
+# Front colour.
+[[plate]]
+name = "plates/zoneflow-plate-3-front"
+title = "ZoneFlow enclosure, front colour: fascia and wiring cover"
+color = "#4a5057"
+parts = [
+    { file = "zoneflow-fascia" },
+    { file = "zoneflow-cover", turn = 90 },
+]
+
+# Clear.
+[[plate]]
+name = "plates/zoneflow-plate-4-clear"
+title = "ZoneFlow enclosure, clear: light-pipe comb"
+color = "#8fc46a"
+parts = [
+    { file = "zoneflow-lightpipe" },
+]
+
+# ---- For a 250 x 250 mm bed ------------------------------------------------
+#
+# The whole enclosure in one material does not go on one plate: see
+# [[not_possible]] below. It is two plates. The base and the fascia each need
+# their own, the wiring cover goes beside the fascia and the small parts
+# beside the base. That is also the split by colour of the 220 set, so either
+# plate can be printed in its own colour. The light-pipe comb is on plate A1
+# so that one material makes everything; for a clear comb, leave it off that
+# plate in the slicer and print plate 4.
+
+[[plate]]
+name = "plates/zoneflow-plate-250-a1-base-and-small-parts"
+title = "ZoneFlow enclosure for a 250 mm bed, plate A1: base, display carrier, knob, two button caps, light-pipe comb"
+bed = [250, 250]
+color = "#b9b6ae"
+parts = [
+    { file = "zoneflow-base" },
+    { file = "zoneflow-bridge" },
+    { file = "zoneflow-knob" },
+    { file = "zoneflow-button-back" },
+    { file = "zoneflow-button-home" },
+    { file = "zoneflow-lightpipe" },
+]
+
+[[plate]]
+name = "plates/zoneflow-plate-250-a2-fascia-and-cover"
+title = "ZoneFlow enclosure for a 250 mm bed, plate A2: fascia and wiring cover"
+bed = [250, 250]
+color = "#4a5057"
+parts = [
+    { file = "zoneflow-fascia" },
+    { file = "zoneflow-cover" },
+]
+
+# The same eight prints as plate 1. On the wider bed they lie in other places,
+# so it is a file of its own.
+[[plate]]
+name = "plates/zoneflow-plate-250-b-test-fit-kit"
+title = "ZoneFlow test-fit kit for a 250 mm bed, plate B: board, C1, K1, four plug pieces, display panel"
+bed = [250, 250]
+color = "#e8c36a"
+parts = [
+    { file = "test-fit/zoneflow-testfit-board" },
+    { file = "test-fit/zoneflow-testfit-panel" },
+    { file = "test-fit/zoneflow-testfit-plug-7p", count = 2 },
+    { file = "test-fit/zoneflow-testfit-plug-4p" },
+    { file = "test-fit/zoneflow-testfit-plug-2p" },
+    { file = "test-fit/zoneflow-testfit-c1" },
+    { file = "test-fit/zoneflow-testfit-k1" },
+]
+
+# ---- Asked for, and not possible with the margin and gap above ---------------
+#
+# tools/check.py proves each of these from the sizes of the print files and
+# writes the numbers into the check report. If one becomes possible, the build
+# fails and says so: then make it a plate.
+
+[[not_possible]]
+title = "Everything on one 250 x 250 mm plate: the enclosure and the test-fit kit"
+bed = [250, 250]
+parts = [
+    { file = "zoneflow-base" }, { file = "zoneflow-fascia" }, { file = "zoneflow-cover" }, { file = "zoneflow-bridge" },
+    { file = "zoneflow-knob" }, { file = "zoneflow-button-back" }, { file = "zoneflow-button-home" },
+    { file = "zoneflow-lightpipe" },
+    { file = "test-fit/zoneflow-testfit-board" }, { file = "test-fit/zoneflow-testfit-panel" },
+    { file = "test-fit/zoneflow-testfit-plug-7p", count = 2 }, { file = "test-fit/zoneflow-testfit-plug-4p" },
+    { file = "test-fit/zoneflow-testfit-plug-2p" }, { file = "test-fit/zoneflow-testfit-c1" },
+    { file = "test-fit/zoneflow-testfit-k1" },
+]
+
+[[not_possible]]
+title = "The whole enclosure, all eight parts, on one 250 x 250 mm plate"
+bed = [250, 250]
+parts = [
+    { file = "zoneflow-base" }, { file = "zoneflow-fascia" }, { file = "zoneflow-cover" }, { file = "zoneflow-bridge" },
+    { file = "zoneflow-knob" }, { file = "zoneflow-button-back" }, { file = "zoneflow-button-home" },
+    { file = "zoneflow-lightpipe" },
+]

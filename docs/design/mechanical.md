@@ -10,9 +10,13 @@ This document is for the PCB layout engineer. It explains the mechanical
 contract in `hardware/mechanical.yaml`, which is the file to work from. If a
 number here disagrees with that file, the file is right.
 
-The board has not been laid out. That was deliberate. The product's shape
-comes from how people use it, the enclosure follows from that, and the board
-outline follows from the enclosure.
+This contract was written before the board was laid out. That was
+deliberate. The product's shape comes from how people use it, the enclosure
+follows from that, and the board outline follows from the enclosure. The
+board has since been laid out to it: [hardware layout](hardware-layout.md).
+Section 12.1 lists what the layout changed, and the build now reads the
+positions of the parts from the board file and stops if they differ from
+this contract.
 
 ![Assembled, three-quarter view](../assets/enclosure/render-three-quarter.png)
 
@@ -235,7 +239,7 @@ free space in the model, with the margins that the table already includes.
 | Part | Height, mm | Source | Where it goes |
 |---|---|---|---|
 | K1, Omron G5NB | 15.3 maximum | Omron outline, 20.5 x 7.2 x 15.3 | Bottom |
-| C1, Rubycon 12.5 x 20, lying down | 13.0 | Rubycon PX drawing: diameter + 0.5, length + 1.5 | Bottom, fixed |
+| C1, Rubycon 12.5 x 20, lying down | 13.0 | Rubycon ZLJ drawing: diameter + 0.5, length + 2.0 (revision 3; revision 2 read the PX sheet, length + 1.5) | Bottom, fixed |
 | Terminal headers | 7.0 | Kefa KF2EDGR drawing | Their fixed positions |
 | CR2032 holder BS-6 | 5.5 | Q&J drawing | Top, T_GENERAL |
 | L1, SRN6045TA | 4.5 | Bourns, 4.2 ± 0.3 | Top, anywhere |
@@ -274,9 +278,10 @@ has to be asked; I did not ask. If it will not, the builder solders K1 and C1
 at final assembly, when the display and the coin cell go in. Either way the
 board, the BOM and the enclosure are the same.
 
-**What this means for the BOM.** C1 becomes the Rubycon part, LCSC C88758,
-which the BOM already names as the alternative. The hardware design gives its
-ripple rating as 560 mA at 50 Hz against 480 mA peak. Section 16.4 of that
+**What this means for the BOM.** In revision 2, C1 became the Rubycon PX
+part, LCSC C88758, which the BOM named as the alternative. The hardware
+design gave its ripple rating as 560 mA at 50 Hz against 480 mA peak.
+Revision 3 uses the Rubycon ZLJ part, LCSC C2940725: section 12.1. Section 16.4 of that
 document says a through-hole capacitor does not help, because lying down it
 is over the 9 mm allowed on top. On the bottom, lying down, it is 13.0 mm
 under a 17.0 mm limit. Its life rating against the Lelon part's 5000 hours is
@@ -520,12 +525,22 @@ flowchart LR
     Z --> R[Renders]
     Z --> C[enclosure/tools/check.py]
     C --> K[check-report.md]
+    L[hardware/zoneflow-a/zoneflow-a.kicad_pcb] --> BL[enclosure/tools/board_layout.py]
+    BL --> J[enclosure/board_layout.json]
+    J --> T[enclosure/tools/gen_testfit.py]
+    Y --> T
+    T --> TP[enclosure/testfit_params.scad]
+    TP --> Z
+    L --> D[view-only board model]
+    D --> C
 ```
 
 - **`hardware/mechanical.yaml`** is the contract. Edit it by pull request.
 - **`gen_params.py`** refuses to run if the contract contradicts itself. It checks that each header's length matches its pole count, that pin 1 and the pin row follow from the mating face, that J7 is centred on the FPC tail and its mouth is the face of its body, that both fuse holders stand clear of the well's walls, that C1's pads are beyond the end of its can, that no screw is within 15 mm of the antenna, and that every zone and part is on the board.
 - **`board_params.scad`** is generated and committed. Do not edit it.
-- **`check.py`** intersects 59 pairs of solids and fails the build if any pair overlaps by more than 0.5 mm³. 45 pairs are the placeholder board, the display, the mated plugs and the height zones, each against every printed part, and the printed parts against each other. 14 more repeat the display, carrier and fascia checks with the 2.4 inch option.
+- **`board_layout.json`** is what `board_layout.py` reads from the laid-out board with KiCad's Python module: the outline, the holes, and the position, side and pads of every footprint. It is generated and committed, so that the rest builds without KiCad.
+- **`gen_testfit.py`** places a stand-in for every part at least 1.5 mm tall where the board file puts it. It takes the body from this contract or from `hardware/zoneflow-a/design/heights.toml`. It stops if the board and the contract differ by more than 0.05 mm on any part the contract places. Its output, `testfit_params.scad`, is generated and committed.
+- **`check.py`** intersects 91 pairs of solids and fails the build if any pair overlaps by more than 0.5 mm³. 45 pairs are the placeholder board, the display, the mated plugs and the height zones, each against every printed part, and the printed parts against each other. 32 are the printable test-fit kit and the soldered lead ends. 14 more repeat the display, carrier and fascia checks with the 2.4 inch option. It also intersects every body of KiCad's detailed export of the board with every printed part, measures 89 gaps and 20 alignments on the meshes, and checks every print file. The [test fit](../enclosure/test-fit.md) page says what the gaps are.
 
 Run `make` in `enclosure/` after any change to the YAML file.
 
@@ -543,7 +558,8 @@ Run `make` in `enclosure/` after any change to the YAML file.
 | Fuse holder | Littelfuse 154 series, revised 09/16/20 | <https://www.lcsc.com/datasheet/C206913.pdf> |
 | Output PTC | BHFUSE BSMD2920 series | <https://www.lcsc.com/datasheet/C3020148.pdf> |
 | Coin cell holder | Q&J BS-6 drawing | <https://www.lcsc.com/datasheet/C70377.pdf> |
-| Bulk capacitor, through-hole | Rubycon PX series | <https://www.lcsc.com/datasheet/C88758.pdf> |
+| Bulk capacitor, through-hole | Rubycon ZLJ series (revision 3) | <https://www.lcsc.com/datasheet/C2940725.pdf> |
+| Bulk capacitor, through-hole, revision 2 | Rubycon PX series | <https://www.lcsc.com/datasheet/C88758.pdf> |
 | Bulk capacitor, SMD | Lelon VZH series | <https://www.lcsc.com/datasheet/C249935.pdf> |
 | Relay | Omron G5NB, Chinese edition | <https://www.lcsc.com/datasheet/C48746.pdf> |
 | Inductor | Bourns SRN6045TA | <https://www.lcsc.com/datasheet/C5151734.pdf> |

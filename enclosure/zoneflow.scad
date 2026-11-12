@@ -555,6 +555,11 @@ module zone_free() {
     }
 }
 
+// ---- Test-fit kit -------------------------------------------------------------------
+// Printable stand-ins for the board, its plugs and the display panel.
+include <testfit_params.scad>
+include <testfit.scad>
+
 // ---- Assembly and views -----------------------------------------------------------
 // Render only: a paper label in the recess and the markings filled with
 // white paint, which is how the printing guide says to finish them.
@@ -636,6 +641,13 @@ module solid(name) {
     if (name == "display") { panel_solid(); fpc_solid(); }
     if (name == "plugs") board_parts("mate");
     if (name == "zones") zone_free();
+    // The test-fit kit, as printed, in its assembled position.
+    if (name == "tfmain") tf_main();
+    if (name == "tfaddons") tf_addons();
+    if (name == "tfboard") { tf_main(); tf_addons(); }
+    if (name == "tfplugs") tf_plugs_all();
+    if (name == "tfpanel") tf_panel(cable = false);
+    if (name == "tails") tf_tails_all();
 }
 
 // Drilling template, 1:1, seen from the room side.
@@ -669,6 +681,8 @@ if (part == "section" || part == "section_side") show() section();
 if (part == "board") show() board_colored();
 if (part == "zones") { %pcb(); zone_free(); }
 if (part == "check") intersection() { solid(check_a); solid(check_b); }
+// One solid in its assembled position, by the names solid() knows.
+if (part == "solid") solid(check_a);
 if (part == "template") template2d();
 for (n = ["base", "fascia", "cover", "bridge", "knob", "lightpipe"]) if (part == n) solid(n);
 if (part == "button_back") button(0);
@@ -683,4 +697,15 @@ if (part == "print_bridge") translate([0, disp_y1 + 10, z_deck_top]) rotate([180
 if (part == "print_knob") translate([-enc_c[0], enc_c[1], knob_z1]) rotate([180, 0, 0]) knob();
 if (part == "print_button_back") translate([-btn_c[0][0], -btn_c[0][1], -btn_flange_z0]) button(0);
 if (part == "print_button_home") translate([-btn_c[1][0], -btn_c[1][1], -btn_flange_z0]) button(1);
+// The test-fit kit.
+if (part == "tf_board") show() tf_board_colored();
+if (part == "tf_scene") show() tf_scene();
+if (part == "tf_kit") tf_kit();
+if (part == "tf_underside") tf_underside();
+for (n = ["tfmain", "tfaddons", "tfboard", "tfplugs", "tfpanel", "tails"]) if (part == n) solid(n);
+if (part == "print_tf_board") tf_print_main();
+if (part == "print_tf_c1") tf_print_addon("C1");
+if (part == "print_tf_k1") tf_print_addon("K1");
+for (i = [0 : len(tf_headers) - 1]) if (part == str("print_tf_plug_", tf_headers[i][6], "p")) tf_print_plug(i);
+if (part == "print_tf_panel") tf_print_panel();
 if (part == "print_lightpipe") translate([-led_c[0][0], zF, -(led_y - lp_size / 2)]) rotate([90, 0, 0]) lightpipe();

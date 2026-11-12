@@ -7,7 +7,13 @@
     `enclosure/params.scad`.
 
 The files are in `enclosure/output/`, as STL and 3MF, already in print
-orientation. Put each one on the bed as it is.
+orientation. Put each one on the bed as it is. `enclosure/output/plates/`
+has one 3MF per print batch with the parts laid out, a set for a 220 x 220 mm
+bed and a set for a 250 x 250 mm bed, and a picture of each from above.
+
+The [test fit](test-fit.md) page links every file and one zip of all of
+them. It also has a printable stand-in for the board, so that you can check
+the fit before a board exists.
 
 ## Parts
 

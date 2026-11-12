@@ -3,8 +3,9 @@
 !!! warning "Designed, not printed"
     The enclosure exists as a parametric model. Nobody has printed it and no
     board exists to put in it. What has been checked is that the modelled
-    parts do not overlap each other or the placeholder board. See
-    [what was checked](#what-was-checked). Tracked in
+    parts do not overlap each other, the board as it is laid out, or a
+    printable stand-in for it. See [what was checked](#what-was-checked) and
+    the [test fit](test-fit.md). Tracked in
     [issue #9](https://github.com/syntroniks/zoneflow/issues/9).
 
 ![Front view](../assets/enclosure/render-front.png){ width="400" }
@@ -15,6 +16,7 @@ The enclosure is for indoor or garage walls. It is not weatherproof. See
 
 - [Printing](printing.md): material, settings, orientation, time and filament for each part
 - [Assembly](assembly.md): from printed parts and a board to a unit on the wall
+- [Test fit](test-fit.md): a printable stand-in for the board, and what to check with it before a board is ordered
 - [Mechanical design](../design/mechanical.md): the contract with the PCB, for the layout engineer
 
 ## At a glance
@@ -178,11 +180,15 @@ the hardware design's bring-up plan decides it.
 ## What was checked
 
 Run `make` in `enclosure/`. It rebuilds the parameters from
-`hardware/mechanical.yaml`, exports every part, renders the views and runs
-the interference check.
+`hardware/mechanical.yaml`, reads the positions of the parts from the board
+file, exports every part, renders the views and runs the check. The report
+is `enclosure/output/check-report.md`.
 
-- **Interference.** 59 pairs of solids are intersected in their assembled positions. 45 are the placeholder board, the display with its folded cable, the mated plugs and the promised component height zones, each against every printed part, and the printed parts against each other. 14 repeat the display checks with the 2.4 inch option. Every pair overlaps by less than 0.5 mm³, except the knob and the encoder shaft, where the 35.5 mm³ is the flat that the placeholder shaft does not have. The report is `enclosure/output/check-report.md`.
-- **Bed size.** Every part fits 220 x 220 mm in its print orientation.
+- **Interference.** 91 pairs of solids are intersected in their assembled positions. 45 are the contract's placeholder board, the display with its folded cable, the mated plugs and the promised component height zones, each against every printed part, and the printed parts against each other. 32 are the printable [test-fit kit](test-fit.md) and the soldered lead ends, which come from the board file. 14 repeat the display checks with the 2.4 inch option. Every pair overlaps by less than 0.5 mm³, with two exceptions that are expected. The knob and the placeholder shaft share 35.5 mm³, the flat that the placeholder does not have. The contract's volume for the display cable reaches 1.9 mm³ into the connector it plugs into.
+- **The board as KiCad models it.** Every body of KiCad's detailed export against every printed part. None overlaps. That export lacks 22 parts, listed in the report.
+- **Board against contract.** The 26 parts the contract places are where the board file puts them, within 0.05 mm.
+- **Clearances.** 89 gaps and 20 alignments at the features a person checks by hand, measured on the exported meshes.
+- **Print files.** Each STL is one closed solid, sits on the bed and fits 220 x 220 mm in its print orientation.
 - **Contract consistency.** The generator rejects a contract whose numbers contradict each other.
 
 Not checked, because it needs a printer and a board:
