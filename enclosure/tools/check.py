@@ -1102,11 +1102,17 @@ def main() -> None:
         "## 3MF files and plates",
         "",
         "Written by `enclosure/tools/threemf.py` from the STL files and read back here with",
-        f"trimesh {trimesh.__version__}. A part's 3MF must hold the volume of its STL. A plate must hold every",
-        "part, apart from each other, on the bed. No slicer has opened these files.",
+        f"trimesh {trimesh.__version__}. A part's 3MF must hold the volume of its STL. No slicer has opened these files.",
         "",
-        "| Plate | Parts | Extent on the bed, mm | Smallest gap between parts, mm | Result |",
-        "|---|---|---|---|---|",
+        "A plate must hold every part, on its own bed, with the margin free at every edge and the",
+        "gap between any two parts. `enclosure/plates.toml` gives the bed, the margin and the gap,",
+        "and says why: the margin takes a skirt or a 5 mm brim, the gap keeps neighbours apart.",
+        "The picture of each plate from above is beside it, with the same name and `.png`.",
+        "Hours are the volume divided by 5 and by 10 mm3/s, calculated, not sliced.",
+        "",
+        "| Plate | Bed, mm | Margin, gap, mm | Parts | Extent on the bed, mm | Least free at an edge, mm "
+        "| Smallest gap between parts, mm | Volume, cm3 | Hours at 5 | Hours at 10 | Result |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for _, file, _ in PRINTS + TF_PRINTS:
         want = measure(stl_arrays(out_dir / f"{file}.stl"))[0]
@@ -1114,7 +1120,16 @@ def main() -> None:
         if abs(abs(got.volume) - want) > max(0.5, want * 1e-4):
             failed.append(f"{file}.3mf holds {abs(got.volume):.1f} mm3, its STL {want:.1f} mm3")
     cfg = threemf.load_plates(HERE / "plates.toml")
+    sizes: dict[str, tuple[float, float]] = {}
+
+    def footprint(file: str) -> tuple[float, float]:
+        if file not in sizes:
+            _, lo, hi = measure(stl_arrays(out_dir / f"{file}.stl"))
+            sizes[file] = (hi[0] - lo[0], hi[1] - lo[1])
+        return sizes[file]
+
     for plate in cfg["plate"]:
+        bed, margin, gap_want = threemf.bed_of(cfg, plate)
         scene = trimesh.load(out_dir / f"{plate['name']}.3mf")
         meshes = scene.dump() if isinstance(scene, trimesh.Scene) else [scene]
         want_n = sum(int(p.get("count", 1)) for p in plate["parts"])
@@ -1128,13 +1143,58 @@ def main() -> None:
                 gap_min = d if gap_min is None else min(gap_min, d)
         want_vol = sum(measure(stl_arrays(out_dir / f"{p['file']}.stl"))[0] * int(p.get("count", 1)) for p in plate["parts"])
         got_vol = sum(abs(m.volume) for m in meshes)
-        ok = (len(meshes) == want_n and lo[0] >= -1e-6 and lo[1] >= -1e-6 and hi[0] <= cfg["bed"][0] + 1e-6
-              and hi[1] <= cfg["bed"][1] + 1e-6 and abs(lo[2]) < 0.02 and (gap_min is None or gap_min >= cfg["gap"] - 1e-6)
-              and abs(got_vol - want_vol) < max(1.0, want_vol * 1e-4))
+        free = min(lo[0], lo[1], bed[0] - hi[0], bed[1] - hi[1])
+        ok = (len(meshes) == want_n and free >= margin - 1e-6 and abs(lo[2]) < 0.02
+              and (gap_min is None or gap_min >= gap_want - 1e-6) and abs(got_vol - want_vol) < max(1.0, want_vol * 1e-4))
         if not ok:
-            failed.append(f"plate {plate['name']}: {len(meshes)} of {want_n} parts, extent {lo[:2]} to {hi[:2]}, gap {gap_min}")
-        lines.append(f"| `{plate['name']}.3mf` | {len(meshes)} | {lo[0]:.1f}, {lo[1]:.1f} to {hi[0]:.1f}, {hi[1]:.1f} "
-                     f"| {'one part' if gap_min is None else f'{gap_min:.1f}'} | {'pass' if ok else '**FAIL**'} |")
+            failed.append(f"plate {plate['name']}: {len(meshes)} of {want_n} parts, extent {lo[:2]} to {hi[:2]} on a "
+                          f"{bed[0]:g} x {bed[1]:g} bed with a {margin:g} mm margin, gap {gap_min}")
+        lines.append(f"| `{plate['name']}.3mf` | {bed[0]:g} x {bed[1]:g} | {margin:g}, {gap_want:g} | {len(meshes)} "
+                     f"| {lo[0]:.1f}, {lo[1]:.1f} to {hi[0]:.1f}, {hi[1]:.1f} | {free:.1f} "
+                     f"| {'one part' if gap_min is None else f'{gap_min:.1f}'} | {want_vol / 1000:.1f} "
+                     f"| {want_vol / 5 / 3600:.1f} | {want_vol / 10 / 3600:.1f} | {'pass' if ok else '**FAIL**'} |")
+
+    # ---- Plates that were asked for and cannot be made ----------------------------------------------
+    # Two parts that do not overlap are apart along the bed's width or along its depth. Either way their
+    # short sides, the gap and two margins have to fit along that side of the bed. And no set of parts
+    # fits whose footprints together are larger than the bed.
+    lines += [
+        "",
+        "### Plates that do not fit",
+        "",
+        "`enclosure/plates.toml` lists what was asked for and cannot be laid out with that margin",
+        "and gap. Each is proved here from the footprints of the print files, either by area or by",
+        "two parts that cannot share the bed however they are turned by quarter turns. If one of",
+        "these became possible the build would fail and say so.",
+        "",
+    ]
+    for entry in cfg.get("not_possible", []):
+        bed, margin, gap_want = threemf.bed_of(cfg, entry)
+        parts_ = [(p["file"], int(p.get("count", 1))) for p in entry["parts"]]
+        area = sum(footprint(f)[0] * footprint(f)[1] * n for f, n in parts_)
+        reasons = []
+        if area > bed[0] * bed[1]:
+            reasons.append(f"The footprints add up to {area:,.0f} mm2. The bed is {bed[0] * bed[1]:,.0f} mm2, "
+                           f"and {(bed[0] - 2 * margin) * (bed[1] - 2 * margin):,.0f} mm2 inside the margin.")
+        names = [f for f, n in parts_ for _ in range(n)]
+        worst = None
+        for i in range(len(names)):
+            for j in range(i + 1, len(names)):
+                need = min(footprint(names[i])) + min(footprint(names[j]))
+                if worst is None or need > worst[0]:
+                    worst = (need, names[i], names[j])
+        if worst and worst[0] + gap_want + 2 * margin > max(bed):
+            need, fa, fb = worst
+            reasons.append(
+                f"`{Path(fa).name}` is {footprint(fa)[0]:.1f} x {footprint(fa)[1]:.1f} mm and `{Path(fb).name}` "
+                f"{footprint(fb)[0]:.1f} x {footprint(fb)[1]:.1f} mm. Side by side on their short sides they are "
+                f"{need:.1f} mm. With {margin:g} mm at both edges that is {need + 2 * margin:.1f} mm, and "
+                f"{need + 2 * margin + gap_want:.1f} mm with the {gap_want:g} mm gap, on a {max(bed):g} mm bed. "
+                f"The bed leaves {max(bed) - need:.1f} mm for two margins and the gap together.")
+        if not reasons:
+            failed.append(f"plates.toml says this does not fit, and no proof was found: {entry['title']}. "
+                          "It may fit now: make it a plate, or remove the entry.")
+        lines.append(f"- **{entry['title']}.** " + " ".join(reasons))
     lines.append("")
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
@@ -1143,7 +1203,7 @@ def main() -> None:
     n_ok = sum(1 for ab, v, _ in everything if v < LIMIT or {**EXPECTED, **TF_EXPECTED}.get(ab, 0) >= v)
     print(f"{args.out}: {n_ok} of {len(everything)} pairs clear, {counts['closed'] + counts['hull']} bodies of the detailed "
           f"board, {len(gaps)} gaps and {len(aligns)} alignments measured, {len(PRINTS) + len(TF_PRINTS)} print files, "
-          f"{len(cfg['plate'])} plates")
+          f"{len(cfg['plate'])} plates, {len(cfg.get('not_possible', []))} plates shown not to fit")
     if failed:
         print("FAILED:\n  " + "\n  ".join(failed), file=sys.stderr)
         raise SystemExit(1)

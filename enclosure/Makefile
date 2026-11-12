@@ -52,8 +52,12 @@ TF_VIEWS := kit board-top board-bottom step-1-board step-2-display step-3-fascia
 TF_PNG   := $(TF_VIEWS:%=$(TF)/render-%.png)
 # The board as KiCad models it, for viewing and for the check. Not for printing.
 DETAIL   := $(TF)/view-only/zoneflow-a-board-detailed-view-only
-PLATE_NAMES := 1-test-fit-kit 2-body 3-front 4-clear
+# One set of plates for a 220 x 220 mm bed, one for a 250 x 250 mm bed: plates.toml.
+PLATE_NAMES := 1-test-fit-kit 2-body 3-front 4-clear \
+               250-a1-base-and-small-parts 250-a2-fascia-and-cover 250-b-test-fit-kit
 PLATES   := $(PLATE_NAMES:%=$(OUT)/plates/zoneflow-plate-%.3mf)
+PLATE_PNG := $(PLATE_NAMES:%=$(OUT)/plates/zoneflow-plate-%.png)
+PLATE_SCAD := $(PLATE_NAMES:%=build/plates/zoneflow-plate-%.scad)
 ZIP      := build/zoneflow-test-fit-print-files.zip
 
 RENDER := $(XVFB) $(OSC) --render --colorscheme=Tomorrow
@@ -97,10 +101,18 @@ $(TF)/zoneflow-testfit-%.3mf: $(TF)/zoneflow-testfit-%.stl tools/threemf.py
 	$(PYTHON) tools/threemf.py single $< $@ --title "ZoneFlow TEST FIT: $*" \
 		--description "Stand-in for a dry fit. Not a circuit board. In print orientation."
 
-# One 3MF per print batch, parts laid out on a 220 x 220 mm bed.
+# One 3MF per print batch, parts laid out on the bed plates.toml names. It
+# fails if a plate does not fit its bed with the margin and gap given there.
 plates: $(PLATES)
 $(PLATES) &: plates.toml tools/threemf.py $(STL) $(TF_STL)
 	$(PYTHON) tools/threemf.py plates plates.toml $(OUT)
+
+# Each plate from straight above, with the bed outline and the margin drawn,
+# all at one scale. The scene puts the middle of the bed at the origin.
+$(PLATE_SCAD) &: plates.toml tools/threemf.py $(STL) $(TF_STL)
+	$(PYTHON) tools/threemf.py scenes plates.toml $(OUT) build/plates
+$(OUT)/plates/zoneflow-plate-%.png: build/plates/zoneflow-plate-%.scad
+	$(RENDER) -q --projection=o --camera=0,-9,700,0,-9,0 --imgsize=1300,1400 -o $@ $<
 
 # The board with every part model KiCad has, as STL and 3MF. For viewing and
 # for the check, not for printing: its bodies are not all closed solids. The
@@ -118,7 +130,7 @@ $(DETAIL).3mf: $(DETAIL).stl
 
 # Cameras: eye x,y,z then centre x,y,z. With wallview the product stands as
 # on a wall: x right, z up, the front faces -y.
-renders: $(PNG) $(TF_PNG)
+renders: $(PNG) $(TF_PNG) $(PLATE_PNG)
 $(OUT)/render-front.png: $(SRC) | $(OUT)
 	$(RENDER) -q $(WALL) -D 'part="assembly"' --projection=o --camera=57,-600,39,57,0,39 --imgsize=1200,1600 -o $@ zoneflow.scad
 $(OUT)/render-front-2.4.png: $(SRC) | $(OUT)
@@ -185,9 +197,10 @@ DOCIMG := ../docs/assets/enclosure
 docs-images: $(PNG) tf-docs-images
 	mkdir -p $(DOCIMG)
 	cp $(PNG) $(DOCIMG)/
-tf-docs-images: $(TF_PNG)
-	mkdir -p $(DOCIMG)/test-fit
+tf-docs-images: $(TF_PNG) $(PLATE_PNG)
+	mkdir -p $(DOCIMG)/test-fit $(DOCIMG)/plates
 	cp $(TF_PNG) $(DOCIMG)/test-fit/
+	cp $(PLATE_PNG) $(DOCIMG)/plates/
 
 check: $(OUT)/check-report.md
 $(OUT)/check-report.md: $(SRC) tools/check.py board_layout.json plates.toml $(STL) $(TF_STL) $(3MF) $(TF_3MF) $(PLATES) $(DETAIL).stl | $(OUT)
@@ -196,7 +209,7 @@ $(OUT)/check-report.md: $(SRC) tools/check.py board_layout.json plates.toml $(ST
 # Every print file in one archive, with a list of what is in it. The
 # documentation build makes the same archive and publishes it with the site.
 zip: $(ZIP)
-$(ZIP): tools/pack.py $(STL) $(3MF) $(TF_STL) $(TF_3MF) $(PLATES) $(DETAIL).stl $(DETAIL).3mf $(OUT)/check-report.md
+$(ZIP): tools/pack.py $(STL) $(3MF) $(TF_STL) $(TF_3MF) $(PLATES) $(PLATE_PNG) $(DETAIL).stl $(DETAIL).3mf $(OUT)/check-report.md
 	$(PYTHON) tools/pack.py $@
 
 $(OUT) $(TF):

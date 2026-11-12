@@ -455,12 +455,30 @@ of 10 mm3/s, a current fast printer. They are calculated, not sliced, and count 
 ## 3MF files and plates
 
 Written by `enclosure/tools/threemf.py` from the STL files and read back here with
-trimesh 5.2.0. A part's 3MF must hold the volume of its STL. A plate must hold every
-part, apart from each other, on the bed. No slicer has opened these files.
+trimesh 5.2.0. A part's 3MF must hold the volume of its STL. No slicer has opened these files.
 
-| Plate | Parts | Extent on the bed, mm | Smallest gap between parts, mm | Result |
-|---|---|---|---|---|
-| `plates/zoneflow-plate-1-test-fit-kit.3mf` | 8 | 5.0, 5.0 to 210.7, 141.0 | 6.0 | pass |
-| `plates/zoneflow-plate-2-body.3mf` | 5 | 5.0, 5.0 to 213.2, 195.0 | 6.0 | pass |
-| `plates/zoneflow-plate-3-front.3mf` | 2 | 5.0, 5.0 to 201.1, 136.7 | 6.0 | pass |
-| `plates/zoneflow-plate-4-clear.3mf` | 1 | 5.0, 5.0 to 97.4, 16.0 | one part | pass |
+A plate must hold every part, on its own bed, with the margin free at every edge and the
+gap between any two parts. `enclosure/plates.toml` gives the bed, the margin and the gap,
+and says why: the margin takes a skirt or a 5 mm brim, the gap keeps neighbours apart.
+The picture of each plate from above is beside it, with the same name and `.png`.
+Hours are the volume divided by 5 and by 10 mm3/s, calculated, not sliced.
+
+| Plate | Bed, mm | Margin, gap, mm | Parts | Extent on the bed, mm | Least free at an edge, mm | Smallest gap between parts, mm | Volume, cm3 | Hours at 5 | Hours at 10 | Result |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `plates/zoneflow-plate-1-test-fit-kit.3mf` | 220 x 220 | 5, 6 | 8 | 5.0, 5.0 to 210.7, 141.0 | 5.0 | 6.0 | 56.2 | 3.1 | 1.6 | pass |
+| `plates/zoneflow-plate-2-body.3mf` | 220 x 220 | 5, 6 | 5 | 5.0, 5.0 to 213.2, 195.0 | 5.0 | 6.0 | 81.6 | 4.5 | 2.3 | pass |
+| `plates/zoneflow-plate-3-front.3mf` | 220 x 220 | 5, 6 | 2 | 5.0, 5.0 to 201.1, 136.7 | 5.0 | 6.0 | 61.0 | 3.4 | 1.7 | pass |
+| `plates/zoneflow-plate-4-clear.3mf` | 220 x 220 | 5, 6 | 1 | 5.0, 5.0 to 97.4, 16.0 | 5.0 | one part | 1.0 | 0.1 | 0.0 | pass |
+| `plates/zoneflow-plate-250-a1-base-and-small-parts.3mf` | 250 x 250 | 5, 6 | 6 | 5.0, 5.0 to 208.7, 217.0 | 5.0 | 6.0 | 82.6 | 4.6 | 2.3 | pass |
+| `plates/zoneflow-plate-250-a2-fascia-and-cover.3mf` | 250 x 250 | 5, 6 | 2 | 5.0, 5.0 to 125.2, 212.6 | 5.0 | 6.0 | 61.0 | 3.4 | 1.7 | pass |
+| `plates/zoneflow-plate-250-b-test-fit-kit.3mf` | 250 x 250 | 5, 6 | 8 | 5.0, 5.0 to 230.4, 139.6 | 5.0 | 6.0 | 56.2 | 3.1 | 1.6 | pass |
+
+### Plates that do not fit
+
+`enclosure/plates.toml` lists what was asked for and cannot be laid out with that margin
+and gap. Each is proved here from the footprints of the print files, either by area or by
+two parts that cannot share the bed however they are turned by quarter turns. If one of
+these became possible the build would fail and say so.
+
+- **Everything on one 250 x 250 mm plate: the enclosure and the test-fit kit.** The footprints add up to 68,023 mm2. The bed is 62,500 mm2, and 57,600 mm2 inside the margin. `zoneflow-base` is 120.2 x 172.0 mm and `zoneflow-fascia` 120.2 x 131.7 mm. Side by side on their short sides they are 240.4 mm. With 5 mm at both edges that is 250.4 mm, and 256.4 mm with the 6 mm gap, on a 250 mm bed. The bed leaves 9.6 mm for two margins and the gap together.
+- **The whole enclosure, all eight parts, on one 250 x 250 mm plate.** `zoneflow-base` is 120.2 x 172.0 mm and `zoneflow-fascia` 120.2 x 131.7 mm. Side by side on their short sides they are 240.4 mm. With 5 mm at both edges that is 250.4 mm, and 256.4 mm with the 6 mm gap, on a 250 mm bed. The bed leaves 9.6 mm for two margins and the gap together.

@@ -18,7 +18,7 @@ nothing here has been printed.
 - **`tools/check.py`**: intersects the parts with each other, with the contract's placeholder board, with the test-fit kit and with KiCad's detailed model of the board. It measures the gaps a person checks by hand and inspects every print file. Any failure fails the build.
 - **`tools/pack.py`**: packs the print files into one zip.
 - **`fonts/`**: Liberation Sans, under the SIL Open Font Licence, for the engraved markings. The system's own fonts gave different results from one run to the next.
-- **`output/`**: STL and 3MF for each part in print orientation, the renders, the drilling template and the check report. `output/test-fit/` has the test-fit kit, `output/plates/` one 3MF per print batch, `output/test-fit/view-only/` the board as KiCad models it. Committed so that nobody needs the tools to print.
+- **`output/`**: STL and 3MF for each part in print orientation, the renders, the drilling template and the check report. `output/test-fit/` has the test-fit kit, `output/plates/` one 3MF per print batch for a 220 mm and for a 250 mm bed, with a picture of each from above, `output/test-fit/view-only/` the board as KiCad models it. Committed so that nobody needs the tools to print.
 
 ## Build
 

@@ -26,7 +26,7 @@ PATTERNS = [
     "zoneflow-*.stl", "zoneflow-*.3mf",
     "test-fit/zoneflow-testfit-*.stl", "test-fit/zoneflow-testfit-*.3mf",
     "test-fit/view-only/*.stl", "test-fit/view-only/*.3mf", "test-fit/view-only/*.txt",
-    "test-fit/stand-ins.md", "plates/*.3mf", "check-report.md",
+    "test-fit/stand-ins.md", "plates/*.3mf", "plates/*.png", "check-report.md",
 ]
 EXTRA = [(HERE.parent / "hardware" / "zoneflow-a" / "output" / "zoneflow-a.step", "test-fit/view-only/zoneflow-a.step")]
 
@@ -42,11 +42,22 @@ https://syntroniks.github.io/zoneflow/enclosure/test-fit/
 
 What to print
 -------------
-plates/                 one 3MF per print batch, parts laid out for a 220 x 220 mm bed
+plates/                 one 3MF per print batch, parts laid out on the bed, and a
+                        picture of each from above with the same name and .png.
+                        5 mm is free at every bed edge, 6 mm between parts.
+ For a 220 x 220 mm bed:
   zoneflow-plate-1-test-fit-kit.3mf   stand-in board, C1, K1, four plug pieces, display panel
   zoneflow-plate-2-body.3mf           base, display carrier, knob, two button caps
   zoneflow-plate-3-front.3mf          fascia and wiring cover
   zoneflow-plate-4-clear.3mf          light-pipe comb
+ For a 250 x 250 mm bed:
+  zoneflow-plate-250-a1-base-and-small-parts.3mf   base, display carrier, knob, two button
+                                                   caps, light-pipe comb
+  zoneflow-plate-250-a2-fascia-and-cover.3mf       fascia and wiring cover
+  zoneflow-plate-250-b-test-fit-kit.3mf            the test-fit kit
+ The whole enclosure does not go on one 250 mm plate: the base and the fascia are
+ each 120.2 mm on their short side. For a clear light-pipe comb, leave it off
+ plate A1 and print plate 4.
 zoneflow-*.stl, .3mf    the eight enclosure parts, each in print orientation
 test-fit/zoneflow-testfit-*.stl, .3mf
                         the seven pieces of the test-fit kit, each in print orientation.
