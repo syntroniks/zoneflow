@@ -74,6 +74,7 @@ Run, all on the build machine on 2026-11-12, before any change:
 | `make -C hardware/zoneflow-a review-check` | 63 pictures of the review walkthrough drawn again from the board file, the same as the committed ones |
 | `firmware/zoneflow-fw/test/host/run.sh` | 859 of 859 host tests pass, with ASan and UBSan |
 | `firmware/esphome/test/host/run.sh` | 45 of 45 pass |
+| `firmware/zoneflow-fw/sim/run.sh --screenshots` into a scratch directory | 75 pictures, each the same bytes as its committed copy in `docs/design/display-ui/` |
 | `firmware/esphome/tools/gen_board_yaml.py --check` | The ESPHome pin file is what the pin map gives |
 | `firmware/zoneflow-fw/tools/gen_board_header.py` | Writes the board header from the pin map with no error |
 | `zfcost render --check` and `pytest` in `tools/cost` | The cost page is current with its data; 19 tests pass |
@@ -90,9 +91,8 @@ All pass. The pull request states the same list.
 STEP, renders) and of the enclosure (OpenSCAD) was not run, so their outputs
 were not regenerated here. The ESP-IDF build, the ESPHome compile, the web
 interface's tests, the soak simulation and the browser demo were not run
-locally; CI runs them. The display pictures and the web interface
-screenshots were not drawn again. The simulations in `hardware/sim/` were
-not run again. The body of the cost page and the long design documents were
+locally; CI runs them. The web interface screenshots were not drawn again.
+The simulations in `hardware/sim/` were not run again. The body of the cost page and the long design documents were
 not read line by line. No statement in a design document was checked against
 a data sheet: this audit looked for disagreement inside the repository, not
 for errors in the engineering.
@@ -266,7 +266,7 @@ the "To be completed" notes name (issue #33).
 - `hardware/zoneflow-a/zoneflow-a.kicad_pcb`, `design/board.toml` and everything in `output/` that the schematic job does not write: Gerbers, drill files, placement files, the pin 1 table, the STEP, the renders, the interactive BOM, the board and assembly PDFs, the board plots, `reports/drc.*`, `reports/routing.md`, `reports/layout-rules.md`, `reports/build-summary.json`, `reports/placement-check.md`.
 - All of `hardware/toolchain-test/`.
 - `hardware/sim/failsafe/results/` and the tables in the design documents that quote them.
-- The pictures: `docs/design/display-ui/` (names are compared, pixels are not), `docs/firmware/img/webui/`, the enclosure renders and plate pictures in `enclosure/output/` and `docs/assets/enclosure/`, the drilling template.
+- The pictures: `docs/design/display-ui/` (CI compares names, not pixels; a run on the build machine today gave the same bytes), `docs/firmware/img/webui/`, the enclosure renders and plate pictures in `enclosure/output/` and `docs/assets/enclosure/`, the drilling template.
 - `enclosure/output/test-fit/view-only/`.
 
 **Tests and checks that exist and that no workflow runs:**
