@@ -361,42 +361,58 @@ def _layer_svg(view, board, layer, box, marks, zones, values=False, text=True):
                 return m["colour"]
         return None
 
-    groups = {}  # colour -> {"zone": [], "poly": [], "segs": {w: []}, "circ": []}
+    # colour -> key -> shapes. The key is the net on a copper layer and the part on any other, and it
+    # goes into the picture as data-n or data-r: the page reads it when a shape is selected, so what it
+    # says about a shape is what the board file says.
+    groups = {}
 
-    def group(c):
-        return groups.setdefault(c, {"zone": [], "poly": [], "segs": {}, "circ": []})
+    def group(c, key):
+        return groups.setdefault(c, {}).setdefault(key, {"zone": [], "pad": [], "poly": [], "segs": {}, "circ": []})
 
     if copper and zones:
         for net, polys in board.zone_fills(layer, box):
-            group(mark_of(net) or colour)["zone"].append(view.path(polys))
+            group(mark_of(net) or colour, net)["zone"].append(view.path(polys))
     for it in board.items(layer):
         if not _overlap(it["bbox"], box) or (it.get("field") == "Value" and not values):
             continue
         if it["kind"] == "text" and not text:
             continue
-        g = group((mark_of(it["net"]) if copper else None) or colour)
+        g = group((mark_of(it["net"]) if copper else None) or colour, it["net"] if copper else it["ref"])
         if it["kind"] == "seg":
             x1, y1, x2, y2, w = it["seg"]
             g["segs"].setdefault(w, []).append(f"M{view.pt((x1, y1))}L{view.pt((x2, y2))}")
         elif it["kind"] == "via":
             cx, cy, r = it["circle"]
             g["circ"].append(f'<circle cx="{_num(view.px(cx))}" cy="{_num(view.py(cy))}" r="{_num(r * view.s)}"/>')
+        elif it["kind"] == "pad":
+            g["pad"].append(f'<path data-p="{html.escape(it["ref"] + "." + it["pad"], quote=True)}" d="{view.path(it["polys"])}"/>')
         else:
             g["poly"].append(view.path(it["polys"]))
 
-    out = [f'<g id="layer-{layer.replace(".", "-")}">']
+    attr = "data-n" if copper else "data-r"
+    out = [f'<g id="layer-{layer.replace(".", "-")}" data-layer="{layer}">']
     # The layer colour first, the mark colours over it.
     for c in sorted(groups, key=lambda c: c != colour):
-        g = groups[c]
         marked = c != colour
-        if g["zone"]:
-            out.append(f'<path fill="{c}" fill-rule="evenodd" opacity="{0.6 if marked else 0.38}" d="{"".join(g["zone"])}"/>')
+        keys = sorted(groups[c])
+        for key in keys:
+            g = groups[c][key]
+            if g["zone"]:
+                out.append(f'<path {attr}="{html.escape(key, quote=True)}" data-zone="1" fill="{c}" fill-rule="evenodd" '
+                           f'opacity="{0.6 if marked else 0.38}" d="{"".join(g["zone"])}"/>')
         body = []
-        if g["poly"]:
-            body.append(f'<path fill-rule="evenodd" d="{"".join(g["poly"])}"/>')
-        for w, segs in sorted(g["segs"].items()):
-            body.append(f'<path fill="none" stroke="{c}" stroke-width="{_num(w * view.s)}" stroke-linecap="round" d="{"".join(segs)}"/>')
-        body.extend(g["circ"])
+        for key in keys:
+            g = groups[c][key]
+            shapes = []
+            if g["poly"]:
+                shapes.append(f'<path fill-rule="evenodd" d="{"".join(g["poly"])}"/>')
+            for w, segs in sorted(g["segs"].items()):
+                shapes.append(f'<path fill="none" stroke="{c}" stroke-width="{_num(w * view.s)}" stroke-linecap="round" d="{"".join(segs)}"/>')
+            shapes.extend(g["circ"])
+            # Pads last: a track of the same net that ends in a pad does not hide the pad from a selection.
+            shapes.extend(g["pad"])
+            if shapes:
+                body.append(f'<g {attr}="{html.escape(key, quote=True)}">' + "".join(shapes) + "</g>")
         if body:
             opacity = 1.0 if marked or not copper else 0.88
             out.append(f'<g fill="{c}" opacity="{opacity}">' + "".join(body) + "</g>")
@@ -406,7 +422,8 @@ def _layer_svg(view, board, layer, box, marks, zones, values=False, text=True):
 
 def _grid(view):
     step = next((g for g in (0.5, 1, 2, 5, 10, 20, 50) if g * view.s >= 70), 50)
-    out = ['<g id="grid" stroke="#ffffff" stroke-opacity="0.10" stroke-width="1" font-size="10" fill="#ffffff" fill-opacity="0.55">']
+    out = ['<g id="grid" pointer-events="none" stroke="#ffffff" stroke-opacity="0.10" stroke-width="1" font-size="10" fill="#ffffff" '
+           'fill-opacity="0.55">']
     k = math.ceil(view.x0 / step - 1e-9)
     while k * step <= view.x1 + 1e-9:
         px = view.px(k * step)
@@ -598,8 +615,10 @@ def render_figure(board, fig):
                 hole.append(f'<circle cx="{_num(view.px(cx))}" cy="{_num(view.py(cy))}" r="{_num(r * view.s)}"/>')
             else:
                 hole.append(f'<path d="{view.path(h["polys"])}"/>')
-        out.append(f'<g id="holes" fill="{HOLE_FILL}" stroke="#aeb4bf" stroke-width="0.8">' + "".join(hole) + "</g>")
+        out.append(f'<g id="holes" pointer-events="none" fill="{HOLE_FILL}" stroke="#aeb4bf" stroke-width="0.8">' + "".join(hole) + "</g>")
 
+    # Everything from here on is annotation. A click goes through it to the copper under it.
+    out.append('<g id="pad-labels" pointer-events="none">')
     # Pad numbers, and the net on each pad, for the parts that ask for them.
     mode = fig.get("pad_label_mode", "net")
     seen = set()
@@ -629,8 +648,9 @@ def render_figure(board, fig):
                     out.append(_text(px, py + nsize + 1, net, nsize))
                 else:
                     out.append(_text(px, py + size * 0.36, it["pad"], size, weight="bold"))
-    out.append("</g>")
+    out.append("</g></g>")
 
+    out.append('<g id="notes" pointer-events="none">')
     # Boxes round marked parts.
     for m in marks:
         for ref in m["refs"]:
@@ -660,7 +680,7 @@ def render_figure(board, fig):
     if corner != "none" and covers < 0.5:
         out.append(_minimap(view, board, corner))
     out.append(_legend(view, fig, layers, marks, band))
-    out.append("</svg>\n")
+    out.append("</g></svg>\n")
     refs, nets = references(fig)
     meta = {"width": view.w, "height": view.h + band, "box": list(box), "view": view_side, "layers": layers,
             "kicad_centre": list(board.kicad_xy((box[0] + box[2]) / 2, (box[1] + box[3]) / 2)),

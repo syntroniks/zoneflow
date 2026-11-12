@@ -45,6 +45,27 @@ def test_the_buck_converter_picture_has_its_six_vias_and_its_labels(drawn):
 
 
 @needs_kicad
+def test_each_shape_says_what_the_board_file_says_of_it(drawn):
+    root = ET.parse(drawn / "k-u1-vias-pad.svg").getroot()
+    layer = root.find(f".//{SVG}g[@data-layer='F.Cu']")
+    assert layer is not None and layer.get("id") == "layer-F-Cu"
+    pads = {}
+    for group in layer.iter(f"{SVG}g"):
+        for pad in group.findall(f"{SVG}path[@data-p]"):
+            pads.setdefault(pad.get("data-p"), set()).add(group.get("data-n"))
+    # The nets the netlist puts on the pins of U1.
+    want = {"U1.1": "GND", "U1.2": "/Power/VIN_U1", "U1.3": "/Power/UVLO", "U1.4": "/Power/RON", "U1.5": "/Power/FB",
+            "U1.6": "/PGOOD", "U1.7": "/Power/BST", "U1.8": "/Power/SW", "U1.9": "GND"}
+    assert {k: v for k, v in pads.items() if k.startswith("U1.")} == {k: {v} for k, v in want.items()}
+    assert layer.find(f"{SVG}path[@data-zone='1'][@data-n='GND']") is not None
+    # Annotation does not take a press away from the copper under it.
+    for name in ("grid", "holes", "pad-labels", "notes"):
+        assert root.find(f".//{SVG}g[@id='{name}']").get("pointer-events") == "none", name
+    silk = ET.parse(drawn / "s-d25-pads.svg").getroot().find(f".//{SVG}g[@data-layer='F.Fab']")
+    assert silk.find(f".//{SVG}g[@data-r='D25']") is not None
+
+
+@needs_kicad
 def test_a_bottom_view_is_mirrored(drawn):
     meta = json.loads((drawn / "manifest.json").read_text())["figures"]["p-bottom-parts.svg"]
     assert meta["view"] == "bottom"
