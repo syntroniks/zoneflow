@@ -116,7 +116,7 @@ The ESP32-S3 has four reset levels. The manual says what each resets
 | Level | Resets | Manual's words |
 |---|---|---|
 | CPU Reset | One processor core | "CPU Reset: only resets CPUx core." |
-| Core Reset | Both cores, the peripherals, the digital GPIOs. Not the RTC domain | "Core Reset: resets the whole digital system except RTC, including CPU0, CPU1, peripherals, Wi-Fi, Bluetooth LE (BLE), and digital GPIOs." |
+| Core Reset | Both cores, the peripherals, the digital GPIOs. Not the RTC domain | "Core Reset: resets the whole digital system except RTC, including CPU0, CPU1, peripherals, Wi-Fi, Bluetooth® LE (BLE), and digital GPIOs." |
 | System Reset | The above and the RTC domain | "System Reset: resets the whole digital system, including RTC." |
 | Chip Reset | Everything | "Chip Reset: resets the whole chip." |
 
@@ -194,8 +194,9 @@ restart code nor the start-up code of ESP-IDF resets LEDC
 | Crystal watchdog, clock glitch detector | | The first watches a 32 kHz crystal this board does not have. The second detects pulses shorter than 3 ns (manual 24.2.1) | | A 40 MHz crystal that stops. No document says anything detects that, item N9 |
 
 Any code can switch off every one of them. The write keys guard against an
-accidental write, in the manual's words "to prevent the watchdogs from being
-disabled or tampered with due to an accidental write" (13.2.2.3). And a USB
+accidental write only. The manual calls them a mechanism that "prevent the
+watchdogs from being disabled or tampered with due to an accidental write"
+(13.2.2.3). And a USB
 host is enough to switch two of them off: "OpenOCD will disable the hardware
 timers of both the interrupt and task watchdogs at every breakpoint.
 Moreover, OpenOCD will not re-enable them upon leaving the breakpoint"
@@ -649,7 +650,7 @@ that has failed short.
 
 **What is known about that failure.**
 
-- **It is the common field failure.** The prior-art survey lists it first: "Blown triac, zone dead or always on. Shorted solenoid or wiring destroys the zone triac", from the OpenSprinkler forum, and after it lightning on long valve wires, where the maker says a strike "can destroy the TVS". Those boards use a MAC97 with an 8 A surge rating. I found no failure rate for any design.
+- **It is the common field failure.** The prior-art survey lists it first, from the OpenSprinkler forum: "Blown triac, zone dead or always on", and "Shorted solenoid or wiring destroys the zone triac". After it comes lightning on long valve wires, where the survey reports that a strike "can destroy the TVS". Those boards use a MAC97 with an 8 A surge rating. I found no failure rate for any design.
 - **This design is built not to fail that way from a short.** The T810 has an 80 A surge rating, and by calculation carries a dead short on a 20 to 75 VA transformer until the PTC opens, with a margin of 1.8 to 3.1 in current (hardware design 6.6). Two things weaken that, both bench items there: the surge curve is for a junction that starts at 25 °C, and the PTC trip times above 8 A are scaled from one point.
 - **A surge is a different matter.** Each output has a 600 W TVS that clamps at 77.4 V. A strike beyond its rating kills it, and "a TVS normally fails short, and a shorted TVS energises its valve" (hardware design 6.6). No calculation covers lightning. Risk 6 has no assumption at all.
 - **Three parts per output can each do it:** the triac, its TVS, the output of the opto-triac. A shorted snubber capacitor passes about 0.3 A through 47 ohm, which may hold a valve open too.
@@ -692,9 +693,9 @@ so the fault lasts two half-cycles at most. The latch also holds a flag the
 firmware reads, and lights D8.
 
 **What the design already says without it.** "With the 8 A triac the
-output survives without this path. What the path still buys is that a short
-ends before a fuse opens, and that firmware gets a latched signal that says
-why" (hardware design 9). So removing the latch does not change whether the
+output survives without this path", and "What the path still buys is that a
+short ends before a fuse opens, and that firmware gets a latched signal that
+says why" (hardware design 9). So removing the latch does not change whether the
 output survives. That rests on the PTC and the surge rating, with the margins
 of section 8, and on a bench test that has not been run.
 
