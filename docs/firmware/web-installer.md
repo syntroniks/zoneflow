@@ -67,7 +67,8 @@ See <a href="../releases/">Releases and updating</a> for how releases are made.<
 No release has been published ([issue #8](https://github.com/syntroniks/zoneflow/issues/8)),
 so this page, `zfflash` and the esptool commands below have nothing to install yet. Until
 there is one, the only way to put firmware on a board is to build it from the repository.
-Nobody has done this with a board: none exists. CI builds both firmwares on every change.
+Nobody has done this with a board: none exists. CI builds each firmware whenever its sources
+change.
 
 - **Standalone firmware.** Install ESP-IDF v5.5.6, build the web interface, then build and
   flash. The steps are in
