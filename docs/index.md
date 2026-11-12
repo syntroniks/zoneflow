@@ -14,6 +14,8 @@ hide:
 
 [Try it in your browser](try-it.md){ .md-button .md-button--primary }
 
+<small>The demo is a simulation: the firmware on simulated hardware. It is not a test of a board.</small>
+
 </div>
 
 !!! danger zf-status "Status: designed on paper. Not built. Not tested."
@@ -46,12 +48,12 @@ people who build their own electronics.
 
 | Part | State | Where |
 |---|---|---|
-| Circuit design | Written with calculations and simulations, reviewed once (review A1), findings resolved | [Hardware design](design/hardware-design.md), [review A1](design/hardware-review-a1.md) |
+| Circuit design | Written with calculations and simulations; reviewed twice (reviews A1 and A2), the firmware's questions answered, findings resolved | [Hardware design](design/hardware-design.md), [review A1](design/hardware-review-a1.md), [review A2](design/hardware-review-a2.md), [answers A2](design/hardware-answers-a2.md) |
 | Schematic | Captured in KiCad 10 from the design netlist; ERC clean; 20 pages | [Schematic](hardware/schematic.md) |
-| Bill of materials | Every line with an LCSC number, stock and price checked on 2026-11-10 | [BOM](hardware/bom.md) |
-| PCB layout | Placed and routed, four layers; DRC, mechanical contract and fail-safe layout rules checked on the files; not reviewed, not built | [PCB layout](hardware/layout.md), [layout document](design/hardware-layout.md) |
-| Enclosure | Parametric model, interference-checked, STL and 3MF files; not printed | [Enclosure](enclosure/index.md) |
-| Standalone firmware | Written; builds in CI; logic covered by host tests; display runs in a desktop simulator | [Web interface](firmware/standalone.md), [display](guide/display.md) |
+| Bill of materials | Every line but the coin cell with an LCSC number; stock and price checked on 2026-11-10 and 2026-11-11 | [BOM](hardware/bom.md), [what a controller costs](hardware/cost.md) |
+| PCB layout | Revision A, 114 x 110 mm, four layers, placed and routed; DRC, mechanical contract and fail-safe layout rules checked on the files; independently reviewed. The review's pre-order checklist for a person is open. Not ordered, not built | [PCB layout](hardware/layout.md), [layout document](design/hardware-layout.md), [layout review](design/hardware-layout-review.md), [review walkthrough](hardware/review/index.md) |
+| Enclosure | Parametric model of 8 printed parts, interference-checked, STL and 3MF files, a printable test-fit kit generated from the board file; not printed | [Enclosure](enclosure/index.md), [test fit](enclosure/test-fit.md) |
+| Standalone firmware | Written; builds in CI; logic covered by host tests and a soak simulation on a simulated board; display runs in a desktop simulator | [Web interface](firmware/standalone.md), [display](guide/display.md) |
 | ESPHome package | Written; compiles for the board; logic covered by host tests | [ESPHome](firmware/esphome.md) |
 | Browser demo | The firmware's logic, display and REST API compiled to WebAssembly, on simulated hardware; smoke-tested in CI | [Try it](try-it.md) |
 | Release tooling | Web installer, release workflow, `zfflash` command-line tool; no release published yet | [Installing firmware](firmware/web-installer.md) |
@@ -141,7 +143,7 @@ schematics and firmware of other open controllers in November 2026:
 ## Follow and contribute
 
 - Progress is logged in [issue #1](https://github.com/syntroniks/zoneflow/issues/1). Open work is in the [issue list](https://github.com/syntroniks/zoneflow/issues).
-- The most useful contribution now is a review: of the [circuit](design/hardware-design.md), the [schematic](hardware/schematic.md) or the [firmware](design/firmware-architecture.md). See [contributing](contributing.md).
+- The most useful contribution now is a review: of the [circuit](design/hardware-design.md), the [schematic](hardware/schematic.md), the [layout](hardware/layout.md) or the [firmware](design/firmware-architecture.md). See [contributing](contributing.md).
 
 ## Licences
 

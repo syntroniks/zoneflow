@@ -4,9 +4,10 @@ Standalone firmware for the ZoneFlow irrigation controller, system spec
 section 4.1. Target: ESP32-S3-WROOM-1-N16R8 (16 MB flash, 8 MB octal PSRAM),
 ESP-IDF v5.5.6.
 
-> **Status: phase 3 (MQTT), never run on hardware.** No board exists yet. What has
-> been checked is listed under "What is verified" below. Everything else,
-> including every pin number, is provisional.
+> **Status: written for the rev A board, never run on hardware.** No board
+> exists yet. What has been checked is listed under "What is verified" below.
+> The pin numbers are those of the rev A design (`hardware/pinmap.yaml`); the
+> limits and timings that only a board can give are provisional.
 
 Design and interfaces: [`docs/design/firmware-architecture.md`](../../docs/design/firmware-architecture.md).
 Network security: [`docs/design/firmware-security.md`](../../docs/design/firmware-security.md).
@@ -28,8 +29,10 @@ idf.py -p /dev/ttyACM0 flash monitor
 
 `sdkconfig` is generated from `sdkconfig.defaults` and is not committed.
 Board options (keep-alive period, heartbeat timeout, control period) are in
-`idf.py menuconfig` under "ZoneFlow board". The first build downloads LVGL
-9.6.0 into `managed_components/` (ESP-IDF component manager).
+`idf.py menuconfig` under "ZoneFlow board". The first build downloads three
+components from the ESP-IDF component registry into `managed_components/`
+(not committed): `lvgl/lvgl` 9.6.0, `espressif/mdns` 1.14.1 and
+`joltwallet/littlefs` 1.22.3.
 
 There is one build, for the rev A board, display included. Its pin numbers
 come from `hardware/pinmap.yaml`: every build (firmware, host tests,
@@ -58,10 +61,6 @@ firmware/zoneflow-fw/sim/run.sh --screenshots out/   # headless, a PNG of every 
 
 The simulator runs the firmware's display code on the real controller core
 with fake hardware. Keys and details: [`sim/README.md`](sim/README.md).
-
-The first build downloads two managed components from the ESP-IDF component
-registry (`espressif/mdns` 1.14.1, `joltwallet/littlefs` 1.22.3) into
-`managed_components/` (not committed).
 
 Web UI files placed in `www/` (with an `index.html`) are packed into
 `build/www.bin` and flashed to the `www` partition; see
@@ -132,7 +131,7 @@ CI checks formatting with the same clang-format version.
 | `components/zf_ota/` | Firmware upload and HTTPS pull, web UI image upload, post-boot self-test and rollback. |
 | `components/zf_display/` | The local interface. `src/ui`: display logic, no LVGL, host-tested. `src/view`: LVGL drawing. `src/port`: ST7789 over SPI, backlight, encoder, buttons, the UI task. |
 | `components/zf_mqtt/` | MQTT client (esp-mqtt), topic tree, commands, Home Assistant discovery. Logic in `mqtt_logic.cpp` (host-tested). |
-| `sim/` | Desktop simulator of the display and the screenshot generator. |
+| `sim/` | Desktop simulator of the display and the screenshot generator. `sim/web/` is the browser demo: the same code as WebAssembly. |
 | `main/app_main.cpp` | Wires everything together and starts the tasks. |
 | `test/host/` | GoogleTest suites and fakes for the core and the display logic. |
 | `test/soak/` | System soak simulation of both firmwares on the simulated board (`zf_soak`). |

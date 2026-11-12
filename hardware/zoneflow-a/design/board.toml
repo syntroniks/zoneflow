@@ -2669,7 +2669,7 @@ distance = 10.0
 parts = ["C22", "C51"]
 
 # ---- silkscreen -----------------------------------------------------------------------------------
-# 351 parts on one side: the designators of the small parts do not fit between them. They are left
+# 354 of the 356 footprints are on one side: the designators of the small parts do not fit between them. They are left
 # off the silkscreen and are on the assembly drawing (F.Fab) instead. Connectors, ICs, switches,
 # fuses, test pads and the bottom-side parts keep theirs. "clean" lets the builder take away what
 # DRC then still finds wrong: an outline over a neighbour's pad, a designator with no free place.

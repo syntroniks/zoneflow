@@ -49,7 +49,9 @@ resistor R28. Firmware reads the strap and runs four zones.
 ## What was checked
 
 `make` in `hardware/zoneflow-a/` runs these and stops at the first failure.
-The results are from the build of 2026-11-10 with KiCad 10.0.8.
+The results are those of the committed files, built with KiCad 10.0.8. The
+date in their title block, 2026-11-10, is the date of the design and not of
+the build.
 
 | Check | What it proves | Result |
 |---|---|---|

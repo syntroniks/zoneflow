@@ -139,6 +139,7 @@ nav:
   - FAQ: faq.md
   - Glossary: glossary.md
   - Contributing: contributing.md
+  - Third-party material: third-party.md
   - Design documents:
       - design/index.md
       - System specification: design/system-spec.md
@@ -150,6 +151,7 @@ nav:
       - Hardware layout: design/hardware-layout.md
       - Hardware layout review: design/hardware-layout-review.md
       - Review records: design/reviews/index.md
+      - Repository audit: design/repository-audit.md
       - Hardware toolchain: design/hardware-toolchain.md
       - Mechanical design: design/mechanical.md
       - Firmware architecture: design/firmware-architecture.md

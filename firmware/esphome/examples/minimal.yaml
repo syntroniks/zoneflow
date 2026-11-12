@@ -1,3 +1,5 @@
+# The user file of docs/firmware/esphome.md. v0.2.0 stands for the tag of a release. No release has
+# been tagged yet: until one is, write main in both places.
 substitutions:
   name: garden
   zoneflow_ref: v0.2.0

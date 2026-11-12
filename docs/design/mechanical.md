@@ -462,7 +462,7 @@ change if it turns out wrong.
 I did not edit the circuit design documents.
 
 1. **Section 16.4 quotes revision 1 coordinates.** J7 is now at x = 60.44, y = 88.43, pad 1 at y = 85.68, pad 12 at y = 91.18. The rule for which end is pad 1 is unchanged.
-2. **C1 on the BOM.** The enclosure and the contract now assume the Rubycon through-hole part lying down. The BOM still lists the Lelon part first. See section 6.
+2. **C1 on the BOM.** The enclosure and the contract now assume the Rubycon through-hole part lying down. When this was written the BOM still listed the Lelon part first. It has since been changed: the netlist and the BOM carry the Rubycon 63ZLJ470M12.5X20, LCSC C2940725 (hardware design, section 4.5). See section 6.
 3. **Both fuses** are in the well behind J1, as section 4.3 of the hardware design asks.
 4. **The encoder shaft is 24.5 mm above the board.** The knob absorbs it and stands 14 mm off the fascia.
 5. **Temperature.** With the changes in this revision my estimate is a rise of 9 K at 2 W and 14 K at 3.5 W, down from 11 K and 18 K. The 70 °C design figure then has about 6 K in hand at 50 °C ambient and 3.5 W. It is still an estimate from textbook coefficients. The calculation is on the [enclosure page](../enclosure/index.md#heat-and-ventilation).

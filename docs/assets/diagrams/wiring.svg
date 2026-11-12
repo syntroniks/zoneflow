@@ -210,5 +210,5 @@
 <text x="30" y="470" font-size="12" fill="#1f2933" font-weight="bold">Notes</text>
 <text x="30" y="488" font-size="11.5" fill="#1f2933">Terminal 2 of J1 is the board's ground leg: the sensor GND terminals, the USB ground and the Qwiic ground are the same net.</text>
 <text x="30" y="505" font-size="11.5" fill="#1f2933">Never join a sensor GND to the transformer's other wire, to COM or to any valve wire. Read the USB and earthing rules before connecting USB.</text>
-<text x="30" y="522" font-size="11.5" fill="#1f2933">Drawn from the terminal table in hardware design section 16.1. Silkscreen labels are not final until the PCB layout exists.</text>
+<text x="30" y="522" font-size="11.5" fill="#1f2933">Drawn from the terminal table in hardware design section 16.1. The board prints these names behind the terminals, with Z1 to Z8 at the zones.</text>
 </svg>

@@ -62,6 +62,35 @@ See <a href="../releases/">Releases and updating</a> for how releases are made.<
 <noscript><p>JavaScript is off. Use the <a href="https://github.com/syntroniks/zoneflow/releases">GitHub releases</a>.</p></noscript>
 </div>
 
+## Until the first release: build it yourself
+
+No release has been published ([issue #8](https://github.com/syntroniks/zoneflow/issues/8)),
+so this page, `zfflash` and the esptool commands below have nothing to install yet. Until
+there is one, the only way to put firmware on a board is to build it from the repository.
+Nobody has done this with a board: none exists. CI builds each firmware whenever its sources
+change.
+
+- **Standalone firmware.** Install ESP-IDF v5.5.6, build the web interface, then build and
+  flash. The steps are in
+  [`firmware/zoneflow-fw/README.md`](https://github.com/syntroniks/zoneflow/blob/main/firmware/zoneflow-fw/README.md):
+
+    ```sh
+    cd firmware/zoneflow-fw/web && npm ci && npm run build
+    cd .. && idf.py set-target esp32s3 && idf.py build
+    idf.py -p PORT flash
+    ```
+
+- **ESPHome package.** In `firmware/esphome`, with [uv](https://docs.astral.sh/uv/):
+
+    ```sh
+    uv sync
+    uv run esphome run examples/zoneflow-8zone.yaml
+    ```
+
+    Use `examples/zoneflow-4zone.yaml` for a 4-zone board.
+
+Read [before you flash](#before-you-flash) first: it applies to these commands too.
+
 ## Before you flash
 
 - **Unpower the valves.** Unplug the 24 VAC transformer and the valve wires. USB alone
