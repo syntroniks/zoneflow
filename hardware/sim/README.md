@@ -20,6 +20,11 @@ its own `README.md`. The hand-written files below model one block each and
 are kept. Section 11 of the review compares `failsafe/` with them where the
 two overlap.
 
+`study-failsafe-reduction/` is not about the product at all. It simulates a
+circuit that is in no netlist: the reduced fail-safe that
+`docs/design/failsafe-reduction-study.md` examines. It has its own
+`README.md` and a `Makefile`.
+
 Four of the older files predate one change of review A2.
 `keepalive.cir`, `keepalive_faults.cir`, `relay_detector.cir` and
 `ka_bridge.cir` have the pull-down R33 at 10 kohm. It is 2.2 kohm now. The

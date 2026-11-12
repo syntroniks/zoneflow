@@ -1,0 +1,107 @@
+# A valve runs and 3V3 sags
+
+Study, not the product. Written by `study.py`; do not edit.
+
+The keep-alive toggles and one valve bit and `RLY_ON` are set. At 1.0 s the rail changes as named. The supervisor U12 pulls `EN` low when
+the rail passes its threshold, and the pin is high-impedance from then on: the processor does not come back within the run.
+`V_BUCK` stays at 5.28 V, so the relay coil has its supply throughout, which is the bad case. The rows with "no second supervisor"
+are the circuit without the part that pulls `DRV_EN` low on a low rail: they show what it is for.
+
+| 3V3 | corner | one-shot output below its supply range | EN low after the sag begins, ms | LED current under 0.5 mA after the sag begins, ms | K1 coil under 3.6 mA after the sag begins, ms | expander bits gone after the sag begins, ms | highest LED current later than 0.4 s after EN low, mA | 3V3 when the LED went dark, V |
+|---|---|---|---|---|---|---|---|---|
+| dip to 2.5 V for 300 ms | short, U12 at 3.018 V, second supervisor at 3.142 V | low below 1.0 V | 0.4 | 0.3 | 3.0 | 0.3 | 0.00 | 3.02 |
+| dip to 2.5 V for 300 ms | short, U12 at 3.018 V, second supervisor at 3.142 V | taken as high below 1.65 V | 0.4 | 0.3 | 3.0 | 0.3 | 0.00 | 3.02 |
+| dip to 2.5 V for 300 ms | long, U12 at 3.018 V, second supervisor at 3.142 V | low below 1.0 V | 0.4 | 0.3 | 3.0 | 0.3 | 0.00 | 3.02 |
+| dip to 2.5 V for 300 ms | long, U12 at 3.018 V, second supervisor at 3.142 V | taken as high below 1.65 V | 0.4 | 0.3 | 3.0 | 0.3 | 0.00 | 3.02 |
+| dip to 2.5 V for 300 ms | short, U12 at 3.142 V, second supervisor at 3.018 V | low below 1.0 V | 0.2 | 0.5 | 3.2 | 0.5 | 0.00 | 2.90 |
+| dip to 2.5 V for 300 ms | short, U12 at 3.142 V, second supervisor at 3.018 V | taken as high below 1.65 V | 0.2 | 0.5 | 3.2 | 0.5 | 0.00 | 2.90 |
+| dip to 2.5 V for 300 ms | long, U12 at 3.142 V, second supervisor at 3.018 V | low below 1.0 V | 0.2 | 0.5 | 3.2 | 0.5 | 0.00 | 2.90 |
+| dip to 2.5 V for 300 ms | long, U12 at 3.142 V, second supervisor at 3.018 V | taken as high below 1.65 V | 0.2 | 0.5 | 3.2 | 0.5 | 0.00 | 2.90 |
+| dip to 2.5 V for 300 ms | short, U12 at 3.018 V, no second supervisor | low below 1.0 V | 0.4 | 140.4 | 143.0 | 140.4 | 0.00 | 2.50 |
+| dip to 2.5 V for 300 ms | short, U12 at 3.018 V, no second supervisor | taken as high below 1.65 V | 0.4 | 140.4 | 143.0 | 140.4 | 0.00 | 2.50 |
+| dip to 2.5 V for 300 ms | long, U12 at 3.018 V, no second supervisor | low below 1.0 V | 0.4 | 277.5 | 280.1 | 277.5 | 0.00 | 2.50 |
+| dip to 2.5 V for 300 ms | long, U12 at 3.018 V, no second supervisor | taken as high below 1.65 V | 0.4 | 277.5 | 280.1 | 277.5 | 0.00 | 2.50 |
+| dip to 2.5 V for 300 ms | short, U12 at 3.142 V, no second supervisor | low below 1.0 V | 0.2 | 140.4 | 143.0 | 140.4 | 0.00 | 2.50 |
+| dip to 2.5 V for 300 ms | short, U12 at 3.142 V, no second supervisor | taken as high below 1.65 V | 0.2 | 140.4 | 143.0 | 140.4 | 0.00 | 2.50 |
+| dip to 2.5 V for 300 ms | long, U12 at 3.142 V, no second supervisor | low below 1.0 V | 0.2 | 277.5 | 280.1 | 277.5 | 0.00 | 2.50 |
+| dip to 2.5 V for 300 ms | long, U12 at 3.142 V, no second supervisor | taken as high below 1.65 V | 0.2 | 277.5 | 280.1 | 277.5 | 0.00 | 2.50 |
+| dip to 2.9 V for 50 ms | short, U12 at 3.018 V, second supervisor at 3.142 V | low below 1.0 V | 0.7 | 0.5 | 3.3 | 0.5 | 0.00 | 3.08 |
+| dip to 2.9 V for 50 ms | short, U12 at 3.018 V, second supervisor at 3.142 V | taken as high below 1.65 V | 0.7 | 0.5 | 3.3 | 0.5 | 0.00 | 3.08 |
+| dip to 2.9 V for 50 ms | long, U12 at 3.018 V, second supervisor at 3.142 V | low below 1.0 V | 0.7 | 0.5 | 3.3 | 0.5 | 0.00 | 3.08 |
+| dip to 2.9 V for 50 ms | long, U12 at 3.018 V, second supervisor at 3.142 V | taken as high below 1.65 V | 0.7 | 0.5 | 3.3 | 0.5 | 0.00 | 3.08 |
+| dip to 2.9 V for 50 ms | short, U12 at 3.142 V, second supervisor at 3.018 V | low below 1.0 V | 0.4 | 0.8 | 3.6 | 0.8 | 0.00 | 2.96 |
+| dip to 2.9 V for 50 ms | short, U12 at 3.142 V, second supervisor at 3.018 V | taken as high below 1.65 V | 0.4 | 0.8 | 3.6 | 0.8 | 0.00 | 2.96 |
+| dip to 2.9 V for 50 ms | long, U12 at 3.142 V, second supervisor at 3.018 V | low below 1.0 V | 0.4 | 0.8 | 3.6 | 0.8 | 0.00 | 2.96 |
+| dip to 2.9 V for 50 ms | long, U12 at 3.142 V, second supervisor at 3.018 V | taken as high below 1.65 V | 0.4 | 0.8 | 3.6 | 0.8 | 0.00 | 2.96 |
+| dip to 2.9 V for 50 ms | short, U12 at 3.018 V, no second supervisor | low below 1.0 V | 0.7 | 157.3 | 160.0 | 157.3 | 0.00 | 3.30 |
+| dip to 2.9 V for 50 ms | short, U12 at 3.018 V, no second supervisor | taken as high below 1.65 V | 0.7 | 157.3 | 160.0 | 157.3 | 0.00 | 3.30 |
+| dip to 2.9 V for 50 ms | long, U12 at 3.018 V, no second supervisor | low below 1.0 V | 0.7 | 299.1 | 301.8 | 299.1 | 0.00 | 3.30 |
+| dip to 2.9 V for 50 ms | long, U12 at 3.018 V, no second supervisor | taken as high below 1.65 V | 0.7 | 299.1 | 301.8 | 299.1 | 0.00 | 3.30 |
+| dip to 2.9 V for 50 ms | short, U12 at 3.142 V, no second supervisor | low below 1.0 V | 0.4 | 157.3 | 160.0 | 157.3 | 0.00 | 3.30 |
+| dip to 2.9 V for 50 ms | short, U12 at 3.142 V, no second supervisor | taken as high below 1.65 V | 0.4 | 157.3 | 160.0 | 157.3 | 0.00 | 3.30 |
+| dip to 2.9 V for 50 ms | long, U12 at 3.142 V, no second supervisor | low below 1.0 V | 0.4 | 299.1 | 301.8 | 299.1 | 0.00 | 3.30 |
+| dip to 2.9 V for 50 ms | long, U12 at 3.142 V, no second supervisor | taken as high below 1.65 V | 0.4 | 299.1 | 301.8 | 299.1 | 0.00 | 3.30 |
+| dip to 1.2 V for 300 ms | short, U12 at 3.018 V, second supervisor at 3.142 V | low below 1.0 V | 0.3 | 0.3 | 3.0 | 0.3 | 0.00 | 2.98 |
+| dip to 1.2 V for 300 ms | short, U12 at 3.018 V, second supervisor at 3.142 V | taken as high below 1.65 V | 0.3 | 0.3 | 3.0 | 0.3 | 0.00 | 2.98 |
+| dip to 1.2 V for 300 ms | long, U12 at 3.018 V, second supervisor at 3.142 V | low below 1.0 V | 0.3 | 0.3 | 3.0 | 0.3 | 0.00 | 2.98 |
+| dip to 1.2 V for 300 ms | long, U12 at 3.018 V, second supervisor at 3.142 V | taken as high below 1.65 V | 0.3 | 0.3 | 3.0 | 0.3 | 0.00 | 2.98 |
+| dip to 1.2 V for 300 ms | short, U12 at 3.142 V, second supervisor at 3.018 V | low below 1.0 V | 0.2 | 0.4 | 3.1 | 0.4 | 0.00 | 2.88 |
+| dip to 1.2 V for 300 ms | short, U12 at 3.142 V, second supervisor at 3.018 V | taken as high below 1.65 V | 0.2 | 0.4 | 3.1 | 0.4 | 0.00 | 2.88 |
+| dip to 1.2 V for 300 ms | long, U12 at 3.142 V, second supervisor at 3.018 V | low below 1.0 V | 0.2 | 0.4 | 3.1 | 0.4 | 0.00 | 2.88 |
+| dip to 1.2 V for 300 ms | long, U12 at 3.142 V, second supervisor at 3.018 V | taken as high below 1.65 V | 0.2 | 0.4 | 3.1 | 0.4 | 0.00 | 2.88 |
+| dip to 1.2 V for 300 ms | short, U12 at 3.018 V, no second supervisor | low below 1.0 V | 0.3 | 92.6 | 95.3 | 92.7 | 0.00 | 1.20 |
+| dip to 1.2 V for 300 ms | short, U12 at 3.018 V, no second supervisor | taken as high below 1.65 V | 0.3 | 302.2 | 304.8 | 302.1 | 0.00 | 3.30 |
+| dip to 1.2 V for 300 ms | long, U12 at 3.018 V, no second supervisor | low below 1.0 V | 0.3 | 199.7 | 202.4 | 199.8 | 0.00 | 1.20 |
+| dip to 1.2 V for 300 ms | long, U12 at 3.018 V, no second supervisor | taken as high below 1.65 V | 0.3 | 302.2 | 304.8 | 302.2 | 0.00 | 3.30 |
+| dip to 1.2 V for 300 ms | short, U12 at 3.142 V, no second supervisor | low below 1.0 V | 0.2 | 92.6 | 95.3 | 92.7 | 0.00 | 1.20 |
+| dip to 1.2 V for 300 ms | short, U12 at 3.142 V, no second supervisor | taken as high below 1.65 V | 0.2 | 302.2 | 304.8 | 302.1 | 0.00 | 3.30 |
+| dip to 1.2 V for 300 ms | long, U12 at 3.142 V, no second supervisor | low below 1.0 V | 0.2 | 199.7 | 202.4 | 199.8 | 0.00 | 1.20 |
+| dip to 1.2 V for 300 ms | long, U12 at 3.142 V, no second supervisor | taken as high below 1.65 V | 0.2 | 302.2 | 304.8 | 302.2 | 0.00 | 3.30 |
+| falls to 0 V in 1 s | short, U12 at 3.018 V, second supervisor at 3.142 V | low below 1.0 V | 85.5 | 48.1 | 50.7 | 48.0 | 0.00 | 3.14 |
+| falls to 0 V in 1 s | short, U12 at 3.018 V, second supervisor at 3.142 V | taken as high below 1.65 V | 85.5 | 48.1 | 50.7 | 48.0 | 0.00 | 3.14 |
+| falls to 0 V in 1 s | long, U12 at 3.018 V, second supervisor at 3.142 V | low below 1.0 V | 85.5 | 48.1 | 50.7 | 48.0 | 0.00 | 3.14 |
+| falls to 0 V in 1 s | long, U12 at 3.018 V, second supervisor at 3.142 V | taken as high below 1.65 V | 85.5 | 48.1 | 50.7 | 48.0 | 0.00 | 3.14 |
+| falls to 0 V in 1 s | short, U12 at 3.142 V, second supervisor at 3.018 V | low below 1.0 V | 47.9 | 85.6 | 88.3 | 85.6 | 0.00 | 3.02 |
+| falls to 0 V in 1 s | short, U12 at 3.142 V, second supervisor at 3.018 V | taken as high below 1.65 V | 47.9 | 85.6 | 88.3 | 85.6 | 0.00 | 3.02 |
+| falls to 0 V in 1 s | long, U12 at 3.142 V, second supervisor at 3.018 V | low below 1.0 V | 47.9 | 85.6 | 88.3 | 85.6 | 0.00 | 3.02 |
+| falls to 0 V in 1 s | long, U12 at 3.142 V, second supervisor at 3.018 V | taken as high below 1.65 V | 47.9 | 85.6 | 88.3 | 85.6 | 0.00 | 3.02 |
+| falls to 0 V in 1 s | short, U12 at 3.018 V, no second supervisor | low below 1.0 V | 85.5 | 208.0 | 210.7 | 208.0 | 0.00 | 2.61 |
+| falls to 0 V in 1 s | short, U12 at 3.018 V, no second supervisor | taken as high below 1.65 V | 85.5 | 208.0 | 210.7 | 208.0 | 0.00 | 2.61 |
+| falls to 0 V in 1 s | long, U12 at 3.018 V, no second supervisor | low below 1.0 V | 85.5 | 296.0 | 298.7 | 296.1 | 0.00 | 2.32 |
+| falls to 0 V in 1 s | long, U12 at 3.018 V, no second supervisor | taken as high below 1.65 V | 85.5 | 296.0 | 298.7 | 296.1 | 0.00 | 2.32 |
+| falls to 0 V in 1 s | short, U12 at 3.142 V, no second supervisor | low below 1.0 V | 47.9 | 168.8 | 171.5 | 168.8 | 0.00 | 2.74 |
+| falls to 0 V in 1 s | short, U12 at 3.142 V, no second supervisor | taken as high below 1.65 V | 47.9 | 168.8 | 171.5 | 168.8 | 0.00 | 2.74 |
+| falls to 0 V in 1 s | long, U12 at 3.142 V, no second supervisor | low below 1.0 V | 47.9 | 258.4 | 261.1 | 258.4 | 0.00 | 2.45 |
+| falls to 0 V in 1 s | long, U12 at 3.142 V, no second supervisor | taken as high below 1.65 V | 47.9 | 258.4 | 261.1 | 258.4 | 0.00 | 2.45 |
+| falls to 0 V in 10 s | short, U12 at 3.018 V, second supervisor at 3.142 V | low below 1.0 V | 854.5 | 479.0 | 481.6 | 479.0 | 0.00 | 3.14 |
+| falls to 0 V in 10 s | short, U12 at 3.018 V, second supervisor at 3.142 V | taken as high below 1.65 V | 854.5 | 479.0 | 481.6 | 479.0 | 0.00 | 3.14 |
+| falls to 0 V in 10 s | long, U12 at 3.018 V, second supervisor at 3.142 V | low below 1.0 V | 854.5 | 479.0 | 481.6 | 479.0 | 0.00 | 3.14 |
+| falls to 0 V in 10 s | long, U12 at 3.018 V, second supervisor at 3.142 V | taken as high below 1.65 V | 854.5 | 479.0 | 481.6 | 479.0 | 0.00 | 3.14 |
+| falls to 0 V in 10 s | short, U12 at 3.142 V, second supervisor at 3.018 V | low below 1.0 V | 478.8 | 617.0 | 619.8 | 617.0 | 0.00 | 3.10 |
+| falls to 0 V in 10 s | short, U12 at 3.142 V, second supervisor at 3.018 V | taken as high below 1.65 V | 478.8 | 617.0 | 619.8 | 617.0 | 0.00 | 3.10 |
+| falls to 0 V in 10 s | long, U12 at 3.142 V, second supervisor at 3.018 V | low below 1.0 V | 478.8 | 752.4 | 755.2 | 752.4 | 0.00 | 3.05 |
+| falls to 0 V in 10 s | long, U12 at 3.142 V, second supervisor at 3.018 V | taken as high below 1.65 V | 478.8 | 752.4 | 755.2 | 752.4 | 0.00 | 3.05 |
+| falls to 0 V in 10 s | short, U12 at 3.018 V, no second supervisor | low below 1.0 V | 854.5 | 997.0 | 999.6 | 997.0 | 0.00 | 2.97 |
+| falls to 0 V in 10 s | short, U12 at 3.018 V, no second supervisor | taken as high below 1.65 V | 854.5 | 997.0 | 999.6 | 997.0 | 0.00 | 2.97 |
+| falls to 0 V in 10 s | long, U12 at 3.018 V, no second supervisor | low below 1.0 V | 854.5 | 1132.2 | 1135.0 | 1132.2 | 0.00 | 2.93 |
+| falls to 0 V in 10 s | long, U12 at 3.018 V, no second supervisor | taken as high below 1.65 V | 854.5 | 1132.2 | 1135.0 | 1132.2 | 0.00 | 2.93 |
+| falls to 0 V in 10 s | short, U12 at 3.142 V, no second supervisor | low below 1.0 V | 478.8 | 617.0 | 619.8 | 617.0 | 0.00 | 3.10 |
+| falls to 0 V in 10 s | short, U12 at 3.142 V, no second supervisor | taken as high below 1.65 V | 478.8 | 617.0 | 619.8 | 617.0 | 0.00 | 3.10 |
+| falls to 0 V in 10 s | long, U12 at 3.142 V, no second supervisor | low below 1.0 V | 478.8 | 752.4 | 755.2 | 752.4 | 0.00 | 3.05 |
+| falls to 0 V in 10 s | long, U12 at 3.142 V, no second supervisor | taken as high below 1.65 V | 478.8 | 752.4 | 755.2 | 752.4 | 0.00 | 3.05 |
+| falls to 1.5 V in 50 ms and stays | short, U12 at 3.018 V, second supervisor at 3.142 V | low below 1.0 V | 7.8 | 4.5 | 7.2 | 4.5 | 0.00 | 3.14 |
+| falls to 1.5 V in 50 ms and stays | short, U12 at 3.018 V, second supervisor at 3.142 V | taken as high below 1.65 V | 7.8 | 4.5 | 7.2 | 4.5 | 0.00 | 3.14 |
+| falls to 1.5 V in 50 ms and stays | long, U12 at 3.018 V, second supervisor at 3.142 V | low below 1.0 V | 7.8 | 4.5 | 7.2 | 4.5 | 0.00 | 3.14 |
+| falls to 1.5 V in 50 ms and stays | long, U12 at 3.018 V, second supervisor at 3.142 V | taken as high below 1.65 V | 7.8 | 4.5 | 7.2 | 4.5 | 0.00 | 3.14 |
+| falls to 1.5 V in 50 ms and stays | short, U12 at 3.142 V, second supervisor at 3.018 V | low below 1.0 V | 4.4 | 8.0 | 10.6 | 8.0 | 0.00 | 3.01 |
+| falls to 1.5 V in 50 ms and stays | short, U12 at 3.142 V, second supervisor at 3.018 V | taken as high below 1.65 V | 4.4 | 8.0 | 10.6 | 8.0 | 0.00 | 3.01 |
+| falls to 1.5 V in 50 ms and stays | long, U12 at 3.142 V, second supervisor at 3.018 V | low below 1.0 V | 4.4 | 8.0 | 10.6 | 8.0 | 0.00 | 3.01 |
+| falls to 1.5 V in 50 ms and stays | long, U12 at 3.142 V, second supervisor at 3.018 V | taken as high below 1.65 V | 4.4 | 8.0 | 10.6 | 8.0 | 0.00 | 3.01 |
+| falls to 1.5 V in 50 ms and stays | short, U12 at 3.018 V, no second supervisor | low below 1.0 V | 7.8 | 57.0 | 59.7 | 57.0 | 0.00 | 1.50 |
+| falls to 1.5 V in 50 ms and stays | short, U12 at 3.018 V, no second supervisor | taken as high below 1.65 V | 7.8 | **stays on** | **stays on** | **stays on** | 2.36 | 3.30 |
+| falls to 1.5 V in 50 ms and stays | long, U12 at 3.018 V, no second supervisor | low below 1.0 V | 7.8 | 180.9 | 183.6 | 181.0 | 0.00 | 1.50 |
+| falls to 1.5 V in 50 ms and stays | long, U12 at 3.018 V, no second supervisor | taken as high below 1.65 V | 7.8 | **stays on** | **stays on** | **stays on** | 2.36 | 3.30 |
+| falls to 1.5 V in 50 ms and stays | short, U12 at 3.142 V, no second supervisor | low below 1.0 V | 4.4 | 57.0 | 59.7 | 57.0 | 0.00 | 1.50 |
+| falls to 1.5 V in 50 ms and stays | short, U12 at 3.142 V, no second supervisor | taken as high below 1.65 V | 4.4 | **stays on** | **stays on** | **stays on** | 2.36 | 3.30 |
+| falls to 1.5 V in 50 ms and stays | long, U12 at 3.142 V, no second supervisor | low below 1.0 V | 4.4 | 180.9 | 183.6 | 181.0 | 0.00 | 1.50 |
+| falls to 1.5 V in 50 ms and stays | long, U12 at 3.142 V, no second supervisor | taken as high below 1.65 V | 4.4 | **stays on** | **stays on** | **stays on** | 2.36 | 3.30 |

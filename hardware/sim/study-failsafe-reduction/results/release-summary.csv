@@ -1,0 +1,10 @@
+stop,what,"earliest, ms","latest, ms"
+low,DRV_EN low,139,281
+low,LED dark,139,281
+low,K1 coil released,141,287
+high,DRV_EN low,149,291
+high,LED dark,149,291
+high,K1 coil released,151,297
+hiz,DRV_EN low,139,281
+hiz,LED dark,139,281
+hiz,K1 coil released,141,287

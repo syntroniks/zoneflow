@@ -1,0 +1,49 @@
+net bridged to KA,"bridge, ohm",one-shot input,"highest level on KA after the stop, V",valve
+"push-pull 3.3 V output, 1 kHz (backlight)",0,lowest thresholds,3.60,**valve stays on**
+"push-pull 3.3 V output, 1 kHz (backlight)",0,highest thresholds,3.20,**valve stays on**
+"push-pull 3.3 V output, 1 kHz (backlight)",100,lowest thresholds,3.44,**valve stays on**
+"push-pull 3.3 V output, 1 kHz (backlight)",100,highest thresholds,3.06,**valve stays on**
+"push-pull 3.3 V output, 1 kHz (backlight)",470,lowest thresholds,2.97,**valve stays on**
+"push-pull 3.3 V output, 1 kHz (backlight)",470,highest thresholds,2.64,**valve stays on**
+"push-pull 3.3 V output, 1 kHz (backlight)",1000,lowest thresholds,2.47,**valve stays on**
+"push-pull 3.3 V output, 1 kHz (backlight)",1000,highest thresholds,2.20,**valve stays on**
+"push-pull 3.3 V output, 1 kHz (backlight)",2200,lowest thresholds,1.80,**valve stays on**
+"push-pull 3.3 V output, 1 kHz (backlight)",2200,highest thresholds,1.60,off after 281 ms
+"push-pull 3.3 V output, 1 kHz (backlight)",3300,lowest thresholds,1.44,**valve stays on**
+"push-pull 3.3 V output, 1 kHz (backlight)",3300,highest thresholds,1.28,off after 281 ms
+"push-pull 3.3 V output, 1 kHz (backlight)",4700,lowest thresholds,1.15,off after 281 ms
+"push-pull 3.3 V output, 1 kHz (backlight)",4700,highest thresholds,1.02,off after 281 ms
+"push-pull 3.3 V output, 1 kHz (backlight)",10000,lowest thresholds,0.65,off after 281 ms
+"push-pull 3.3 V output, 1 kHz (backlight)",10000,highest thresholds,0.58,off after 281 ms
+"push-pull 3.3 V output, 20 Hz",0,lowest thresholds,3.60,**valve stays on**
+"push-pull 3.3 V output, 20 Hz",0,highest thresholds,3.20,**valve stays on**
+"push-pull 3.3 V output, 20 Hz",100,lowest thresholds,3.44,**valve stays on**
+"push-pull 3.3 V output, 20 Hz",100,highest thresholds,3.06,**valve stays on**
+"push-pull 3.3 V output, 20 Hz",470,lowest thresholds,2.97,**valve stays on**
+"push-pull 3.3 V output, 20 Hz",470,highest thresholds,2.64,**valve stays on**
+"push-pull 3.3 V output, 20 Hz",1000,lowest thresholds,2.47,**valve stays on**
+"push-pull 3.3 V output, 20 Hz",1000,highest thresholds,2.20,**valve stays on**
+"push-pull 3.3 V output, 20 Hz",2200,lowest thresholds,1.80,**valve stays on**
+"push-pull 3.3 V output, 20 Hz",2200,highest thresholds,1.60,off after 281 ms
+"push-pull 3.3 V output, 20 Hz",3300,lowest thresholds,1.44,**valve stays on**
+"push-pull 3.3 V output, 20 Hz",3300,highest thresholds,1.28,off after 281 ms
+"push-pull 3.3 V output, 20 Hz",4700,lowest thresholds,1.15,off after 281 ms
+"push-pull 3.3 V output, 20 Hz",4700,highest thresholds,1.02,off after 281 ms
+"push-pull 3.3 V output, 20 Hz",10000,lowest thresholds,0.65,off after 281 ms
+"push-pull 3.3 V output, 20 Hz",10000,highest thresholds,0.58,off after 281 ms
+"zero-cross signal AC_ZC, 50 Hz",0,lowest thresholds,0.65,off after 281 ms
+"zero-cross signal AC_ZC, 50 Hz",0,highest thresholds,0.58,off after 281 ms
+"zero-cross signal AC_ZC, 50 Hz",100,lowest thresholds,0.64,off after 282 ms
+"zero-cross signal AC_ZC, 50 Hz",100,highest thresholds,0.57,off after 282 ms
+"zero-cross signal AC_ZC, 50 Hz",470,lowest thresholds,0.63,off after 281 ms
+"zero-cross signal AC_ZC, 50 Hz",470,highest thresholds,0.56,off after 282 ms
+"zero-cross signal AC_ZC, 50 Hz",1000,lowest thresholds,0.60,off after 281 ms
+"zero-cross signal AC_ZC, 50 Hz",1000,highest thresholds,0.53,off after 281 ms
+"zero-cross signal AC_ZC, 50 Hz",2200,lowest thresholds,0.55,off after 281 ms
+"zero-cross signal AC_ZC, 50 Hz",2200,highest thresholds,0.49,off after 282 ms
+"zero-cross signal AC_ZC, 50 Hz",3300,lowest thresholds,0.51,off after 281 ms
+"zero-cross signal AC_ZC, 50 Hz",3300,highest thresholds,0.45,off after 281 ms
+"zero-cross signal AC_ZC, 50 Hz",4700,lowest thresholds,0.47,off after 281 ms
+"zero-cross signal AC_ZC, 50 Hz",4700,highest thresholds,0.42,off after 281 ms
+"zero-cross signal AC_ZC, 50 Hz",10000,lowest thresholds,0.36,off after 281 ms
+"zero-cross signal AC_ZC, 50 Hz",10000,highest thresholds,0.32,off after 281 ms
