@@ -1,7 +1,7 @@
 # ZoneFlow rev A, the product board. `make` regenerates the KiCad project and
 # every output from the files in design/ and from ../netlist.yaml, and fails
-# if the netlist check, the page lint, ERC or (once the board is laid out)
-# DRC fail. See docs/design/hardware-toolchain.md.
+# if the netlist check, the page lint, ERC, DRC, the mechanical contract or
+# the layout rules fail. See docs/design/hardware-toolchain.md.
 NAME := zoneflow-a
 VARIANTS := 4-zone
 SCH_LINT := 1
