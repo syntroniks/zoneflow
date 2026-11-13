@@ -71,6 +71,38 @@ courtyard area. `new-parts.csv` holds the JLCPCB rows of 2026-11-12 for the
 part numbers revision A does not have. `variants.py` lists the parts of each
 variant. `area.py` reads pads and courtyards from the board file.
 
+## The review's additions
+
+[`docs/design/failsafe-reduction-review.md`](../../../docs/design/failsafe-reduction-review.md)
+is an independent review of the study. It ran `make` again and compared the
+results with the committed ones, and it added three things here. They are a
+study too.
+
+    make review   # the two below, about 6 minutes on a 16-core machine
+    make wide     # faults_wide.py
+    make options  # review_options.py
+
+    uv run faults_wide.py --variant V1 --ids u5_p00_low ct_leak_100k   # some faults, printed
+    uv run faults_wide.py --variant V1 --deck u5_p00_low stop-low      # one deck, to read it
+
+| File | What it does | Result files |
+|---|---|---|
+| `faults_wide.py` | The fault injection that the study says it did not do, in the manner of review A2, on V2 and on V1. Every component open and shorted, every pin of the one-shot stuck, open and bridged to its neighbour, the pins of the transistors and of the expander, nets shorted to a rail, leaks, and bridges from the keep-alive net to its neighbours on the module. It takes the deck of `study.py` and edits it for each fault. V1 is that deck without the inverter, Q3 and the relay, with the opto LEDs on `3V3` and the read-back on `DRV_EN`. | `results/faults-wide-v1.md`, `results/faults-wide-v2.md` |
+| `faults_wide.py`, the trip run | An option the study does not have: the over-current comparator of revision A on the clear input of the one-shot. | `results/trip-via-clear.md` |
+| `review_options.py` | V1 with one thing put back at a time: parts, landed cost and area against revision A and against V1, with `cost.py` and `variants.py` unchanged. | `results/review-options.md` |
+
+Each fault goes through seven runs: the keep-alive stops low, high and
+high-impedance with a valve open, and four tests a firmware could make
+(idle, float, pin-high, and a run with a start and a stop test, at the short
+and the long corner). The result files say what each column means.
+
+Limits of the fault injection, beyond those below:
+
+- **A fault on a pin of the one-shot shows what the model does.** The data sheets do not describe the inside of the part. The rows are marked "model", and the review counts the ones that matter as not established until a bench has repeated them.
+- **Some faults cannot be put into this deck**: an open supply or ground pin, and shorts that load the ideal `3V3` source. They are in the tables with the basis "reading" and no run.
+- **One valve channel**, as in the study. A bridge between two valve pins is not in the list.
+- **No temperature and no corner sweep.** One corner per fault, two for the stop test.
+
 ## What this does not show
 
 - **Nothing about a real part.** The one-shot's K at 50 kohm and 4.7 uF, its output under 1.65 V and its behaviour with a slow supply are not in its data sheet in the detail the model needs.
