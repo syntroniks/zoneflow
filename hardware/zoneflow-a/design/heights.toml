@@ -40,8 +40,8 @@ src = "package"
 height = 2.7
 src = "package"
 [footprint.LED_0603_1608Metric]
-height = 0.8
-src = "sheet"      # C125094: "Extra thin (0.80 mm)". The red LED, C2286, is 0.6
+height = 0.6
+src = "sheet"      # C2286, KT-0603R: "Package (L/W/H): 1.6*0.8*0.6 mm". Every LED is this part since 2026-11-12
 [footprint.D_SOD-123]
 height = 1.35
 src = "package"

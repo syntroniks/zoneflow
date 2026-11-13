@@ -98,9 +98,9 @@ dead,"27 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,with U13,
 dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.839,,,True,3.047e-08
 dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.839,,,True,4.506e-07
 dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.839,,,True,3.727e-08
-dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,-6.206e-16
-dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,9.938e-15
-dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,-6.209e-16
+dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,-6.202e-16
+dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,1.084e-14
+dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,-6.213e-16
 dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.838,,,True,3.047e-08
 dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.838,,,True,4.505e-07
 dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.838,,,True,3.727e-08
@@ -110,15 +110,15 @@ dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",hiz,with U13,
 dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.839,,,True,3.046e-08
 dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.839,,,True,4.505e-07
 dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.839,,,True,3.726e-08
-dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,-8.711e-17
-dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,7.464e-15
-dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,-9.042e-17
+dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,-8.741e-17
+dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,6.431e-15
+dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,-9.002e-17
 dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.838,,,True,3.046e-08
 dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.838,,,True,4.505e-07
 dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.838,,,True,3.726e-08
-dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,-8.89e-17
-dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,1.128e-14
-dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,-8.922e-17
+dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,-8.923e-17
+dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,1.051e-14
+dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.0025,4.831,4.823,,,True,-8.918e-17
 dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.000371
 dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.004545
 dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.0003841
@@ -129,8 +129,8 @@ dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",low,with U13,
 dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.004545
 dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.0003841
 dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",low,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.07,,,True,-4.427e-16
-dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.07,,,True,1.69e-14
-dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.07,,,True,-4.423e-16
+dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",high,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.07,,,True,1.934e-14
+dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.07,,,True,-4.425e-16
 dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",low,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.000371
 dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",high,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.004545
 dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",hiz,with U13,ok,,True,False,0.0005,0.0005,0.003,5.069,5.074,,,True,0.0003841
@@ -352,7 +352,7 @@ no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse
 no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",one pulse of 100 ms,with U13,ok,,,,,,,5.069,0.01012,False,1.559,False,1.528
 no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",0.5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.624,False,1.581
 no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",1 Hz,with U13,ok,,,,,,,5.069,0.01012,False,1.861,False,1.813
-no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",2 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.331,False,2.274
+no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",2 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.332,False,2.274
 no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",3 Hz,with U13,ok,,,,,,,5.069,0.01012,False,2.881,False,2.626
 no edges,"27 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",5 Hz,with U13,ok,,,,,,,5.069,0.01012,False,3.32,False,3.099
 no edges,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",pin low from power-up,with U13,ok,,,,,,,4.831,0.009647,False,0.001656,False,3.909e-05
@@ -554,9 +554,9 @@ dead,"27 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,without U
 dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.3955,0.3955,0.3975,4.824,4.824,,,True,3.041e-08
 dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.613,0.613,0.6155,4.824,4.824,,,True,4.512e-07
 dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.3955,0.3955,0.3975,4.824,4.824,,,True,3.72e-08
-dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.2655,0.2655,0.2675,4.824,4.824,,,True,-6.197e-16
-dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.4155,0.4155,0.4175,4.824,4.824,,,True,1.373e-14
-dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.2655,0.2655,0.2675,4.824,4.824,,,True,-6.199e-16
+dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.2655,0.2655,0.2675,4.824,4.824,,,True,-6.2e-16
+dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.4155,0.4155,0.4175,4.824,4.824,,,True,1.32e-14
+dead,"70 C, small capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.2655,0.2655,0.268,4.824,4.824,,,True,-6.205e-16
 dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.3955,0.3955,0.3975,4.824,4.824,,,True,3.041e-08
 dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.613,0.613,0.6155,4.824,4.824,,,True,4.511e-07
 dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.3955,0.3955,0.3975,4.824,4.824,,,True,3.72e-08
@@ -566,17 +566,17 @@ dead,"70 C, small capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",hiz,without U
 dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.349,0.395,0.349,4.824,4.827,,,True,3.041e-08
 dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.5475,0.613,0.5475,4.824,4.827,,,True,4.509e-07
 dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.349,0.395,0.349,4.824,4.827,,,True,3.72e-08
-dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.243,0.2655,0.243,4.824,4.827,,,True,-8.991e-17
-dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.384,0.4155,0.384,4.824,4.827,,,True,1.645e-14
-dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.243,0.2655,0.243,4.824,4.827,,,True,-8.905e-17
+dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.243,0.2655,0.243,4.824,4.827,,,True,-8.937e-17
+dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.384,0.4155,0.384,4.824,4.827,,,True,1.186e-14
+dead,"70 C, small capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.243,0.2655,0.243,4.824,4.827,,,True,-8.965e-17
 dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.3175,0.395,0.3175,4.824,4.827,,,True,3.041e-08
 dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,0.4985,0.613,0.4985,4.824,4.827,,,True,4.509e-07
 dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.3175,0.395,0.3175,4.824,4.827,,,True,3.72e-08
-dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.225,0.2655,0.225,4.824,4.827,,,True,-8.867e-17
-dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.357,0.4155,0.357,4.824,4.827,,,True,7.253e-16
-dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.225,0.2655,0.225,4.824,4.827,,,True,-8.964e-17
+dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.225,0.2655,0.225,4.824,4.827,,,True,-8.88e-17
+dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.357,0.4155,0.357,4.824,4.827,,,True,-1.016e-15
+dead,"70 C, small capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.225,0.2655,0.225,4.824,4.827,,,True,-8.926e-17
 dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.833,0.833,0.8355,5.061,5.061,,,True,0.0003703
-dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,1.245,1.245,1.248,5.061,5.061,,,True,0.004552
+dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,1.246,1.246,1.248,5.061,5.061,,,True,0.004552
 dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.833,0.833,0.8355,5.061,5.061,,,True,0.0003833
 dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.5665,0.5665,0.569,5.061,5.061,,,True,-2.448e-16
 dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.849,0.849,0.8515,5.061,5.061,,,True,1.136e-14
@@ -584,9 +584,9 @@ dead,"70 C, large capacitors, Vth 0.65 V at -4.5 mV/K, IS 6.6e-07",hiz,without U
 dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.833,0.833,0.8355,5.061,5.061,,,True,0.0003703
 dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,1.245,1.245,1.248,5.061,5.061,,,True,0.004551
 dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.833,0.833,0.8355,5.061,5.061,,,True,0.0003833
-dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.5665,0.5665,0.569,5.061,5.061,,,True,-4.426e-16
-dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.849,0.849,0.8515,5.061,5.061,,,True,2.401e-14
-dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.5665,0.5665,0.569,5.061,5.061,,,True,-4.421e-16
+dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.5665,0.5665,0.569,5.061,5.061,,,True,-4.425e-16
+dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.849,0.849,0.8515,5.061,5.061,,,True,2.425e-14
+dead,"70 C, large capacitors, Vth 0.65 V at -1.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.5665,0.5665,0.569,5.061,5.061,,,True,-4.42e-16
 dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.7485,0.832,0.7485,5.061,5.065,,,True,0.0003702
 dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,1.129,1.245,1.129,5.061,5.065,,,True,0.004549
 dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.7485,0.832,0.7485,5.061,5.065,,,True,0.0003833
@@ -595,7 +595,7 @@ dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",high,without 
 dead,"70 C, large capacitors, Vth 1.45 V at -4.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.524,0.566,0.524,5.061,5.065,,,True,8.527e-17
 dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",low,without U13,ok,,True,False,0.6855,0.832,0.6855,5.061,5.065,,,True,0.0003702
 dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",high,without U13,ok,,True,False,1.035,1.245,1.035,5.061,5.065,,,True,0.004548
-dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.6855,0.8325,0.6855,5.061,5.065,,,True,0.0003833
+dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 1.5e-08",hiz,without U13,ok,,True,False,0.6855,0.832,0.6855,5.061,5.065,,,True,0.0003833
 dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",low,without U13,ok,,True,False,0.4895,0.566,0.4895,5.061,5.065,,,True,8.566e-17
 dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",high,without U13,ok,,True,False,0.7425,0.849,0.7425,5.061,5.065,,,True,1.288e-14
 dead,"70 C, large capacitors, Vth 1.45 V at -1.5 mV/K, IS 6.6e-07",hiz,without U13,ok,,True,False,0.4895,0.566,0.4895,5.061,5.065,,,True,8.512e-17

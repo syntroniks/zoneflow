@@ -9,6 +9,8 @@ by review A1 (`docs/design/hardware-review-a1.md`).
 `failsafe/` were added by review A2 (`docs/design/hardware-review-a2.md`).
 `vin_mon.cir` and four more runs in `failsafe/` were added with the answers
 to the firmware's questions (`docs/design/hardware-answers-a2.md`).
+`array_feed.cir` was added with the second pass on extended part types
+(design section 29).
 The design is in
 `docs/design/hardware-design.md`. No board exists. These runs check the
 circuit as drawn against idealised parts. They do not replace a bench test.
@@ -444,3 +446,29 @@ What it showed:
 - **The gate-drive detector is not enabled.** Its reservoir stays 0.5 V short of the threshold.
 - **The relay detector can be held on.** 0.83 to 0.95 V turns on a Q2 from the low half of the threshold range. A hand estimate had said neither reservoir would charge. It was wrong.
 - **So this bridge defeats one detector, not both.** The design document's layout rules keep `KA` away from `AC_ZC` anyway, and away from the backlight PWM net, which could run both.
+
+## array_feed.cir
+
+A DC solution, added on 2026-11-12 to answer one question: may the pull-up
+arrays RN1 and RN2 on the zone pins of the expander be 10 kohm, which is a
+basic part at JLCPCB, where they are 100 kohm?
+
+The state it solves is a fault of design section 8.5: the expander keeps
+its output bits after the keep-alive has stopped. Q3 has taken the LED
+supply `V_DRV` away. The seven zone pins that are off are still driven high
+and each feeds `V_DRV` backwards through its pull-up. The pin of the running
+zone is still low. `failsafe/` cannot show this, because it models two of
+the nine valve pins.
+
+| Pull-ups | `3V3` and LED | `V_DRV` | Opto LED of the running zone | At GPIO42 |
+|---|---|---|---|---|
+| 100 kohm | 3.3 V, typical LED | 0.926 V | 0.079 mA | 0.838 V |
+| 100 kohm | 3.6 V, low forward voltage | 0.793 V | 0.129 mA | |
+| 10 kohm | 3.3 V, typical LED | 1.282 V | 1.275 mA | 1.161 V |
+| 10 kohm | 3.6 V, low forward voltage | 1.179 V | 1.572 mA | |
+
+What it showed:
+
+- **100 kohm keeps the current under the criterion.** `failsafe/run.py` counts an opto LED current above 0.25 mA as enough to fire a triac. The board as it is stays at a third to a half of that.
+- **10 kohm does not.** Five to six times the criterion: the LED supply switch would no longer answer these faults. The arrays stay at 100 kohm.
+- **One valve pin stuck high, expander in reset.** `V_DRV` rests at 0.25 V with 100 kohm and at 1.50 V with 10 kohm.

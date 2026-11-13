@@ -26,16 +26,16 @@ from the component side. Heights are above the side the part is on.
 | SW3 | EC11J1525402 encoder with push switch | top | 85.000, 88.000 (body centre) | 15 x 13.5 x 4.5; 8.5 x 18 x 1.2; dia 8.975 x 10; dia 5.975 x 10 | 24.5 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
 | SW4 | Back button, TS-1102S-C-M-B, 10 mm actuator | top | 22.000, 61.500 (body centre) | 8.6 x 6 x 3.3; dia 3.5 x 6.7 | 10 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
 | SW5 | Home / Manual button, TS-1102S-C-M-B, 10 mm actuator | top | 48.000, 61.500 (body centre) | 8.6 x 6 x 3.3; dia 3.5 x 6.7 | 10 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
-| D6 | Status LED | top | 12.000, 42.000 (body centre) | 1.6 x 0.8 x 0.8 | 0.8 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
-| D902 | Master valve LED | top | 26.000, 42.000 (body centre) | 1.6 x 0.8 x 0.8 | 0.8 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
-| D102 | Zone 1 LED | top | 35.500, 42.000 (body centre) | 1.6 x 0.8 x 0.8 | 0.8 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
-| D202 | Zone 2 LED | top | 45.000, 42.000 (body centre) | 1.6 x 0.8 x 0.8 | 0.8 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
-| D302 | Zone 3 LED | top | 54.500, 42.000 (body centre) | 1.6 x 0.8 x 0.8 | 0.8 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
-| D402 | Zone 4 LED | top | 64.000, 42.000 (body centre) | 1.6 x 0.8 x 0.8 | 0.8 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
-| D502 | Zone 5 LED | top | 73.500, 42.000 (body centre) | 1.6 x 0.8 x 0.8 | 0.8 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
-| D602 | Zone 6 LED | top | 83.000, 42.000 (body centre) | 1.6 x 0.8 x 0.8 | 0.8 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
-| D702 | Zone 7 LED | top | 92.500, 42.000 (body centre) | 1.6 x 0.8 x 0.8 | 0.8 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
-| D802 | Zone 8 LED | top | 102.000, 42.000 (body centre) | 1.6 x 0.8 x 0.8 | 0.8 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
+| D6 | Status LED | top | 12.000, 42.000 (body centre) | 1.6 x 0.8 x 0.6 | 0.6 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
+| D902 | Master valve LED | top | 26.000, 42.000 (body centre) | 1.6 x 0.8 x 0.6 | 0.6 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
+| D102 | Zone 1 LED | top | 35.500, 42.000 (body centre) | 1.6 x 0.8 x 0.6 | 0.6 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
+| D202 | Zone 2 LED | top | 45.000, 42.000 (body centre) | 1.6 x 0.8 x 0.6 | 0.6 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
+| D302 | Zone 3 LED | top | 54.500, 42.000 (body centre) | 1.6 x 0.8 x 0.6 | 0.6 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
+| D402 | Zone 4 LED | top | 64.000, 42.000 (body centre) | 1.6 x 0.8 x 0.6 | 0.6 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
+| D502 | Zone 5 LED | top | 73.500, 42.000 (body centre) | 1.6 x 0.8 x 0.6 | 0.6 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
+| D602 | Zone 6 LED | top | 83.000, 42.000 (body centre) | 1.6 x 0.8 x 0.6 | 0.6 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
+| D702 | Zone 7 LED | top | 92.500, 42.000 (body centre) | 1.6 x 0.8 x 0.6 | 0.6 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
+| D802 | Zone 8 LED | top | 102.000, 42.000 (body centre) | 1.6 x 0.8 x 0.6 | 0.6 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
 | J5 | USB-C receptacle TYPE-C-31-M-12 | top | 8.000, 2.675 (body centre) | 8.94 x 7.35 x 3.26 | 3.26 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
 | J1 | KF2EDGR-3.81-2P header, 24 VAC | top | 17.805, 5.900 (pin 1) | 8.42 x 9.2 x 7 | 7 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |
 | J2 | KF2EDGR-3.81-7P header, COM COM MV 1 2 3 4 | top | 30.225, 5.900 (pin 1) | 27.47 x 9.2 x 7 | 7 | Body: `hardware/mechanical.yaml`, part entry. Position: board file. |

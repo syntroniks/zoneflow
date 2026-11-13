@@ -1618,7 +1618,7 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "ZoneFlow:TLV803EA30DBZ"
+		(symbol "ZoneFlow:TLV803EA29DBZ"
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
@@ -1635,7 +1635,7 @@
 					(justify left)
 				)
 			)
-			(property "Value" "TLV803EA30DBZR"
+			(property "Value" "TLV803EA29DBZR"
 				(at -10.16 3.81 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -1668,7 +1668,7 @@
 					)
 				)
 			)
-			(property "Description" "3.0 V supply supervisor, open-drain active-low reset, 200 ms delay"
+			(property "Description" "2.93 V supply supervisor, open-drain active-low reset, 200 ms delay"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -1679,7 +1679,7 @@
 					)
 				)
 			)
-			(symbol "TLV803EA30DBZ_0_1"
+			(symbol "TLV803EA29DBZ_0_1"
 				(rectangle
 					(start -10.16 2.54)
 					(end 10.16 -7.62)
@@ -1692,7 +1692,7 @@
 					)
 				)
 			)
-			(symbol "TLV803EA30DBZ_1_1"
+			(symbol "TLV803EA29DBZ_1_1"
 				(pin power_in line
 					(at 0 -10.16 90)
 					(length 2.54)
@@ -1914,6 +1914,17 @@
 		)
 		(uuid "d8b11936-317b-5e5a-8592-2f785f0c3bcb")
 	)
+	(text "MCU (hardware design section 12; every pin with its reset state is in hardware/pinmap.yaml).\n\nU4 ESP32-S3-WROOM-1-N16R8: 16 MB flash, 8 MB octal PSRAM, which takes GPIO35 to 37.\nRated to 65 C, or 85 C with PSRAM ECC on: firmware must enable it. C14 and C15 at pin 2.\n\nNo valve, relay or enable function is on a GPIO. The valve outputs are on the I2C expander,\nwhich the fail-safe circuit holds in reset. Only KA (GPIO17) and I2C0 can influence a valve.\nKA is on module pin 10, between ENC_B and BTN_BACK, on purpose: no net beside it toggles by\nitself. Do not move it without redoing section 8.5 of the hardware design for its neighbours.\n\nStrapping pins:\n  GPIO0   BOOT: R19 pull-up and button SW2. Low at reset selects download mode.\n  GPIO3   VIN_MON: analogue input, held low at reset by its 10k divider leg.\n  GPIO45  SENS_PWR_EN: 100k to GND and one CMOS input. Never add a pull-up to this net.\n  GPIO46  STATUS_LED: R20 and D6 to GND can only pull down.\n\nADC1 only: GPIO1 ADC_LO, GPIO2 ADC_HI, GPIO3 VIN_MON, GPIO7 RLY_B_RB.\nGPIO7 and GPIO42 read back the two keep-alive detectors. They stay inputs for the life of the\nfirmware. GPIO40 reads the over-current latch through 10k.\nUSB: GPIO19 D-, GPIO20 D+, through the series footprints on the USB sheet.\n\nU12 TLV803EA29: open drain, pulls EN low while 3V3 is under 2.93 V (2.87 to 2.99 V) and for\n130 to 270 ms after. R18 10k and C16 1 uF delay EN by about 10 ms. SW1 is reset.\n\nLAYOUT: the 18 x 6 mm antenna end of the module is beyond the top board edge. No copper on any\nlayer under or beside it. Route KA from pin 10 with ground on both sides, at least 1 mm from\nany other signal and never next to TFT_BL, AC_ZC, U0TXD or the buck converter. Put R33 at the\nmodule pin (section 8.5)."
+		(exclude_from_sim no)
+		(at 254 93.98 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left top)
+		)
+		(uuid "17f5dcc3-c6eb-5b88-a3d6-2b3292794993")
+	)
 	(text "Reset: supervisor, RC delay, button"
 		(exclude_from_sim no)
 		(at 24.13 41.3 0)
@@ -1957,17 +1968,6 @@
 			(justify left bottom)
 		)
 		(uuid "d946a279-b47f-557b-bf32-0d4e6f3e23ca")
-	)
-	(text "MCU (hardware design section 12; every pin with its reset state is in hardware/pinmap.yaml).\n\nU4 ESP32-S3-WROOM-1-N16R8: 16 MB flash, 8 MB octal PSRAM, which takes GPIO35 to 37.\nRated to 65 C, or 85 C with PSRAM ECC on: firmware must enable it. C14 and C15 at pin 2.\n\nNo valve, relay or enable function is on a GPIO. The valve outputs are on the I2C expander,\nwhich the fail-safe circuit holds in reset. Only KA (GPIO17) and I2C0 can influence a valve.\nKA is on module pin 10, between ENC_B and BTN_BACK, on purpose: no net beside it toggles by\nitself. Do not move it without redoing section 8.5 of the hardware design for its neighbours.\n\nStrapping pins:\n  GPIO0   BOOT: R19 pull-up and button SW2. Low at reset selects download mode.\n  GPIO3   VIN_MON: analogue input, held low at reset by its 10k divider leg.\n  GPIO45  SENS_PWR_EN: 100k to GND and one CMOS input. Never add a pull-up to this net.\n  GPIO46  STATUS_LED: R20 and D6 to GND can only pull down.\n\nADC1 only: GPIO1 ADC_LO, GPIO2 ADC_HI, GPIO3 VIN_MON, GPIO7 RLY_B_RB.\nGPIO7 and GPIO42 read back the two keep-alive detectors. They stay inputs for the life of the\nfirmware. GPIO40 reads the over-current latch through 10k.\nUSB: GPIO19 D-, GPIO20 D+, through the series footprints on the USB sheet.\n\nU12 TLV803EA30: open drain, pulls EN low while 3V3 is under 3.0 V (2.94 to 3.06 V) and for\n130 to 270 ms after. R18 10k and C16 1 uF delay EN by about 10 ms. SW1 is reset.\n\nLAYOUT: the 18 x 6 mm antenna end of the module is beyond the top board edge. No copper on any\nlayer under or beside it. Route KA from pin 10 with ground on both sides, at least 1 mm from\nany other signal and never next to TFT_BL, AC_ZC, U0TXD or the buck converter. Put R33 at the\nmodule pin (section 8.5)."
-		(exclude_from_sim no)
-		(at 254 93.98 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left top)
-		)
-		(uuid "ffa57461-2b8e-54d1-8cdd-bc9cd4ea3789")
 	)
 	(junction
 		(at 116.84 63.5)
@@ -4687,7 +4687,7 @@
 		)
 	)
 	(symbol
-		(lib_id "ZoneFlow:TLV803EA30DBZ")
+		(lib_id "ZoneFlow:TLV803EA29DBZ")
 		(at 63.5 63.5 0)
 		(unit 1)
 		(body_style 1)
@@ -4708,7 +4708,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "TLV803EA30"
+		(property "Value" "TLV803EA29"
 			(at 53.34 59.69 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4741,7 +4741,7 @@
 				)
 			)
 		)
-		(property "Description" "3.0 V supply supervisor, open-drain active-low reset, 200 ms delay"
+		(property "Description" "2.93 V supply supervisor, open-drain active-low reset, 200 ms delay"
 			(at 63.5 63.5 0)
 			(hide yes)
 			(show_name no)
@@ -4752,7 +4752,7 @@
 				)
 			)
 		)
-		(property "Spec" "TLV803EA30DBZR supervisor 3.0 V, open drain, 200 ms"
+		(property "Spec" "TLV803EA29DBZR supervisor 2.93 V, open drain, 200 ms"
 			(at 63.5 63.5 0)
 			(hide yes)
 			(show_name no)
@@ -4763,7 +4763,7 @@
 				)
 			)
 		)
-		(property "MPN" "TLV803EA30DBZR"
+		(property "MPN" "TLV803EA29DBZR"
 			(at 63.5 63.5 0)
 			(hide yes)
 			(show_name no)
@@ -4785,7 +4785,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C5218924"
+		(property "LCSC" "C1852114"
 			(at 63.5 63.5 0)
 			(hide yes)
 			(show_name no)
@@ -5678,7 +5678,7 @@
 				)
 			)
 		)
-		(property "Value" "yel-grn"
+		(property "Value" "red"
 			(at 96.901 170.434 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5721,7 +5721,7 @@
 				)
 			)
 		)
-		(property "Spec" "LED yellow-green"
+		(property "Spec" "LED red"
 			(at 95.25 167.64 0)
 			(hide yes)
 			(show_name no)
@@ -5732,7 +5732,7 @@
 				)
 			)
 		)
-		(property "MPN" "LTST-C190KGKT"
+		(property "MPN" "KT-0603R"
 			(at 95.25 167.64 0)
 			(hide yes)
 			(show_name no)
@@ -5743,7 +5743,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Lite-On"
+		(property "Manufacturer" "Hubei KENTO Elec"
 			(at 95.25 167.64 0)
 			(hide yes)
 			(show_name no)
@@ -5754,7 +5754,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C125094"
+		(property "LCSC" "C2286"
 			(at 95.25 167.64 0)
 			(hide yes)
 			(show_name no)

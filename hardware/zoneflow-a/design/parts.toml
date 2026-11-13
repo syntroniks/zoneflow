@@ -60,7 +60,7 @@ symbol = "Device:Fuse"
 footprint = "Fuse:Fuseholder_Littelfuse_Nano2_154x"
 package = "SMD 9.7x5 mm"
 
-[part.C151287]  # D1: TVS 48 V bidirectional 1500 W
+[part.C41411765]  # D1: TVS 48 V bidirectional 1500 W
 value = "SMCJ48CA"
 symbol = "Device:D_TVS"
 footprint = "Diode_SMD:D_SMC"
@@ -248,7 +248,7 @@ symbol = "Device:R"
 footprint = "Resistor_SMD:R_0603_1608Metric"
 package = "0603"
 
-[part.C151264]  # D23: TVS 48 V bidirectional 600 W
+[part.C19077591]  # D23: TVS 48 V bidirectional 600 W
 value = "SMBJ48CA"
 symbol = "Device:D_TVS"
 footprint = "Diode_SMD:D_SMB"
@@ -323,9 +323,9 @@ symbol = "Device:C"
 footprint = "Capacitor_SMD:C_0603_1608Metric"
 package = "0603"
 
-[part.C5218924]  # U12: TLV803EA30DBZR supervisor 3.0 V, open drain, 200 ms
-value = "TLV803EA30"
-symbol = "ZoneFlow:TLV803EA30DBZ"
+[part.C1852114]  # U12: TLV803EA29DBZR supervisor 2.93 V, open drain, 200 ms
+value = "TLV803EA29"
+symbol = "ZoneFlow:TLV803EA29DBZ"
 footprint = "Package_TO_SOT_SMD:SOT-23"
 package = "SOT-23"
 
@@ -346,13 +346,6 @@ value = "680R"
 symbol = "Device:R"
 footprint = "Resistor_SMD:R_0603_1608Metric"
 package = "0603"
-
-[part.C125094]  # D6: LED yellow-green
-value = "yel-grn"
-symbol = "Device:LED"
-footprint = "LED_SMD:LED_0603_1608Metric"
-package = "0603"
-pins = { "A" = "2", "K" = "1" }
 
 [part.C4190]  # R21: 2.2k 1%
 value = "2.2k"
@@ -501,7 +494,7 @@ symbol = "Device:C"
 footprint = "Capacitor_SMD:C_0603_1608Metric"
 package = "0603"
 
-[part.C2286]  # D8: LED red
+[part.C2286]  # D6: LED red
 value = "red"
 symbol = "Device:LED"
 footprint = "LED_SMD:LED_0603_1608Metric"

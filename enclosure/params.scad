@@ -88,7 +88,7 @@ btn_socket_d = 4.3;       // loose on the 3.5 mm actuator
 // ---- Light pipes -------------------------------------------------------
 lp_size      = 2.4;   // square section
 lp_hole      = 2.9;   // square hole in the fascia
-lp_bottom_z  = 1.5;   // 0.7 above the LED
+lp_bottom_z  = 1.5;   // 0.9 above the LED, which is 0.6 high (0.7 above the 0.8 mm part before it)
 lp_rail_z    = [8.2, 10.3];
 lp_chan_wall = 1.0;
 lp_fit       = 0.1;   // per side between rail and channel: press fit

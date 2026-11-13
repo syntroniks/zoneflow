@@ -513,6 +513,21 @@ positions:
 - Nothing can stand beside module pins 38 and 39, so the ADC filter capacitors
   are 23 mm of track from them (hardware layout, section 7.11).
 
+### 12.2 The indicator LEDs, 2026-11-12
+
+Written with the second pass on extended part types
+([hardware design](hardware-design.md), section 29), not by the author of the
+rest of this document. The ten LEDs of the row are now the KENTO KT-0603R,
+0.6 mm high by its sheet, where they were the Lite-On LTST-C190KGKT, 0.8 mm.
+The contract carries the new height and the new sheet. Nothing else in it
+moved: no position, no zone, no keep-out, so it stays revision 3. The
+enclosure is unchanged. The light pipes end 1.5 mm above the board as
+before, which is now 0.9 mm above each LED where it was 0.7 mm, and
+`enclosure/tools/check.py` expects that figure. The LED bumps of the
+test-fit board are 0.2 mm lower. The LEDs are red, and by the two sheets
+eight times as bright at the same current as the parts before them, so the
+wider gap is not expected to cost light; nothing was measured.
+
 ## 13. How the files fit together
 
 ```mermaid

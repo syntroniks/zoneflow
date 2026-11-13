@@ -3431,7 +3431,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 55.88 64.77 0)
 			(hide yes)
 			(show_name no)
@@ -3442,7 +3442,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 55.88 64.77 0)
 			(hide yes)
 			(show_name no)
@@ -4811,7 +4811,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 55.88 156.21 0)
 			(hide yes)
 			(show_name no)
@@ -4822,7 +4822,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 55.88 156.21 0)
 			(hide yes)
 			(show_name no)
@@ -4936,7 +4936,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 251.46 222.25 0)
 			(hide yes)
 			(show_name no)
@@ -4947,7 +4947,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 251.46 222.25 0)
 			(hide yes)
 			(show_name no)
@@ -7780,7 +7780,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 55.88 110.49 0)
 			(hide yes)
 			(show_name no)
@@ -7791,7 +7791,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 55.88 110.49 0)
 			(hide yes)
 			(show_name no)

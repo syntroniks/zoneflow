@@ -167,7 +167,7 @@ The underside says it again.
 
 ### What the kit leaves out
 
-- **Low parts.** 228 parts under 1.5 mm tall have no block. They are too small to print. The ten LEDs are the exception: each is a bump 1.6 x 0.8 x 0.8 mm, which a 0.4 mm nozzle prints as two lines.
+- **Low parts.** 228 parts under 1.5 mm tall have no block. They are too small to print. The ten LEDs are the exception: each is a bump 1.6 x 0.8 x 0.6 mm, which a 0.4 mm nozzle prints as two lines.
 - **Lead ends.** The soldered ends of through-hole leads are not printed. The check below includes them as 2.5 mm stubs, a length I assumed.
 - **Fold stiffness.** A printed strip does not bend like a flat cable.
 - **Real mating parts.** Try a real USB-C cable and a real Qwiic plug in their openings. The kit has neither.
@@ -279,7 +279,7 @@ the knob onto the shaft, flat to flat.
 | Check | Expect |
 |---|---|
 | Each pipe in its hole | 0.25 mm each side, the end flush with the face |
-| Each pipe over its LED bump | In line, 0.7 mm above it. Look in from the side before the fascia closes, or down a clear pipe. |
+| Each pipe over its LED bump | In line, 0.9 mm above it. Look in from the side before the fascia closes, or down a clear pipe. |
 
 ### 4. Plug pieces
 

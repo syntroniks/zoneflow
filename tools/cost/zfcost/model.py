@@ -421,17 +421,15 @@ def enclosure_cost(n: int, inp: Inputs) -> float:
 # Scenarios
 # --------------------------------------------------------------------------
 
-# Extended, non-preferred types for which the JLCPCB library held a basic or a
-# preferred extended part in the same footprint on 2026-11-11, and which the
-# BOM consolidation left alone because the swap is a decision and not a
-# like-for-like replacement. docs/hardware/cost.md says why for each.
+# Extended, non-preferred types that are left after the second pass
+# (2026-11-12) and that a part of the basic or preferred library could replace
+# if the owner accepts what docs/hardware/cost.md says each would cost in
+# function or in margin. They are not in the revision B package.
 NEEDS_DECISION = {
-    "C125094": "zone and status LED: yellow NCD0603Y2 (C89811, preferred) in place of yellow-green",
-    "C1996": "100 kohm x4 arrays: 10 kohm x4 (C29718, basic)",
-    "C151264": "TVS SMBJ48CA: the same type from another maker (C19077591, preferred)",
-    "C151287": "TVS SMCJ48CA: the same type from another maker (C41411765, preferred)",
-    "C83270": "TVS SMBJ6.0A: the same type from another maker (C19077560, preferred)",
-    "C7519": "USBLC6-2SC6: SRV05-4 (C7420376, preferred)",
+    "C83270": "TVS SMBJ6.0A (D25): a preferred or basic part whose sheet lacks the pulse curve of section 4.8",
+    "C7519": "USBLC6-2SC6 (U2, U9): SRV05-4 (C7420376, preferred), with pin 5 of U2 taken off VBUS",
+    "C435835": "LDL1117S33R (U3): AMS1117-3.3 (C6186, basic), which needs 4.6 V and may get 4.1 V from USB",
+    "C55266": "TPS2553DBVR (U11): a basic P-channel switch, without the current limit and the fault flag",
 }
 
 # Issue #31 candidates priced here: drop the output snubbers (47 R + 10 nF per
@@ -442,8 +440,65 @@ CHANNELS = {"8-zone": 9, "4-zone": 5}
 
 
 def scenario_needs_decision(inp: Inputs) -> Inputs:
-    """The fee of the six types of NEEDS_DECISION removed. Part prices are left as they are."""
+    """The fee of the four types of NEEDS_DECISION removed. Part prices are left as they are."""
     return inp.copy(basic_override=frozenset(NEEDS_DECISION))
+
+
+# The revision B package of docs/hardware/cost.md: seven changes to the
+# circuit or the layout, each of which removes one fee-carrying type. A line
+# is (LCSC number, change of quantity on the 8-zone board, on the 4-zone
+# board). A number that is not on the BOM today is priced from
+# data/revb-parts.csv. "all" removes the line.
+REVB_PACKAGE = [
+    # U12 goes: comparator A of U13 takes its job, with a two-resistor divider.
+    ("supervisor", [("C1852114", "all"), ("C22935", 1, 1), ("C22807", 1, 1)], -3 + 4),
+    # R60, 33 ohm 1206: three of the 100 ohm 0805 parts of the gate network in parallel.
+    ("backlight resistor", [("C18005", "all"), ("C17408", 3, 3)], +4),
+    # R84, 4.7 ohm 1206: two basic 10 ohm 1206 parts in parallel.
+    ("sensor supply resistor", [("C17937", "all"), ("C17903", 2, 2)], +2),
+    # 10 nF 100 V 0805 (nine snubbers and C48): the basic 100 nF 100 V part.
+    ("snubber capacitor", [("C18741", "all"), ("C28233", 10, 6)], 0),
+    # SW4, SW5: the basic 5.1 mm switch of SW1 and SW2, with longer caps.
+    ("tactile switch", [("C381050", "all"), ("C318884", 2, 2)], 0),
+    # C2, C3, 2.2 uF 100 V 1210: two series pairs of basic 4.7 uF 50 V 1206 parts, each with 1 Mohm across it.
+    ("input capacitors", [("C55151", "all"), ("C29823", 4, 4), ("C22935", 4, 4)], +12),
+    # F2, the Qwiic PTC: the type of F3 on an 1812 footprint.
+    ("Qwiic PTC", [("C151160", "all"), ("C315900", 1, 1)], 0),
+]
+
+
+def scenario_revb(inp: Inputs) -> Inputs:
+    """The board after the revision B package."""
+    parts = dict(inp.parts)
+    parts.update(load_parts(DATA / "revb-parts.csv"))
+    delta: dict[str, dict[str, int] | str] = {}
+    joints = 0
+    for _name, changes, dj in REVB_PACKAGE:
+        joints += dj
+        for code, *q in changes:
+            if q == ["all"]:
+                delta[code] = "all"
+            else:
+                d = delta.setdefault(code, {b: 0 for b in BUILDS})
+                for b, dq in zip(BUILDS, q):
+                    d[b] += dq
+    lines, seen = [], set()
+    for ln in inp.lines:
+        seen.add(ln.lcsc)
+        d = delta.get(ln.lcsc)
+        if d == "all":
+            lines.append(replace(ln, qty={b: 0 for b in BUILDS}))
+        elif d:
+            lines.append(replace(ln, qty={b: ln.qty[b] + d[b] for b in BUILDS}))
+        else:
+            lines.append(ln)
+    for code, d in delta.items():
+        if code not in seen:
+            lines.append(Line(refs="revision B", mpn=parts[code].mpn, lcsc=code, qty=dict(d), kind="smt"))
+    new = inp.copy(lines=lines, parts=parts)
+    for b in BUILDS:
+        new.joints[b] += joints
+    return new
 
 
 def scenario_selftap(inp: Inputs) -> Inputs:
@@ -468,8 +523,12 @@ def scenario_issue31(inp: Inputs) -> Inputs:
 
 SCENARIOS = {
     "selftap": ("Self-tapping screws in place of the seven heat-set inserts", scenario_selftap),
+    "revb": (
+        "The revision B package: seven extended types removed by changes to the circuit or the layout",
+        scenario_revb,
+    ),
     "needs_decision": (
-        "Six more extended types moved to a basic or preferred part in the same footprint; each needs a decision",
+        "Four more extended types whose replacement costs function or margin; each needs a decision",
         scenario_needs_decision,
     ),
     "issue31": (
@@ -479,29 +538,60 @@ SCENARIOS = {
 }
 
 
-# The BOM consolidation (issue #31) replaced five extended part numbers by
-# basic or preferred ones. data/replaced-parts.csv keeps the snapshot rows of
-# the old numbers, fetched on the same day as the new ones, with the number
-# that replaced each. From it the model prices the board as it was, so that
-# the saving on the page is calculated and not copied.
-def load_replaced(path: Path = DATA / "replaced-parts.csv") -> dict[str, Part]:
-    """New LCSC number -> the part it replaced."""
-    with path.open(newline="") as f:
-        new_of = {r["lcsc"]: r["replaced_by"] for r in csv.DictReader(f)}
+# Two passes replaced extended part numbers by basic or preferred ones: five
+# on 2026-11-11 (pull request #47) and four more, with one that stays
+# extended, on 2026-11-12. data/replaced-parts.csv keeps the snapshot rows of
+# the old numbers, fetched on the same day as the new ones, with the pass and
+# the number that replaced each. From it the model prices the board as it was
+# before either pass, so that the savings on the page are calculated and not
+# copied.
+@dataclass(frozen=True)
+class Replaced:
+    step: int  # 1: the first pass, 2: the second
+    new: str  # the LCSC number that is on the BOM now
+    old: Part
+    qty: dict[str, int] | None  # how many parts of the new line were this part; None: the whole line
+
+
+def load_replaced(path: Path = DATA / "replaced-parts.csv") -> list[Replaced]:
     old = load_parts(path)
-    return {new_of[code]: part for code, part in old.items()}
+    out = []
+    with path.open(newline="") as f:
+        for r in csv.DictReader(f):
+            qty = {b: int(r[QTY_COLUMN[b]]) for b in BUILDS} if r["qty_8zone"] else None
+            out.append(Replaced(step=int(r["pass"]), new=r["replaced_by"], old=old[r["lcsc"]], qty=qty))
+    return out
 
 
-def before_consolidation(inp: Inputs) -> Inputs:
-    """The same order with the five replaced part numbers put back."""
-    replaced = load_replaced()
-    lines = [
-        replace(ln, lcsc=replaced[ln.lcsc].lcsc, mpn=replaced[ln.lcsc].mpn) if ln.lcsc in replaced else ln
-        for ln in inp.lines
-    ]
+def before(inp: Inputs, steps=(1, 2)) -> Inputs:
+    """The same order with the part numbers that the given passes replaced put back."""
+    by_new = {r.new: r for r in load_replaced() if r.step in steps}
+    lines = []
+    for ln in inp.lines:
+        r = by_new.get(ln.lcsc)
+        if r is None:
+            lines.append(ln)
+        elif r.qty is None:
+            lines.append(replace(ln, lcsc=r.old.lcsc, mpn=r.old.mpn))
+        else:
+            # Part of the line was the old number: the zone and status LEDs
+            # joined the line of the fault LED.
+            lines.append(replace(ln, qty={b: ln.qty[b] - r.qty[b] for b in BUILDS}))
+            refs = f"{ln.refs} (as {r.old.mpn})"
+            lines.append(replace(ln, refs=refs, lcsc=r.old.lcsc, mpn=r.old.mpn, qty=dict(r.qty)))
     parts = dict(inp.parts)
-    parts.update({p.lcsc: p for p in replaced.values()})
+    parts.update({r.old.lcsc: r.old for r in by_new.values()})
     return inp.copy(lines=lines, parts=parts)
+
+
+def stages(inp: Inputs) -> list[tuple[str, str, Inputs]]:
+    """(key, what it is, inputs) for the board at each stage of the work on extended part types."""
+    return [
+        ("designed", "Revision A as designed", before(inp, (1, 2))),
+        ("pass1", "After the first pass, 2026-11-11", before(inp, (2,))),
+        ("now", "After the second pass: the board as it is", inp),
+        ("revb", "After the revision B package", scenario_revb(inp)),
+    ]
 
 
 def fee_types(inp: Inputs, build: str) -> int:

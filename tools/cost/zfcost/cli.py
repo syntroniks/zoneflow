@@ -5,6 +5,7 @@ uv run zfcost table --qty 3 40 --build 4-zone --set us_tariff_rate=0.25
 uv run zfcost render ../../docs/hardware/cost.md          # rewrite the tables
 uv run zfcost render ../../docs/hardware/cost.md --check  # fail if out of date
 uv run zfcost fetch                     # refresh data/jlcpcb-parts.csv (network)
+uv run zfcost fetch --side              # refresh the replaced and the revision B parts (network)
 """
 
 from __future__ import annotations
@@ -44,11 +45,16 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--check", action="store_true", help="only check that the page is current")
     f = sub.add_parser("fetch", help="refresh the JLCPCB parts snapshot (network)")
     f.add_argument("--out", type=Path, default=m.DATA / "jlcpcb-parts.csv")
+    f.add_argument("--side", action="store_true", help="refetch replaced-parts.csv and revb-parts.csv instead")
     args = ap.parse_args(argv)
 
     if args.cmd == "fetch":
-        from .fetch import fetch
+        from .fetch import fetch, refresh_side
 
+        if args.side:
+            for name in ("replaced-parts.csv", "revb-parts.csv"):
+                print(f"refetched {refresh_side(m.DATA / name)} parts of {name}")
+            return 0
         n = fetch(m.BOM_CSV, args.out)
         print(f"wrote {n} parts to {args.out}")
         return 0

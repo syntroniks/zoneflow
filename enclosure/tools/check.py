@@ -582,8 +582,8 @@ def clearances(s: dict[str, m3.Manifold], bp: dict, tf: dict) -> tuple[list[dict
         side.append(P.axis(P.part("lightpipe", [cxl - 1.5, cyl - 1.5, zF - 1.5], [cxl + 1.5, cyl + 1.5, zF - 0.5]),
                            P.part("fascia", [cxl - 3, cyl - 1, zF - 1.5], [cxl - 1.21, cyl + 1, zF - 0.5]), 0, -1))
     ok = all(v is not None for v in zg + off + side)
-    gap(sec, "LED top to the end of its light pipe, smallest of the ten", min(zg) if ok else None, 0.7,
-        ("print", "thickness"), note="`lp_bottom_z` 1.5 over a 0.8 mm LED")
+    gap(sec, "LED top to the end of its light pipe, smallest of the ten", min(zg) if ok else None, 0.9,
+        ("print", "thickness"), note="`lp_bottom_z` 1.5 over a 0.6 mm LED")
     gap(sec, "Light pipe in its hole in the fascia, each side, smallest of the ten", min(side) if ok else None, 0.25,
         ("print",), kind="fit", note="2.4 mm pipe in a 2.9 mm hole")
     align(sec, "LED to the axis of its light pipe, largest of the ten", max(off) if ok else None)
@@ -652,7 +652,7 @@ def dimensions(s: dict[str, m3.Manifold], bp: dict, tf: dict) -> list[dict]:
     row(tb, "Button actuator, diameter", size(act, 0), 3.5)
     row(tb, "Button actuator, top above the underside of the board", act[1][2] + t, 11.6, "10.0 above the top surface")
     lx, ly = bp["led_c"][0]
-    row(tb, "Left board edge to the middle of the first LED bump", lx, 12.0, "From the contract; the bump is 1.6 x 0.8 x 0.8")
+    row(tb, "Left board edge to the middle of the first LED bump", lx, 12.0, "From the contract; the bump is 1.6 x 0.8 x 0.6")
     row(tb, "Bottom board edge to the middle of the LED row", ly, 42.0, "From the contract")
 
     pn = "Display panel stand-in"

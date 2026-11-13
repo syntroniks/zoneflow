@@ -1,0 +1,92 @@
+* Pull-up arrays RN1 and RN2: what they feed into the LED supply when Q3 is off
+* (docs/design/hardware-design.md section 29, docs/hardware/cost.md)
+*
+* Question. RN1 and RN2 pull the eight zone pins of the expander up to V_DRV,
+* the opto LED supply behind Q3. They are 100 kohm, an extended part at
+* JLCPCB. The basic array is 10 kohm. Does the value matter to the fail-safe?
+*
+* It matters in the faults in which the expander keeps its output bits after
+* the keep-alive has stopped: U5 ignoring its reset, pin 3 of U5 open, DRV_EN
+* stuck high or shorted to 3V3 (design section 8.5, the rows "Q1 stays on").
+* In those faults Q3 still removes the LED supply. But the valve pins that
+* are off are driven high, push-pull, and each feeds V_DRV backwards through
+* its pull-up, around Q3. The pin of the running zone is still low, so that
+* current has a way through its opto LED.
+*
+* hardware/sim/failsafe/ drives two of the nine valve pins, zone 1 and the
+* master valve, so it shows one pull-up where the board has up to eight. This
+* file has all of them. It is a DC solution, nothing more.
+*
+* Circuit: seven zone pins high at 3V3 through one array element each, the
+* master valve pin high through R96 (100 kohm, a single resistor, not
+* changed), Q3 off, R26 to ground, the read-back R92 into GPIO42 with its
+* 45 kohm pull-down, and zone 1 low: R101 with the opto LED of U101, and R102
+* with the indicator D102. Diode models are those of failsafe/model.py.
+* The fail-safe analysis counts an opto LED current above 0.25 mA as enough
+* to fire the triac (failsafe/run.py, I_LED): the MOC3023 guarantees firing at
+* 5 mA and gives no lower limit.
+*
+* Run:  ngspice -b array_feed.cir
+*
+* Result, ngspice 47, 2026-11-12:
+*   element   V_DRV     opto LED current   at GPIO42
+*   100 kohm  0.926 V   0.079 mA           0.838 V
+*   10 kohm   1.282 V   1.275 mA           1.161 V
+* and with 3V3 at 3.6 V and an LED of low forward voltage (IS x 30):
+*   100 kohm  0.793 V   0.129 mA
+*   10 kohm   1.179 V   1.572 mA
+* So with 100 kohm the current stays at a third to a half of the 0.25 mA
+* criterion, and with 10 kohm it is five to six times above it: the LED
+* supply switch would no longer answer these faults, and only the relay
+* would. That is why the arrays stay at 100 kohm.
+*
+* The second network is one valve pin stuck high with the expander in reset
+* (one element feeds V_DRV and no pin is low): V_DRV rests at 0.25 V with
+* 100 kohm and at 1.50 V with 10 kohm, where GPIO42 (1.36 V) reads neither
+* level.
+
+.param rel=100k v33=3.3 isopto=6.9e-13
+.model DOPTO D(IS={isopto} N=1.9 RS=3)
+.model DLED  D(IS=3.1e-20 N=2 RS=5)
+
+V3V3  v33 0 {v33}
+* seven zone pins driven high, one element each; the expander's high side is about 30 ohm
+RPH   v33 pinh 4.3
+RNX   pinh vdrv {rel/7}
+* master valve pin high through R96
+R96   v33 vdrv 100k
+R26   vdrv 0 10k
+R92   vdrv rb 4.7k
+RGPIO rb 0 45k
+* zone 1: pin low through the expander's low side
+R101  vdrv ola 150
+VLED  ola olk 0
+D101  olk zd DOPTO
+R102  vdrv leda 680
+D102  leda zd DLED
+RPL   zd 0 30
+
+* one pin stuck high, expander in reset: a second, separate network
+V3B   b33 0 {v33}
+RNB   b33 bdrv {rel}
+R26B  bdrv 0 10k
+R92B  bdrv brb 4.7k
+RGPB  brb 0 45k
+
+.control
+foreach r 100k 10k
+  alterparam rel = $r
+  alterparam v33 = 3.3
+  alterparam isopto = 6.9e-13
+  reset
+  op
+  echo "element $r, 3V3 3.3 V: V_DRV $&v(vdrv) V, opto LED $&i(vled) A, GPIO42 $&v(rb) V; one pin stuck high: V_DRV $&v(bdrv) V, GPIO42 $&v(brb) V"
+  alterparam v33 = 3.6
+  alterparam isopto = 2.07e-11
+  reset
+  op
+  echo "element $r, 3V3 3.6 V, low LED voltage: V_DRV $&v(vdrv) V, opto LED $&i(vled) A"
+end
+quit
+.endc
+.end

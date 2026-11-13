@@ -3,9 +3,10 @@
 # guesses are in assumptions.toml. Prices are USD.
 #
 # Per-part JLCPCB data (stock, price breaks, basic/extended, minimum and
-# attrition quantities) is in jlcpcb-parts.csv, fetched on 2026-11-11.
+# attrition quantities) is in jlcpcb-parts.csv, fetched on 2026-11-12. The
+# board and freight quotes and the other entries below keep their own dates.
 
-snapshot_date = "2026-11-11"
+snapshot_date = "2026-11-12"
 
 # --- The board, from the layout after its independent review ---
 [board]
@@ -69,8 +70,8 @@ usd = [26.60, 26.60, 31.69, 43.19, 45.70, 67.64, 99.31, 117.40, 155.77]
 
 # --- PCB assembly fees, JLCPCB price page ---
 [assembly]
-source = "https://jlcpcb.com/help/article/pcb-assembly-price (page last updated 2026-10-22)"
-date_checked = "2026-11-11"
+source = "https://jlcpcb.com/help/article/pcb-assembly-price (page last updated 2026-10-22). Read again on 2026-11-12 for the feeder fees, setup and stencil: unchanged"
+date_checked = "2026-11-12"
 economic_max_qty = 50          # https://jlcpcb.com/capabilities/pcb-assembly-capabilities: Economic 2-50 pcs
 standard_max_qty = 80000
 economic_setup = 8.18
@@ -90,7 +91,7 @@ hand_soldering_labor_per_order = 3.58
 # Fixtures, standard rigid PCB: [upper board count, number of fixtures], 8.21 each.
 fixture_each = 8.21
 fixture_tiers = [[29, 2], [99, 3], [199, 5], [349, 10], [499, 15], [100000, 20]]
-preferred_exempt_source = "https://jlcpcb.com/help/article/pcb-assembly-faqs: Preferred Extended parts are exempt from the feeder loading fee for Economic PCB assembly"
+preferred_exempt_source = "https://jlcpcb.com/help/article/pcb-assembly-faqs (last updated 2026-09-09, read again on 2026-11-12): Preferred Extended parts are exempt from the feeder loading fee for Economic PCB assembly"
 capabilities_source = "https://jlcpcb.com/capabilities/pcb-assembly-capabilities: Economic single-sided placement (SMT/thru-hole), 2-50 pcs; Standard single and double sided, 2-80000 pcs"
 
 # --- Parts that JLCPCB does not stock ---
