@@ -46,7 +46,7 @@
   - read-back times the firmware would measure: tA 0.282 to 0.761 (lowest: sample 9; highest: sample 322) s, tB 0.145 to 0.923 (lowest: sample 0; highest: sample 220) s
 - pin stops hiz: valve current ends after 0.116 to 0.679 (lowest: sample 15; highest: sample 146) s; 0 of 127 runs later than 0.95 s
   - gate drive alone ends after 0.284 to 0.797 (lowest: sample 126; highest: sample 27) s
-  - relay alone may hold for 0.116 to 0.681 (lowest: sample 15; highest: sample 146) s
+  - relay alone may hold for 0.116 to 0.682 (lowest: sample 15; highest: sample 146) s
   - earliest the relay can let go (coil below 16 mA): 0.102 to 0.681 (lowest: sample 15; highest: sample 146) s
   - read-back times the firmware would measure: tA 0.285 to 0.799 (lowest: sample 126; highest: sample 27) s, tB 0.151 to 0.955 (lowest: sample 15; highest: sample 252) s
 - pin stops high: valve current ends after 0.297 to 1.08 (lowest: sample 158; highest: sample 230) s; 0 of 140 runs later than 1.4 s

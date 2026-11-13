@@ -11,7 +11,7 @@ A open: R30 open (the same as R91 open). B open: R14 open (the same as R90 open)
 | Monte Carlo | healthy | 0.38 to 0.82 | 0.21 to 0.93 | 0.32 to 1.98 | 1.30 to 1.91 | 1.32 to 1.94 | 17.95 to 55.46 | 11.00 to 32.00 | 2.00 to 33.00 |
 | Monte Carlo | A open | 0.89 to 1.99 | 0.21 to 0.93 | 0.14 to 0.91 | 1.29 to 1.89 | 1.32 to 1.94 | 42.43 to 131.62 | 11.00 to 32.00 | 2.00 to 33.00 |
 | Monte Carlo | B open | 0.38 to 0.82 | 0.45 to 1.86 | 0.71 to 4.04 | 1.30 to 1.90 | 1.31 to 1.91 | 17.95 to 55.46 | 11.00 to 32.00 | 2.00 to 32.00 |
-| grid of extremes | healthy | 0.37 to 0.83 | 0.14 to 1.23 | 0.18 to 3.10 | 1.50 to 1.56 | 1.50 to 1.64 | 17.52 to 57.00 | 13.00 to 23.00 | 2.00 to 42.00 |
+| grid of extremes | healthy | 0.37 to 0.83 | 0.14 to 1.23 | 0.18 to 3.10 | 1.50 to 1.56 | 1.50 to 1.64 | 17.52 to 57.00 | 12.00 to 23.00 | 2.00 to 42.00 |
 | grid of extremes | A open | 0.79 to 2.01 | 0.14 to 1.23 | 0.07 to 1.36 | 1.49 to 1.54 | 1.50 to 1.64 | 42.14 to 138.71 | 12.00 to 23.00 | 2.00 to 42.00 |
 | grid of extremes | B open | 0.37 to 0.83 | 0.32 to 2.51 | 0.42 to 6.33 | 1.50 to 1.56 | 1.49 to 1.58 | 17.52 to 57.00 | 13.00 to 23.00 | 2.00 to 41.00 |
 

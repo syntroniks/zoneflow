@@ -98,7 +98,7 @@ corner,run,sim,suspect,fails,t_a,t_b,t_b_low,t_a_high,g2_max,vth_q2,temp
 "-20 C, 3V3 3.0 V, small capacitors, Vth 0.65 V at -4.5 mV/K, Schottky IS 1.5e-08",one edge,ok,,,,,0.144,,0.8538,0.8525,-20
 "-20 C, 3V3 3.0 V, small capacitors, Vth 0.65 V at -4.5 mV/K, Schottky IS 6.6e-07",one edge,ok,,,,,0.159,,0.882,0.8525,-20
 "-20 C, 3V3 3.0 V, small capacitors, Vth 0.65 V at -1.5 mV/K, Schottky IS 1.5e-08",one edge,ok,,,,,0.25,,0.8539,0.7175,-20
-"-20 C, 3V3 3.0 V, small capacitors, Vth 0.65 V at -1.5 mV/K, Schottky IS 6.6e-07",one edge,ok,,,,,0.264,,0.882,0.7175,-20
+"-20 C, 3V3 3.0 V, small capacitors, Vth 0.65 V at -1.5 mV/K, Schottky IS 6.6e-07",one edge,ok,,,,,0.264,,0.8821,0.7175,-20
 "-20 C, 3V3 3.0 V, small capacitors, Vth 1.45 V at -4.5 mV/K, Schottky IS 1.5e-08",one edge,ok,,,,,,,0.854,1.652,-20
 "-20 C, 3V3 3.0 V, small capacitors, Vth 1.45 V at -4.5 mV/K, Schottky IS 6.6e-07",one edge,ok,,,,,,,0.8822,1.652,-20
 "-20 C, 3V3 3.0 V, small capacitors, Vth 1.45 V at -1.5 mV/K, Schottky IS 1.5e-08",one edge,ok,,,,,,,0.854,1.518,-20

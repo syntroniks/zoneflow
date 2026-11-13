@@ -173,6 +173,21 @@ Every model is behavioural and is fitted to the data sheet figures quoted in
 | Supplies | `V_BUCK`, `V5` and `3V3` as sources chained in that order, each limited to 1.5 A and unable to sink, with the bulk capacitance of the rail | Design section 4. The current limit is the peak limit of U1, taken for all three. |
 | Supervisor U12 | Resets the processor when `3V3` is under 2.871 V. The processor then stays in reset for the rest of the run: its pins are inputs and it writes nothing. | TI TLV803EA29, lowest threshold: 2.93 V less 2 %, design section 12.4. Until 2026-11-12 the model took 2.94 V, the figure that section then gave for the TLV803EA30 |
 
+**Run again on 2026-11-12** with the supervisor at 2.871 V, for the second
+pass on extended part types (design section 29): every command above. No
+verdict changed. 395 of about 9,300 result rows differ from those before,
+in the last printed digit, and two summary lines with them (the longest
+hold of the relay detector alone in the Monte Carlo run, 0.682 s where it
+printed 0.681 s; the shortest enable time of detector A in the
+commissioning grid, 12 ms where it printed 13 ms). One row of `commission`
+has detector A enabled one keep-alive edge earlier, after 26 ms where it
+was 31 ms.
+The model has one diode for every indicator LED, so the change of ten of
+them from yellow-green to red changes no deck. The pull-up arrays were also
+tried at 10 kohm on a copy of the netlist: `faults` and `sequence` gave the
+same verdicts, and `../array_feed.cir` shows why that result is not enough,
+because this model drives two of the nine valve pins.
+
 Limits to keep in mind when reading a result:
 
 - **Gates are ideal apart from their thresholds and a delay.** A fault that
