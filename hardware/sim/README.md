@@ -23,7 +23,9 @@ two overlap.
 `study-failsafe-reduction/` is not about the product at all. It simulates a
 circuit that is in no netlist: the reduced fail-safe that
 `docs/design/failsafe-reduction-study.md` examines. It has its own
-`README.md` and a `Makefile`.
+`README.md` and a `Makefile`. The review of that study,
+`docs/design/failsafe-reduction-review.md`, added a wider fault injection
+and a cost table there.
 
 Four of the older files predate one change of review A2.
 `keepalive.cir`, `keepalive_faults.cir`, `relay_detector.cir` and
