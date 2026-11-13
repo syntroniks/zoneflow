@@ -80,10 +80,12 @@ A shorter-shaft encoder would allow a lower knob.
 ### Light pipes
 
 The comb is one flat part printed in clear PETG. Ten square pipes, 2.4 mm
-across, run from 0.7 mm above each LED to the front surface. Printed on its
+across, run from 0.9 mm above each LED to the front surface. Printed on its
 side, the layers run along each pipe. The pipes share one rail, so a little
 light from a lit LED will reach its neighbours. Whether that is visible, and
-whether 1.6 mA per LED is bright enough, are bench questions.
+whether 1.7 mA per LED is bright enough, are bench questions. The LEDs
+are red since 2026-11-12, eight times as bright at the same current as the
+yellow-green parts before them by the two data sheets.
 
 ## Two compartments
 

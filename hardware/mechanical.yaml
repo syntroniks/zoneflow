@@ -209,27 +209,30 @@ parts:
     model:
       - box: [0, 0, 8.6, 6.0, 0, 3.3]
       - cyl: [0, 0, 3.5, 3.3, 10.0]
-  # LEDs. One square light pipe stands 0.7 mm above each. All on y = 42.
+  # LEDs. One square light pipe stands 0.9 mm above each. All on y = 42.
+  # Since 2026-11-12 the part is the KENTO KT-0603R, 0.6 mm high, where it was
+  # the Lite-On LTST-C190KGKT, 0.8 mm (hardware design section 29). No
+  # position, zone or keep-out moved, and the light pipes are as they were.
   - {ref: D6, name: Status LED, side: top, x: 12.0, y: 42.0, rot: 0, label: "",
-     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.6]}]}
   - {ref: D902, name: Master valve LED, side: top, x: 26.0, y: 42.0, rot: 0, label: "M",
-     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.6]}]}
   - {ref: D102, name: Zone 1 LED, side: top, x: 35.5, y: 42.0, rot: 0, label: "1",
-     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.6]}]}
   - {ref: D202, name: Zone 2 LED, side: top, x: 45.0, y: 42.0, rot: 0, label: "2",
-     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.6]}]}
   - {ref: D302, name: Zone 3 LED, side: top, x: 54.5, y: 42.0, rot: 0, label: "3",
-     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.6]}]}
   - {ref: D402, name: Zone 4 LED, side: top, x: 64.0, y: 42.0, rot: 0, label: "4",
-     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.6]}]}
   - {ref: D502, name: Zone 5 LED, side: top, x: 73.5, y: 42.0, rot: 0, label: "5",
-     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.6]}]}
   - {ref: D602, name: Zone 6 LED, side: top, x: 83.0, y: 42.0, rot: 0, label: "6",
-     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.6]}]}
   - {ref: D702, name: Zone 7 LED, side: top, x: 92.5, y: 42.0, rot: 0, label: "7",
-     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.6]}]}
   - {ref: D802, name: Zone 8 LED, side: top, x: 102.0, y: 42.0, rot: 0, label: "8",
-     model: [{box: [0, 0, 1.6, 0.8, 0, 0.8]}]}
+     model: [{box: [0, 0, 1.6, 0.8, 0, 0.6]}]}
   # Bottom edge, left to right as the installer sees it. Mating faces point
   # towards -y into the wiring compartment.
   - ref: J5
@@ -490,7 +493,7 @@ heights:
   - {ref: J6, part: SM04B-SRSS-TB, height: 2.95, src: jst, note: "4.25 deep; width 6.0 not read from the drawing"}
   - {ref: Q101-Q901, part: T810-600B-TR DPAK, height: 2.4, src: triac,
      note: "Dimension A maximum of the DPAK in the T4 sheet; the T810 sheet was not opened"}
-  - {ref: D6 D102-D902, part: LTST-C190KGKT, height: 0.8, src: led, note: "\"Extra thin (0.80 mm)\""}
+  - {ref: D6 D102-D902, part: KT-0603R, height: 0.6, src: led, note: "\"Package (L/W/H): 1.6*0.8*0.6 mm\". The LTST-C190KGKT before it was 0.8"}
 
 unconfirmed:
   - id: fpc_contact_side
@@ -630,9 +633,9 @@ sources:
     url: https://www.lcsc.com/datasheet/C2970064.pdf
     read: Text
   led:
-    doc: Lite-On LTST-C190KGKT
-    url: https://www.lcsc.com/datasheet/C125094.pdf
-    read: Text
+    doc: Hubei KENTO KT-0603R, approval sheet A.0, 2018-12-06, sections 1 and 2
+    url: https://www.lcsc.com/datasheet/C2286.pdf
+    read: Text and drawing
   wroom:
     doc: ESP32-S3-WROOM-1 datasheet v1.8, figure 10-1
     url: https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf

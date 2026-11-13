@@ -314,7 +314,7 @@ Kind: `gap` must stay open; `play` is a loose fit by design; `fit` is a close fi
 
 | Feature | Kind | Nominal, mm | Tolerance assumed, mm | Left over, mm | Note |
 |---|---|---|---|---|---|
-| LED top to the end of its light pipe, smallest of the ten | gap | 0.70 | 0.36 (print + thickness) | +0.34 | `lp_bottom_z` 1.5 over a 0.8 mm LED |
+| LED top to the end of its light pipe, smallest of the ten | gap | 0.90 | 0.36 (print + thickness) | +0.54 | `lp_bottom_z` 1.5 over a 0.6 mm LED |
 | Light pipe in its hole in the fascia, each side, smallest of the ten | fit | 0.25 | 0.20 (print) | +0.05 | 2.4 mm pipe in a 2.9 mm hole |
 
 ### Module, cell and the rest
@@ -396,7 +396,7 @@ adds or takes; the difference is the thing to report.
 | Test-fit board | Encoder bushing, diameter | 8.98 |  |
 | Test-fit board | Button actuator, diameter | 3.50 |  |
 | Test-fit board | Button actuator, top above the underside of the board | 11.60 | 10.0 above the top surface |
-| Test-fit board | Left board edge to the middle of the first LED bump | 12.00 | From the contract; the bump is 1.6 x 0.8 x 0.8 |
+| Test-fit board | Left board edge to the middle of the first LED bump | 12.00 | From the contract; the bump is 1.6 x 0.8 x 0.6 |
 | Test-fit board | Bottom board edge to the middle of the LED row | 42.00 | From the contract |
 | Display panel stand-in | Panel, long side | 51.80 |  |
 | Display panel stand-in | Panel, short side | 36.20 |  |

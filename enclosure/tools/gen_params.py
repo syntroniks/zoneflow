@@ -236,7 +236,7 @@ def main() -> None:
         "btn_act_d": 3.5,
         "led_c": [[p["x"], p["y"]] for p in leds],
         "led_label": [p["label"] for p in leds],
-        "led_h": 0.8,
+        "led_h": 0.6,
         # ref, x0, x1 of each header body
         "terminals": [[r, by[r]["x"] - (by[r]["poles"] * 3.81 + 0.8) / 2,
                        by[r]["x"] + (by[r]["poles"] * 3.81 + 0.8) / 2]
