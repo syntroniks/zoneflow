@@ -161,35 +161,33 @@ def cuts(inp: m.Inputs, qtys=(5, 25, 100)) -> str:
 
 
 def consolidation(inp: m.Inputs, qtys=QTYS) -> str:
-    """Before and after the BOM consolidation: fee-carrying types, fees per order, cost per controller."""
-    was = m.before_consolidation(inp)
+    """The board at each stage of the work on extended part types: types, fees per order, cost per controller."""
     rows = []
     for b in m.BUILDS:
-        for n in qtys:
-            old, new = m.batch_cost(n, b, was), m.batch_cost(n, b, inp)
-            rows.append(
-                [
-                    b,
-                    str(n),
-                    " + ".join(s for _, s in new.orders),
-                    f"{m.fee_types(was, b)} to {m.fee_types(inp, b)}",
-                    f"{usd(old.extended_fee)} to {usd(new.extended_fee)}",
-                    usd(old.total - new.total),
-                    f"{usd(old.per_unit())} to {usd(new.per_unit())}",
-                    usd(old.per_unit() - new.per_unit()),
-                ]
-            )
+        for _key, what, alt in m.stages(inp):
+            cs = [m.batch_cost(n, b, alt) for n in qtys]
+            eco = m.fee_types(alt, b) * inp.sourced["assembly"]["economic_feeder_extended"]
+            rows.append([b, what, str(m.fee_types(alt, b)), usd(eco)] + [usd(c.per_unit()) for c in cs])
     return table(
-        [
-            "Build",
-            "Units",
-            "Service",
-            "Fee-carrying types",
-            "Extended-part fees, USD per batch",
-            "Saved per batch, USD, with duty and part prices",
-            "USD per controller",
-            "Saved per controller, USD",
-        ],
+        ["Build", "Stage", "Fee-carrying types", "Their fees, USD per Economic order"]
+        + [f"USD per controller at {n}" for n in qtys],
+        rows,
+    )
+
+
+def stage_savings(inp: m.Inputs, qtys=QTYS) -> str:
+    """What each stage saves against the one before it, 8-zone build."""
+    st = m.stages(inp)
+    rows = []
+    for (_k0, _w0, a0), (_k1, what, a1) in zip(st, st[1:]):
+        row = [what, f"{m.fee_types(a0, '8-zone')} to {m.fee_types(a1, '8-zone')}"]
+        for n in qtys:
+            c0, c1 = m.batch_cost(n, "8-zone", a0), m.batch_cost(n, "8-zone", a1)
+            row.append(f"{usd(c0.per_unit() - c1.per_unit())} ({usd((c0.smt_parts - c1.smt_parts) / n)})")
+        rows.append(row)
+    return table(
+        ["Stage, 8-zone", "Fee-carrying types"]
+        + [f"Saved per controller at {n}, USD (of which fitted parts before duty)" for n in qtys],
         rows,
     )
 
@@ -320,6 +318,7 @@ BLOCKS = {
     "sensitivity": sensitivity,
     "cuts": cuts,
     "consolidation": consolidation,
+    "stage-savings": stage_savings,
     "batch": batch_size,
     "time": time_table,
     "oneoff": one_off,

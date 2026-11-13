@@ -88,26 +88,55 @@ def test_every_priced_line_is_in_the_snapshot(inp):
 
 def test_extended_type_count(inp):
     smt = {ln.lcsc for ln in inp.lines if ln.kind == "smt" and ln.qty["8-zone"]}
-    assert len(smt) == 89
-    assert sum(1 for c in smt if inp.parts[c].fee_extended) == 35
-    assert m.fee_types(inp, "8-zone") == m.fee_types(inp, "4-zone") == 35
+    # 88 since 2026-11-12: the zone and status LEDs became the part of the fault LED.
+    assert len(smt) == 88
+    assert sum(1 for c in smt if inp.parts[c].fee_extended) == 32
+    assert m.fee_types(inp, "8-zone") == m.fee_types(inp, "4-zone") == 32
 
 
-def test_before_consolidation_is_the_board_with_the_old_part_numbers(inp):
-    was = m.before_consolidation(inp)
-    assert m.fee_types(was, "8-zone") == 40
-    # Today's board with the five part numbers changed back. docs/hardware/cost.md published 627.30
-    # and 4,800.02 for it before the consolidation. Since 2026-11-12 the board has five 0603 parts
-    # fewer (the debounce filters of the three push contacts, hardware design section 28), which
-    # takes 0.27 and 4.23 off those two totals.
-    assert m.batch_cost(5, "8-zone", was).total == pytest.approx(627.03, abs=0.005)
-    assert m.batch_cost(100, "4-zone", was).total == pytest.approx(4795.79, abs=0.005)
-    saved = m.batch_cost(5, "8-zone", was).extended_fee - m.batch_cost(5, "8-zone", inp).extended_fee
-    assert saved == pytest.approx(5 * inp.sourced["assembly"]["economic_feeder_extended"])
+def test_stages_are_the_board_with_the_old_part_numbers(inp):
+    by_key = {key: alt for key, _what, alt in m.stages(inp)}
+    assert [m.fee_types(by_key[k], "8-zone") for k in ("designed", "pass1", "now", "revb")] == [40, 35, 32, 25]
+    assert by_key["now"] is inp
+    fee = inp.sourced["assembly"]["economic_feeder_extended"]
+
+    def ext(key):
+        return m.batch_cost(5, "8-zone", by_key[key]).extended_fee
+
+    assert ext("designed") - ext("pass1") == pytest.approx(5 * fee)
+    assert ext("pass1") - ext("now") == pytest.approx(3 * fee)
+    assert ext("now") - ext("revb") == pytest.approx(7 * fee)
+    # The board as designed and after the first pass, with the prices of 2026-11-12. With the prices
+    # of 2026-11-11 the two stages came to 627.03 and 606.11 USD for five 8-zone controllers.
+    assert m.batch_cost(5, "8-zone", by_key["designed"]).total == pytest.approx(629.95, abs=0.005)
+    assert m.batch_cost(5, "8-zone", by_key["pass1"]).total == pytest.approx(609.01, abs=0.005)
+    assert m.batch_cost(100, "4-zone", by_key["designed"]).total == pytest.approx(4853.92, abs=0.005)
+    # The same parts are placed at every stage of a part-number swap.
+    for key in ("designed", "pass1"):
+        for b in m.BUILDS:
+            placed = sum(ln.qty[b] for ln in by_key[key].lines if ln.kind == "smt")
+            assert placed == sum(ln.qty[b] for ln in inp.lines if ln.kind == "smt")
     # Every replaced number is gone from the BOM and its replacement is on it.
     on_bom = {ln.lcsc for ln in inp.lines}
-    for new, old in m.load_replaced().items():
-        assert new in on_bom and old.lcsc not in on_bom
+    for r in m.load_replaced():
+        assert r.new in on_bom and r.old.lcsc not in on_bom
+    # The LEDs: ten of the eleven parts of the red line were the yellow-green part.
+    led = [ln for ln in by_key["pass1"].lines if ln.lcsc == "C125094"]
+    assert len(led) == 1 and led[0].qty == {"8-zone": 10, "4-zone": 6}
+    assert [ln.qty["8-zone"] for ln in by_key["pass1"].lines if ln.lcsc == "C2286"] == [1]
+
+
+def test_revb_package_changes_parts_and_joints(inp):
+    alt = m.scenario_revb(inp)
+    placed = sum(ln.qty["8-zone"] for ln in inp.lines if ln.kind == "smt")
+    # Ten parts more: two for the supervisor's divider less U12, two for R60, one for R84, six for C2 and C3.
+    assert sum(ln.qty["8-zone"] for ln in alt.lines if ln.kind == "smt") == placed + 10
+    assert alt.joints["8-zone"] == 840 + 19 and alt.joints["4-zone"] == 730 + 19
+    smt = {ln.lcsc for ln in alt.lines if ln.kind == "smt" and ln.qty["8-zone"]}
+    assert not smt & {"C1852114", "C18005", "C17937", "C18741", "C381050", "C55151", "C151160"}
+    # Three of the seven are replaced by a basic part that is not on the board today.
+    assert len(smt) == 88 - 7 + 3
+    assert all(alt.parts[c].library == "basic" for c in ("C17903", "C28233", "C29823"))
 
 
 # --- Whole-batch arithmetic, redone by hand from the parts of the result ---
@@ -123,9 +152,9 @@ def test_economic_fees_by_hand(inp):
     a = inp.sourced["assembly"]
     c = m.batch_cost(10, "8-zone", inp)
     expect = a["economic_setup"] + a["economic_stencil"] + a["confirm_placement"]
-    expect += 840 * 10 * a["economic_joint"] + 35 * a["economic_feeder_extended"]
+    expect += 840 * 10 * a["economic_joint"] + 32 * a["economic_feeder_extended"]
     assert c.assembly == pytest.approx(expect)
-    assert c.extended_fee == pytest.approx(35 * 3.07)
+    assert c.extended_fee == pytest.approx(32 * 3.07)
 
 
 def test_duty_is_rate_times_goods(inp):

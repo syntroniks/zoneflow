@@ -7,6 +7,13 @@ documented API: it may change or stop answering. One request per second.
 
 Writes one row per LCSC number in hardware/bom-preliminary.csv, plus the
 extra numbers in EXTRA_CODES, with the date of the fetch in every row.
+
+    uv run zfcost fetch --side
+
+refetches the two side files, data/replaced-parts.csv (the part numbers that
+the two passes on extended part types replaced) and data/revb-parts.csv (the
+basic parts that the revision B package would add), so that the stages on the
+cost page are priced on one day.
 """
 
 from __future__ import annotations
@@ -72,6 +79,26 @@ def row_from_item(item: dict, date: str) -> dict:
         "date_checked": date,
         "source": "JLCPCB parts search, selectSmtComponentList",
     }
+
+
+def refresh_side(path: Path) -> int:
+    """Refetch the snapshot columns of a side file (replaced-parts.csv, revb-parts.csv), keeping its own columns."""
+    with path.open(newline="") as f:
+        reader = csv.DictReader(f)
+        fields, rows = reader.fieldnames, list(reader)
+    date = dt.date.today().isoformat()
+    for r in rows:
+        item = _query(r["lcsc"])
+        if item is None:
+            print(f"not found: {r['lcsc']}")
+        else:
+            r.update(row_from_item(item, date))
+        time.sleep(1.0)
+    with path.open("w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=fields, lineterminator="\n")
+        w.writeheader()
+        w.writerows(rows)
+    return len(rows)
 
 
 def fetch(bom_csv: Path, out_csv: Path) -> int:

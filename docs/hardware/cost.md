@@ -1,8 +1,9 @@
 # What a controller costs
 
-!!! warning "An estimate, dated 2026-11-11. Not a quote."
+!!! warning "An estimate, dated 2026-11-12. Not a quote."
     No ZoneFlow board has been ordered, built or tested. Every number on this
-    page is calculated from prices and price lists read on **2026-11-11**,
+    page is calculated from part prices read on **2026-11-12**, from board
+    and freight quotes and price lists read on 2026-11-11,
     and from the assumptions named in the [last section](#assumptions). The
     assembler's own quote needs a login and uploaded files; it has not been
     asked for. Tariffs changed several times in 2026 and will change again.
@@ -21,10 +22,10 @@ user buys them whichever controller they choose.
 
 | USD per controller | 5 units | 10 units | 25 units | 100 units |
 |---|---|---|---|---|
-| 8-zone, board landed | 111.35 | 82.53 | 64.73 | 48.53 |
-| 8-zone, with enclosure | 121.22 | 89.67 | 70.57 | 53.71 |
-| 4-zone, board landed | 104.10 | 74.78 | 58.11 | 42.78 |
-| 4-zone, with enclosure | 113.97 | 81.92 | 63.94 | 47.97 |
+| 8-zone, board landed | 107.72 | 79.99 | 63.16 | 47.61 |
+| 8-zone, with enclosure | 117.60 | 87.13 | 69.00 | 52.79 |
+| 4-zone, board landed | 100.95 | 72.76 | 57.03 | 42.29 |
+| 4-zone, with enclosure | 110.82 | 79.90 | 62.87 | 47.48 |
 
 <!-- zfcost:end -->
 
@@ -40,8 +41,8 @@ What a whole batch costs, which is what has to be paid up front:
 
 | USD for the whole batch | 5 units | 10 units | 25 units | 100 units |
 |---|---|---|---|---|
-| 8-zone | 606.11 | 896.70 | 1,764.19 | 5,371.33 |
-| 4-zone | 569.87 | 819.18 | 1,598.52 | 4,796.50 |
+| 8-zone | 587.98 | 871.27 | 1,724.96 | 5,278.68 |
+| 4-zone | 554.12 | 799.05 | 1,571.66 | 4,747.59 |
 
 <!-- zfcost:end -->
 
@@ -51,16 +52,16 @@ What a whole batch costs, which is what has to be paid up front:
 
 | 8-zone, USD per controller | 5 units | 10 units | 25 units | 100 units |
 |---|---|---|---|---|
-| Parts fitted by JLCPCB | 38.06 | 34.44 | 31.84 | 25.60 |
-| Parts bought loose: headers, C1, K1, plugs, display, spare fuse | 6.45 | 5.73 | 5.57 | 4.43 |
+| Parts fitted by JLCPCB | 37.21 | 33.47 | 31.04 | 24.93 |
+| Parts bought loose: headers, C1, K1, plugs, display, spare fuse | 6.45 | 5.74 | 5.57 | 4.43 |
 | Coin cell (US distributor) | 2.74 | 1.37 | 0.61 | 0.37 |
 | Bare board | 6.56 | 4.05 | 2.55 | 1.65 |
-| Assembly fees | 24.87 | 13.10 | 6.05 | 2.95 |
-| &nbsp;&nbsp;of which for extended parts | 21.49 | 10.74 | 4.30 | 0.60 |
+| Assembly fees | 23.02 | 12.18 | 5.68 | 2.94 |
+| &nbsp;&nbsp;of which for extended parts | 19.65 | 9.82 | 3.93 | 0.58 |
 | Freight to the US | 6.10 | 3.77 | 2.01 | 1.40 |
-| US duty | 26.57 | 20.06 | 16.10 | 12.12 |
+| US duty | 25.63 | 19.40 | 15.70 | 11.88 |
 | Enclosure materials | 9.87 | 7.14 | 5.83 | 5.18 |
-| **Total per controller** | **121.22** | **89.67** | **70.57** | **53.71** |
+| **Total per controller** | **117.60** | **87.13** | **69.00** | **52.79** |
 | Assembly service | economic 5 | economic 10 | economic 25 | standard 100 |
 | Boards ordered | 5 | 10 | 25 | 100 |
 
@@ -70,16 +71,16 @@ What a whole batch costs, which is what has to be paid up front:
 
 | 4-zone, USD per controller | 5 units | 10 units | 25 units | 100 units |
 |---|---|---|---|---|
-| Parts fitted by JLCPCB | 33.23 | 29.24 | 27.48 | 21.77 |
-| Parts bought loose: headers, C1, K1, plugs, display, spare fuse | 6.08 | 5.37 | 5.20 | 4.14 |
+| Parts fitted by JLCPCB | 32.73 | 28.66 | 27.04 | 21.42 |
+| Parts bought loose: headers, C1, K1, plugs, display, spare fuse | 6.09 | 5.37 | 5.21 | 4.15 |
 | Coin cell (US distributor) | 2.74 | 1.37 | 0.61 | 0.37 |
 | Bare board | 6.56 | 4.05 | 2.55 | 1.65 |
-| Assembly fees | 24.69 | 12.93 | 5.87 | 2.81 |
-| &nbsp;&nbsp;of which for extended parts | 21.49 | 10.74 | 4.30 | 0.60 |
+| Assembly fees | 22.85 | 12.01 | 5.50 | 2.80 |
+| &nbsp;&nbsp;of which for extended parts | 19.65 | 9.82 | 3.93 | 0.58 |
 | Freight to the US | 6.10 | 3.77 | 2.01 | 1.40 |
-| US duty | 24.70 | 18.05 | 14.39 | 10.63 |
+| US duty | 23.88 | 17.53 | 14.11 | 10.51 |
 | Enclosure materials | 9.87 | 7.14 | 5.83 | 5.18 |
-| **Total per controller** | **113.97** | **81.92** | **63.94** | **47.97** |
+| **Total per controller** | **110.82** | **79.90** | **62.87** | **47.48** |
 | Assembly service | economic 5 | economic 10 | economic 25 | standard 100 |
 | Boards ordered | 5 | 10 | 25 | 100 |
 
@@ -90,15 +91,15 @@ What a whole batch costs, which is what has to be paid up front:
 - **At 5 units, fixed charges per order are the largest share.** The board's
   engineering fee, the assembly setup and stencil, and above all the
   extended-part fees are charged once per order whatever its size:
-  142.16 USD. With the duty on them they are about 38 USD per controller,
-  32 % of the 121 USD. Parts are 47 USD, 39 %.
-- **At 100 units, parts and duty dominate.** Parts are 30 of the 54 USD and
-  duty 12. Board and assembly fees together have fallen to 4.62 USD.
+  132.95 USD. With the duty on them they are about 36 USD per controller,
+  31 % of the 118 USD. Parts are 46 USD, 39 %.
+- **At 100 units, parts and duty dominate.** Parts are 30 of the 53 USD and
+  duty 12. Board and assembly fees together have fallen to 4.59 USD.
 - **Extended-part fees are the largest single fixed charge.** JLCPCB's
   Economic assembly charges 3.07 USD for each extended part type that is not
-  "preferred"; this board has 35 such types, so every order pays 107.45 USD
-  before it fits a part. On five boards that is 21 USD each, 29 USD with
-  duty, a quarter of the total. It had 40 until five were replaced:
+  "preferred"; this board has 32 such types, so every order pays 98.24 USD
+  before it fits a part. On five boards that is 20 USD each, 27 USD with
+  duty, 23 % of the total. It had 40 as designed; two passes replaced eight:
   [fewer extended part types](#fewer-extended-part-types). Standard assembly, which the model uses
   above 50 boards, charges 1.53 USD for every type, basic or extended.
 
@@ -106,8 +107,8 @@ What a whole batch costs, which is what has to be paid up front:
 
 | Build | Parts placed | Joints | Part types | Basic | Preferred extended | Extended, fee charged |
 |---|---|---|---|---|---|---|
-| 8-zone | 307 | 840 | 89 | 50 | 4 | 35 |
-| 4-zone | 262 | 730 | 89 | 50 | 4 | 35 |
+| 8-zone | 307 | 840 | 88 | 50 | 6 | 32 |
+| 4-zone | 262 | 730 | 88 | 50 | 6 | 32 |
 
 <!-- zfcost:end -->
 
@@ -115,35 +116,35 @@ What a whole batch costs, which is what has to be paid up front:
 
 | Units | Service | Extended-part fees, USD per batch | With duty, USD per controller | Share of the total |
 |---|---|---|---|---|
-| 5 | economic | 107.45 | 29.01 | 24 % |
-| 10 | economic | 107.45 | 14.51 | 16 % |
-| 25 | economic | 107.45 | 5.80 | 8 % |
-| 100 | standard | 59.67 | 0.81 | 1 % |
+| 5 | economic | 98.24 | 26.52 | 23 % |
+| 10 | economic | 98.24 | 13.26 | 15 % |
+| 25 | economic | 98.24 | 5.30 | 8 % |
+| 100 | standard | 58.14 | 0.78 | 1 % |
 
 <!-- zfcost:end -->
 
 - **US duty is the second-largest line at every quantity.** At the 35 % that
   JLCPCB says it collects on boards, it adds 35 % to everything made in
-  China, fees included: 27 USD of the 121 at 5 units, 12 of the 54 at 100.
-- **The 4-zone build saves only 5.75 to 7.75 USD.** It drops 45 parts, but every
+  China, fees included: 26 USD of the 118 at 5 units, 12 of the 53 at 100.
+- **The 4-zone build saves only 5.31 to 7.22 USD.** It drops 45 parts, but every
   part type stays (zones 1 to 4 use the same types as 5 to 8), so it pays
   the same per-order fees and the same board.
 - **Batch size is the biggest lever a builder controls.** Five boards cost
-  51 USD more each than 25 boards.
+  49 USD more each than 25 boards.
 
 ## Components
 
 **Method.** Every line of
 [`hardware/bom-preliminary.csv`](https://github.com/syntroniks/zoneflow/blob/main/hardware/bom-preliminary.csv)
-was priced again on 2026-11-11 from the JLCPCB parts search: stock, price
+was priced again on 2026-11-12 from the JLCPCB parts search: stock, price
 breaks, basic or extended, preferred or not. The snapshot is
 `tools/cost/data/jlcpcb-parts.csv`. For a part JLCPCB fits, the number
 bought is the number fitted plus JLCPCB's attrition quantity for that part,
 and at least its minimum assembly quantity; the price break is the one that
 total reaches. Both quantities come from the parts search; reading them as
-attrition and minimum is an [assumption](#assumptions). They add 8.46 USD to
-a batch of five (1.69 per controller) and 6.68 USD to a batch of a hundred
-(under 0.07 per controller): the minimums are 20 or fewer, and the parts they
+attrition and minimum is an [assumption](#assumptions). They add 10.76 USD to
+a batch of five (2.15 per controller) and 8.54 USD to a batch of a hundred
+(under 0.09 per controller): the minimums are 20 or fewer, and the parts they
 apply to cost a cent or less.
 
 Which parts JLCPCB fits comes from the [layout](layout.md) as it stands
@@ -166,21 +167,24 @@ The most expensive lines, 8-zone:
 
 | Part | USD per controller at 5 | USD per controller at 100 |
 |---|---|---|
+| ESP32-S3-WROOM-1-N16R8 | 5.38 | 3.78 |
 | T810-600B-TR | 4.71 | 3.75 |
-| ESP32-S3-WROOM-1-N16R8 | 4.95 | 3.35 |
 | HS20HS072RX | 3.58 | 2.41 |
-| 0154003.DRT | 3.05 | 2.37 |
+| 0154003.DRT | 3.06 | 2.38 |
 | MOC3023SR2M | 3.75 | 2.12 |
-| EC11J1525402 | 3.05 | 1.80 |
+| EC11J1525402 | 3.06 | 1.80 |
 | LM5164DDAR | 2.56 | 1.67 |
-| SMBJ48CA | 1.82 | 1.49 |
-| BSMD2920-100-60V | 2.18 | 1.46 |
-| TCA9539PWR | 1.22 | 0.79 |
+| BSMD2920-100-60V | 2.19 | 1.47 |
+| TCA9539PWR | 1.22 | 0.80 |
+| KF2EDGK-3.81-7P | 0.75 | 0.55 |
 
 <!-- zfcost:end -->
 
-The nine output channels carry the three most expensive families of the
-board: nine triacs, nine opto-triacs and fourteen 48 V TVS diodes.
+The nine output channels carry two of the most expensive families of the
+board: nine triacs and nine opto-triacs. The fourteen 48 V TVS diodes were
+the third until 2026-11-12: the part of the second maker costs 0.04 USD
+where the first cost 0.11 to 0.13 USD. The module rose by 0.43 USD between
+2026-11-11 and 2026-11-12.
 
 **Stock.** No line was out of stock or below what 100 eight-zone controllers
 need. The thinnest, as the number of 100-unit batches JLCPCB had in stock:
@@ -189,20 +193,23 @@ need. The thinnest, as the number of 100-unit batches JLCPCB had in stock:
 
 | Part | LCSC | Library | JLCPCB stock | Needed for 100 | Batches in stock | Flag |
 |---|---|---|---|---|---|---|
-| T810-600B-TR | C155588 | extended | 3,384 | 900 | 3.8 | thin: under 5 batches |
-| SMBJ48CA | C151264 | extended | 5,782 | 1,402 | 4.1 | thin: under 5 batches |
-| HS20HS072RX | C5329582 | extended | 413 | 100 | 4.1 | thin: under 5 batches |
-| KF2EDGR-3.81-7P | C441187 | extended | 1,606 | 200 | 8.0 |  |
-| KF2EDGK-3.81-7P | C440863 | extended | 1,827 | 200 | 9.1 |  |
-| 0154003.DRT | C206913 | extended | 2,514 | 200 | 12.6 |  |
-| EC11J1525402 | C209762 | extended | 1,486 | 100 | 14.9 |  |
-| 1812L020/60DR | C315900 | extended | 1,590 | 100 | 15.9 |  |
-| LM5164DDAR | C477928 | extended | 1,651 | 100 | 16.5 |  |
-| MOC3023SR2M | C40701 | extended | 15,015 | 900 | 16.7 |  |
+| SMBJ48CA | C19077591 | extended | 2,730 | 1,402 | 1.9 | thin: under 5 batches |
+| T810-600B-TR | C155588 | extended | 2,882 | 900 | 3.2 | thin: under 5 batches |
+| HS20HS072RX | C5329582 | extended | 334 | 100 | 3.3 | thin: under 5 batches |
+| KF2EDGK-3.81-7P | C440863 | extended | 1,522 | 200 | 7.6 |  |
+| KF2EDGR-3.81-7P | C441187 | extended | 1,599 | 200 | 8.0 |  |
+| LM5164DDAR | C477928 | extended | 852 | 100 | 8.5 |  |
+| TLV803EA29DBZR | C1852114 | extended | 1,206 | 100 | 12.1 |  |
+| 0154003.DRT | C206913 | extended | 2,504 | 200 | 12.5 |  |
+| EC11J1525402 | C209762 | extended | 1,481 | 100 | 14.8 |  |
+| 1812L020/60DR | C315900 | extended | 1,540 | 100 | 15.4 |  |
 
 <!-- zfcost:end -->
 
-The display panel had 460 on 2026-11-10 and 413 a day later.
+The display panel had 460 on 2026-11-10, 413 a day later and 334 the day
+after that. The buck converter LM5164DDAR had 1,651 on 2026-11-11 and 852 on
+2026-11-12, and the Qwiic connector SM04B-SRSS-TB fell from 75,739 to 7,233
+in the same day.
 
 ## Board fabrication
 
@@ -250,7 +257,7 @@ From JLCPCB's price page, last updated 2026-10-22, and its capability page.
 Economic assembly takes 2 to 50 boards with parts on one side; Standard
 takes 2 to 80,000 on one or both sides. The model uses Economic up to 50
 and Standard above. For 100 eight-zone boards, one Standard order comes to
-53.71 USD per controller and two Economic orders of 50 to 60.40 USD, because
+52.79 USD per controller and two Economic orders of 50 to 59.28 USD, because
 each Economic order pays the extended-part fees and the board's engineering
 fee again.
 
@@ -278,8 +285,8 @@ options, by the published rules:
 
 | 8-zone, USD per controller (builder minutes per controller) | 5 units | 25 units | 100 units |
 |---|---|---|---|
-| Builder solders them | 121.22 (79 min) | 70.57 (60 min) | 53.71 (56 min) |
-| JLCPCB fits them (Standard service) | 141.62 (69 min) | 75.11 (50 min) | 54.89 (46 min) |
+| Builder solders them | 117.60 (79 min) | 69.00 (60 min) | 52.79 (56 min) |
+| JLCPCB fits them (Standard service) | 140.06 (69 min) | 73.96 (50 min) | 53.97 (46 min) |
 
 <!-- zfcost:end -->
 
@@ -410,9 +417,9 @@ transformer and the cable already installed.
 |---|---|---|
 | Economic assembly: setup, stencil, placement confirmation | 10.16 | Every order |
 | Standard assembly: setup, stencil, placement confirmation | 34.22 | Every order |
-| Economic extended-part fees, 8-zone | 107.45 | Every order |
+| Economic extended-part fees, 8-zone | 98.24 | Every order |
 | Bare boards, 5 pieces, smallest hole 0.3 mm | 32.80 | Every order; 25.00 of it is the engineering fee |
-| Prototype run: 5 eight-zone controllers, landed, with enclosures | 606.11 | Once |
+| Prototype run: 5 eight-zone controllers, landed, with enclosures | 587.98 | Once |
 
 <!-- zfcost:end -->
 
@@ -489,48 +496,319 @@ ten solder joints, the parts, and the duty on all of it.
 | Saved, 8-zone, USD | 0.05 | 0.05 | 0.05 | 0.04 |
 | Saved, 4-zone, USD | 0.05 | 0.05 | 0.05 | 0.04 |
 
-These are the batch totals of this page against the totals it had on
-2026-11-11 with the same prices, divided by the batch size: 606.38 to 606.11
-USD for five 8-zone controllers, 5,375.55 to 5,371.33 USD for a hundred. The
-decision was not made for the money.
+These are the batch totals this page had on 2026-11-11 before and after the
+decision, with the prices of that day, divided by the batch size: 606.38 to
+606.11 USD for five 8-zone controllers, 5,375.55 to 5,371.33 USD for a
+hundred. The decision was not made for the money.
 
 ## Fewer extended part types
 
-Revision A had 40 part types that pay JLCPCB's Economic feeder fee. On
-2026-11-11 each of the 40 was looked up again in JLCPCB's parts library, for a
-basic part or a preferred extended part **in the same footprint** that meets
-every figure the design relies on. The rule was: no change to what the
-circuit does, no footprint change, no new layout. Five types changed, so 35
-are left.
+Revision A as designed had 40 part types that pay JLCPCB's Economic feeder
+fee. Two passes over that list have taken eight types off it, and a package
+of seven more is drawn up for revision B.
 
-The library was read whole, not searched by keyword: the parts search
-returned 351 basic parts and 1,235 preferred extended parts that day, and
-every candidate below was matched against those two lists.
+- **The first pass, 2026-11-11**, allowed only a basic or preferred part in
+  the same footprint that changes nothing in the circuit: 40 to 35.
+- **The second pass, 2026-11-12**, followed the owner's instruction to
+  "focus on fewer distinct extended part types" and was allowed to change the
+  design. What keeps the footprint and the copper and passes a comparison
+  figure by figure is done: 35 to 32. What needs new copper, the enclosure, a
+  firmware change or a bench is the revision B package: 32 to 25.
+
+**The fee rule, read again on 2026-11-12.** JLCPCB's price page (last updated
+2026-10-22) charges "Feeder loading" of 3.07 USD per extended type on an
+Economic order and 1.53 USD per type, basic or extended, on a Standard order.
+Its FAQ page (last updated 2026-09-09) exempts preferred extended parts from
+the Economic fee. The fee is per part type and per order, not per side or
+per board. That is what this page used on 2026-11-11, and nothing below
+rests on anything else.
+
+**The lists, read again.** The parts search returned 351 basic and 1,235
+preferred extended parts on 2026-11-12, the same counts as the day before.
+Every candidate below was matched against those two lists by package and
+value, not by keyword. Every one of the 35 types was also looked up again:
+none had changed its class.
 
 <!-- zfcost:begin consolidation -->
 
-| Build | Units | Service | Fee-carrying types | Extended-part fees, USD per batch | Saved per batch, USD, with duty and part prices | USD per controller | Saved per controller, USD |
+| Build | Stage | Fee-carrying types | Their fees, USD per Economic order | USD per controller at 5 | USD per controller at 10 | USD per controller at 25 | USD per controller at 100 |
 |---|---|---|---|---|---|---|---|
-| 8-zone | 5 | economic | 40 to 35 | 122.80 to 107.45 | 20.92 | 125.41 to 121.22 | 4.18 |
-| 8-zone | 10 | economic | 40 to 35 | 122.80 to 107.45 | 21.12 | 91.78 to 89.67 | 2.11 |
-| 8-zone | 25 | economic | 40 to 35 | 122.80 to 107.45 | 21.74 | 71.44 to 70.57 | 0.87 |
-| 8-zone | 100 | standard | 40 to 35 | 65.79 to 59.67 | -0.71 | 53.71 to 53.71 | -0.01 |
-| 4-zone | 5 | economic | 40 to 35 | 122.80 to 107.45 | 20.92 | 118.16 to 113.97 | 4.18 |
-| 4-zone | 10 | economic | 40 to 35 | 122.80 to 107.45 | 21.12 | 84.03 to 81.92 | 2.11 |
-| 4-zone | 25 | economic | 40 to 35 | 122.80 to 107.45 | 21.74 | 64.81 to 63.94 | 0.87 |
-| 4-zone | 100 | standard | 40 to 35 | 65.79 to 59.67 | -0.71 | 47.96 to 47.97 | -0.01 |
+| 8-zone | Revision A as designed | 40 | 122.80 | 125.99 | 92.37 | 72.02 | 54.29 |
+| 8-zone | After the first pass, 2026-11-11 | 35 | 107.45 | 121.80 | 90.26 | 71.15 | 54.30 |
+| 8-zone | After the second pass: the board as it is | 32 | 98.24 | 117.60 | 87.13 | 69.00 | 52.79 |
+| 8-zone | After the revision B package | 25 | 76.75 | 111.22 | 83.85 | 67.24 | 52.29 |
+| 4-zone | Revision A as designed | 40 | 122.80 | 118.74 | 84.61 | 65.39 | 48.54 |
+| 4-zone | After the first pass, 2026-11-11 | 35 | 107.45 | 114.55 | 82.50 | 64.52 | 48.55 |
+| 4-zone | After the second pass: the board as it is | 32 | 98.24 | 110.82 | 79.90 | 62.87 | 47.48 |
+| 4-zone | After the revision B package | 25 | 76.75 | 104.44 | 76.62 | 61.10 | 47.00 |
 
 <!-- zfcost:end -->
 
-The table is the model run twice: once on the board as it is now and once
-with the five old part numbers put back
-(`tools/cost/data/replaced-parts.csv`, fetched the same day). The fees fall
-by 5 x 3.07 = 15.35 USD per Economic order. The batch saves a little more
-than that with duty, and a few cents come from part prices. At 100 units
-there is no saving, because Standard assembly charges 1.53 USD for every
-type, basic or extended; the new parts cost a cent more per board there.
+<!-- zfcost:begin stage-savings -->
 
-### What was swapped
+| Stage, 8-zone | Fee-carrying types | Saved per controller at 5, USD (of which fitted parts before duty) | Saved per controller at 10, USD (of which fitted parts before duty) | Saved per controller at 25, USD (of which fitted parts before duty) | Saved per controller at 100, USD (of which fitted parts before duty) |
+|---|---|---|---|---|---|
+| After the first pass, 2026-11-11 | 40 to 35 | 4.19 (0.03) | 2.11 (0.03) | 0.87 (0.03) | -0.01 (-0.00) |
+| After the second pass: the board as it is | 35 to 32 | 4.21 (1.27) | 3.13 (1.40) | 2.16 (1.23) | 1.51 (1.10) |
+| After the revision B package | 32 to 25 | 6.38 (0.46) | 3.27 (0.31) | 1.76 (0.47) | 0.50 (0.33) |
+
+<!-- zfcost:end -->
+
+The first table is the model run four times: on the board as it is, with the
+old part numbers of one or both passes put back
+(`tools/cost/data/replaced-parts.csv`, fetched the same day), and with the
+revision B package applied (`scenario_revb` in `tools/cost/zfcost/model.py`).
+All four use the prices of 2026-11-12. The second table is the difference
+between each stage and the one before it, and in brackets how much of it is
+the price of the fitted parts.
+
+- **Each type is 3.07 USD per Economic order**, 4.14 USD with duty: 0.83 USD per controller at 5, 0.17 USD at 25. At 100 units the model orders Standard assembly, which charges every type alike, so a type saves money there only if it leaves the board altogether, 0.02 USD per controller.
+- **The second pass also saves in part prices.** The fourteen 48 V clamps of the second maker cost 0.04 USD each where the first maker's cost 0.11 to 0.13 USD. That is why it saves 1.51 USD per controller at 100 units, where the first pass saved nothing.
+- **The revision B package adds ten parts** and still saves at every quantity, because one of its changes removes the supervisor chip.
+
+### The second pass: what was swapped on revision A
+
+| Parts | Was | Is now | Library, stock on 2026-11-12, USD at 100 pieces | Fee |
+|---|---|---|---|---|
+| D1, surge clamp on the 24 VAC input | Littelfuse SMCJ48CA, C151287 | Hongjiacheng SMCJ48CA, C41411765 | Preferred extended, 14,082, 0.098 (was 0.197) | One type fewer |
+| D12, D13, D14, D18, D23, D101 to D901: the fourteen 600 W clamps on the field terminals | Littelfuse SMBJ48CA, C151264 | Hongjiacheng SMBJ48CA, C19077591 | Preferred extended, 2,730, 0.039 (was 0.127) | One type fewer |
+| D6, D102 to D902: status light and the nine output lights | Lite-On LTST-C190KGKT, yellow-green, C125094 | KENTO KT-0603R, red, C2286, the part of the fault light D8 | Basic, 5,966,082, 0.0077 (was 0.019) | One type fewer, and one type fewer on the board |
+| U12, the supply supervisor | TI TLV803EA30DBZR, 3.08 V, C5218924 | TI TLV803EA29DBZR, 2.93 V, C1852114 | Extended, 1,206, 0.31 (was 0.24) | None. This is the correction of [issue #58](https://github.com/syntroniks/zoneflow/issues/58) |
+
+**The two 48 V clamps.** Second makers of protection parts were ruled out in
+the first pass. They are allowed now, on one condition: every figure and
+curve that a sum of the design uses must be in the second maker's own sheet.
+I read the Hongjiacheng SMCJ sheet (rev 2.2) and SMBJ sheet (rev 1.1) against
+the Littelfuse sheets the design was calculated from.
+
+| | Littelfuse SMCJ48CA | Hongjiacheng SMCJ48CA | Littelfuse SMBJ48CA | Hongjiacheng SMBJ48CA |
+|---|---|---|---|---|
+| Stand-off voltage | 48 V | 48 V | 48 V | 48 V |
+| Breakdown at 1 mA | 53.3 to 58.9 V | 53.3 to 58.9 V | 53.3 to 58.9 V | 53.3 to 58.9 V |
+| Clamping voltage at the rated pulse current, 10/1000 us | 77.4 V at 19.4 A | 77.4 V at 19.4 A | 77.4 V at 7.8 A | 77.4 V at 7.75 A |
+| Peak pulse power, 10/1000 us | 1500 W | 1500 W | 600 W | 600 W |
+| Leakage at 48 V | 1 uA | 1 uA | 1 uA | 5 uA |
+| Steady power | 6.5 W | 6.5 W | 5 W | 5 W |
+| Junction to lead | 15 K/W | 15 K/W | 20 K/W | 20 K/W |
+| Junction temperature | -65 to 150 °C | -55 to 150 °C | -65 to 150 °C | -55 to 150 °C |
+| Failure mode stated | Short | Short | Short | Short |
+| Body, lead span | 6.60 to 7.11 x 5.59 to 6.22 mm, 7.75 to 8.13 mm | The same | 4.06 to 4.75 x 3.30 to 3.94 mm, 5.21 to 5.59 mm | 4.25 to 4.85 x 3.30 to 3.94 mm, 5.08 to 5.59 mm |
+
+What the design takes from these parts, and where:
+
+- **The stand-off, breakdown and clamping voltages at the rated 10/1000 us pulse** (design sections 4.4, 6.6, 7.2, 13.3 and 13.4). They are equal in both makers' tables, so the sums of those sections stand as written: the 14 V rise of C1 behind R1, the 137 V across D2, the 77 V on a triac rated 600 V and on a snubber capacitor rated 100 V, the 7 mA into a sensor clamp.
+- **The energy of the relay's inductive kick into D23** (section 7.2), which the design compared with "600 W for 1 ms". The Hongjiacheng curve of peak power against pulse length (its figure 1) ends at 1 ms, and the kick lasts 2.3 to 3.3 ms. I redid that sum so that it needs no curve: the kick starts at 38 to 55 W and falls to zero, and the rated 10/1000 us pulse of figure 3 still delivers 61 W after 3.3 ms, so the kick is under the rated pulse at every moment. It carries 63 mJ against the 0.87 J of the rated pulse.
+- **Leakage.** 5 uA at 48 V against 1 uA. The largest effect is on a sensor terminal, 10 kohm from 5 V: 50 mV at most if the part leaked its 48 V figure at 5 V. On an output it is 5 uA through a valve that carries 90 uA of snubber current already.
+- **Nothing else.** No sum of the design reads the pulse curve of the 48 V parts beyond the rated pulse. Surge immunity of the terminals was a bench item before and is one now.
+
+**D25 was not swapped, for that reason.** The 6 V clamp on the buck output is
+the Littelfuse SMBJ6.0A. The Hongjiacheng part of that name, C19077560, is
+preferred, has 174,319 in stock and the same table figures: 6.67 to 7.37 V,
+10.3 V at 58.25 A, 800 uA, 5 W. But section 4.8 of the design reads the
+curve of peak power against pulse length out to 10 ms: it is what says that
+D25 survives the cases in which the fuse F5 takes up to 18 ms to open. The
+Littelfuse figure 2 runs to 10 ms. The Hongjiacheng figure 1 ends at 1 ms,
+and so does the Brightking one for the basic P6SMB6.8CA. A part whose sheet
+lacks the curve that the sum needs does not qualify.
+
+**The lights.** The owner decided on 2026-11-12 that the colour of the lights
+does not matter. The basic library has two 0603 LEDs, red and white, and the
+preferred list one, yellow. White needs 2.6 to 3.1 V and does not run from a
+3.3 V rail behind 680 ohm and an expander pin. Red is the KT-0603R that the
+fault light D8 used already, so the eleven lights are now one basic type.
+
+| | LTST-C190KGKT, before | KT-0603R, now |
+|---|---|---|
+| Forward voltage at 20 mA | 1.9 to 2.4 V | 1.8 to 2.4 V |
+| Luminous intensity at 20 mA | 18 to 71 mcd | 145 to 300 mcd |
+| Forward current, maximum | 30 mA | 25 mA |
+| Reverse voltage | 5 V | 5 V |
+| Operating temperature | -30 to 85 °C | -40 to 85 °C |
+| Height | 0.8 mm | 0.6 mm |
+
+- **Current with the resistors that are fitted.** 1.7 mA in an output light, 2.1 mA in the status light, 1.4 mA in the fault light, from the typical curve of the KENTO sheet. Far inside 25 mA.
+- **Brightness.** Eight times the light at the same current by the minimum figures of the two sheets. The fault light has run this part at 1.4 mA from the start. Whether that is right behind a light pipe was a bench item for the old part and is one for this.
+- **The expander pin.** Each output light shares its expander pin with the opto LED of its channel, so its current adds to the pin's. The lowest forward voltage is 0.1 V lower, which is 0.14 mA more. Solved for both parts in the same way (design section 6.4): the worst-case opto LED current at -20 °C goes from 7.06 to 7.02 mA against the 5.6 mA it needs, a margin of 1.26 before and 1.25 now, and the highest pin current from 17.0 to 17.2 mA against the 18 mA that the TCA9539 sheet recommends up to 85 °C.
+- **The fail-safe.** The fault injection models every indicator with one diode model, the red fault light included, so its decks do not change with the colour. An indicator's current never passes through an opto LED, so it cannot fire a triac.
+- **The status light is on a strapping pin**, GPIO46, which must read low at reset. R20 and the LED to ground can only pull down, with either part.
+- **Pins and pads.** Anode and cathode on the same pads. The placement check puts the cathode of all eleven where JLCPCB's library footprint has it.
+- **The enclosure.** The part is 0.2 mm lower, so each light pipe ends 0.9 mm above its LED where it ended 0.7 mm. The mechanical contract and the test-fit page say so now.
+
+**The supervisor.** U12 was the wrong option of its family: its threshold is
+3.08 V and not the 3.0 V the design gave it, which left 12 mV between the
+lowest rail and the level at which the board is released from reset. Option
+29 of the same family, 2.93 V, has the same package and pins and leaves
+167 mV. [Design section 12.4](../design/hardware-design.md#124-supply-reset-and-boot)
+has the figures and what the lower threshold costs. It is an extended part
+like the one it replaces, so no fee moves. Can U12 and the other supervisor
+on the board, U13, be one type? Not on these pads: U13 is a window detector
+in a six-pin package that watches for a rail that is too high. But U13 has a
+second comparator that is not used and that watches for a rail that is too
+low. In revision B it can take over the job of U12, which then leaves the
+board: [the package](#the-revision-b-package).
+
+**The 100 kohm arrays were not swapped.** The basic array is 10 kohm. The
+brief for this pass was to run the fail-safe fault injection with 10 kohm
+and to swap only if every margin of the analysis holds. One does not.
+
+| | 100 kohm, as fitted | 10 kohm |
+|---|---|---|
+| Fault injection, 397 faults (`hardware/sim/failsafe`, `faults`) | 3 leave a valve on, all bridges onto the keep-alive net | The same 3. No row loses another layer. A valve pin stuck high is found by the stop test where the weld check found it. Three rows with a bridge at U7 did not finish in their 90 s, on a machine that was busy, and were not repeated |
+| Self-test on a healthy board, 96 corners (`sequence`) | Passes | Passes. Two release times move by 5 ms |
+| Worst-case opto LED current at -20 °C against the 5.6 mA it needs, with the red lights | 7.02 mA, margin 1.25 | 6.95 mA, margin 1.24 |
+| Highest expander pin current against 18 mA | 17.2 mA | 17.5 mA |
+| **Opto LED current of a running zone after the keep-alive has stopped, with an expander that keeps its bits** (`hardware/sim/array_feed.cir`) | **0.08 to 0.13 mA** | **1.3 to 1.6 mA** |
+| The criterion of the analysis for "the triac may fire" | 0.25 mA | 0.25 mA |
+
+The last rows are the reason. If the expander ignores its reset, or its
+reset pin is open, or `DRV_EN` is stuck high, the transistor Q3 still takes
+the LED supply away. That is the layer of the fail-safe that answers those
+faults. But the valve pins that are off are then still driven high, and each
+feeds the LED supply backwards through its pull-up, around Q3. With 100 kohm
+that is a third to a half of the current the analysis counts as dangerous.
+With 10 kohm it is five to six times more than that, and only the relay
+would be left to stop the valve. The fault injection does not show this,
+because it models two of the nine valve pins. `array_feed.cir` is new and has
+all of them. So the type stays, and the way to remove it is in the revision B
+table below.
+
+**Checks run for the second pass.** No board exists; these are the checks that ran.
+
+- `make -C hardware design-check`: netlist, design tables, BOM and the committed schematic outputs agree.
+- `make` in `hardware/zoneflow-a/` with the autorouter forbidden (`ROUTE_FLAGS=--stored-only`): netlist parity, ERC, DRC with schematic parity and every board check pass on the stored routing.
+- The board file differs from the one before in 170 lines, each a `Value`, `Spec`, `LCSC`, `MPN`, `Manufacturer` or `Description` field of one of the 26 parts. No Gerber, drill or placement file changed. The two renders and the STEP model came out different in 84 and 3 pixels and in the order of their entries, with the same 77 bodies; they are left as they were.
+- `make cpl-check`: 307 placements of the 8-zone build and 262 of the 4-zone build against JLCPCB's library footprints, none misfits. JLCPCB's library footprint for the Hongjiacheng SMB part is drawn for a lead span of 5.4 mm where the Littelfuse one has 5.3 mm; the worst pad is 0.44 mm from its land where it was 0.24 mm, which the check passes. Both clamps are bidirectional, so they have no polarity to turn.
+- `hardware/sim/failsafe`, every run, on the netlist as it is, with the supervisor of the model moved to the lowest threshold of the new part: see [what the runs gave](#what-the-fail-safe-runs-gave).
+- `hardware/sim/array_feed.cir`, as above.
+
+### All 35 types, one by one
+
+The 35 types that paid the fee before this pass. "Fee" in the last column is
+the 3.07 USD per Economic order of one type. Stock and prices are JLCPCB's on
+2026-11-12; the price is for 100 pieces.
+
+| # | Type, and where it is | Verdict | Replacement | What was compared, and what it takes | Saving |
+|---|---|---|---|---|---|
+| 1 | 0154003.DRT, fuse holder with a 3 A time-lag fuse: F1, F4 | Stays | None. No fuse or holder is basic or preferred | Its melting I²t of 20.16 A²s and its opening times are the inputs of design sections 4.3 and 6.6. It cannot share a type with F5, which must melt at 0.0824 A²s | |
+| 2 | SMCJ48CA, 1500 W clamp: D1 | **Swapped** | Hongjiacheng SMCJ48CA, C41411765, preferred, 14,082, 0.098 | Table above. No sum redone | Fee, and 0.10 a board |
+| 3 | SR2512JK-073RL, 3 ohm surge resistor: R1 | Stays | None. No 2512 part and no pulse-rated resistor in either list | Design section 4.4 needs a single-pulse curve at 240 to 390 W for 1 ms. Basic 1206 parts in parallel have no such curve in the sheet | |
+| 4 | 0451.500MRL, 0.5 A very fast fuse: F5 | Stays | None | Its I²t and its 0.42 ohm are in the sum of section 4.8. "Do not fit a larger rating" | |
+| 5 | CL32B225KCJSNNE, 2.2 uF 100 V, 1210: C2, C3 | Revision B | Two series pairs of the basic 4.7 uF 50 V X7R 1206 part, C29823, 575,531, 0.055, each part with a basic 1 Mohm across it | 100 V because the input reaches 59 V in a surge. Two 50 V parts in series see 32.5 V each at 10 % mismatch. Needs the layout at the pins of U1 and the capacitance under bias read against the LM5164 sheet | Fee, for six parts more |
+| 6 | LM5164DDAR, 100 V buck converter: U1 | Stays | None. The basic and preferred converters stop at 28 to 40 V of input by their listings | The specification asks for 60 V or more. 852 in stock, half of the day before | |
+| 7 | SRN6045TA-470M, 47 uH: L1 | Stays | None. The lists hold no power inductor | | |
+| 8 | 4D03WGJ0104T5E, 100 kohm x4: RN1, RN2, RN3 | Revision B, or stays | On these pads only the basic 10 kohm array, C29718. In revision B twelve basic 100 kohm 0603 resistors, the type of R96 | Not swapped: table above. Twelve single resistors are nine placements more for one fee, so this is in the package only if the board is laid out again anyway | Fee, for nine parts more |
+| 9 | SMBJ6.0A, 6 V clamp: D25 | Stays; decision | Hongjiacheng SMBJ6.0A, C19077560, preferred, 174,319, 0.039 | Same table figures. Its pulse curve ends at 1 ms and section 4.8 needs 10 ms: above | Fee |
+| 10 | TYPE-C-31-M-12, USB-C receptacle: J5 | Stays | None. The lists hold no connector | | |
+| 11 | USBLC6-2SC6: U2 on USB, U9 on the Qwiic connector | Stays; decision | SRV05-4, Hongjiacheng C7420376, preferred, 307,505, 0.075 | Fails on two figures. Working voltage 5.0 V at most, and pin 5 of U2 is on VBUS, which may be 5.25 V. Leakage 5 uA against 150 nA. Its capacitance is given as typical only. It would do on U9, which sits on 3.3 V, but one position does not remove the type. With pin 5 of U2 taken off VBUS it protects the data lines and no longer VBUS | Fee |
+| 12 | LDL1117S33R, 3.3 V regulator: U3 | Stays; decision | AMS1117-3.3, C6186, basic, 1,476,272, 0.15 | Same pins. Drops up to 1.3 V at 0.8 A, so it needs 4.6 V in. On 24 VAC the 5 V bus is 4.66 V at its lowest: 0.06 V in hand. On USB it can be 4.1 V, and the rail would fall to 2.8 V | Fee, and 0.13 a board |
+| 13 | ESP32-S3-WROOM-1-N16R8: U4 | Stays | None | | |
+| 14 | SM04B-SRSS-TB, Qwiic connector: J6 | Stays | None. No connector | 7,233 in stock, a tenth of the day before | |
+| 15 | 1206L012WR, PTC 0.125 A: F2, Qwiic supply | Revision B | 1812L020/60DR, the part of F3, on an 1812 footprint | Two PTCs become one type. Holds 0.2 A where F2 holds 0.125 A, 1.4 to 4.4 ohm cold where F2 has up to 6 ohm. To check then: how long the 3.3 V rail sags while it trips on a shorted cable | Fee |
+| 16 | TCA9539PWR, expander: U5 | Stays | None of its kind. The lists hold shift registers, 74HC595 and 74HC165 | Shift registers need three processor pins that the module does not have (design 12.2), and the fail-safe analysis rests on what this part does on its reset pin | |
+| 17 | LM2901DR, quad comparator: U6 | Stays | LM393DR2G, C7955, basic | Two comparators in SOIC-8, 0 to 70 °C by its listing. The board uses four, from -20 °C. Two of them are two footprints and still the wrong temperature range | |
+| 18 | TLV803EA30DBZR, supervisor: U12 | **Swapped**, then revision B | Now TLV803EA29DBZR, C1852114, extended, 1,206, 0.31. In revision B: no part, comparator A of U13 with two basic resistors | Issue #58. The second step needs a divider, a look at what holds `EN` below 1.8 V of supply, where U13's outputs are not defined, and the fault injection of U13 again | None now. Fee and 0.31 a board in revision B |
+| 19 | TPS3701DDCR, over-voltage detector: U13 | Stays | None. A discrete detector from the basic CJ431 and two transistors is about seven parts for this one | In revision B it does the job of U12 as well | |
+| 20 | 74HC132D, quad Schmitt NAND: U7 | Stays | 74HC14D, basic: six Schmitt inverters. 74HC08D, preferred: AND gates without Schmitt inputs | The latch and the enable gate need three two-input gates on slow inputs. Inverters with diode gates are at least nine parts more, with low levels a diode drop above ground, and the whole fault injection again. Not proposed | |
+| 21 | RLP25FEER100, 0.1 ohm 2 W shunt: R37 | Stays | None in 2512. The basic 0.1 ohm is 1206, 0.25 W, 800 ppm/K | 0.63 W at inrush and 1 % with a low drift are what section 10.5 budgets. Ten basic 1 ohm 1206 parts in parallel would carry it at four times the drift, with no defined Kelvin point, for nine parts more | |
+| 22 | LTST-C190KGKT, yellow-green LED: D6, D102 to D902 | **Swapped** | KT-0603R, red, C2286, basic, 5,966,082, 0.0077 | Above. Section 6.4 solved again | Fee, the type itself, and 0.12 a board |
+| 23 | CR2032-BS-6-1, cell holder: BT1 | Stays | None | | |
+| 24 | FPC-05F-12PH20, display connector: J7 | Stays | None | | |
+| 25 | 1206W4F330JT5E, 33 ohm 1206: R60, backlight | Revision B | Three 100 ohm 0805 parts, C17408, in parallel: basic, on the board already as R103 to R903 | 33.3 ohm, each part 0.05 W of its 0.125 W at the 0.16 W the three share. On these pads the basic 22 ohm 1206 gives 89 mA into a backlight rated 80 mA | Fee, and the type, for two parts more |
+| 26 | EC11J1525402, encoder: SW3 | Stays | None | | |
+| 27 | TS-1102S-C-M-B, 6 x 6 mm switch: SW4, SW5 | Revision B | TS-1187A-B-A-B, C318884, basic, on the board as SW1 and SW2 | 1.5 mm high where this one is 10 mm: the button caps of the enclosure have to reach down to it. Its force was not compared | Fee, and the type |
+| 28 | SMBJ48CA, 600 W clamp: fourteen places | **Swapped** | Hongjiacheng SMBJ48CA, C19077591, preferred, 2,730, 0.039 | Table above. The sum of section 7.2 redone. Stock is under two batches of 100 | Fee, and 1.2 a board |
+| 29 | TPS2553DBVR, sensor supply switch: U11 | Stays; decision | A basic P-channel switch, AO3401A, with a transistor to drive it | Loses the limit of 116 to 158 mA and the fault flag. A shorted sensor wire would then draw 0.5 to 0.8 A from the buck converter for the seconds the PTC F3 takes, against the 0.72 A it has in hand | Fee, and about 0.3 a board |
+| 30 | 1206W4F470KT5E, 4.7 ohm 1206: R84, sensor supply | Revision B | Two basic 10 ohm 1206 parts, C17903, 900,456, in parallel | 5 ohm. 15 mV more drop at 50 mA, 6 % less current into D24 in a miswire (section 13.5), each part at 0.06 W where the one part takes 0.12 W with U11 at its limit | Fee, for one part more |
+| 31 | CL21B103KCANNNC, 10 nF 100 V 0805: nine snubbers and C48 | Revision B | The basic 100 nF 100 V 0805 part, C28233, 2,961,434, 0.012, on the same pads. Or no snubbers, which is issue #31's own candidate and needs a bench | Ten times the snubber current: 0.9 mA through each idle valve, 8 mA for nine against the firmware's idle threshold of 30 mA. A slower voltage rise at turn-off, which is the safe direction. The threshold and the 5 mV it puts on the high-gain current channel have to be looked at with the firmware first | Fee |
+| 32 | 1812L020/60DR, PTC 0.2 A 60 V: F3, sensor supply | Stays | None. The lists hold no PTC | It takes F2's place as well in revision B | |
+| 33 | BSMD2920-100-60V, PTC 1.1 A: F101 to F901 | Stays | None | Its 40 A maximum fault current and its trip point of 0.5 s at 8 A are the inputs of section 6.6 | |
+| 34 | T810-600B-TR, triac: Q101 to Q901 | Stays | None. The lists hold no triac | 2,882 in stock, 3.2 batches of 100 | |
+| 35 | MOC3023SR2M, opto-triac: U101 to U901 | Stays | None. The two basic optocouplers have transistor outputs | | |
+
+Counted: 3 swapped for a fee (rows 2, 22, 28), 7 in the revision B package
+(rows 5, 15, 18, 25, 27, 30, 31, of which row 18 also changed its part
+number now), 1 more that revision B could take for nine parts (row 8), 4
+that need a decision (rows 9, 11, 12, 29), and 20 that stay because the
+lists hold no part of the kind or none that meets the figures.
+
+**Parts the builder solders anyway.** The six through-hole parts are bought
+loose and pay no fee already. Every one of the 32 types left is a
+surface-mount part. Moving one to the soldering iron to save 3.07 USD would
+cost the builder more minutes than the fee is worth and is not what the
+specification asks for, so none is proposed.
+
+### The revision B package
+
+Seven changes, each of which takes one fee-carrying type off the board. None
+is made in this revision: each needs new copper, the enclosure, the firmware
+or a look that was not taken here. `uv run zfcost table` prices the package
+as the scenario `revb`.
+
+| Change | Type it removes | Parts | What it needs first |
+|---|---|---|---|
+| U13's unused comparator A watches for a low rail and pulls `EN`; U12 goes | TLV803EA29DBZR | -1 chip, +2 resistors | The divider values, what holds `EN` low under 1.8 V, the fault injection of U13 again |
+| R60 becomes three 100 ohm 0805 in parallel | 33 ohm 1206 | +2 | Layout |
+| R84 becomes two 10 ohm 1206 in parallel | 4.7 ohm 1206 | +1 | Layout |
+| C2 and C3 become two series pairs of 4.7 uF 50 V with 1 Mohm across each part | 2.2 uF 100 V 1210 | +6 | Layout at U1, the LM5164's input capacitance under bias |
+| F2 becomes the PTC type of F3 | 1206L012WR | 0 | An 1812 footprint, the trip time against the 3.3 V rail |
+| SW4 and SW5 become the 5.1 mm switch of SW1 and SW2 | TS-1102S-C-M-B | 0 | Button caps 8.5 mm longer in the enclosure, a new footprint |
+| The ten 10 nF 100 V capacitors become the basic 100 nF 100 V part, or the nine snubbers go | 10 nF 100 V 0805 | 0, or -18 | The firmware's idle threshold; for no snubbers, a bench |
+
+That is 32 types to 25, ten parts and nineteen solder joints more, and by
+the model 6.38, 1.76 and 0.50 USD less per 8-zone controller at 5, 25 and
+100. Rows 8 of the table above, twelve single resistors for the arrays,
+would make it 24.
+
+**The fail-safe variants.** The [reduced fail-safe](../design/failsafe-reduction-study.md)
+that the owner is considering changes parts in this list. Under "V1 with the
+comparator and K1", which its [review](../design/failsafe-reduction-review.md)
+recommends, the 74HC132 goes and a 74LVC1G123 comes, an extended part too.
+The LM2901 stays, with three of its four comparators in use. A second
+supervisor comes, of the type of U12. So the count is the same as for
+revision A, with or without this package: 32 now, 25 after it. One thing
+changes: with a second TLV803E on the board, folding U12 into U13 no longer
+removes the type, and the package is worth 26.
+
+### Decisions waiting for the owner
+
+Each would remove one more type. The scenario `needs_decision` prices the
+four together: 3.32, 0.66 and 0.00 USD per controller at 5, 25 and 100,
+before any difference in part prices.
+
+| Type | The swap | What it costs |
+|---|---|---|
+| SMBJ6.0A, D25 | The preferred part of the same name, or a basic 6.5 V or 6.8 V part | The sum of design section 4.8 would rest on a pulse curve that the maker does not print beyond 1 ms. A bench test of the clamp and the fuse together (risk 21 of the design) would settle it |
+| USBLC6-2SC6, U2 and U9 | SRV05-4 | Pin 5 of U2 off VBUS, which is a track to cut in the layout, and no clamp on VBUS at the connector |
+| LDL1117S33R, U3 | AMS1117-3.3 | The board would no longer be sure to run from a USB port alone: it needs 4.6 V on the 5 V bus and a port may leave 4.1 V. On 24 VAC it has 0.06 V in hand, which a buck output 0.2 V higher would cure |
+| TPS2553DBVR, U11 | A basic transistor switch | No current limit and no fault flag on the sensor supply; a shorted sensor wire loads the buck converter until the PTC trips |
+
+I recommend none of the four as they stand. The first is worth a bench test
+when boards exist.
+
+### What the fail-safe runs gave
+
+`hardware/sim/failsafe` writes its decks from the netlist and from part
+models. Two things it reads changed in this pass. The value text of the
+lights changes no deck, because every indicator, red or not, has one diode
+model. The supervisor does: the model takes the processor as reset below the
+lowest threshold of U12, which was 2.94 V in the model and is 2.871 V for
+the part now fitted. So every run was made again on 2026-11-12: `sequence`,
+`faults`, `bridges`, `duty`, `warmup`, `ldo`, `floatload`, `corners` and
+`commission`.
+
+- **No verdict changed.** 397 faults, the same 3 that leave a valve on, all bridges onto the keep-alive net; the same 60 rows with a layer lost, each found by the same step; the self-test passes on a healthy board at the same 96 corners; the tables of design sections 7.3, 8.4, 8.5 and 9.5 stand.
+- **What moved is the last printed digit** in 395 of about 9,300 result rows: 1 ms, 1 mV or less. Two lines of the summaries moved with it: the longest time the relay detector alone may hold in the Monte Carlo run is 0.682 s where it printed 0.681 s, and the shortest enable time of detector A in the commissioning grid is 12 ms where it printed 13 ms. One row of the commissioning run moved by more: an enable time of detector A of 26 ms where it was 31 ms, which is one keep-alive edge earlier. The result files are now those of the present model.
+- **So no result depends on where between 2.87 and 2.94 V the processor is reset.** I did not look for the reason in each run. The corners set the rail no lower than 3.0 V, and the faults that pull it down pull it far below both levels.
+- **Four rows of `faults` ran out of their 90 s** while the machine was building the board, and were made again alone. Two of them are bridges across a gate of U7 that oscillate in the model and never finish their first run, as the design says in section 8.5. Their other runs finished this time, with the verdict they had.
+
+The run with 10 kohm arrays is not in the result files, because that value
+was not fitted. Its outcome is in the table of the arrays above.
+
+### The first pass, 2026-11-11
+
+The rule was: no change to what the circuit does, no footprint change, no
+new layout. Five types changed.
+
 
 | Parts | Was | Is now | Library, stock | Why it is the same part for this circuit |
 |---|---|---|---|---|
@@ -603,36 +881,6 @@ does, this type pays 3.07 USD again and nothing else changes.
 - The fail-safe simulation builds its decks from the netlist. All 1,440 corner decks and the four scenario decks are byte for byte what they were before the swap. `failsafe.py corners` run again (2,104 runs): no run changed its verdict, and every line of the summary is the same but for one coil current of zero that prints as -1.04e-05 mA where it printed -1.11e-05. 197 rows differ from the committed files by one unit in the last printed digit (1 ms, 1 mV, 0.01 mA). That is not this change: the committed files were from the netlist of review A2, before the over-voltage detector U13. Three of those rows run on that netlist give the committed figures, and on the netlist before and after the swap they give one and the same new figure. The result files are now those of the present netlist.
 - `hardware/sim/isense.cir` with 330 pF, as above.
 
-### What was not swapped, and why
-
-**Protection parts, 11 types.** Left alone unless the same maker's part
-number is basic, and none is: the fuses 0154003.DRT and 0451.500MRL, the
-PTCs 1206L012WR, 1812L020/60DR and BSMD2920-100-60V, the triac
-T810-600B-TR, the opto-triac MOC3023SR2M, and the clamps SMCJ48CA, SMBJ48CA,
-SMBJ6.0A and USBLC6-2SC6. The design's surge and short-circuit sums rest on
-these makers' curves.
-
-**No basic or preferred part of the kind, 13 types.** LM5164DDAR,
-SRN6045TA-470M, ESP32-S3-WROOM-1-N16R8, TCA9539PWR, TLV803EA30DBZR,
-TPS3701DDCR, TPS2553DBVR, the USB-C, Qwiic and display connectors, the cell
-holder, the encoder, and the 6 x 6 mm tactile switch. The two lists hold no
-connector, no power inductor and no part of these functions; the two basic
-tactile switches are 5.1 x 5.1 mm and 4 x 3 mm.
-
-**A near part exists and fails on a figure, 11 types.**
-
-| Type | Nearest basic or preferred part | Why not |
-|---|---|---|
-| LDL1117S33R, 3.3 V regulator | AMS1117-3.3, C6186, basic, same SOT-223 pins | Drops 1.1 V at 0.8 A by its listing. On USB power the input falls to 4.1 V, which leaves 0.8 V |
-| LM2901DR, quad comparator | LM393, C7955, basic | Two comparators in SOIC-8, 0 to 70 °C. The board needs four, in SOIC-14, from -20 °C |
-| 74HC132D, quad Schmitt NAND | 74HC14D, C5605, basic | A hex inverter. It cannot make the latch |
-| CL32B225KCJSNNE, 2.2 uF 100 V, 1210 | None | No 1210 capacitor is basic or preferred |
-| SR2512JK-073RL, 3 ohm surge resistor, and RLP25FEER100, 0.1 ohm shunt | None | No 2512 resistor is basic or preferred. The basic 0.1 ohm is a 1206 thick-film part, 0.25 W and 800 ppm/K |
-| CL21B103KCANNNC, 10 nF 100 V, 0805: nine snubbers and C48 | 10 nF 50 V, C1710, basic | The snubber sees 45 V peak at 32 VAC and up to the 77 V of the clamp. The only basic 100 V part in 0805 is 100 nF, ten times the snubber current |
-| 1206W4F330JT5E, 33 ohm, backlight | 22 ohm 1206, C17958, basic | 89 mA into a backlight rated 80 mA. The basic 33 ohm parts are 0805 and 0603: 0.125 W against the 0.16 W it dissipates |
-| 1206W4F470KT5E, 4.7 ohm, sensor supply | 1 ohm and 10 ohm 1206, basic | 10 ohm doubles the drop to the sensor terminal. 1 ohm lets five times the current into D24 in a miswire, where the margin is small already (design section 13.5) |
-| 4D03WGJ0104T5E, 100 kohm x4 | 10 kohm x4, C29718, basic | Each element limits what one fault can push into a valve pin or the LED supply to 33 uA, far under the 0.25 mA at which the fail-safe analysis counts an opto-triac as fired. 10 kohm lets 0.2 to 0.33 mA through. It would need the fault-injection runs redone and their margins judged again |
-| LTST-C190KGKT, yellow-green LED | NCD0603Y2, yellow, C89811, preferred, 129,644 | Another colour, and its forward voltage may be 2.6 V where this one stops at 2.4 V. It is brighter (50 mcd minimum at 15 mA against 18 at 20 mA) and would work. The colour of the front panel is the owner's choice |
 
 **Values that could share a type.** Merging two basic values saves nothing
 on an Economic order and 1.53 USD on a Standard one. I looked at the pairs
@@ -644,27 +892,8 @@ that serve one purpose and merged none:
 - **SS34 and SS210, M7.** Different voltage ratings for different places.
 - **LED resistors.** Already one value, 680 ohm; the red fault LED uses the 1 kohm that 19 other places use.
 
-### What a design change could still remove
 
-For [issue #31](https://github.com/syntroniks/zoneflow/issues/31). Each row
-is one fee-carrying type, 3.07 USD per Economic order.
-
-| Type | Change it needs |
-|---|---|
-| Yellow-green LED | A decision to make the lights yellow: NCD0603Y2 is preferred extended and fits the footprint and the 680 ohm resistors |
-| 100 kohm x4 arrays | 10 kohm arrays, with the fail-safe fault runs redone, or twelve basic 100 kohm 0603 resistors on a changed layout |
-| SMBJ48CA, SMCJ48CA, SMBJ6.0A | A second maker qualified for each clamp. Hongjiacheng parts of these names are preferred extended (2,619, 14,082 and 174,679 in stock; the first is thin). Their clamping curves would have to be read against the sums of design sections 4.4, 4.8 and 6.6 |
-| USBLC6-2SC6 | SRV05-4 is preferred extended and its pins suit this wiring. The same qualification |
-| 10 nF 100 V, 0805 | Dropping the snubbers, the issue's own candidate, removes nine of the ten. The tenth, C48, could then be the basic 100 nF 100 V part |
-| 33 ohm 1206 | Two basic 1206 resistors in series, 22 and 10 ohm, on a changed layout |
-| 4.7 ohm 1206 | Two basic 10 ohm 1206 resistors in parallel, on a changed layout |
-| 6 x 6 mm tactile switch | The basic 5.1 mm switch that SW1 and SW2 use, with longer button caps in the enclosure |
-| 0.1 ohm shunt, 3 ohm surge resistor, 2.2 uF 100 V | None found: the ratings are the reason for the parts |
-
-The scenario `needs_decision` in the next section prices the first four rows
-(six types) together.
-
-## Four cheap ways to cut cost
+## Five ways to cut cost
 
 Ordered from least work to most. Each saving is the model run with the
 change, against the base case, for the 8-zone build.
@@ -674,7 +903,8 @@ change, against the base case, for the 8-zone build.
 | Scenario | Change | Saves USD per controller at 5 | Saves USD per controller at 25 | Saves USD per controller at 100 |
 |---|---|---|---|---|
 | `selftap` | Self-tapping screws in place of the seven heat-set inserts | 1.67 | 0.67 | 0.58 |
-| `needs_decision` | Six more extended types moved to a basic or preferred part in the same footprint; each needs a decision | 4.97 | 0.99 | 0.00 |
+| `revb` | The revision B package: seven extended types removed by changes to the circuit or the layout | 6.38 | 1.76 | 0.50 |
+| `needs_decision` | Four more extended types whose replacement costs function or margin; each needs a decision | 3.32 | 0.66 | 0.00 |
 | `issue31` | Issue #31: no output snubbers; zone LED in series with the opto-triac LED | 0.34 | 0.36 | 0.32 |
 
 <!-- zfcost:end -->
@@ -683,33 +913,36 @@ change, against the base case, for the 8-zone build.
 
 | Build | 5 units | 25 units | Saved 5 to 25 | 100 units | Saved 25 to 100 |
 |---|---|---|---|---|---|
-| 8-zone | 121.22 | 70.57 | 50.65 | 53.71 | 16.85 |
-| 4-zone | 113.97 | 63.94 | 50.03 | 47.97 | 15.98 |
+| 8-zone | 117.60 | 69.00 | 48.60 | 52.79 | 16.21 |
+| 4-zone | 110.82 | 62.87 | 47.96 | 47.48 | 15.39 |
 
 <!-- zfcost:end -->
 
 1. **Order more at once** (no design change). Going from 5 to 25 boards
-   saves 51 USD per controller, more than all the design changes together.
+   saves 49 USD per controller, more than all the design changes together.
    Five friends ordering one batch of 25 pay less each than one person
    ordering five.
 2. **Self-tapping screws** (`fastener = "selftap"` in the enclosure model, no
    design change): 0.58 to 1.67 USD. The printing page says this suits a unit
    that is opened a few times.
-3. **Fewer extended part types** (BOM change only). The swaps that change
-   nothing in the circuit are made: five types,
-   [above](#fewer-extended-part-types). Of the seven passives this page
-   first named, four are among them; the other three (10 nF 100 V in 0805,
-   33 ohm and 4.7 ohm in 1206) have no basic part in their footprint. Six
-   more types have a basic or preferred part that fits, and each needs a
-   decision first: the colour of the lights, the pull-up arrays of the
-   fail-safe circuit, a second maker for three clamps and for the USB
-   protection. Together they are 4.97 USD per controller at 5 boards and
+3. **Fewer extended part types.** What can be done on revision A is done:
+   eight types in two passes, [above](#fewer-extended-part-types), worth
+   8.39 USD per controller at 5 boards and 1.50 USD at 100 against the board
+   as designed. The [revision B package](#the-revision-b-package) is seven
+   more, 6.38 USD at 5 and 0.50 USD at 100, for ten parts more and a new
+   layout. Four further types each wait for a
+   [decision](#decisions-waiting-for-the-owner): together 3.32 USD at 5 and
    nothing at 100, where Standard charges every type alike.
 4. **Part-count reduction,
    [issue #31](https://github.com/syntroniks/zoneflow/issues/31)**: the two
    candidates priced here, dropping the output snubbers and putting each zone
    LED in series with its opto-triac's LED, remove 27 parts and 54 joints and
-   save **0.32 to 0.36 USD**. Removing small passives saves little money,
+   save **0.32 to 0.36 USD**. The second of the two does not work as it
+   stands: an indicator of up to 2.4 V in series with an opto LED of up to
+   1.5 V and an expander pin at 0.57 V needs 4.5 V, and the LED supply is
+   3.19 V at its lowest. Even the typical figures, 1.9, 1.18 and 0.28 V, add
+   up to more than 3.3 V. It would need the LED supply to come from the 5 V
+   bus. Removing small passives saves little money,
    because each costs well under a cent and their part types stay on the
    board. Issue #31 is worth doing for assembly risk and board space; for cost
    the candidates that count are the big parts. The issue's "opto-triacs"
@@ -717,7 +950,7 @@ change, against the base case, for the 8-zone build.
    price of whatever drives the triacs instead; it also removes a protection
    layer and needs an explicit decision.
 
-The 4-zone build saves 5.75 to 7.75 USD over the 8-zone build, far less than
+The 4-zone build saves 5.31 to 7.22 USD over the 8-zone build, far less than
 ordering ten boards in place of five.
 
 ## Against other controllers
@@ -740,10 +973,10 @@ A builder's cost is not a retail price: a seller adds labour, testing,
 certification, support, returns, a margin and, in the EU, VAT. With that in
 mind:
 
-- **At 5 units**, an 8-zone ZoneFlow costs about 121 USD landed, 29 USD
+- **At 5 units**, an 8-zone ZoneFlow costs about 118 USD landed, 32 USD
   under the 150 USD of an OpenSprinkler 3.4 AC, which arrives built and
   supported.
-- **At 25 units**, 71 USD; **at 100**, 54 USD. That is materials and fees
+- **At 25 units**, 69 USD; **at 100**, 53 USD. That is materials and fees
   only; it leaves room under the OpenSprinkler prices for the costs a seller
   carries, but nothing here says how much.
 - The cheaper open controllers switch relays or latching DC valves, with
@@ -755,38 +988,44 @@ mind:
 
 | 8-zone, USD per controller | 5 units | 25 units | 100 units |
 |---|---|---|---|
-| Base case | 121.22 | 70.57 | 53.71 |
-| US duty 0 % | 94.65 | 54.46 | 41.59 |
-| US duty 25 % | 113.63 | 65.97 | 50.25 |
-| US duty 60 % | 140.20 | 82.07 | 62.37 |
-| Display panel price x 0.5 | 118.81 | 68.51 | 52.09 |
-| Display panel price x 1.5 | 123.64 | 72.62 | 55.34 |
-| ESP32-S3 module price x 0.75 | 119.55 | 69.12 | 52.58 |
-| ESP32-S3 module price x 1.25 | 122.89 | 72.02 | 54.84 |
+| Base case | 117.60 | 69.00 | 52.79 |
+| US duty 0 % | 91.96 | 53.30 | 40.90 |
+| US duty 25 % | 110.27 | 64.51 | 49.39 |
+| US duty 60 % | 135.91 | 80.21 | 61.28 |
+| Display panel price x 0.5 | 115.18 | 66.94 | 51.16 |
+| Display panel price x 1.5 | 120.01 | 71.05 | 54.41 |
+| ESP32-S3 module price x 0.75 | 115.78 | 67.40 | 51.51 |
+| ESP32-S3 module price x 1.25 | 119.41 | 70.60 | 54.06 |
 
 <!-- zfcost:end -->
 
-Duty moves the answer most: each 10 points of duty is about 3.5 USD per
-controller at 100 units and 7.6 USD at 5. The display panel and the module
+Duty moves the answer most: each 10 points of duty is about 3.4 USD per
+controller at 100 units and 7.3 USD at 5. The display panel and the module
 are the two parts most likely to change price or source, and neither moves
 the total by more than 2.5 USD within the ranges shown.
 
 ## Supply risks
 
 - **The display panel** (HS20HS072RX, C5329582) is a single-source part from
-  a small maker, sold through JLCPCB's shop, with 413 in stock on 2026-11-11,
-  four 100-unit batches, and 47 fewer than the day before. The fascia and
+  a small maker, sold through JLCPCB's shop, with 334 in stock on 2026-11-12,
+  three 100-unit batches, and 126 fewer than two days before. The fascia and
   carrier are drawn for it. A second panel would need its own outline check.
-- **The triac** T810-600B-TR has 3,384 in stock, under four 100-unit
-  batches, and is the costliest line. It has no second source in the BOM.
-- **The 48 V TVS** SMBJ48CA has about four 100-unit batches in stock. It is
-  a common part from several makers, so this is a matter of choosing a
-  second LCSC number, not a redesign.
-- **Extended parts in general**: 39 of the 89 types are extended, and an
+- **The triac** T810-600B-TR has 2,882 in stock, about three 100-unit
+  batches, 502 fewer than a day before. It has no second source in the BOM.
+- **The 48 V TVS** SMBJ48CA is now the Hongjiacheng part, which has 2,730 in
+  stock: under two 100-unit batches, because a board takes fourteen. The
+  Littelfuse part that it replaced, C151264, fits the same pads, has 5,618
+  in stock and pays the 3.07 USD fee. The plan for a batch above 190 boards
+  is to check the stock first and to order with the Littelfuse number if it
+  is short.
+- **The supervisor** TLV803EA29DBZR has 1,206 in stock. The TLV803SDBZR,
+  C132016, with the same threshold on the same pads, has 34,990.
+- **The buck converter** LM5164DDAR fell from 1,651 to 852 in a day.
+- **Extended parts in general**: 38 of the 88 types are extended, and an
   extended part can go out of stock at JLCPCB between ordering and
   production. Pre-ordering them is possible but ties up money.
 - **Tariffs** changed several times in 2026 (see above). A change of 25 points
-  moves an 8-zone controller by 9 to 19 USD.
+  moves an 8-zone controller by 8 to 18 USD.
 - **Prices are one day's prices.** JLCPCB's price page says prices vary with
   exchange rates; it adjusted board prices in August 2026.
 
@@ -842,10 +1081,23 @@ Each is in `tools/cost/data/assumptions.toml` and can be changed there or with
 
 All read on 2026-11-11 unless a date is given.
 
-- JLCPCB parts search, per LCSC number: stock, price breaks, library, minimum
-  and attrition quantities (`tools/cost/data/jlcpcb-parts.csv`). The same
-  search with the library filter set to basic (351 parts) and to preferred
-  (1,235 parts), read whole for the part swaps.
+- JLCPCB parts search, per LCSC number, on 2026-11-12: stock, price breaks,
+  library, minimum and attrition quantities
+  (`tools/cost/data/jlcpcb-parts.csv`, and `replaced-parts.csv` and
+  `revb-parts.csv` beside it). The same search with the library filter set
+  to basic (351 parts) and to preferred (1,235 parts), read whole on
+  2026-11-11 and again on 2026-11-12 for the part swaps: the same two counts
+  on both days.
+- For the swaps of 2026-11-12: Zhuhai Hongjiacheng, "SMBJ series", rev 1.1,
+  and "SMCJ series", rev 2.2, the sheets LCSC serves for C19077591,
+  C19077560 and C41411765; Littelfuse SMBJ and SMCJ series sheets, for
+  C151264, C83270 and C151287; Brightking P6SMB series, revision of
+  2014-07-21, for C78395; Hubei KENTO KT-0603R approval sheet A.0 of
+  2018-12-06, for C2286; TI SLVSES2J as LCSC's copy ZHCSJX8J, for C1852114;
+  Hongjiacheng SRV05-4, rev 2.2, for C7420376, and ST USBLC6-2, Doc ID 11265
+  rev 5; Advanced Monolithic Systems AMS1117, for C6186; TI TCA9539 for the
+  sink current limits; UNI-ROYAL chip resistor arrays, for C29718. JLCEDA
+  library footprints for the three new numbers that are placed.
 - For the swaps: Zhuhai Hongjiacheng, "BAT54 thru BAT54S", rev 2.0, the sheet
   LCSC serves for C7420333. Fenghua, general specification of multilayer
   chip capacitors, the sheet LCSC serves for C1604, C57112 and C53987.
@@ -855,9 +1107,10 @@ All read on 2026-11-11 unless a date is given.
 - JLCPCB online quote page, cart.jlcpcb.com/quote: board prices and US
   freight.
 - JLCPCB, [PCB assembly price](https://jlcpcb.com/help/article/pcb-assembly-price),
-  last updated 2026-10-22.
+  last updated 2026-10-22. Read again on 2026-11-12: unchanged.
 - JLCPCB, [PCB assembly capabilities](https://jlcpcb.com/capabilities/pcb-assembly-capabilities).
-- JLCPCB, [PCB assembly FAQs](https://jlcpcb.com/help/article/pcb-assembly-faqs):
+- JLCPCB, [PCB assembly FAQs](https://jlcpcb.com/help/article/pcb-assembly-faqs),
+  last updated 2026-09-09, read again on 2026-11-12:
   preferred extended parts exempt from the Economic feeder fee.
 - JLCPCB, [US tariff policy FAQ](https://jlcpcb.com/help/article/us-tariff-policy-faq),
   last updated 2026-10-29.
@@ -883,6 +1136,7 @@ All read on 2026-11-11 unless a date is given.
 ```sh
 cd tools/cost
 uv run zfcost fetch        # new JLCPCB parts snapshot (network)
+uv run zfcost fetch --side # the replaced and the revision B part numbers
 uv run zfcost table --qty 5 50 --set us_tariff_rate=0.25
 uv run zfcost render ../../docs/hardware/cost.md
 uv run pytest -q

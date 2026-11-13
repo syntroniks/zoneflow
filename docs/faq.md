@@ -101,11 +101,11 @@ rain delay from any source.
 ## What does it cost?
 
 Nobody sells ZoneFlow controllers; you have one made. The
-[cost estimate](hardware/cost.md), from prices checked on 2026-11-11, puts a
+[cost estimate](hardware/cost.md), from prices checked on 2026-11-12, puts a
 finished 8-zone controller, assembled by JLCPCB, delivered to the United
-States with duty paid and in its printed enclosure, at about 121 USD each
-for a batch of 5, 71 USD for 25 and 54 USD for 100. The 4-zone build is 6 to
-8 USD less. The transformer and the valve cable come on top. These are
+States with duty paid and in its printed enclosure, at about 118 USD each
+for a batch of 5, 69 USD for 25 and 53 USD for 100. The 4-zone build is 5 to
+7 USD less. The transformer and the valve cable come on top. These are
 estimates, not prices, and US tariffs move them most.
 
 ## Is it certified?
