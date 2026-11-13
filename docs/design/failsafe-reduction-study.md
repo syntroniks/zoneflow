@@ -7,6 +7,15 @@ document, calculated from figures read from documents, or taken from a
 simulation with behavioural models, and the text says which. Section 12
 lists what the documents do not settle.
 
+**Review, 2026-11-12.** This study has had an independent [review](failsafe-reduction-review.md). Where the review
+found the text wrong or incomplete, a note marked like this one says what
+and why, and the original text stands beside it. No correction reverses the
+recommendation. Two weaken it: the one-chip detector has more single faults
+that leave a valve on than section 6.4 found, and the second supply
+supervisor is not shown to do what section 6.1 fits it for. The review also
+treats V1 at the depth this study gives V2, because the owner has since said
+that V1 is the variant he favours. Section 14 of the review lists the notes.
+
 The owner asked for a review of this proposal, and added that the board will
 need a watchdog:
 
@@ -59,6 +68,10 @@ supervisor cost more than the twelve resistors, capacitors and diodes they
 replace. If the aim is part count or cost, this is the wrong block to cut.
 Issue #31 has the blocks where the parts are.
 
+**Review, 2026-11-12.** V1 removes 31 soldered parts, not 32. Of its 40 designators JP1 is a
+pad pattern, as section 7.1 says, and the table and the paragraph above count
+it. The board then has 282 parts. Review, finding R8.
+
 **Recommendation: V2, if the owner wants a smaller fail-safe at all.** It
 keeps one answer to each kind of fault: the detector for dead firmware, the
 LED supply switch for a stuck expander, the relay for a shorted output
@@ -71,6 +84,18 @@ plain words:
 - **The second layer.** In revision A no single component fault leaves a valve on after the firmware stops. In V2 two of the eleven faults I ran do: the timing capacitor shorted, and the chip's output stuck high. Firmware finds each at the end of the run or before the next one. A valve stays on only if the fault and a firmware crash fall in the same run.
 - **The fast trip on a short.** Without the comparator and latch a dead short lasts until the PTC opens, 0.07 to 0.6 s by the design document's estimate, not 20 ms. By that same estimate it can open a fuse on a 40 or 75 VA transformer.
 - **The relay detector that needs no supply rail.** Revision A opens the relay whatever the 3.3 V rail does. V2 needs a second supply supervisor to cover a rail that sags, and the one-shot's behaviour under 1.65 V is not in its data sheet.
+
+**Review, 2026-11-12.** On the first of these three: the review injected 114 faults
+into V2 in the manner of review A2. Eight distinct single faults of a
+component, a pin or a net leave the valve on after the keep-alive stops,
+14 rows of its table, most of them at the timing node of the one-shot. "The same run" is also too
+narrow: a fault that arises while the board is idle passes the idle test,
+because the one-shot's output is low until its first trigger, and is found
+at the end of the next run. A crash in that run leaves the valve on. A
+release test before the valve opens would close that window. On the third:
+the second supervisor is guaranteed to sink 15 uA below 1.7 V, against more
+than a milliamp from the one-shot through R_S. Review, findings R2, R3, R4
+and R12.
 
 If the owner will not give up the sentence "no single component fault" of
 safety rule 3, the choice is V3 or revision A, and V3 saves ten parts. That
@@ -163,6 +188,12 @@ Two more facts about the pins:
 
 - **Glitches.** At power-up GPIO17 and GPIO7 are each driven low for about 60 us (chip data sheet, table 2-2). That is the idle level of the keep-alive. The table is for power-up. Whether the same happens on other resets is not established, item N3.
 - **Hold.** A pin with the hold function enabled keeps its level through a Core Reset. The firmware does not use the function today. A design that relies on a pin being released must never use it.
+
+**Review, 2026-11-12.** The same holds for the RTC IO functions. GPIO17 is an RTC pin
+(datasheet v2.2, table 2-1), and a Core Reset resets "the whole digital
+system except RTC". A pin driven through the RTC IO multiplexer would keep
+driving through a Core Reset. The firmware does not do that today. Review,
+finding R16.
 
 ### 2.3 What follows for the wiring
 
@@ -288,6 +319,14 @@ the relay. The Nexperia sheet (rev 8, 14 August 2023) gives:
 - **Supply.** 1.65 to 5.5 V, 6.5 V absolute. "Power-on-reset on outputs."
 - **A trap.** A rising edge on the clear input while the trigger input is high also starts a pulse (function table).
 
+**Review, 2026-11-12.** Two things the list lacks. The same sheet gives a retrigger time that
+grows with the capacitor: 10 ms typical at 100 uF and 1 kohm, with no
+maximum, so about 0.5 ms at 4.7 uF if it scales. The TI sheet prints 1.4 us
+for 100 uF and 1 kohm. Edges 10 ms apart are not affected, and the model has no
+such dead time. And the TSSOP-8 named in the table has one maker in stock at
+JLCPCB; under "VSSOP-8-0.5mm" it lists two, Nexperia C77273 and TI C352969. Review,
+findings R14 and R15.
+
 ### 4.3 Time-outs against what the firmware does
 
 This matters for a watchdog that resets the processor through `EN`, options
@@ -346,6 +385,17 @@ revision A does (hardware design 19.4).
 The cells that say "on" for V1 and V2 are the price of those variants.
 They are not softened anywhere else in this document.
 
+**Review, 2026-11-12.** Two cells say less than they should. In the row "expander ignores its
+reset, or a valve pin is stuck low", the V1 cell is right for the reset, and
+for a stuck pin it is worse: the opto LEDs of V1 are on `3V3` all the time,
+so a valve pin held low, a drive net bridged to ground or 220 ohm of residue
+opens the valve from the moment of the fault, with the controller idle. In
+the row "shorted valve wire", every cell without K1 assumes that the triac
+stops once gate drive is removed. Hardware design 6.6 does not rely on that
+on a 75 VA transformer, where K1 breaks the current in revision A. The table
+also lacks the rows of the review's section 6.1, group D, beyond the two of
+section 6.4. Review, findings R5 and R6.
+
 ## 6. The reduced circuit, simulated
 
 ### 6.1 The circuit
@@ -357,6 +407,15 @@ assigned any.
 - **R_T1, R_T2 and C_T**, 100 kohm twice in parallel and 4.7 uF. The pulse is 50 kohm x 4.7 uF = 235 ms. Two resistors, so that one of them open doubles the time and no more, the same reasoning as R30 and R91 of revision A. All three values are on the BOM already.
 - **R_S**, 1 kohm, from the output of U_WD to `DRV_EN`, and **R_PD**, 100 kohm, from `DRV_EN` to ground.
 - **U_SV**, a second supply supervisor of the type of U12, open drain, on `DRV_EN`. It holds `DRV_EN` low while `3V3` is under its threshold. Its output is defined from a supply of 0.7 V (TI SLVSES2J, feature list).
+
+**Review, 2026-11-12.** "Defined from 0.7 V" is true and not enough. Section 7.5 of the same
+sheet guarantees a low level of 0.3 V at 15 uA from 0.7 V and at 0.5 mA at
+1.7 V. With the one-shot's output high and R_S at 1 kohm, U_SV would have to
+sink 1.2 to 1.6 mA there. The model gives it a 30 ohm switch. So the row
+"falls to 1.5 V and stays" of section 6.4 is not closed by the data sheets.
+A larger R_S would close it and would let a mis-driven read-back pin lift
+`DRV_EN` in V1. U_SV also has the threshold of U12, so the note in section
+13 applies to it. Review, findings R3, R11 and R20.
 - **`DRV_EN`** is the reset input of U5, as today.
 - **Q_INV**, an AO3400A, inverts `DRV_EN` for the gate of Q3, with R25 as its pull-up. U7 did that before.
 - **K1** hangs on Q1 alone. Q1 follows the expander bit `RLY_ON`, as today. The source of Q1 goes to ground where Q2 was.
@@ -448,6 +507,18 @@ hardware design 8.5 has fifteen component faults that stick the discrete
 detector A with its comparator and gates: the rows "gate drive stays" that
 are not nets or leaks. The two counts are not of the same kind. Mine is from
 eleven faults I chose. The other is from an injection of every pin and net.
+
+**Review, 2026-11-12.** The injection of every pin and net has now been made on this circuit:
+`faults_wide.py` beside `study.py`, with the tables in
+`results/faults-wide-v1.md` and `results/faults-wide-v2.md`. The timing node
+of the one-shot fails in the unsafe direction. Besides the shorted capacitor,
+a leak across it of 100 kohm or less, an open joint at pin 7 and the timing
+pin bridged to `3V3` each hold `DRV_EN` high in the model; the last of these
+is not established for a real part. A cracked ceramic capacitor is a known
+source of such a leak. In the pump of revision A the same faults of the
+reservoir end drive. One timing resistor open is found by a stop test with
+fixed limits at the long corner, 0.59 s, and not at the short one. Review,
+finding R2 and section 6.
 
 ## 7. The variants
 
@@ -622,6 +693,12 @@ the output-enable holds in reset", stays true in every variant.
 | ESPHome package | The same changes, in the code it shares with the standalone firmware (firmware architecture, section 21) | As V1 | As V1 |
 | Unexpected-current checks, rule 6 | Report only. There is no relay to open | No change | No change |
 
+**Review, 2026-11-12.** Two rows are missing. V2 keeps the gate bleed check, step 5b: with R12
+open the gate of Q1 keeps its charge when the expander is reset, and K1
+stays closed. And all three variants should prove the one-shot before a
+valve opens, not only after the run: a few edges, a stop, and the read-back
+low within 0.35 s. Review, findings R9 and R12.
+
 ### 7.7 Bench risks of the register, hardware design section 20
 
 | Risk | V1 | V2 | V3 |
@@ -724,6 +801,17 @@ to 31 A peak flowing. Without the latch nothing asks the relay to do that.
 The question is how long the PTC and the fuses take, and those are data
 sheet curves and a bench test, not a circuit.
 
+**Review, 2026-11-12.** The columns "with the latch, 20 ms" and "firmware with a limit on
+samples, 30 ms" assume that the triac stops at the first current zero after
+gate drive is removed. Hardware design 6.6 says of a 75 VA transformer
+shorted at the terminals that the triac "is likely to conduct on", and has
+K1 break the current. In V1 there is no K1, so on that transformer a fuse
+may open whatever removes the drive. And there is an option this section
+does not have: the window comparator can stay on the net that becomes the
+clear input of the one-shot, with R52 and C33 kept. A short then resets the
+expander in hardware, for two parts. Review, findings R6 and R13, and
+`results/trip-via-clear.md`.
+
 **My reading.** The latch is five parts and under ten cents. Removing it saves
 almost nothing and makes risk 4 of the register the normal case. I include
 its removal in V2 only because the gates of U7 go anyway, and I would decide
@@ -800,6 +888,10 @@ Each item names the test that would settle it.
 Not read at all: the ESP32-S3 errata, the mask ROM, and the data sheets of
 the second-source copies of the supervisor parts.
 
+**Review, 2026-11-12.** The review read the errata. Eight entries, none about a reset, a
+watchdog, a brownout or the state of a pin. Its section 12 goes through the
+items of the table above.
+
 ## 13. Found on the way
 
 **The threshold of U12 is 3.08 V, not 3.0 V.** Hardware design 12.4 gives
@@ -816,6 +908,15 @@ says. The 2.93 V part that 12.4 names as the fallback would restore the
 margin. I did not change the design document. Its author should check the
 table, and the bring-up step that expects `EN` to fall "when `3V3` passes
 2.94 to 3.06 V".
+
+**Review, 2026-11-12.** Confirmed from the TI sheet, with two additions. The "about 10 mV" is
+the margin to the release level: 3.201 V less 3.189 V is 12 mV. The margin
+that decides whether a dip resets the board is to the falling threshold:
+59 mV at light load and 44 mV with the regulator's full load regulation,
+where the design document implies 140 mV. And the 2.93 V part restores the
+upper margin but trips at 2.87 to 2.99 V, below the 3.0 V that the module
+needs, so it is a choice and not a plain fix. The review's section 11 has
+the numbers for both parts and the text of an issue.
 
 **A restart is not a reset of the pins.** Section 2.2 applies to revision A
 as well. The firmware's shutdown and panic handlers drive the keep-alive
