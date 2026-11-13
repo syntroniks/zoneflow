@@ -795,8 +795,9 @@ type and a new analysis.
 latch later. I would keep the fast trip in every variant, because section
 7.3 gets it for two parts, and I rate the one-chip detector lower than the
 study does, because of R2. On K1 we agree. The study's weakest point, by its
-own account, is that the saving is small. That has not changed. These variants differ in what the specification can
-promise. In part count they differ by 5 to 31 of 313.
+own account, is that the saving is small. That has not changed. These
+variants differ in what the specification can promise. In part count the
+three I list remove 18 to 31 of 313.
 
 ## 14. Corrections made to the study
 
