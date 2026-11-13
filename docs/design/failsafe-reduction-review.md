@@ -24,8 +24,9 @@ tie the output expander's reset to the processor's reset and let the chip's
 own watchdogs do the rest. The study says that does not work, and it is
 right. I checked every link in Espressif's manual, the data sheets and the
 source of the ESP-IDF version this firmware builds with. A crash, a watchdog
-time-out and a restart reset the two processor cores and nothing else. The
-reset pin does not move and the pins keep driving. A valve would stay open.
+time-out and a restart reset the two processor cores and leave the pins
+alone. The reset pin does not move and the pins keep driving. A valve would
+stay open.
 
 **V1 is the variant the owner now favours.** One chip watches the
 keep-alive and resets the expander. There is no switch in the supply of the
@@ -71,10 +72,10 @@ with a real order.
 parts, take V1 with the comparator and the relay put back: 23 parts fewer
 than today, about the price of today's board, and still an answer in
 hardware to the two failures an installer is most likely to meet, a shorted
-wire and a triac killed by a surge. Bare V1 is what most controllers of this
-class ship plus a real watchdog, but it breaks safety rules 1, 3 and 6 of the
-specification as written, so choose it only if the specification is
-rewritten to say that one fault can leave a valve on. Whatever is
+wire and a triac killed by a surge. Bare V1 is more than most of the open designs in the prior-art
+survey have, but it breaks safety rules 1, 3 and 6 of the specification as
+written, so choose it only if the specification is rewritten to say that one
+fault can leave a valve on. Whatever is
 chosen, the fail-safe is a tenth of this board, so the part count will not
 come from here, and the watchdog chip has to be measured on a bench before
 any board depends on it.
