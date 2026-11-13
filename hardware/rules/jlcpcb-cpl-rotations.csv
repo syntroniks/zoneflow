@@ -35,7 +35,7 @@ footprint_regex,rotation,dx,dy,lcsc
 ^SOT-23-6,270,0,0,C7519
 # TPS3701DDCR (U13, added with the over-voltage detector): the same library footprint, pin 1 at the bottom left
 ^TSOT-23-6,270,0,0,C132788
-# TPS2553DBVR, and the three-pin parts BAT54S, AO3400A, AO3401A, TLV803EA30: pin 1 at the bottom right
+# TPS2553DBVR, and the three-pin parts BAT54S, AO3400A, AO3401A, TLV803EA29: pin 1 at the bottom right
 ^SOT-223,180,0,0,
 ^SOT-23,180,0,0,
 ^SOIC-,270,0,0,

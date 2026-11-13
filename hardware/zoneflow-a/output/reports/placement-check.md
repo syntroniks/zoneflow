@@ -27,9 +27,9 @@ Library footprints: JLCEDA/EasyEDA Official Library (<https://lceda.cn/>, <https
 | `D_SMA` | C14996 | `SMA_L4.3-W2.6-LS5.2-RD` | 2: D19 ... | cathode | 0 | 0.20 | yes |
 | `D_SMA` | C8678 | `SMA_L4.3-W2.6-LS5.2-RD` | 3: D24 ... | cathode | 0 | 0.20 | yes |
 | `D_SMA` | C95872 | `SMA_L4.3-W2.6-LS5.2-RD` | 1: D2 | cathode | 0 | 0.20 | yes |
-| `D_SMB` | C151264 | `SMB_L4.6-W3.6-LS5.3-BI` | 14: D101 ... | set | 0 | 0.24 | yes |
+| `D_SMB` | C19077591 | `SMB_L4.6-W3.6-LS5.4-BI` | 14: D101 ... | set | 0 | 0.44 | yes |
 | `D_SMB` | C83270 | `SMB_L4.6-W3.6-LS5.3-RD` | 1: D25 | set | 0 | 0.21 | yes |
-| `D_SMC` | C151287 | `SMC_L7.1-W6.2-LS8.1-BI` | 1: D1 | set | 0 | 0.04 | yes |
+| `D_SMC` | C41411765 | `SMC_L6.9-W5.9-LS7.9-BI` | 1: D1 | set | 0 | 0.03 | yes |
 | `D_SOD-123` | C81598 | `SOD-123F_L2.7-W1.6-LS3.8-RD` | 3: D10 ... | cathode | 0 | 0.08 | yes |
 | `ESP32-S3-WROOM-1` | C2913202 | `WIRELM-SMD_ESP32-S3-WROOM-1` | 1: U4 | pin 1 | 0 | 0.02 | yes |
 | `FPC_XUNPU_FPC-05F-12PH20` | C2856799 | `FPC-SMD_12P-P0.50_FPC-05F-12PH20` | 1: J7 | pin 1 | 90 | 0.00 | yes |
@@ -39,8 +39,7 @@ Library footprints: JLCEDA/EasyEDA Official Library (<https://lceda.cn/>, <https
 | `Fuse_Littelfuse-NANO2-451_453` | C142836 | `FUSE-SMD_L6.1-W2.7` | 1: F5 | set | 0 | 0.13 | yes |
 | `Fuseholder_Littelfuse_Nano2_154x` | C206913 | `FUSE-SMD_L10.0-W5.0` | 2: F1 ... | set | 0 | 0.00 | yes |
 | `JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal` | C160404 | `CONN-SMD_4P-P1.00_SM04B-SRSS-TB-LF-SN` | 1: J6 | pin 1 | 0 | 0.06 | yes |
-| `LED_0603_1608Metric` | C125094 | `LED0603-RD` | 10: D102 ... | cathode | 0 | 0.04 | yes |
-| `LED_0603_1608Metric` | C2286 | `LED-SMD_L1.6-W0.8-R-RD` | 1: D8 | cathode | 0 | 0.04 | yes |
+| `LED_0603_1608Metric` | C2286 | `LED-SMD_L1.6-W0.8-R-RD` | 11: D102 ... | cathode | 0 | 0.04 | yes |
 | `L_Bourns_SRN6045TA` | C5151734 | `IND-SMD_L6.0-W6.0` | 1: L1 | set | 0 | 0.42 | yes |
 | `R_0603_1608Metric` | C21189 | `R0603` | 4: R17 ... | set | 0 | 0.07 | yes |
 | `R_0603_1608Metric` | C21190 | `R0603` | 20: R104 ... | set | 0 | 0.07 | yes |
@@ -83,8 +82,8 @@ Library footprints: JLCEDA/EasyEDA Official Library (<https://lceda.cn/>, <https
 | `SOIC-8_3.9x4.9mm_P1.27mm` | C7440 | `SOIC-8_L5.0-W4.0-P1.27-LS6.0-BL` | 1: U10 | pin 1 | 270 | 0.23 | yes |
 | `SOT-223-3_TabPin2` | C435835 | `SOT-223-4_L6.5-W3.5-P2.30-LS7.0-BR` | 1: U3 | pin 1 | 180 | 0.32 | yes |
 | `SOT-23` | C15127 | `SOT-23_L2.9-W1.3-P1.90-LS2.4-BR` | 1: Q3 | pin 1 | 180 | 0.21 | yes |
+| `SOT-23` | C1852114 | `SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR` | 1: U12 | pin 1 | 180 | 0.06 | yes |
 | `SOT-23` | C20917 | `SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR` | 3: Q1 ... | pin 1 | 180 | 0.06 | yes |
-| `SOT-23` | C5218924 | `SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR` | 1: U12 | pin 1 | 180 | 0.06 | yes |
 | `SOT-23` | C7420333 | `SOT-23-3_L2.9-W1.3-P1.90-LS2.4-BR` | 6: D15 ... | pin 1 | 180 | 0.06 | yes |
 | `SOT-23-6` | C55266 | `SOT-23-6_L2.9-W1.6-P0.95-LS2.8-BR` | 1: U11 | pin 1 | 180 | 0.21 | yes |
 | `SOT-23-6` | C7519 | `SOT-23-6_L2.9-W1.6-P0.95-LS2.8-BL` | 2: U2 ... | pin 1 | 270 | 0.01 | yes |

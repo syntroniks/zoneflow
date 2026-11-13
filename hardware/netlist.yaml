@@ -48,7 +48,7 @@ components:
   - ref: D1
     value: "TVS 48 V bidirectional 1500 W"
     package: "SMC"
-    lcsc: C151287
+    lcsc: C41411765
     block: "A power"
     variant: "all"
     note: "Input surge clamp"
@@ -459,7 +459,7 @@ components:
   - ref: D23
     value: "TVS 48 V bidirectional 600 W"
     package: "SMB"
-    lcsc: C151264
+    lcsc: C19077591
     block: "B valve common relay"
     variant: "all"
     note: "Clamps the valve common while K1 is open and when it opens under load"
@@ -743,12 +743,12 @@ components:
       "1": "EN"
       "2": "GND"
   - ref: U12
-    value: "TLV803EA30DBZR supervisor 3.0 V, open drain, 200 ms"
+    value: "TLV803EA29DBZR supervisor 2.93 V, open drain, 200 ms"
     package: "SOT-23"
-    lcsc: C5218924
+    lcsc: C1852114
     block: "D MCU"
     variant: "all"
-    note: "Holds EN low while 3V3 is below 3.0 V and for 200 ms after"
+    note: "Holds EN low while 3V3 is below 2.93 V and for 200 ms after"
     pins:
       "1 GND": "GND"
       "2 RESET": "EN"
@@ -802,9 +802,9 @@ components:
       "1": "STATUS_LED"
       "2": "LED_ST"
   - ref: D6
-    value: "LED yellow-green"
+    value: "LED red"
     package: "0603"
-    lcsc: C125094
+    lcsc: C2286
     block: "D MCU"
     variant: "all"
     note: "Power / status"
@@ -2000,7 +2000,7 @@ components:
   - ref: D12
     value: "TVS 48 V bidirectional 600 W"
     package: "SMB"
-    lcsc: C151264
+    lcsc: C19077591
     block: "L sensor inputs and sensor supply"
     variant: "all"
     note: "Terminal clamp"
@@ -2059,7 +2059,7 @@ components:
   - ref: D13
     value: "TVS 48 V bidirectional 600 W"
     package: "SMB"
-    lcsc: C151264
+    lcsc: C19077591
     block: "L sensor inputs and sensor supply"
     variant: "all"
     note: "Terminal clamp"
@@ -2118,7 +2118,7 @@ components:
   - ref: D14
     value: "TVS 48 V bidirectional 600 W"
     package: "SMB"
-    lcsc: C151264
+    lcsc: C19077591
     block: "L sensor inputs and sensor supply"
     variant: "all"
     note: "Terminal clamp"
@@ -2295,7 +2295,7 @@ components:
   - ref: D18
     value: "TVS 48 V bidirectional 600 W"
     package: "SMB"
-    lcsc: C151264
+    lcsc: C19077591
     block: "L sensor inputs and sensor supply"
     variant: "all"
     note: "Terminal clamp"
@@ -2315,7 +2315,7 @@ components:
   - ref: D101
     value: "TVS 48 V bidirectional 600 W"
     package: "SMB"
-    lcsc: C151264
+    lcsc: C19077591
     block: "Z output channels"
     variant: "all"
     note: "Across the triac, at the terminal"
@@ -2406,9 +2406,9 @@ components:
       "1": "V_DRV"
       "2": "LEDA_Z1"
   - ref: D102
-    value: "LED yellow-green"
+    value: "LED red"
     package: "0603"
-    lcsc: C125094
+    lcsc: C2286
     block: "Z output channels"
     variant: "all"
     note: "Output indicator"
@@ -2428,7 +2428,7 @@ components:
   - ref: D201
     value: "TVS 48 V bidirectional 600 W"
     package: "SMB"
-    lcsc: C151264
+    lcsc: C19077591
     block: "Z output channels"
     variant: "all"
     note: "Across the triac, at the terminal"
@@ -2519,9 +2519,9 @@ components:
       "1": "V_DRV"
       "2": "LEDA_Z2"
   - ref: D202
-    value: "LED yellow-green"
+    value: "LED red"
     package: "0603"
-    lcsc: C125094
+    lcsc: C2286
     block: "Z output channels"
     variant: "all"
     note: "Output indicator"
@@ -2541,7 +2541,7 @@ components:
   - ref: D301
     value: "TVS 48 V bidirectional 600 W"
     package: "SMB"
-    lcsc: C151264
+    lcsc: C19077591
     block: "Z output channels"
     variant: "all"
     note: "Across the triac, at the terminal"
@@ -2632,9 +2632,9 @@ components:
       "1": "V_DRV"
       "2": "LEDA_Z3"
   - ref: D302
-    value: "LED yellow-green"
+    value: "LED red"
     package: "0603"
-    lcsc: C125094
+    lcsc: C2286
     block: "Z output channels"
     variant: "all"
     note: "Output indicator"
@@ -2654,7 +2654,7 @@ components:
   - ref: D401
     value: "TVS 48 V bidirectional 600 W"
     package: "SMB"
-    lcsc: C151264
+    lcsc: C19077591
     block: "Z output channels"
     variant: "all"
     note: "Across the triac, at the terminal"
@@ -2745,9 +2745,9 @@ components:
       "1": "V_DRV"
       "2": "LEDA_Z4"
   - ref: D402
-    value: "LED yellow-green"
+    value: "LED red"
     package: "0603"
-    lcsc: C125094
+    lcsc: C2286
     block: "Z output channels"
     variant: "all"
     note: "Output indicator"
@@ -2767,7 +2767,7 @@ components:
   - ref: D501
     value: "TVS 48 V bidirectional 600 W"
     package: "SMB"
-    lcsc: C151264
+    lcsc: C19077591
     block: "Z output channels"
     variant: "8"
     note: "Across the triac, at the terminal"
@@ -2858,9 +2858,9 @@ components:
       "1": "V_DRV"
       "2": "LEDA_Z5"
   - ref: D502
-    value: "LED yellow-green"
+    value: "LED red"
     package: "0603"
-    lcsc: C125094
+    lcsc: C2286
     block: "Z output channels"
     variant: "8"
     note: "Output indicator"
@@ -2880,7 +2880,7 @@ components:
   - ref: D601
     value: "TVS 48 V bidirectional 600 W"
     package: "SMB"
-    lcsc: C151264
+    lcsc: C19077591
     block: "Z output channels"
     variant: "8"
     note: "Across the triac, at the terminal"
@@ -2971,9 +2971,9 @@ components:
       "1": "V_DRV"
       "2": "LEDA_Z6"
   - ref: D602
-    value: "LED yellow-green"
+    value: "LED red"
     package: "0603"
-    lcsc: C125094
+    lcsc: C2286
     block: "Z output channels"
     variant: "8"
     note: "Output indicator"
@@ -2993,7 +2993,7 @@ components:
   - ref: D701
     value: "TVS 48 V bidirectional 600 W"
     package: "SMB"
-    lcsc: C151264
+    lcsc: C19077591
     block: "Z output channels"
     variant: "8"
     note: "Across the triac, at the terminal"
@@ -3084,9 +3084,9 @@ components:
       "1": "V_DRV"
       "2": "LEDA_Z7"
   - ref: D702
-    value: "LED yellow-green"
+    value: "LED red"
     package: "0603"
-    lcsc: C125094
+    lcsc: C2286
     block: "Z output channels"
     variant: "8"
     note: "Output indicator"
@@ -3106,7 +3106,7 @@ components:
   - ref: D801
     value: "TVS 48 V bidirectional 600 W"
     package: "SMB"
-    lcsc: C151264
+    lcsc: C19077591
     block: "Z output channels"
     variant: "8"
     note: "Across the triac, at the terminal"
@@ -3197,9 +3197,9 @@ components:
       "1": "V_DRV"
       "2": "LEDA_Z8"
   - ref: D802
-    value: "LED yellow-green"
+    value: "LED red"
     package: "0603"
-    lcsc: C125094
+    lcsc: C2286
     block: "Z output channels"
     variant: "8"
     note: "Output indicator"
@@ -3219,7 +3219,7 @@ components:
   - ref: D901
     value: "TVS 48 V bidirectional 600 W"
     package: "SMB"
-    lcsc: C151264
+    lcsc: C19077591
     block: "Z output channels"
     variant: "all"
     note: "Across the triac, at the terminal"
@@ -3310,9 +3310,9 @@ components:
       "1": "V_DRV"
       "2": "LEDA_MV"
   - ref: D902
-    value: "LED yellow-green"
+    value: "LED red"
     package: "0603"
-    lcsc: C125094
+    lcsc: C2286
     block: "Z output channels"
     variant: "all"
     note: "Output indicator"

@@ -4130,7 +4130,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 73.66 77.47 0)
 			(hide yes)
 			(show_name no)
@@ -4141,7 +4141,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151287"
+		(property "LCSC" "C41411765"
 			(at 73.66 77.47 0)
 			(hide yes)
 			(show_name no)

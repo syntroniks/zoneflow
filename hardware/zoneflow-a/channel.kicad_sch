@@ -1526,17 +1526,6 @@
 		)
 		(uuid "6e111656-dca5-5579-a879-11296188bd7d")
 	)
-	(text "OUTPUT CHANNEL (hardware design section 6). Nine instances: Z1 to Z8 and MV.\nThe valve sits between a COM terminal and OUT. Current returns through PTC F1, the triac\nand the shared shunt (ISNS) to GND. The gate is fired from T2 through opto-triac U1 and R3,\nso gate current has the polarity of T2: quadrants I and III, which every triac supports.\n\nQ1  T810-600B-TR, 8 A, three-quadrant, DPAK. Pin 1 A1 (T1) to ISNS, pin 2 and tab A2 (T2), pin 3 gate.\n    The tab is net T2: give it its own copper island of 2 cm2 or more (section 6.7).\nU1  MOC3023, random phase. LED current 7.1 mA worst case, 12 mA typical; it needs 5.6 mA at -20 C.\nR1  150R sets the opto LED current. R2 680R gives the indicator LED 1.6 mA.\nR3  100R limits the opto-triac to 0.45 A at the 45 V peak. R4 1k holds the gate at T1.\nR5 + C1  47R and 10 nF snubber. F1 PTC 1.1 A hold, 40 A maximum. D1 SMBJ48CA clamps at 77 V.\nD2  lights when the expander pin is low AND V_DRV is on: the real drive state.\n\nZD_N is low to turn the output on. V_DRV is removed by the fail-safe circuit."
-		(exclude_from_sim no)
-		(at 17.78 147.32 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left top)
-		)
-		(uuid "3399306f-78ec-510e-8880-879f2c18a897")
-	)
 	(text "Drive: opto LED and indicator"
 		(exclude_from_sim no)
 		(at 62.23 61.62 0)
@@ -1569,6 +1558,17 @@
 			(justify left bottom)
 		)
 		(uuid "987f1280-2980-5aa6-a7d4-7143f6203e69")
+	)
+	(text "OUTPUT CHANNEL (hardware design section 6). Nine instances: Z1 to Z8 and MV.\nThe valve sits between a COM terminal and OUT. Current returns through PTC F1, the triac\nand the shared shunt (ISNS) to GND. The gate is fired from T2 through opto-triac U1 and R3,\nso gate current has the polarity of T2: quadrants I and III, which every triac supports.\n\nQ1  T810-600B-TR, 8 A, three-quadrant, DPAK. Pin 1 A1 (T1) to ISNS, pin 2 and tab A2 (T2), pin 3 gate.\n    The tab is net T2: give it its own copper island of 2 cm2 or more (section 6.7).\nU1  MOC3023, random phase. LED current 7.0 mA worst case, 12 mA typical; it needs 5.6 mA at -20 C.\nR1  150R sets the opto LED current. R2 680R gives the indicator LED 1.7 mA.\nR3  100R limits the opto-triac to 0.45 A at the 45 V peak. R4 1k holds the gate at T1.\nR5 + C1  47R and 10 nF snubber. F1 PTC 1.1 A hold, 40 A maximum. D1 SMBJ48CA clamps at 77 V.\nD2  lights when the expander pin is low AND V_DRV is on: the real drive state.\n\nZD_N is low to turn the output on. V_DRV is removed by the fail-safe circuit."
+		(exclude_from_sim no)
+		(at 17.78 147.32 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left top)
+		)
+		(uuid "a63d62c1-630e-571a-b2d6-73918f21bbfa")
 	)
 	(junction
 		(at 213.36 76.2)
@@ -2657,7 +2657,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 248.92 102.87 0)
 			(hide yes)
 			(show_name no)
@@ -2668,7 +2668,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 248.92 102.87 0)
 			(hide yes)
 			(show_name no)
@@ -3859,7 +3859,7 @@
 				(justify right)
 			)
 		)
-		(property "Value" "yel-grn"
+		(property "Value" "red"
 			(at 87.376 100.711 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3903,7 +3903,7 @@
 				)
 			)
 		)
-		(property "Spec" "LED yellow-green"
+		(property "Spec" "LED red"
 			(at 83.82 97.79 0)
 			(hide yes)
 			(show_name no)
@@ -3914,7 +3914,7 @@
 				)
 			)
 		)
-		(property "MPN" "LTST-C190KGKT"
+		(property "MPN" "KT-0603R"
 			(at 83.82 97.79 0)
 			(hide yes)
 			(show_name no)
@@ -3925,7 +3925,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Lite-On"
+		(property "Manufacturer" "Hubei KENTO Elec"
 			(at 83.82 97.79 0)
 			(hide yes)
 			(show_name no)
@@ -3936,7 +3936,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C125094"
+		(property "LCSC" "C2286"
 			(at 83.82 97.79 0)
 			(hide yes)
 			(show_name no)

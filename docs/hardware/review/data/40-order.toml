@@ -346,28 +346,32 @@ be at the left.
 why = '''
 An LED the wrong way round stays dark. The ten in the row are the status light and the nine output
 indicators. Each output LED has its own resistor and is not in series with the opto-triac, so a
-dark one does not stop a valve. But the installer tests zones by these lights. The two LED types number their pads
-differently in JLCPCB's library, which is the kind of difference that turns one type round.
+dark one does not stop a valve. But the installer tests zones by these lights. Since 2026-11-12 all
+eleven are one part number, the red KENTO KT-0603R, so they are right or wrong together: if one is
+turned round, all are.
 '''
 good = '''
 - **The row:** D6, D902, D102, D202, D302, D402, D502, D602, D702, D802 from left to right. Each
   has its cathode mark at the left.
-- **D8,** the red one, above and left of U7: cathode at the left.
+- **D8,** the fault light, above and left of U7: cathode at the left.
 '''
 bad = '''
-One type is right and the other is turned round. D8 is the only LED of its type, so look at it
-on its own.
+A cathode mark at the right on any of them. They are one part number with one rotation in the
+placement file, so expect to find it on all eleven.
 '''
 how = '''
 The review's checklist says "the eleven LEDs along y = 42 and D8". The board has ten in the row,
 and D8 makes eleven. In KiCad's `LED_0603` footprint pad 1 is the cathode.
 '''
 fact = '''
-**Lite-On LTST-C190KGKT** data sheet, the copy LCSC serves for [C125094](https://www.lcsc.com/datasheet/C125094.pdf),
-section 2, "Package Dimensions": the drawing marks the cathode end of the part. **KENTO KT-0603R**,
-the copy for [C2286](https://www.lcsc.com/datasheet/C2286.pdf), section 2: the drawing marks one end
-in green and gives the diode symbol beside it. I looked at both drawings and did not check either
-against a part.
+**KENTO KT-0603R** approval sheet A.0 of 2018-12-06, the copy LCSC serves for
+[C2286](https://www.lcsc.com/datasheet/C2286.pdf), section 2, "Package Profile & Soldering PAD
+Suggested": the drawing numbers the two ends 1 and 2, puts "+" at end 1 and "-" at end 2, draws the
+diode symbol pointing from 1 to 2, and marks a corner of end 2 in green. So the maker's end 2, the
+marked end, is the cathode. KiCad numbers the other way: in its `LED_0603` footprint pad 1 is the
+cathode. `make cpl-check` compared all eleven with JLCPCB's library footprint for this part number
+and found the cathode where the board has it. I read the drawing and did not check it against a
+part. Until 2026-11-12 the ten in the row were another part, the Lite-On LTST-C190KGKT.
 '''
 cannot = '''
 I cannot show JLCPCB's preview. The picture shows three of the row and how they must lie.
@@ -388,7 +392,7 @@ marks = [{ refs = ["D6", "D902", "D102"], label = "LEDs" }]
 [[step.figure]]
 id = "d8"
 alt = "The fault LED D8 with its pad numbers"
-caption = "D8, the red fault LED, on F.Cu with silkscreen."
+caption = "D8, the fault LED, on F.Cu with silkscreen."
 around = ["D8"]
 margin = 2.2
 layers = ["F.Cu", "F.Silkscreen", "F.Fab", "Edge.Cuts"]

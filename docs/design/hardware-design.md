@@ -4,8 +4,9 @@ Status: **paper design, 2026-11-12, after
 [hardware review A1](hardware-review-a1.md), the decisions taken on its
 findings, [hardware review A2](hardware-review-a2.md) of the fail-safe
 circuits, the [answers to the firmware's questions](hardware-answers-a2.md)
-on section 19, and the owner's decision to debounce the push contacts in
-firmware (section 28)**. No board exists. Nothing in
+on section 19, the owner's decision to debounce the push contacts in
+firmware (section 28), and the second pass on extended part types
+(section 29)**. No board exists. Nothing in
 this document has been measured. Every number is a datasheet figure, a calculation from
 datasheet figures, or a simulation result, and the text says which. Section 20
 lists what only a bench can confirm. Section 22 lists what I could not confirm
@@ -35,7 +36,9 @@ changed. Section 26 lists what the answers to the firmware's questions
 changed: one part of the circuit and most of section 19. Section 27 lists
 the five part numbers that the BOM consolidation replaced. Section 28 lists
 the five parts that left when the debounce of the encoder switch and the two
-buttons moved into firmware.
+buttons moved into firmware. Section 29 lists the part numbers that the
+second pass on extended part types changed, the supervisor among them, and
+the ones it left alone.
 
 ## 1. The design in brief
 
@@ -133,7 +136,7 @@ input of the LM5164 buck U1, which makes `V_BUCK`, 5.28 V. D25 clamps
 | J1 | Header 2-way 3.81 mm pluggable, right angle | THT | C441182 | `AC_L_IN` to `AC_N` | 24 VAC input |
 | F1 | Fuse 3 A time-lag in SMD holder | SMD 9.7x5 mm | C206913 | `AC_N` to `GND` | Fuse in the leg that becomes circuit ground |
 | F4 | Fuse 3 A time-lag in SMD holder | SMD 9.7x5 mm | C206913 | `AC_L_IN` to `AC_L` | Fuse in the other leg |
-| D1 | TVS 48 V bidirectional 1500 W | SMC | C151287 | `AC_L` to `GND` | Input surge clamp |
+| D1 | TVS 48 V bidirectional 1500 W | SMC | C41411765 | `AC_L` to `GND` | Input surge clamp |
 | D2 | Rectifier 1 A 1000 V | SMA | C95872 | A `AC_L`, K `VRECT` | Half-wave rectifier |
 | R1 | 3R 5% 1 W, surge series | 2512 | C2936639 | `VRECT` to `VIN_DC` | Limits charging and surge current. Pulse rating in section 4.4 |
 | C1 | 470 uF 63 V aluminium electrolytic | THT 12.5x20 mm | C2940725 | + `VIN_DC`, - `GND` | Bulk capacitor. Through-hole, on the bottom side, lying down |
@@ -226,9 +229,11 @@ would become a service call.
 
 ### 4.4 Surge clamp D1 and rectifier D2
 
-D1 is a Littelfuse SMCJ48CA. Its stand-off voltage of 48 V is above the 45.3 V
-peak of 32 VAC, so it does not conduct in normal use. Breakdown is 53.3 to
-58.9 V. It clamps at 77.4 V at its rated 19.4 A, 10/1000 us pulse. A 43 V part,
+D1 is an SMCJ48CA: since 2026-11-12 the Hongjiacheng part, LCSC C41411765,
+where it was the Littelfuse part, C151287 (section 29). Its stand-off voltage
+of 48 V is above the 45.3 V peak of 32 VAC, so it does not conduct in normal
+use. Breakdown is 53.3 to 58.9 V. It clamps at 77.4 V at its rated 19.4 A,
+10/1000 us pulse. Both makers' sheets give these same figures. A 43 V part,
 as OpenSprinkler uses, would sit past its stand-off voltage at 32 VAC.
 
 D2 is an M7, 1 A and 1000 V. The worst reverse voltage is the clamp voltage on
@@ -727,7 +732,7 @@ main triac turns on and collapses the voltage across itself.
 | Ref | Part | Package | LCSC | Connections | Note |
 |---|---|---|---|---|---|
 | F101 | PTC 1.1 A hold, 60 V, 40 A maximum | 2920 | C3020148 | `OUT_Z1` to `T2_Z1` | Fault limiter |
-| D101 | TVS 48 V bidirectional 600 W | SMB | C151264 | `OUT_Z1` to `ISNS` | Across the triac, at the terminal |
+| D101 | TVS 48 V bidirectional 600 W | SMB | C19077591 | `OUT_Z1` to `ISNS` | Across the triac, at the terminal |
 | Q101 | T810-600B-TR triac 8 A 600 V, 3-quadrant | DPAK | C155588 | 1 T1 `ISNS`, 2 T2 (tab) `T2_Z1`, 3 G `G_Z1` |  |
 | R105 | 47R 1% 150 V | 0805 | C17714 | `T2_Z1` to `SNB_Z1` | Snubber |
 | C101 | 10 nF 100 V X7R | 0805 | C18741 | `SNB_Z1` to `ISNS` | Snubber, returned to the shunt so that a shorted capacitor shows as current |
@@ -736,7 +741,7 @@ main triac turns on and collapses the voltage across itself.
 | R103 | 100R 1% 150 V | 0805 | C17408 | `T2_Z1` to `OGT_Z1` | Gate series |
 | R104 | 1k 1% | 0603 | C21190 | `G_Z1` to `ISNS` | Gate to T1 |
 | R102 | 680R 1% | 0603 | C23228 | `V_DRV` to `LEDA_Z1` | Indicator current |
-| D102 | LED yellow-green | 0603 | C125094 | A `LEDA_Z1`, K `ZD_Z1_N` | Output indicator |
+| D102 | LED red | 0603 | C2286 | A `LEDA_Z1`, K `ZD_Z1_N` | Output indicator |
 
 <!-- designsync:end -->
 
@@ -854,22 +859,36 @@ output resistance of 70 ohm.
 
 | Case | `V_DRV` | LED drop | Expander pin | LED current | Requirement |
 |---|---|---|---|---|---|
-| Worst, -20 °C | 3.19 V | 1.56 V | 70 ohm, 0.57 V | 7.1 mA | 5.6 mA |
-| Worst, 25 °C | 3.19 V | 1.50 V | 70 ohm, 0.57 V | 7.5 mA | 5.0 mA |
+| Worst, -20 °C | 3.19 V | 1.56 V | 70 ohm, 0.58 V | 7.0 mA | 5.6 mA |
+| Worst, 25 °C | 3.19 V | 1.50 V | 70 ohm, 0.58 V | 7.3 mA | 5.0 mA |
 | Typical | 3.30 V | 1.18 V | about 0.28 V | 12.3 mA | |
 | Highest | 3.40 V | 1.00 V | about 0.15 V | 15.0 mA | 60 mA absolute maximum |
 
 Each row solves (`V_DRV` - LED drop - pin voltage) / 150 ohm, with the 1.2 to
-1.9 mA of the indicator LED branch added to the pin current. The typical and
+2.1 mA of the indicator LED branch and the 0.03 mA of the pull-up added to
+the pin current. In the two worst rows the pin voltage is 70 ohm times the
+whole pin current, solved together with the two branches. The typical and
 highest pin voltages are my estimates. The datasheet gives no typical value.
-The worst-case margin is 1.27. That corner needs the LDO at its low limit, the
+The worst-case margin is 1.25. That corner needs the LDO at its low limit, the
 LED at its maximum drop, the expander at its guaranteed minimum drive and
 -20 °C together.
 
-The highest pin current is 15.0 + 1.9 = 16.9 mA. The TCA9539 recommends at
-most 18 mA per pin at 85 °C junction, and 100 mA per 8-bit port. Port 0 carries
-Z1 to Z4 and MV, which is 85 mA with all five on. Port 1 carries Z5 to Z8,
-68 mA. Both limits hold even if firmware turns everything on.
+The highest pin current is 15.0 + 2.1 + 0.03 = 17.2 mA. The TCA9539 recommends
+at most 18 mA per pin up to 85 °C junction and 25 mA up to 65 °C, and 100 mA
+per 8-bit port. Port 0 carries Z1 to Z4 and MV, which is 86 mA with all five
+on. Port 1 carries Z5 to Z8, 69 mA. Both limits hold even if firmware turns
+everything on.
+
+**What the red indicator changed here.** Until 2026-11-12 the indicator was a
+yellow-green part of 1.9 V at least where the red one has 1.8 V at least
+(section 15.5), and the two worst rows read 7.1 and 7.5 mA. The second of
+those took the pin voltage of the first. Solved as described above, the
+yellow-green part gives 7.06 and 7.35 mA and a highest pin current of
+17.0 mA, and the red part 7.02 and 7.30 mA and 17.2 mA. So the change costs
+0.04 mA of opto LED current and adds 0.14 mA to a pin. Both makers give the
+forward voltage at 20 mA only. The typical curve of the red part is 0.2 V
+lower at 2 mA; if the lowest part follows it, the branch takes 2.4 mA, the
+pin 17.5 mA and the worst row 6.9 mA. That was as true of the part before.
 
 **Firing voltage.** The triac fires each half-cycle when T2 has risen far
 enough to push the trigger current through the opto-triac, R103 and the gate.
@@ -1042,9 +1061,11 @@ about 1.3 A, below the 1.5 A inrush. The inrush lasts 100 ms and a PTC just
 above its trip current takes seconds, so I do not expect a trip. That is a
 bench item.
 
-**TVS D101.** A Littelfuse SMBJ48CA from the output terminal to `ISNS`. Its
-48 V stand-off is above the 45.3 V peak that appears across an off triac at
-32 VAC. It clamps at 77.4 V, far below the triac's 600 V. It returns to `ISNS`
+**TVS D101.** An SMBJ48CA from the output terminal to `ISNS`: since
+2026-11-12 the Hongjiacheng part, LCSC C19077591, where it was the Littelfuse
+part, C151264 (section 29). Its 48 V stand-off is above the 45.3 V peak that
+appears across an off triac at 32 VAC. It clamps at 77.4 V at its rated
+7.75 A, far below the triac's 600 V. It returns to `ISNS`
 and not to `GND` so that a TVS that has failed short puts the valve current
 through the shunt, where firmware can see current with every output off. A TVS
 normally fails short, and a shorted TVS energises its valve. Section 7 is the
@@ -1135,7 +1156,7 @@ analysis.
 | R93 | 10k 1% | 0603 | C25804 | `V_BUCK` to `RLY_B` | Pulls the node between Q1 and Q2 up, so that firmware can see Q2 off |
 | R94 | 100k 1% | 0603 | C25803 | `RLY_B` to `RLY_B_RB` | Read-back divider to GPIO7 |
 | R95 | 150k 1% | 0603 | C22807 | `RLY_B_RB` to `GND` | 3.05 V at the pin when Q2 is off |
-| D23 | TVS 48 V bidirectional 600 W | SMB | C151264 | `COM` to `GND` | Clamps the valve common while K1 is open and when it opens under load |
+| D23 | TVS 48 V bidirectional 600 W | SMB | C19077591 | `COM` to `GND` | Clamps the valve common while K1 is open and when it opens under load |
 | JP1 | Solder jumper, open | PCB | none | `AC_L` to `COM` | Bridge only if K1 is not fitted |
 | J2 | Header 7-way 3.81 mm pluggable, right angle | THT | C441187 | 1 `COM`, 2 `COM`, 3 `OUT_MV`, 4 `OUT_Z1`, 5 `OUT_Z2`, 6 `OUT_Z3`, 7 `OUT_Z4` | Valves A |
 | J3 | Header 4-way 3.81 mm pluggable, right angle | THT | C441184 | 1 `OUT_Z5`, 2 `OUT_Z6`, 3 `OUT_Z7`, 4 `OUT_Z8` | Valves B (8-zone build only) |
@@ -1186,7 +1207,12 @@ wire of the installation were clamped only by the 750 VAC withstand of the
 open contact. D23 clamps them at 77.4 V like every other field terminal. It
 also takes the inductive kick when K1 opens with valve current flowing. A
 valve at 0.5 A with 0.25 H stores 0.5 x 0.25 x 0.71² = 63 mJ at the current
-peak; the TVS is rated 600 W for 1 ms, which is 0.6 J. With K1 closed D23 is
+peak. Into a clamp at 53 to 77 V that current falls to zero in 0.25 H x
+0.71 A / V = 2.3 to 3.3 ms, from a first power of 38 to 55 W. The TVS is
+rated 600 W for a 10/1000 us pulse, which still delivers 61 W after 3.3 ms
+and 0.87 J in all, so the kick lies under the rated pulse at every moment.
+That argument needs only the rated pulse and its waveform, figure 3 of the
+Hongjiacheng sheet, and no reading of a curve. With K1 closed D23 is
 in parallel with D1 across the supply and does nothing.
 
 **D5** returns the coil current to `V_BUCK` when Q1 or Q2 turns off.
@@ -1456,7 +1482,8 @@ is whenever no valve runs, every pin is an input. Review finding m10: the
 data sheet specifies the supply current only for inputs at a rail. RN1, RN2
 and R96 pull the nine valve pins up to `V_DRV`, 100 kohm each. They go to
 `V_DRV` and not to `3V3` so that an off opto LED never sees a reverse
-voltage: its limit is 3 V. With `V_DRV` off, R26 holds the pins at ground.
+voltage: its limit is 3 V. The value matters to the fail-safe and must not
+be lowered: section 29 says why the basic 10 kohm array was not fitted. With `V_DRV` off, R26 holds the pins at ground.
 RN3 pulls the four spare pins down. `RLY_ON` already had R12, and the two
 inputs their pull-ups. RN2 is fitted on the 4-zone build as well, where P10
 to P13 have nothing else on them.
@@ -2303,13 +2330,13 @@ PSRAM. JLCPCB had 24,221 in stock on 2026-11-10.
 | C15 | 100 nF 50 V X7R | 0603 | C14663 | `3V3` to `GND` | At module pin 2 |
 | R18 | 10k 1% | 0603 | C25804 | `3V3` to `EN` |  |
 | C16 | 1 uF 50 V X5R | 0603 | C15849 | `EN` to `GND` |  |
-| U12 | TLV803EA30DBZR supervisor 3.0 V, open drain, 200 ms | SOT-23 | C5218924 | 1 GND `GND`, 2 RESET `EN`, 3 VDD `3V3` | Holds EN low while 3V3 is below 3.0 V and for 200 ms after |
+| U12 | TLV803EA29DBZR supervisor 2.93 V, open drain, 200 ms | SOT-23 | C1852114 | 1 GND `GND`, 2 RESET `EN`, 3 VDD `3V3` | Holds EN low while 3V3 is below 2.93 V and for 200 ms after |
 | C54 | 100 nF 50 V X7R | 0603 | C14663 | `3V3` to `GND` | At U12 |
 | SW1 | Tactile switch 5.1x5.1 mm, 1.5 mm high | SMD | C318884 | `EN` to `GND` | Reset |
 | R19 | 10k 1% | 0603 | C25804 | `3V3` to `BOOT` |  |
 | SW2 | Tactile switch 5.1x5.1 mm, 1.5 mm high | SMD | C318884 | `BOOT` to `GND` | Boot |
 | R20 | 680R 1% | 0603 | C23228 | `STATUS_LED` to `LED_ST` |  |
-| D6 | LED yellow-green | 0603 | C125094 | A `LED_ST`, K `GND` | Power / status |
+| D6 | LED red | 0603 | C2286 | A `LED_ST`, K `GND` | Power / status |
 | R21 | 2.2k 1% | 0603 | C4190 | `3V3` to `I2C0_SDA` |  |
 | R22 | 2.2k 1% | 0603 | C4190 | `3V3` to `I2C0_SCL` |  |
 | J6 | JST SH 4-way 1.0 mm, side entry | SMD | C160404 | 1 `GND`, 2 `QW_3V3`, 3 `QW_SDA`, 4 `QW_SCL` | Qwiic |
@@ -2419,26 +2446,61 @@ about 100 ms after the 24 VAC goes away (section 4.5), `3V3` then decays as
 slowly as the load lets it, and a weak transformer sags on valve inrush.
 That is the slow, unstable supply the guideline describes.
 
-U12 is a TI TLV803EA30DBZR, LCSC C5218924, 7160 in stock at JLCPCB on
-2026-11-10. Its open-drain output pulls `EN` low while `3V3` is below the
+U12 is a TI TLV803EA29DBZR, LCSC C1852114, 1,206 in stock at JLCPCB on
+2026-11-12. Its open-drain output pulls `EN` low while `3V3` is below the
 threshold and for 130 to 270 ms after it has recovered. R18 remains the
-pull-up, and SW1 and J8 pull the same node low. From the TI data sheet, read
-as LCSC's copy:
+pull-up, and SW1 and J8 pull the same node low. The figures are from TI
+SLVSES2J, read as LCSC's copy ZHCSJX8J (table 12-1 for the threshold options,
+section 7.5 for the tolerances), from ST DocID030319 rev 3, table 4, for the
+regulator U3, and from the module data sheet v1.8:
 
 | | |
 |---|---|
-| Falling threshold | 3.0 V, 2.94 to 3.06 V over temperature |
-| Hysteresis | 1.2 % typical, 1.5 % maximum, so `EN` is released at 3.11 V at most |
-| Lowest `3V3` in normal use | 3.20 V, 0.09 V above that |
+| Falling threshold | 2.93 V, -2 to +2 % over temperature: 2.871 to 2.989 V |
+| Hysteresis | 0.9 / 1.2 / 1.5 %, so `EN` is released at 2.989 x 1.015 = 3.034 V at most |
+| Lowest `3V3` in normal use | 3.3 V x 0.97 = 3.201 V at light load, 3.186 V with the full 15 mV of load regulation |
+| Rail above the release level | 167 mV, 152 mV at full load |
+| A dip that resets the board | 212 mV under the lowest rail, 197 mV at full load |
+| Against the module's minimum supply of 3.0 V (table 6-2) | The supervisor acts 11 to 129 mV below it |
+| Against the flash's minimum of 2.7 V (table 6-8) | 171 mV above it at least |
+| Output controlled from | 0.7 V of supply |
 | Supply current | 250 nA typical |
 | Pins, SOT-23 | 1 `GND`, 2 RESET, 3 VDD. The parts with an R or V before the package code have other pinouts; this one has neither. |
 
-The margin between the lowest rail and the highest release threshold is
-90 mV, and the part answers a dip of 5 % below its threshold in 10 us. A dip
-on `3V3` during a WiFi transmit burst that reaches 3.06 V would reset the
-board. I expect dips of tens of millivolts behind 32 uF, and it is a bench
-item. The 2.93 V version, TLV803SDBZR, C132016, is the fallback and fits the
-same pads.
+The part answers a dip of 5 % below its threshold in 10 us. I expect dips of
+tens of millivolts on `3V3` behind 32 uF during a WiFi transmit burst, and it
+is a bench item. The margin for them is now 197 mV or more on every board.
+
+**The first part was the wrong option, and this section had its figures
+wrong.** Until 2026-11-12 U12 was the TLV803EA30DBZR, C5218924, and this
+section gave it a falling threshold of "3.0 V, 2.94 to 3.06 V" and a release
+at 3.11 V at most, 90 mV under the lowest rail. The family has no 3.0 V
+option. Option 30 is 3.08 V: 3.018 to 3.142 V falling, released at up to
+3.189 V. That is 12 mV under the lowest rail at light load and 3 mV above it
+at full load. At the corner of the tolerances a transmit burst could have
+reset the board at every association: safe, because the valves close, and
+useless. The [review of the fail-safe study](failsafe-reduction-review.md),
+section 11, found it, and
+[issue #58](https://github.com/syntroniks/zoneflow/issues/58) records it.
+Option 29 is the same family in the same package with the same pins, so the
+pads and every other figure of this section stay.
+
+**What the lower threshold costs.** Between 2.87 and 3.0 V the processor
+may run below the supply range of its data sheet with no reset. Espressif
+names the risk of an unstable supply: a start that fails, or a flash erase
+that does not complete. The flash itself is inside its range. The valves do
+not depend on the supervisor: the keep-alive fail-safe of section 8 uses
+none. No standard option of this family sits between 3.0 V and the lowest
+rail with its tolerance, so a part that meets both sides needs a supervisor
+or a regulator of about 1 %, which is a change to the board and not to one
+line. Whoever would sooner have the reset above 3.0 V on every part can fit
+the TLV803EA30DBZR on the same pads, and must then measure on each board at
+bring-up that the rail is at least 100 mV above the level at which `EN`
+falls.
+
+The older TLV803SDBZR, C132016, is the second source: 2.93 V with the same
+tolerance on the same pads, 34,990 in stock on 2026-11-12, with its output
+controlled from 1.1 V where this one is controlled from 0.7 V.
 
 Flashing over USB needs no extra parts. The ESP32-S3's USB Serial/JTAG
 controller resets the chip and enters download mode by itself. For a factory
@@ -2463,19 +2525,19 @@ Three identical inputs: `T_RAIN`, `T_FLOW` and `T_AUX` at the terminals.
 | Ref | Part | Package | LCSC | Connections | Note |
 |---|---|---|---|---|---|
 | J4 | Header 7-way 3.81 mm pluggable, right angle | THT | C441187 | 1 `SENS_5V`, 2 `T_FLOW`, 3 `GND`, 4 `T_RAIN`, 5 `GND`, 6 `T_AUX`, 7 `GND` | Sensors |
-| D12 | TVS 48 V bidirectional 600 W | SMB | C151264 | `T_RAIN` to `GND` | Terminal clamp |
+| D12 | TVS 48 V bidirectional 600 W | SMB | C19077591 | `T_RAIN` to `GND` | Terminal clamp |
 | R74 | 10k 1% 200 V 0.25 W | 1206 | C17902 | `V5` to `T_RAIN` | Pull-up |
 | R75 | 10k 1% 200 V 0.25 W | 1206 | C17902 | `T_RAIN` to `N_RAIN` | Series |
 | D15 | BAT54S dual Schottky, series | SOT-23 | C7420333 | 1 A `GND`, 2 K `3V3`, 3 common `N_RAIN` | Clamp to the rails |
 | C44 | 22 nF 50 V X7R | 0603 | C21122 | `N_RAIN` to `GND` |  |
 | R76 | 1k 1% | 0603 | C21190 | `N_RAIN` to `SENS_RAIN` |  |
-| D13 | TVS 48 V bidirectional 600 W | SMB | C151264 | `T_FLOW` to `GND` | Terminal clamp |
+| D13 | TVS 48 V bidirectional 600 W | SMB | C19077591 | `T_FLOW` to `GND` | Terminal clamp |
 | R77 | 10k 1% 200 V 0.25 W | 1206 | C17902 | `V5` to `T_FLOW` | Pull-up |
 | R78 | 10k 1% 200 V 0.25 W | 1206 | C17902 | `T_FLOW` to `N_FLOW` | Series |
 | D16 | BAT54S dual Schottky, series | SOT-23 | C7420333 | 1 A `GND`, 2 K `3V3`, 3 common `N_FLOW` | Clamp to the rails |
 | C45 | 22 nF 50 V X7R | 0603 | C21122 | `N_FLOW` to `GND` |  |
 | R79 | 1k 1% | 0603 | C21190 | `N_FLOW` to `SENS_FLOW` |  |
-| D14 | TVS 48 V bidirectional 600 W | SMB | C151264 | `T_AUX` to `GND` | Terminal clamp |
+| D14 | TVS 48 V bidirectional 600 W | SMB | C19077591 | `T_AUX` to `GND` | Terminal clamp |
 | R80 | 10k 1% 200 V 0.25 W | 1206 | C17902 | `V5` to `T_AUX` | Pull-up |
 | R81 | 10k 1% 200 V 0.25 W | 1206 | C17902 | `T_AUX` to `N_AUX` | Series |
 | D17 | BAT54S dual Schottky, series | SOT-23 | C7420333 | 1 A `GND`, 2 K `3V3`, 3 common `N_AUX` | Clamp to the rails |
@@ -2493,7 +2555,7 @@ Three identical inputs: `T_RAIN`, `T_FLOW` and `T_AUX` at the terminals.
 | D20 | SS210 Schottky 2 A 100 V | SMA | C14996 | A `GND`, K `SP_A` | Clamps a negative miswire |
 | C48 | 10 nF 100 V X7R | 0805 | C18741 | `SP_A` to `GND` |  |
 | F3 | PTC 0.2 A hold, 60 V | 1812 | C315900 | `SP_A` to `SENS_5V` |  |
-| D18 | TVS 48 V bidirectional 600 W | SMB | C151264 | `SENS_5V` to `GND` | Terminal clamp |
+| D18 | TVS 48 V bidirectional 600 W | SMB | C19077591 | `SENS_5V` to `GND` | Terminal clamp |
 
 <!-- designsync:end -->
 
@@ -2537,7 +2599,7 @@ opens F1.
 
 ### 13.4 Surge on a sensor cable
 
-The TVS limits the terminal to 77.4 V at its rated 7.8 A, 10/1000 us. Behind it
+The TVS limits the terminal to 77.4 V at its rated 7.75 A, 10/1000 us. Behind it
 the series resistor sees at most 74 V and passes 7 mA into the clamp. I did not
 calculate against a specific surge standard. The 600 W TVS on a line with no
 other series impedance is the weak point, and surge immunity is a bench item.
@@ -2891,13 +2953,38 @@ boards, read that result.
 
 | LED | Colour | Current | Driven by |
 |---|---|---|---|
-| D102 to D902, one per output | Yellow-green | 1.6 mA | Expander pin and `V_DRV`, section 6.9 |
-| D6, power and status | Yellow-green | 2 mA | GPIO46 |
-| D8, over-current latch | Red | 1.3 mA | `FAULT`, hardware only |
+| D102 to D902, one per output | Red | 1.7 mA | Expander pin and `V_DRV`, section 6.9 |
+| D6, power and status | Red | 2.1 mA | GPIO46 |
+| D8, over-current latch | Red | 1.4 mA | `FAULT`, hardware only |
 
-I chose yellow-green because it works from 3.3 V. A 2.0 V LED leaves headroom
-that a 3 V blue or pure-green LED does not. Whether 1.6 mA is bright enough
-behind a light pipe is a bench item. R102 sets it.
+All eleven are one part since 2026-11-12: the KENTO KT-0603R, LCSC C2286, a
+basic part at JLCPCB, which D8 used already. The ten lights behind the
+fascia were yellow-green Lite-On LTST-C190KGKT, an extended part. The owner
+decided on 2026-11-12 that the colour of the lights does not matter, and one
+basic type for every position removes a feeder fee (section 29). The fault
+light D8 is then no longer told from the others by its colour. It never was
+from outside: it has no light pipe and shows only with the fascia off.
+
+| | LTST-C190KGKT, before | KT-0603R, now |
+|---|---|---|
+| Forward voltage at 20 mA | 1.9 to 2.4 V | 1.8 to 2.4 V |
+| Luminous intensity at 20 mA | 18 to 71 mcd | 145 to 300 mcd |
+| Forward current, maximum | 30 mA | 25 mA |
+| Reverse voltage | 5 V | 5 V |
+| Operating temperature | -30 to 85 °C | -40 to 85 °C |
+| Height | 0.8 mm | 0.6 mm |
+| Colour | 567.5 to 576.5 nm | 615 to 630 nm |
+
+Either works from 3.3 V, where a 3 V blue, white or pure-green LED does not:
+the basic white part, KT-0603W, needs 2.6 to 3.1 V and was not a candidate.
+The currents in the first table are (3.3 V - 1.88 V - the pin) / 680 ohm and
+(3.3 V - 1.88 V) / 1 kohm, with 1.88 V read from the typical curve of the
+KENTO sheet at 2 mA and 0.28 V taken for the expander pin (section 6.4). The red part gives eight times the light at the same
+current by the two sheets' minimum figures. The fault light has run it at
+1.4 mA from the start, so the zone lights are now as bright as that one was
+designed to be. Whether that is right behind a light pipe is still a bench
+item, and R102 sets it. The part is 0.2 mm lower, so the end of each light
+pipe is 0.9 mm above its LED where it was 0.7 mm.
 
 ## 16. Connectors and test points
 
@@ -3060,12 +3147,12 @@ part type, shipping, duty, the coin cell and the enclosure.
 
 <!-- designsync:begin cost -->
 
-`hardware/bom-preliminary.csv` has 99 lines: 50 basic parts, 48 extended parts and 1 that JLCPCB does not fit.
+`hardware/bom-preliminary.csv` has 98 lines: 50 basic parts, 47 extended parts and 1 that JLCPCB does not fit.
 
 | Build | 10 boards | 100 boards |
 |---|---|---|
-| 8-zone | 41.26 USD | 32.19 USD |
-| 4-zone | 34.97 USD | 27.39 USD |
+| 8-zone | 39.90 USD | 31.09 USD |
+| 4-zone | 34.01 USD | 26.58 USD |
 
 Not in the totals, because the line has no price: CR2032 lithium coin cell, 3 V.
 
@@ -3084,21 +3171,21 @@ Lines with the least stock against a 100-board order of the 8-zone build:
 
 | Part | Stock on the date checked | Needed for 100 boards |
 |---|---|---|
+| SMBJ48CA | 2730 | 1400 |
 | T810-600B-TR | 3384 | 900 |
-| SMBJ48CA | 5665 | 1400 |
 | HS20HS072RX | 460 | 100 |
 | KF2EDGR-3.81-7P | 1806 | 200 |
 | KF2EDGK-3.81-7P | 1827 | 200 |
+| TLV803EA29DBZR | 1206 | 100 |
 | 0154003.DRT | 2514 | 200 |
 | EC11J1525402 | 1486 | 100 |
-| 1812L020/60DR | 1650 | 100 |
 
 <!-- designsync:end -->
 
 This section prices parts only. The landed cost of a finished controller,
 with the board, assembly fees, freight, US duty and the enclosure, re-priced
-on 2026-11-11, is on [what a controller costs](../hardware/cost.md): about
-121 USD each for 5 eight-zone controllers and 54 USD for 100.
+on 2026-11-12, is on [what a controller costs](../hardware/cost.md): about
+118 USD each for 5 eight-zone controllers and 53 USD for 100.
 
 **What the review changes cost.** By this method the BOM as it stood before
 the changes comes to 38.90 and 30.35 USD for the 8-zone board at 10 and 100
@@ -3682,7 +3769,7 @@ get its numbers.
 For the first prototype. Stop at the first step that fails.
 
 1. **Before power.** Inspect. Measure resistance from `VIN_DC`, `V5`, `3V3` and `V_DRV` to `GND`. No cell in BT1, no display, no valve wiring. Then the bleed resistors, on every board: from TP8 (`KA_N2`) to `GND`, and from the gate of Q2 at C50 to `GND`, with the positive lead on the node and a few seconds for the capacitor to charge. Each reads about 50 kohm: R30 with R91, and R14 with R90, with a little leakage beside them. A reading above 80 kohm means one of the pair is open. This is the only test that finds it on a new board (risk 34).
-2. **USB only.** Feed 5 V from a bench supply limited to 200 mA into VBUS. Expect `V5` 4.4 to 4.9 V, `3V3` 3.20 to 3.40 V, under 80 mA with a blank module. Lower the supply slowly: `EN` must fall when `3V3` passes 2.94 to 3.06 V and rise 130 to 270 ms after it recovers. Then use a USB port and read the ROM boot log. GPIO45 must read under 0.3 V during reset. Run `espefuse.py summary` and check that `VDD_SPI_FORCE` is 1 and `VDD_SPI_TIEH` is 1 (section 12.3).
+2. **USB only.** Feed 5 V from a bench supply limited to 200 mA into VBUS. Expect `V5` 4.4 to 4.9 V, `3V3` 3.20 to 3.40 V, under 80 mA with a blank module. Lower the supply slowly: `EN` must fall when `3V3` passes 2.87 to 2.99 V and rise 130 to 270 ms after it has recovered, at 3.04 V at most. Note the level at which it falls and the level of the rail: section 12.4 expects at least 150 mV between them. Then use a USB port and read the ROM boot log. GPIO45 must read under 0.3 V during reset. Run `espefuse.py summary` and check that `VDD_SPI_FORCE` is 1 and `VDD_SPI_TIEH` is 1 (section 12.3).
 3. **Fail-safe at rest.** `KA_OK` low, `DRV_EN` low, `V_DRV` at 0 V, GPIO42 low, the gate of Q2 at 0 V, K1 open, no I2C answer at 0x74. The RTC at 0x51 answers. With `KA` as an input and the display running, `KA` stays under 0.1 V.
 4. **Keep-alive.** Test firmware toggles `KA` at 100 Hz. `KA_N2` rises to about 2.9 V and `DRV_EN` goes high within 20 ms. The gate of Q2, probed at C50, rises to about 2.7 V within 50 ms. Stop toggling and time both falls on a scope: `DRV_EN` after 0.21 to 0.83 s, the gate through 1.5 V and 0.6 V between 0.10 and 1.45 s. Repeat stuck high, where `DRV_EN` must fall within 1.25 s and the gate within 2.19 s, and at 25 Hz. Then try 0.5 Hz, which must not enable, and 1 Hz, 2 Hz, 1 kHz and 100 kHz, and record what each does to both. Then a lopsided keep-alive, 2.5 ms and 20 ms each way round, with the board at -20 °C: Q2 must stay fully on.
 5. **Expander and LEDs.** Turn each output on in turn. Its LED lights. The voltage across R101 is about 1.8 V, 12 mA. `V_DRV` falls when the keep-alive stops, and the expander stops answering.
@@ -3741,6 +3828,9 @@ Still open:
 - **Bulk capacitor ripple rating at 50 and 60 Hz, and Rubycon's rules for forming leads.** Section 4.5.
 - **Resistor array pin pairs.** The UNI-ROYAL data sheet shows the circuit as a picture. Pairs 1-8, 2-7, 3-6 and 4-5 are assumed from the usual numbering.
 - **Regulator over-voltage.** Covered on paper since review A2, section 4.8. Not built, not tested: risk 21.
+- **The indicator's forward voltage at 2 mA.** The KENTO sheet limits it at 20 mA and shows one typical curve. Section 6.4.
+- **The pulse rating of the Hongjiacheng clamps beyond 1 ms.** Their sheets end the curve there. No sum of the design needs more from D1 and the SMBJ48CA parts (section 29). It is the reason D25 is still the Littelfuse part.
+- **The processor between 2.87 and 3.0 V.** Section 12.4. Nothing in its data sheet says what it does there.
 - **A shorted LDO.** `3V3` at 4.7 to 5.1 V. The valves are off by U13, section 9.5. What the processor and the display do there is not known, and the owner accepted that for revision A. Risk 32.
 - **The ADC input of the ESP32-S3.** The data sheet gives no figure for the charge its sampling takes from a source of 60 kohm. Risk 33.
 - **The die temperature against the board temperature.** The data sheet says only that the chip is warmer than its surroundings. The window of section 19.7 assumes 10 to 15 K. Risk 30.
@@ -3764,7 +3854,7 @@ is LCSC's copy of the maker's PDF for that LCSC number.
 | TCA9539 | SCPS202C | <https://www.lcsc.com/datasheet/C131972.pdf> |
 | LM2901 | SLCS006S | <https://www.lcsc.com/datasheet/C7932.pdf> |
 | 74HC132, and the 74HC00 it replaced | Nexperia data sheets | <https://www.lcsc.com/datasheet/C5601.pdf>, <https://www.lcsc.com/datasheet/C5586.pdf> |
-| TLV803E | TI TLV803E, TLV809E, TLV810E, LCSC copy ZHCSJX8J | <https://www.lcsc.com/datasheet/C5218924.pdf> |
+| TLV803E | TI TLV803E, TLV809E, TLV810E, SLVSES2J of May 2021 as LCSC's copy ZHCSJX8J: table 12-1, sections 6, 7.5 and 7.6 | <https://www.lcsc.com/datasheet/C1852114.pdf> |
 | AO3400A | AOS, rev 3, December 2011 | <https://www.lcsc.com/datasheet/C20917.pdf> |
 | SR2512JK-073RL | Yageo SR series, V.14, 2025-02-14 | <https://www.lcsc.com/datasheet/C2936639.pdf> |
 | MMB0207, rejected for R1 | Vishay MELF resistors | <https://www.lcsc.com/datasheet/C2092879.pdf> |
@@ -3774,7 +3864,13 @@ is LCSC's copy of the maker's PDF for that LCSC number.
 | LDL1117 | DocID030319 rev 3 | <https://www.lcsc.com/datasheet/C435835.pdf> |
 | TPS2553 | SLVS841E | <https://www.lcsc.com/datasheet/C55266.pdf> |
 | PCF8563 | Rev. 11.1, 19 January 2026 | <https://www.nxp.com/docs/en/data-sheet/PCF8563.pdf> |
-| SMBJ48CA, SMCJ48CA | Littelfuse SMBJ and SMCJ series | <https://www.lcsc.com/datasheet/C151264.pdf>, <https://www.lcsc.com/datasheet/C151287.pdf> |
+| SMBJ48CA, SMCJ48CA, as first fitted | Littelfuse SMBJ and SMCJ series | <https://www.lcsc.com/datasheet/C151264.pdf>, <https://www.lcsc.com/datasheet/C151287.pdf> |
+| SMBJ48CA, SMCJ48CA as fitted since section 29 | Zhuhai Hongjiacheng, "SMBJ series", rev 1.1, and "SMCJ series", rev 2.2: ratings, electrical tables, figures 1 to 6, package drawings | <https://www.lcsc.com/datasheet/C19077591.pdf>, <https://www.lcsc.com/datasheet/C41411765.pdf> |
+| KT-0603R, every indicator since section 29 | Hubei KENTO, approval sheet "0603-0.6" red, A.0, 2018-12-06: ratings, optical table, bins, curves, drawing | <https://www.lcsc.com/datasheet/C2286.pdf> |
+| LTST-C190KGKT, the indicator before | Lite-On data sheet BNS-OD-FC002/A4 | <https://www.lcsc.com/datasheet/C125094.pdf> |
+| P6SMB6.8CA, not fitted | Brightking P6SMB series, revision of 2014-07-21 | <https://www.lcsc.com/datasheet/C78395.pdf> |
+| SRV05-4, not fitted | Zhuhai Hongjiacheng SRV05-4, rev 2.2 | <https://www.lcsc.com/datasheet/C7420376.pdf> |
+| AMS1117-3.3, not fitted | Advanced Monolithic Systems AMS1117 | <https://www.lcsc.com/datasheet/C6186.pdf> |
 | 2920L110/60, 1812L020/60 | Littelfuse POLY-FUSE 2920L and 1812L | <https://www.lcsc.com/datasheet/C315903.pdf>, <https://www.lcsc.com/datasheet/C315900.pdf> |
 | 0154003.DRT, 0452003.MRL | Littelfuse 154 and 452 series | <https://www.lcsc.com/datasheet/C206913.pdf>, <https://www.lcsc.com/datasheet/C99550.pdf> |
 | RLP25FEER100 | TA-I RLP series | <https://www.lcsc.com/datasheet/C160587.pdf> |
@@ -4137,3 +4233,107 @@ DRC with schematic parity, the mechanical contract, the layout rules;
 `make cpl-check` for both builds; the four bridge faults above on the
 netlist as it is, with the rows of `results/faults.md` unchanged. No board
 exists. Nothing here was measured.
+
+## 29. What changed with the second pass on extended part types
+
+On 2026-11-12 the owner asked for fewer distinct extended part types, and
+decided the same day that the colour of the lights does not matter. The
+first pass (section 27) allowed only swaps that change nothing in the
+circuit. This one was allowed to change the design. It made, on revision A,
+the swaps that keep the footprint and the copper, and listed the rest for
+revision B. [What a controller costs](../hardware/cost.md#fewer-extended-part-types)
+has every one of the 35 types with its verdict, the comparisons figure by
+figure, and the money. This section is the record for the circuit.
+
+**Part numbers.** Four, on 26 parts. 32 fee-carrying types are left.
+
+| Parts | Was | Is now | Sections that changed |
+|---|---|---|---|
+| U12 | TI TLV803EA30DBZR, 3.08 V, C5218924 | TI TLV803EA29DBZR, 2.93 V, C1852114 | 12.4, written again; step 2 of section 21 |
+| D6, D102 to D902 | Lite-On LTST-C190KGKT, yellow-green, C125094 | KENTO KT-0603R, red, C2286, as D8 | 15.5; 6.4, solved again |
+| D1 | Littelfuse SMCJ48CA, C151287 | Hongjiacheng SMCJ48CA, C41411765 | 4.4 |
+| D12, D13, D14, D18, D23, D101 to D901 | Littelfuse SMBJ48CA, C151264 | Hongjiacheng SMBJ48CA, C19077591 | 6.6, 7.2, 13.4 |
+
+**U12.** Not a cost matter: the part was the wrong option of its family, and
+section 12.4 had its threshold wrong. Issue #58. The simulations of
+`hardware/sim/failsafe/` took the processor as reset below 2.94 V, the
+lowest threshold that section then gave. They take 2.871 V now, the lowest
+threshold of the part that is fitted, and every run was made again.
+
+**The clamps.** The stand-off voltage, the breakdown range, the clamping
+voltage at the rated 10/1000 us pulse, the pulse power, the steady power and
+the case are the same in both makers' sheets. Those are the figures that
+sections 4.4, 6.6, 13.3 and 13.4 use. One sum used more: section 7.2
+compared the inductive kick at K1 with "600 W for 1 ms", which is a point of
+the maker's curve of power against pulse length. The second maker's curve
+ends at 1 ms and the kick lasts 2.3 to 3.3 ms, so that sum is made again in
+section 7.2 without a curve. The leakage at 48 V is 5 uA for the SMBJ part
+where it was 1 uA.
+
+**Why D25 is still the first maker's part.** Section 4.8 reads the curve of
+peak power against pulse length out to 10 ms for the cases in which F5
+opens slowly. The Hongjiacheng SMBJ sheet, which covers the preferred
+SMBJ6.0A and the basic SMBJ6.5CA, ends that curve at 1 ms, and so does the
+Brightking sheet of the basic P6SMB6.8CA. The table figures of the
+Hongjiacheng SMBJ6.0A are those of the Littelfuse part. The curve is not
+there, so the sum cannot be made for it.
+
+**Why U2 and U9 are still the USBLC6-2SC6.** The preferred SRV05-4 has the
+same pins as this board wires them. Its working voltage is 5.0 V at most
+and pin 5 of U2 is on `VBUS`, 4.4 to 5.25 V by section 5.2. Its leakage is
+5 uA at most where the ST part has 150 nA, and its capacitance is given as
+a typical figure only.
+
+**Why the arrays RN1 to RN3 are still 100 kohm.** The basic array of this
+footprint is 10 kohm. The first pass left the question to a new run of the
+fault injection. It was run with 10 kohm on all three arrays: 397 faults,
+the same three that leave a valve on (bridges onto the keep-alive net), no
+row with another layer lost, and the self-test passes on a healthy board at
+all 96 corners. That is not the whole answer, because that model drives two
+of the nine valve pins. With an expander that keeps its bits after the
+keep-alive has stopped (the rows "Q1 stays on" of section 8.5 that name U5,
+its reset pin or `DRV_EN`), Q3 removes the LED supply, and the valve pins
+that are off are still driven high. Each feeds `V_DRV` backwards through its
+pull-up, around Q3, and the pin of the running zone is still low.
+`hardware/sim/array_feed.cir` has that state with all the pins:
+
+| Pull-ups | `V_DRV` with Q3 off | Opto LED of the running zone | With `3V3` at 3.6 V and an LED of low forward voltage |
+|---|---|---|---|
+| 100 kohm, as fitted | 0.93 V | 0.08 mA | 0.13 mA |
+| 10 kohm | 1.28 V | 1.3 mA | 1.6 mA |
+
+The fault injection counts an opto LED current above 0.25 mA as enough to
+fire a triac, because the MOC3023 sheet guarantees firing at 5 mA and gives
+no lower limit. With 100 kohm the current is a third to a half of that.
+With 10 kohm it is five to six times above it: the LED supply switch would
+no longer answer those faults and only the relay would. The drive margins
+of section 6.4 would also fall, to 6.95 mA and 17.5 mA. So the value stays,
+and section 8.2 now says that it must.
+
+The same file shows something about the board as it is. In that state
+GPIO42 reads 0.84 V, just above the 0.825 V under which the processor is
+sure to read a low. The stop test then reports that the gate-drive
+read-back did not release, which is the right report for an expander that
+ignores its reset.
+
+**Checks.** `make -C hardware design-check`; `make` in `hardware/zoneflow-a/`
+with the autorouter forbidden: netlist parity, ERC, DRC with schematic
+parity, the mechanical contract, the layout rules; `make cpl-check` for both
+builds, 307 and 262 placements with none misfits; `make review` and
+`review-check`. The board file differs in the fields of the 26 parts and in
+nothing else. Every run of `hardware/sim/failsafe/`: section 8.5 is
+unchanged by it, and `hardware/sim/failsafe/README.md` has what moved. No
+board exists. Nothing here was measured.
+
+**The enclosure.** The red part is 0.6 mm high where the yellow-green part
+was 0.8 mm. The mechanical contract has the new height. The light pipes are
+as they were, so each ends 0.9 mm above its LED.
+
+**Firmware.** No change. The texts of the display and the web interface name
+"the red light D8 on the board", which is still on the board, still red and
+still out of sight behind the fascia.
+
+**The pre-order review.** This is a new board file, so a hand-off of the
+review walkthrough made on the old one is not to be acted on. The step that
+checks the polarity of the lights against the maker's sheet is written again
+for the KENTO sheet.

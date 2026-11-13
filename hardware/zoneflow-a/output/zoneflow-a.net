@@ -4895,9 +4895,9 @@
 				(field
 					(name "MPN") "SMCJ48CA")
 				(field
-					(name "Manufacturer") "Littelfuse")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C151287")
+					(name "LCSC") "C41411765")
 				(field
 					(name "Footprint") "Diode_SMD:D_SMC")
 				(field
@@ -4921,11 +4921,11 @@
 			)
 			(property
 				(name "Manufacturer")
-				(value "Littelfuse")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C151287")
+				(value "C41411765")
 			)
 			(property
 				(name "Sheetname")
@@ -8070,9 +8070,9 @@
 				(field
 					(name "MPN") "SMBJ48CA")
 				(field
-					(name "Manufacturer") "Littelfuse")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C151264")
+					(name "LCSC") "C19077591")
 				(field
 					(name "Footprint") "Diode_SMD:D_SMB")
 				(field
@@ -8096,11 +8096,11 @@
 			)
 			(property
 				(name "Manufacturer")
-				(value "Littelfuse")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C151264")
+				(value "C19077591")
 			)
 			(property
 				(name "Sheetname")
@@ -8148,9 +8148,9 @@
 				(field
 					(name "MPN") "SMBJ48CA")
 				(field
-					(name "Manufacturer") "Littelfuse")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C151264")
+					(name "LCSC") "C19077591")
 				(field
 					(name "Footprint") "Diode_SMD:D_SMB")
 				(field
@@ -8174,11 +8174,11 @@
 			)
 			(property
 				(name "Manufacturer")
-				(value "Littelfuse")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C151264")
+				(value "C19077591")
 			)
 			(property
 				(name "Sheetname")
@@ -8226,9 +8226,9 @@
 				(field
 					(name "MPN") "SMBJ48CA")
 				(field
-					(name "Manufacturer") "Littelfuse")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C151264")
+					(name "LCSC") "C19077591")
 				(field
 					(name "Footprint") "Diode_SMD:D_SMB")
 				(field
@@ -8252,11 +8252,11 @@
 			)
 			(property
 				(name "Manufacturer")
-				(value "Littelfuse")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C151264")
+				(value "C19077591")
 			)
 			(property
 				(name "Sheetname")
@@ -8547,9 +8547,9 @@
 				(field
 					(name "MPN") "SMBJ48CA")
 				(field
-					(name "Manufacturer") "Littelfuse")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C151264")
+					(name "LCSC") "C19077591")
 				(field
 					(name "Footprint") "Diode_SMD:D_SMB")
 				(field
@@ -8573,11 +8573,11 @@
 			)
 			(property
 				(name "Manufacturer")
-				(value "Littelfuse")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C151264")
+				(value "C19077591")
 			)
 			(property
 				(name "Sheetname")
@@ -12630,18 +12630,18 @@
 		)
 		(comp
 			(ref "D6")
-			(value "yel-grn")
+			(value "red")
 			(footprint "LED_SMD:LED_0603_1608Metric")
 			(description "Light emitting diode")
 			(fields
 				(field
-					(name "Spec") "LED yellow-green")
+					(name "Spec") "LED red")
 				(field
-					(name "MPN") "LTST-C190KGKT")
+					(name "MPN") "KT-0603R")
 				(field
-					(name "Manufacturer") "Lite-On")
+					(name "Manufacturer") "Hubei KENTO Elec")
 				(field
-					(name "LCSC") "C125094")
+					(name "LCSC") "C2286")
 				(field
 					(name "Footprint") "LED_SMD:LED_0603_1608Metric")
 				(field
@@ -12657,19 +12657,19 @@
 			)
 			(property
 				(name "Spec")
-				(value "LED yellow-green")
+				(value "LED red")
 			)
 			(property
 				(name "MPN")
-				(value "LTST-C190KGKT")
+				(value "KT-0603R")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Lite-On")
+				(value "Hubei KENTO Elec")
 			)
 			(property
 				(name "LCSC")
-				(value "C125094")
+				(value "C2286")
 			)
 			(property
 				(name "Sheetname")
@@ -13433,38 +13433,38 @@
 		)
 		(comp
 			(ref "U12")
-			(value "TLV803EA30")
+			(value "TLV803EA29")
 			(footprint "Package_TO_SOT_SMD:SOT-23")
 			(datasheet "https://www.ti.com/lit/ds/symlink/tlv803e.pdf")
-			(description "3.0 V supply supervisor, open-drain active-low reset, 200 ms delay")
+			(description "2.93 V supply supervisor, open-drain active-low reset, 200 ms delay")
 			(fields
 				(field
-					(name "Spec") "TLV803EA30DBZR supervisor 3.0 V, open drain, 200 ms")
+					(name "Spec") "TLV803EA29DBZR supervisor 2.93 V, open drain, 200 ms")
 				(field
-					(name "MPN") "TLV803EA30DBZR")
+					(name "MPN") "TLV803EA29DBZR")
 				(field
 					(name "Manufacturer") "Texas Instruments")
 				(field
-					(name "LCSC") "C5218924")
+					(name "LCSC") "C1852114")
 				(field
 					(name "Footprint") "Package_TO_SOT_SMD:SOT-23")
 				(field
 					(name "Datasheet") "https://www.ti.com/lit/ds/symlink/tlv803e.pdf")
 				(field
-					(name "Description") "3.0 V supply supervisor, open-drain active-low reset, 200 ms delay")
+					(name "Description") "2.93 V supply supervisor, open-drain active-low reset, 200 ms delay")
 			)
 			(libsource
 				(lib "ZoneFlow")
-				(part "TLV803EA30DBZ")
-				(description "3.0 V supply supervisor, open-drain active-low reset, 200 ms delay")
+				(part "TLV803EA29DBZ")
+				(description "2.93 V supply supervisor, open-drain active-low reset, 200 ms delay")
 			)
 			(property
 				(name "Spec")
-				(value "TLV803EA30DBZR supervisor 3.0 V, open drain, 200 ms")
+				(value "TLV803EA29DBZR supervisor 2.93 V, open drain, 200 ms")
 			)
 			(property
 				(name "MPN")
-				(value "TLV803EA30DBZR")
+				(value "TLV803EA29DBZR")
 			)
 			(property
 				(name "Manufacturer")
@@ -13472,7 +13472,7 @@
 			)
 			(property
 				(name "LCSC")
-				(value "C5218924")
+				(value "C1852114")
 			)
 			(property
 				(name "Sheetname")
@@ -19037,9 +19037,9 @@
 				(field
 					(name "MPN") "SMBJ48CA")
 				(field
-					(name "Manufacturer") "Littelfuse")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C151264")
+					(name "LCSC") "C19077591")
 				(field
 					(name "Footprint") "Diode_SMD:D_SMB")
 				(field
@@ -19063,11 +19063,11 @@
 			)
 			(property
 				(name "Manufacturer")
-				(value "Littelfuse")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C151264")
+				(value "C19077591")
 			)
 			(property
 				(name "Sheetname")
@@ -20800,9 +20800,9 @@
 				(field
 					(name "MPN") "SMBJ48CA")
 				(field
-					(name "Manufacturer") "Littelfuse")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C151264")
+					(name "LCSC") "C19077591")
 				(field
 					(name "Footprint") "Diode_SMD:D_SMB")
 				(field
@@ -20826,11 +20826,11 @@
 			)
 			(property
 				(name "Manufacturer")
-				(value "Littelfuse")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C151264")
+				(value "C19077591")
 			)
 			(property
 				(name "Sheetname")
@@ -20869,18 +20869,18 @@
 		)
 		(comp
 			(ref "D102")
-			(value "yel-grn")
+			(value "red")
 			(footprint "LED_SMD:LED_0603_1608Metric")
 			(description "Light emitting diode")
 			(fields
 				(field
-					(name "Spec") "LED yellow-green")
+					(name "Spec") "LED red")
 				(field
-					(name "MPN") "LTST-C190KGKT")
+					(name "MPN") "KT-0603R")
 				(field
-					(name "Manufacturer") "Lite-On")
+					(name "Manufacturer") "Hubei KENTO Elec")
 				(field
-					(name "LCSC") "C125094")
+					(name "LCSC") "C2286")
 				(field
 					(name "Footprint") "LED_SMD:LED_0603_1608Metric")
 				(field
@@ -20896,19 +20896,19 @@
 			)
 			(property
 				(name "Spec")
-				(value "LED yellow-green")
+				(value "LED red")
 			)
 			(property
 				(name "MPN")
-				(value "LTST-C190KGKT")
+				(value "KT-0603R")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Lite-On")
+				(value "Hubei KENTO Elec")
 			)
 			(property
 				(name "LCSC")
-				(value "C125094")
+				(value "C2286")
 			)
 			(property
 				(name "Sheetname")
@@ -21665,9 +21665,9 @@
 				(field
 					(name "MPN") "SMBJ48CA")
 				(field
-					(name "Manufacturer") "Littelfuse")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C151264")
+					(name "LCSC") "C19077591")
 				(field
 					(name "Footprint") "Diode_SMD:D_SMB")
 				(field
@@ -21691,11 +21691,11 @@
 			)
 			(property
 				(name "Manufacturer")
-				(value "Littelfuse")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C151264")
+				(value "C19077591")
 			)
 			(property
 				(name "Sheetname")
@@ -21734,18 +21734,18 @@
 		)
 		(comp
 			(ref "D202")
-			(value "yel-grn")
+			(value "red")
 			(footprint "LED_SMD:LED_0603_1608Metric")
 			(description "Light emitting diode")
 			(fields
 				(field
-					(name "Spec") "LED yellow-green")
+					(name "Spec") "LED red")
 				(field
-					(name "MPN") "LTST-C190KGKT")
+					(name "MPN") "KT-0603R")
 				(field
-					(name "Manufacturer") "Lite-On")
+					(name "Manufacturer") "Hubei KENTO Elec")
 				(field
-					(name "LCSC") "C125094")
+					(name "LCSC") "C2286")
 				(field
 					(name "Footprint") "LED_SMD:LED_0603_1608Metric")
 				(field
@@ -21761,19 +21761,19 @@
 			)
 			(property
 				(name "Spec")
-				(value "LED yellow-green")
+				(value "LED red")
 			)
 			(property
 				(name "MPN")
-				(value "LTST-C190KGKT")
+				(value "KT-0603R")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Lite-On")
+				(value "Hubei KENTO Elec")
 			)
 			(property
 				(name "LCSC")
-				(value "C125094")
+				(value "C2286")
 			)
 			(property
 				(name "Sheetname")
@@ -22530,9 +22530,9 @@
 				(field
 					(name "MPN") "SMBJ48CA")
 				(field
-					(name "Manufacturer") "Littelfuse")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C151264")
+					(name "LCSC") "C19077591")
 				(field
 					(name "Footprint") "Diode_SMD:D_SMB")
 				(field
@@ -22556,11 +22556,11 @@
 			)
 			(property
 				(name "Manufacturer")
-				(value "Littelfuse")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C151264")
+				(value "C19077591")
 			)
 			(property
 				(name "Sheetname")
@@ -22599,18 +22599,18 @@
 		)
 		(comp
 			(ref "D302")
-			(value "yel-grn")
+			(value "red")
 			(footprint "LED_SMD:LED_0603_1608Metric")
 			(description "Light emitting diode")
 			(fields
 				(field
-					(name "Spec") "LED yellow-green")
+					(name "Spec") "LED red")
 				(field
-					(name "MPN") "LTST-C190KGKT")
+					(name "MPN") "KT-0603R")
 				(field
-					(name "Manufacturer") "Lite-On")
+					(name "Manufacturer") "Hubei KENTO Elec")
 				(field
-					(name "LCSC") "C125094")
+					(name "LCSC") "C2286")
 				(field
 					(name "Footprint") "LED_SMD:LED_0603_1608Metric")
 				(field
@@ -22626,19 +22626,19 @@
 			)
 			(property
 				(name "Spec")
-				(value "LED yellow-green")
+				(value "LED red")
 			)
 			(property
 				(name "MPN")
-				(value "LTST-C190KGKT")
+				(value "KT-0603R")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Lite-On")
+				(value "Hubei KENTO Elec")
 			)
 			(property
 				(name "LCSC")
-				(value "C125094")
+				(value "C2286")
 			)
 			(property
 				(name "Sheetname")
@@ -23395,9 +23395,9 @@
 				(field
 					(name "MPN") "SMBJ48CA")
 				(field
-					(name "Manufacturer") "Littelfuse")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C151264")
+					(name "LCSC") "C19077591")
 				(field
 					(name "Footprint") "Diode_SMD:D_SMB")
 				(field
@@ -23421,11 +23421,11 @@
 			)
 			(property
 				(name "Manufacturer")
-				(value "Littelfuse")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C151264")
+				(value "C19077591")
 			)
 			(property
 				(name "Sheetname")
@@ -23464,18 +23464,18 @@
 		)
 		(comp
 			(ref "D402")
-			(value "yel-grn")
+			(value "red")
 			(footprint "LED_SMD:LED_0603_1608Metric")
 			(description "Light emitting diode")
 			(fields
 				(field
-					(name "Spec") "LED yellow-green")
+					(name "Spec") "LED red")
 				(field
-					(name "MPN") "LTST-C190KGKT")
+					(name "MPN") "KT-0603R")
 				(field
-					(name "Manufacturer") "Lite-On")
+					(name "Manufacturer") "Hubei KENTO Elec")
 				(field
-					(name "LCSC") "C125094")
+					(name "LCSC") "C2286")
 				(field
 					(name "Footprint") "LED_SMD:LED_0603_1608Metric")
 				(field
@@ -23491,19 +23491,19 @@
 			)
 			(property
 				(name "Spec")
-				(value "LED yellow-green")
+				(value "LED red")
 			)
 			(property
 				(name "MPN")
-				(value "LTST-C190KGKT")
+				(value "KT-0603R")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Lite-On")
+				(value "Hubei KENTO Elec")
 			)
 			(property
 				(name "LCSC")
-				(value "C125094")
+				(value "C2286")
 			)
 			(property
 				(name "Sheetname")
@@ -24269,9 +24269,9 @@
 				(field
 					(name "MPN") "SMBJ48CA")
 				(field
-					(name "Manufacturer") "Littelfuse")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C151264")
+					(name "LCSC") "C19077591")
 				(field
 					(name "Footprint") "Diode_SMD:D_SMB")
 				(field
@@ -24295,11 +24295,11 @@
 			)
 			(property
 				(name "Manufacturer")
-				(value "Littelfuse")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C151264")
+				(value "C19077591")
 			)
 			(property
 				(name "Sheetname")
@@ -24347,18 +24347,18 @@
 		)
 		(comp
 			(ref "D502")
-			(value "yel-grn")
+			(value "red")
 			(footprint "LED_SMD:LED_0603_1608Metric")
 			(description "Light emitting diode")
 			(fields
 				(field
-					(name "Spec") "LED yellow-green")
+					(name "Spec") "LED red")
 				(field
-					(name "MPN") "LTST-C190KGKT")
+					(name "MPN") "KT-0603R")
 				(field
-					(name "Manufacturer") "Lite-On")
+					(name "Manufacturer") "Hubei KENTO Elec")
 				(field
-					(name "LCSC") "C125094")
+					(name "LCSC") "C2286")
 				(field
 					(name "Footprint") "LED_SMD:LED_0603_1608Metric")
 				(field
@@ -24374,19 +24374,19 @@
 			)
 			(property
 				(name "Spec")
-				(value "LED yellow-green")
+				(value "LED red")
 			)
 			(property
 				(name "MPN")
-				(value "LTST-C190KGKT")
+				(value "KT-0603R")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Lite-On")
+				(value "Hubei KENTO Elec")
 			)
 			(property
 				(name "LCSC")
-				(value "C125094")
+				(value "C2286")
 			)
 			(property
 				(name "Sheetname")
@@ -25233,9 +25233,9 @@
 				(field
 					(name "MPN") "SMBJ48CA")
 				(field
-					(name "Manufacturer") "Littelfuse")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C151264")
+					(name "LCSC") "C19077591")
 				(field
 					(name "Footprint") "Diode_SMD:D_SMB")
 				(field
@@ -25259,11 +25259,11 @@
 			)
 			(property
 				(name "Manufacturer")
-				(value "Littelfuse")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C151264")
+				(value "C19077591")
 			)
 			(property
 				(name "Sheetname")
@@ -25311,18 +25311,18 @@
 		)
 		(comp
 			(ref "D602")
-			(value "yel-grn")
+			(value "red")
 			(footprint "LED_SMD:LED_0603_1608Metric")
 			(description "Light emitting diode")
 			(fields
 				(field
-					(name "Spec") "LED yellow-green")
+					(name "Spec") "LED red")
 				(field
-					(name "MPN") "LTST-C190KGKT")
+					(name "MPN") "KT-0603R")
 				(field
-					(name "Manufacturer") "Lite-On")
+					(name "Manufacturer") "Hubei KENTO Elec")
 				(field
-					(name "LCSC") "C125094")
+					(name "LCSC") "C2286")
 				(field
 					(name "Footprint") "LED_SMD:LED_0603_1608Metric")
 				(field
@@ -25338,19 +25338,19 @@
 			)
 			(property
 				(name "Spec")
-				(value "LED yellow-green")
+				(value "LED red")
 			)
 			(property
 				(name "MPN")
-				(value "LTST-C190KGKT")
+				(value "KT-0603R")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Lite-On")
+				(value "Hubei KENTO Elec")
 			)
 			(property
 				(name "LCSC")
-				(value "C125094")
+				(value "C2286")
 			)
 			(property
 				(name "Sheetname")
@@ -26197,9 +26197,9 @@
 				(field
 					(name "MPN") "SMBJ48CA")
 				(field
-					(name "Manufacturer") "Littelfuse")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C151264")
+					(name "LCSC") "C19077591")
 				(field
 					(name "Footprint") "Diode_SMD:D_SMB")
 				(field
@@ -26223,11 +26223,11 @@
 			)
 			(property
 				(name "Manufacturer")
-				(value "Littelfuse")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C151264")
+				(value "C19077591")
 			)
 			(property
 				(name "Sheetname")
@@ -26275,18 +26275,18 @@
 		)
 		(comp
 			(ref "D702")
-			(value "yel-grn")
+			(value "red")
 			(footprint "LED_SMD:LED_0603_1608Metric")
 			(description "Light emitting diode")
 			(fields
 				(field
-					(name "Spec") "LED yellow-green")
+					(name "Spec") "LED red")
 				(field
-					(name "MPN") "LTST-C190KGKT")
+					(name "MPN") "KT-0603R")
 				(field
-					(name "Manufacturer") "Lite-On")
+					(name "Manufacturer") "Hubei KENTO Elec")
 				(field
-					(name "LCSC") "C125094")
+					(name "LCSC") "C2286")
 				(field
 					(name "Footprint") "LED_SMD:LED_0603_1608Metric")
 				(field
@@ -26302,19 +26302,19 @@
 			)
 			(property
 				(name "Spec")
-				(value "LED yellow-green")
+				(value "LED red")
 			)
 			(property
 				(name "MPN")
-				(value "LTST-C190KGKT")
+				(value "KT-0603R")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Lite-On")
+				(value "Hubei KENTO Elec")
 			)
 			(property
 				(name "LCSC")
-				(value "C125094")
+				(value "C2286")
 			)
 			(property
 				(name "Sheetname")
@@ -27161,9 +27161,9 @@
 				(field
 					(name "MPN") "SMBJ48CA")
 				(field
-					(name "Manufacturer") "Littelfuse")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C151264")
+					(name "LCSC") "C19077591")
 				(field
 					(name "Footprint") "Diode_SMD:D_SMB")
 				(field
@@ -27187,11 +27187,11 @@
 			)
 			(property
 				(name "Manufacturer")
-				(value "Littelfuse")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C151264")
+				(value "C19077591")
 			)
 			(property
 				(name "Sheetname")
@@ -27239,18 +27239,18 @@
 		)
 		(comp
 			(ref "D802")
-			(value "yel-grn")
+			(value "red")
 			(footprint "LED_SMD:LED_0603_1608Metric")
 			(description "Light emitting diode")
 			(fields
 				(field
-					(name "Spec") "LED yellow-green")
+					(name "Spec") "LED red")
 				(field
-					(name "MPN") "LTST-C190KGKT")
+					(name "MPN") "KT-0603R")
 				(field
-					(name "Manufacturer") "Lite-On")
+					(name "Manufacturer") "Hubei KENTO Elec")
 				(field
-					(name "LCSC") "C125094")
+					(name "LCSC") "C2286")
 				(field
 					(name "Footprint") "LED_SMD:LED_0603_1608Metric")
 				(field
@@ -27266,19 +27266,19 @@
 			)
 			(property
 				(name "Spec")
-				(value "LED yellow-green")
+				(value "LED red")
 			)
 			(property
 				(name "MPN")
-				(value "LTST-C190KGKT")
+				(value "KT-0603R")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Lite-On")
+				(value "Hubei KENTO Elec")
 			)
 			(property
 				(name "LCSC")
-				(value "C125094")
+				(value "C2286")
 			)
 			(property
 				(name "Sheetname")
@@ -28116,9 +28116,9 @@
 				(field
 					(name "MPN") "SMBJ48CA")
 				(field
-					(name "Manufacturer") "Littelfuse")
+					(name "Manufacturer") "hongjiacheng")
 				(field
-					(name "LCSC") "C151264")
+					(name "LCSC") "C19077591")
 				(field
 					(name "Footprint") "Diode_SMD:D_SMB")
 				(field
@@ -28142,11 +28142,11 @@
 			)
 			(property
 				(name "Manufacturer")
-				(value "Littelfuse")
+				(value "hongjiacheng")
 			)
 			(property
 				(name "LCSC")
-				(value "C151264")
+				(value "C19077591")
 			)
 			(property
 				(name "Sheetname")
@@ -28185,18 +28185,18 @@
 		)
 		(comp
 			(ref "D902")
-			(value "yel-grn")
+			(value "red")
 			(footprint "LED_SMD:LED_0603_1608Metric")
 			(description "Light emitting diode")
 			(fields
 				(field
-					(name "Spec") "LED yellow-green")
+					(name "Spec") "LED red")
 				(field
-					(name "MPN") "LTST-C190KGKT")
+					(name "MPN") "KT-0603R")
 				(field
-					(name "Manufacturer") "Lite-On")
+					(name "Manufacturer") "Hubei KENTO Elec")
 				(field
-					(name "LCSC") "C125094")
+					(name "LCSC") "C2286")
 				(field
 					(name "Footprint") "LED_SMD:LED_0603_1608Metric")
 				(field
@@ -28212,19 +28212,19 @@
 			)
 			(property
 				(name "Spec")
-				(value "LED yellow-green")
+				(value "LED red")
 			)
 			(property
 				(name "MPN")
-				(value "LTST-C190KGKT")
+				(value "KT-0603R")
 			)
 			(property
 				(name "Manufacturer")
-				(value "Lite-On")
+				(value "Hubei KENTO Elec")
 			)
 			(property
 				(name "LCSC")
-				(value "C125094")
+				(value "C2286")
 			)
 			(property
 				(name "Sheetname")
@@ -31064,20 +31064,20 @@
 		)
 		(libpart
 			(lib "ZoneFlow")
-			(part "TLV803EA30DBZ")
-			(description "3.0 V supply supervisor, open-drain active-low reset, 200 ms delay")
+			(part "TLV803EA29DBZ")
+			(description "2.93 V supply supervisor, open-drain active-low reset, 200 ms delay")
 			(docs "https://www.ti.com/lit/ds/symlink/tlv803e.pdf")
 			(fields
 				(field
 					(name "Reference") "U")
 				(field
-					(name "Value") "TLV803EA30DBZR")
+					(name "Value") "TLV803EA29DBZR")
 				(field
 					(name "Footprint") "Package_TO_SOT_SMD:SOT-23")
 				(field
 					(name "Datasheet") "https://www.ti.com/lit/ds/symlink/tlv803e.pdf")
 				(field
-					(name "Description") "3.0 V supply supervisor, open-drain active-low reset, 200 ms delay")
+					(name "Description") "2.93 V supply supervisor, open-drain active-low reset, 200 ms delay")
 			)
 			(pins
 				(pin

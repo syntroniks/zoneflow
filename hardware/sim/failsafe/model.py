@@ -508,8 +508,8 @@ class Deck:
         add("CV5B nv5 0 4.7u")
         add("C3V3B n3v3 0 32u")
         add("R3V3L n3v3 0 33")
-        # The supervisor U12 (TLV803EA30) holds the processor in reset while
-        # 3V3 is below its threshold, 2.94 to 3.06 V, and for 130 to 270 ms
+        # The supervisor U12 (TLV803EA29) holds the processor in reset while
+        # 3V3 is below its threshold, 2.871 to 2.989 V, and for 130 to 270 ms
         # after it has recovered. In reset the pins are inputs and nothing
         # is written. The model takes the lowest threshold. Once the
         # supervisor has reset the processor, the model keeps it in reset
@@ -520,7 +520,7 @@ class Deck:
         # supply whenever the relay transistors conduct, the pin would be
         # driven high again after every recovery, and those edges alone
         # keep both detectors charged. Power-up is not counted as a reset.
-        add("BMCUR mcu_raw 0 V = V(n3v3) > 2.94 ? 1 : 0")
+        add("BMCUR mcu_raw 0 V = V(n3v3) > 2.871 ? 1 : 0")
         add("BMCUN mcu_dis 0 V = (time > 5m) ? 1 - V(mcu_raw) : 0")
         add("CMCUT mcu_t 0 1u IC=1")
         add("RMCUT mcu_t 0 1e12")

@@ -171,7 +171,7 @@ Every model is behavioural and is fitted to the data sheet figures quoted in
 | G5NB | 125 ohm and 0.2 H; the inductance is assumed | Omron |
 | ESP32 pins | Keep-alive: push-pull through 30 ohm or high-impedance. Read-backs: inputs, 45 kohm pull-down on GPIO42 | ESP32-S3 datasheet v2.2, table 5-4 |
 | Supplies | `V_BUCK`, `V5` and `3V3` as sources chained in that order, each limited to 1.5 A and unable to sink, with the bulk capacitance of the rail | Design section 4. The current limit is the peak limit of U1, taken for all three. |
-| Supervisor U12 | Resets the processor when `3V3` is under 2.94 V. The processor then stays in reset for the rest of the run: its pins are inputs and it writes nothing. | TI TLV803EA30, lowest threshold, as quoted in design section 12.4 |
+| Supervisor U12 | Resets the processor when `3V3` is under 2.871 V. The processor then stays in reset for the rest of the run: its pins are inputs and it writes nothing. | TI TLV803EA29, lowest threshold: 2.93 V less 2 %, design section 12.4. Until 2026-11-12 the model took 2.94 V, the figure that section then gave for the TLV803EA30 |
 
 Limits to keep in mind when reading a result:
 

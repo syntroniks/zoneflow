@@ -2730,7 +2730,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
@@ -2742,7 +2742,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
@@ -4038,7 +4038,7 @@
 				)
 			)
 		)
-		(property "Value" "yel-grn"
+		(property "Value" "red"
 			(at 0 1.43 0)
 			(layer "F.Fab")
 			(uuid "a5a88e93-604e-5e0a-8a28-6859b99daf34")
@@ -4083,7 +4083,7 @@
 				)
 			)
 		)
-		(property "Spec" "LED yellow-green"
+		(property "Spec" "LED red"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -4095,7 +4095,7 @@
 				)
 			)
 		)
-		(property "MPN" "LTST-C190KGKT"
+		(property "MPN" "KT-0603R"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -4107,7 +4107,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Lite-On"
+		(property "Manufacturer" "Hubei KENTO Elec"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -4119,7 +4119,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C125094"
+		(property "LCSC" "C2286"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -6744,7 +6744,7 @@
 				)
 			)
 		)
-		(property "Value" "yel-grn"
+		(property "Value" "red"
 			(at 0 1.43 0)
 			(layer "F.Fab")
 			(uuid "3af21894-34da-5085-bf8f-2b8bd93d283c")
@@ -6789,7 +6789,7 @@
 				)
 			)
 		)
-		(property "Spec" "LED yellow-green"
+		(property "Spec" "LED red"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -6801,7 +6801,7 @@
 				)
 			)
 		)
-		(property "MPN" "LTST-C190KGKT"
+		(property "MPN" "KT-0603R"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -6813,7 +6813,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Lite-On"
+		(property "Manufacturer" "Hubei KENTO Elec"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -6825,7 +6825,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C125094"
+		(property "LCSC" "C2286"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -8329,7 +8329,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
@@ -8341,7 +8341,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
@@ -10708,7 +10708,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 0 0 90)
 			(layer "F.SilkS")
 			(hide yes)
@@ -10720,7 +10720,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 0 0 90)
 			(layer "F.SilkS")
 			(hide yes)
@@ -11734,7 +11734,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -11746,7 +11746,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -17380,7 +17380,7 @@
 				)
 			)
 		)
-		(property "Value" "yel-grn"
+		(property "Value" "red"
 			(at 0 1.43 0)
 			(layer "F.Fab")
 			(uuid "f7758bee-5158-5bcc-9e76-32462523e0d7")
@@ -17425,7 +17425,7 @@
 				)
 			)
 		)
-		(property "Spec" "LED yellow-green"
+		(property "Spec" "LED red"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -17437,7 +17437,7 @@
 				)
 			)
 		)
-		(property "MPN" "LTST-C190KGKT"
+		(property "MPN" "KT-0603R"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -17449,7 +17449,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Lite-On"
+		(property "Manufacturer" "Hubei KENTO Elec"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -17461,7 +17461,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C125094"
+		(property "LCSC" "C2286"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -22040,7 +22040,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -22052,7 +22052,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -22556,7 +22556,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
@@ -22568,7 +22568,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
@@ -24525,7 +24525,7 @@
 				)
 			)
 		)
-		(property "Value" "yel-grn"
+		(property "Value" "red"
 			(at 0 1.43 0)
 			(layer "F.Fab")
 			(uuid "9e2ed32e-50dd-509b-9948-e303b9009d72")
@@ -24570,7 +24570,7 @@
 				)
 			)
 		)
-		(property "Spec" "LED yellow-green"
+		(property "Spec" "LED red"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -24582,7 +24582,7 @@
 				)
 			)
 		)
-		(property "MPN" "LTST-C190KGKT"
+		(property "MPN" "KT-0603R"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -24594,7 +24594,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Lite-On"
+		(property "Manufacturer" "Hubei KENTO Elec"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -24606,7 +24606,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C125094"
+		(property "LCSC" "C2286"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -27598,7 +27598,7 @@
 				)
 			)
 		)
-		(property "Value" "TLV803EA30"
+		(property "Value" "TLV803EA29"
 			(at 0 2.4 180)
 			(layer "F.Fab")
 			(uuid "ad5171db-1975-55b9-9827-1eb9fa9d40c2")
@@ -27620,7 +27620,7 @@
 				)
 			)
 		)
-		(property "Description" "3.0 V supply supervisor, open-drain active-low reset, 200 ms delay"
+		(property "Description" "2.93 V supply supervisor, open-drain active-low reset, 200 ms delay"
 			(at 0 0 180)
 			(layer "F.Fab")
 			(hide yes)
@@ -27643,7 +27643,7 @@
 				)
 			)
 		)
-		(property "Spec" "TLV803EA30DBZR supervisor 3.0 V, open drain, 200 ms"
+		(property "Spec" "TLV803EA29DBZR supervisor 2.93 V, open drain, 200 ms"
 			(at 0 0 180)
 			(layer "F.SilkS")
 			(hide yes)
@@ -27655,7 +27655,7 @@
 				)
 			)
 		)
-		(property "MPN" "TLV803EA30DBZR"
+		(property "MPN" "TLV803EA29DBZR"
 			(at 0 0 180)
 			(layer "F.SilkS")
 			(hide yes)
@@ -27679,7 +27679,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C5218924"
+		(property "LCSC" "C1852114"
 			(at 0 0 180)
 			(layer "F.SilkS")
 			(hide yes)
@@ -36827,7 +36827,7 @@
 				)
 			)
 		)
-		(property "Value" "yel-grn"
+		(property "Value" "red"
 			(at 0 1.43 0)
 			(layer "F.Fab")
 			(uuid "9c429864-88a2-53d7-86a3-b347bee07878")
@@ -36872,7 +36872,7 @@
 				)
 			)
 		)
-		(property "Spec" "LED yellow-green"
+		(property "Spec" "LED red"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -36884,7 +36884,7 @@
 				)
 			)
 		)
-		(property "MPN" "LTST-C190KGKT"
+		(property "MPN" "KT-0603R"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -36896,7 +36896,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Lite-On"
+		(property "Manufacturer" "Hubei KENTO Elec"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -36908,7 +36908,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C125094"
+		(property "LCSC" "C2286"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -37470,7 +37470,7 @@
 				)
 			)
 		)
-		(property "Value" "yel-grn"
+		(property "Value" "red"
 			(at 0 1.43 0)
 			(layer "F.Fab")
 			(uuid "87e3e201-ed8f-574f-97d0-a55475606245")
@@ -37515,7 +37515,7 @@
 				)
 			)
 		)
-		(property "Spec" "LED yellow-green"
+		(property "Spec" "LED red"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -37527,7 +37527,7 @@
 				)
 			)
 		)
-		(property "MPN" "LTST-C190KGKT"
+		(property "MPN" "KT-0603R"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -37539,7 +37539,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Lite-On"
+		(property "Manufacturer" "Hubei KENTO Elec"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -37551,7 +37551,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C125094"
+		(property "LCSC" "C2286"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -39154,7 +39154,7 @@
 				)
 			)
 		)
-		(property "Value" "yel-grn"
+		(property "Value" "red"
 			(at 0 1.43 0)
 			(layer "F.Fab")
 			(uuid "828003e4-14e1-5d28-9512-be831c1cdad7")
@@ -39199,7 +39199,7 @@
 				)
 			)
 		)
-		(property "Spec" "LED yellow-green"
+		(property "Spec" "LED red"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -39211,7 +39211,7 @@
 				)
 			)
 		)
-		(property "MPN" "LTST-C190KGKT"
+		(property "MPN" "KT-0603R"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -39223,7 +39223,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Lite-On"
+		(property "Manufacturer" "Hubei KENTO Elec"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -39235,7 +39235,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C125094"
+		(property "LCSC" "C2286"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -40308,7 +40308,7 @@
 				)
 			)
 		)
-		(property "Value" "yel-grn"
+		(property "Value" "red"
 			(at 0 1.43 0)
 			(layer "F.Fab")
 			(uuid "a43dccc2-bf62-575f-ab2a-aa2bd8332a8b")
@@ -40353,7 +40353,7 @@
 				)
 			)
 		)
-		(property "Spec" "LED yellow-green"
+		(property "Spec" "LED red"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -40365,7 +40365,7 @@
 				)
 			)
 		)
-		(property "MPN" "LTST-C190KGKT"
+		(property "MPN" "KT-0603R"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -40377,7 +40377,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Lite-On"
+		(property "Manufacturer" "Hubei KENTO Elec"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -40389,7 +40389,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C125094"
+		(property "LCSC" "C2286"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -42599,7 +42599,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
@@ -42611,7 +42611,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
@@ -42856,7 +42856,7 @@
 				)
 			)
 		)
-		(property "Value" "yel-grn"
+		(property "Value" "red"
 			(at 0 1.43 0)
 			(layer "F.Fab")
 			(uuid "9977b7db-1b5f-5965-8566-1c3c76af4032")
@@ -42901,7 +42901,7 @@
 				)
 			)
 		)
-		(property "Spec" "LED yellow-green"
+		(property "Spec" "LED red"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -42913,7 +42913,7 @@
 				)
 			)
 		)
-		(property "MPN" "LTST-C190KGKT"
+		(property "MPN" "KT-0603R"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -42925,7 +42925,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Lite-On"
+		(property "Manufacturer" "Hubei KENTO Elec"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -42937,7 +42937,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C125094"
+		(property "LCSC" "C2286"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -49758,7 +49758,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
@@ -49770,7 +49770,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
@@ -50076,7 +50076,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
@@ -50088,7 +50088,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
@@ -55353,7 +55353,7 @@
 				)
 			)
 		)
-		(property "Value" "yel-grn"
+		(property "Value" "red"
 			(at 0 1.43 0)
 			(layer "F.Fab")
 			(uuid "79ae0600-beae-508c-ac9a-5d5fbe80f722")
@@ -55398,7 +55398,7 @@
 				)
 			)
 		)
-		(property "Spec" "LED yellow-green"
+		(property "Spec" "LED red"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -55410,7 +55410,7 @@
 				)
 			)
 		)
-		(property "MPN" "LTST-C190KGKT"
+		(property "MPN" "KT-0603R"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -55422,7 +55422,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Lite-On"
+		(property "Manufacturer" "Hubei KENTO Elec"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -55434,7 +55434,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C125094"
+		(property "LCSC" "C2286"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -59051,7 +59051,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -59063,7 +59063,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -62915,7 +62915,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
@@ -62927,7 +62927,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
@@ -74581,7 +74581,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
@@ -74593,7 +74593,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
@@ -74899,7 +74899,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
@@ -74911,7 +74911,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 0 0 270)
 			(layer "F.SilkS")
 			(hide yes)
@@ -75415,7 +75415,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -75427,7 +75427,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151287"
+		(property "LCSC" "C41411765"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -79628,7 +79628,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)
@@ -79640,7 +79640,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 0 0 0)
 			(layer "F.SilkS")
 			(hide yes)

@@ -65,7 +65,7 @@
 | Radio | WiFi 2.4 GHz, Bluetooth LE | Spec 1 |
 | Display | 2.0 inch IPS TFT, 240 x 320, ST7789-class controller, SPI, no touch; Hansheng HS20HS072RX | Design 15.1 |
 | Controls | Rotary encoder with push switch (30 detents), Back button, Manual/Home button | Design 15.4 |
-| Lights | Status, master valve and one per zone (yellow-green); red over-current light on the board, not visible from outside | Design 15.5 |
+| Lights | Status, master valve and one per zone, all red; an over-current light of the same part on the board, not visible from outside | Design 15.5 |
 | Clock | PCF8563 real-time clock, 32.768 kHz crystal, CR2032 cell; about ten years on the cell, set by the cell's shelf life | Design 14 |
 | Expansion | Qwiic (JST SH 4-way, I2C, 3.3 V), 80 mA | Design 16.2 |
 | Service header | J8, 6 pads, 2.54 mm: 3V3, GND, U0TXD, U0RXD, EN, BOOT | Design 16.2 |

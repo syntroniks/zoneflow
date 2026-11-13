@@ -246,8 +246,8 @@ Parts that carry mains-side current, heat or a connector position.
 | F101 to F901 PTC, BHFUSE BSMD2920 (C3020148) | `Fuse:Fuse_2920_7451Metric` | BHFUSE BSMD2920 sheet, recommended pad | Maker: 2.00 x 5.30, gap 4.60. KiCad: 1.925 x 5.45, gap 4.85. Within 0.15 on every edge |
 | F3 PTC, Littelfuse 1812L020/60 (C315900) | `Fuse:Fuse_1812_4532Metric` | Littelfuse 1812L series sheet, pad layout | Gap 3.15, equal. Height 3.45 against 3.40. Littelfuse draws wider lands, 1.78 against 1.125: the stock land still extends 0.33 mm or more past the end of the part (4.73 long at most) |
 | F2 PTC, Littelfuse 1206L012 (C151160) | `Fuse:Fuse_1206_3216Metric` | Littelfuse 1206L series sheet, pad layout | Maker: 1.00 x 1.80, gap 1.80. KiCad: 1.25 x 1.75, gap 1.55 |
-| TVS SMBJ48CA (C151264): D12 to D14, D18, D23, D101 to D901. TVS SMBJ6.0A (C83270), same series and case: D25 | `Diode_SMD:D_SMB` | Littelfuse SMBJ sheet, solder pad table | The table gives I 2.26 min, J 2.16 min, K 2.72 max, L 2.16 min (converted from inches). KiCad's lands are 2.5 x 2.3 with 1.8 between them, which meets all four whichever side each letter names; the figure that assigns the letters was not read |
-| D1 TVS, SMCJ48CA (C151287) | `Diode_SMD:D_SMC` | none | Not compared. JEDEC DO-214AB footprint, lands 3.3 x 2.5 |
+| TVS SMBJ48CA (Hongjiacheng C19077591 since 2026-11-12, Littelfuse C151264 before): D12 to D14, D18, D23, D101 to D901. TVS SMBJ6.0A (Littelfuse C83270), same case: D25 | `Diode_SMD:D_SMB` | Littelfuse SMBJ sheet, solder pad table. Hongjiacheng SMBJ sheet rev 1.1, package outline and pad figures | The table gives I 2.26 min, J 2.16 min, K 2.72 max, L 2.16 min (converted from inches). KiCad's lands are 2.5 x 2.3 with 1.8 between them, which meets all four whichever side each letter names; the figure that assigns the letters was not read. Hongjiacheng: body 4.25 to 4.85 x 3.30 to 3.94, over the leads 5.08 to 5.59, lead 1.85 to 2.21 wide, against Littelfuse 4.06 to 4.75 x 3.30 to 3.94, 5.21 to 5.59 and 1.93 to 2.20; its pad figures are M 2.26 min, J 2.10 min, K 2.74 max, which the same lands meet. The lands span 6.8 mm, 1.2 mm more than the longest part |
+| D1 TVS, SMCJ48CA (Hongjiacheng C41411765 since 2026-11-12, Littelfuse C151287 before) | `Diode_SMD:D_SMC` | Hongjiacheng SMCJ sheet rev 2.2 and Littelfuse SMCJ sheet, package outlines | The two parts against each other, not against the lands: body 6.60 to 7.11 x 5.59 to 6.22 in both, over the leads 7.75 to 8.13 in both, lead 2.85 to 3.27 wide against 2.90 to 3.20. The pad figures of neither sheet were compared with the footprint. JEDEC DO-214AB footprint, lands 3.3 x 2.5 |
 | J5, HRO TYPE-C-31-M-12 (C165948) | `Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12` | HRO drawing TYPE-C-31-M-12, 2020-12-08, recommended layout | Equal: four 0.60 and eight 0.30 lands at 0.50 pitch; locating holes 5.78 apart; shell slots 8.65 apart (footprint 8.64) and 4.18 between the rows. The drawing puts the board edge 2.66 mm in front of the footprint origin, which is where the mechanical contract puts J5 (2.675) |
 | J6, JST SM04B-SRSS-TB (C160404) | `Connector_JST:JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal` | JST SH catalogue sheet, side entry type | Lands 0.6 x 1.55 at 1.0 pitch and mounting lands 1.2 x 1.8, as the sheet gives them. Positions were not compared number by number: the text layer of the sheet does not tie the numbers to features. In this footprint the mounting lands reach 0.15 mm past the front of the housing, so the housing cannot overhang the board edge: revision 2 of the mechanical contract had it 0.5 mm over, which put the lands 0.7 mm off the board. Revision 3 moves J6 in by 1.0 mm |
 | SW1, SW2, XKB TS-1187A-B-A-B (C318884) | `Button_Switch_SMD:SW_Push_1P1T_XKB_TS-1187A` | XKB drawing TS-1187A-X-X-X, revision A0 | Equal: lands 1.0 x 0.75; 7.0 over and 5.0 between along the terminals; 4.5 over and 3.0 between the rows. The two lands of a row are one contact |
@@ -267,15 +267,18 @@ the pin numbering:
 - Diodes: pad 1 is the cathode in KiCad's SMA, SMB, SMC and SOD-123
   footprints. `design/parts.toml` maps K to 1 and A to 2.
 - LEDs: pad 1 is the cathode in KiCad's `LED_0603_1608Metric`. Mapped the same
-  way. The cathode mark of the two LED types on the reel was not checked
-  against the pick-and-place rotation; that is a phase 2 check on the
-  placement file.
+  way. All eleven are the KENTO KT-0603R since 2026-11-12. Its drawing
+  numbers the anode 1 and the cathode 2 and marks the cathode end; its
+  suggested lands are 0.70 long with 0.70 between them. The cathode mark on
+  the reel was not checked against the pick-and-place rotation; `make
+  cpl-check` compares the placement with JLCPCB's library footprint.
 - MOSFETs AO3400A and AO3401A in SOT-23: gate 1, source 2, drain 3, KiCad's
   numbering for these two symbols. The Alpha and Omega sheets show the
   positions as a picture without numbers: drain alone on one side, gate and
   source on the other, which is the same arrangement.
-- TLV803EA30DBZR: the ordering code has no pinout letter, which the TI
-  sheet defines as pin 1 GND, pin 2 RESET, pin 3 VDD.
+- TLV803EA29DBZR (TLV803EA30DBZR until 2026-11-12, the same package and
+  pins): the ordering code has no pinout letter, which the TI sheet defines
+  as pin 1 GND, pin 2 RESET, pin 3 VDD.
 - BAT54S: pin 1 anode, pin 2 cathode, pin 3 the common node, from the
   Nexperia sheet, table 2.
 - LDL1117S33R in SOT-223: 1 GND, 2 OUT, 3 IN, tab OUT, from the ST datasheet.

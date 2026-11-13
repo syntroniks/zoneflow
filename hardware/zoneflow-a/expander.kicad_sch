@@ -8344,7 +8344,7 @@
 				)
 			)
 		)
-		(property "Manufacturer" "Littelfuse"
+		(property "Manufacturer" "hongjiacheng"
 			(at 355.6 62.23 0)
 			(hide yes)
 			(show_name no)
@@ -8355,7 +8355,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C151264"
+		(property "LCSC" "C19077591"
 			(at 355.6 62.23 0)
 			(hide yes)
 			(show_name no)

@@ -71,10 +71,10 @@ def tps2553():
 
 def tlv803e():
     # TI TLV803E data sheet, DBZ (SOT-23) pinout without R or V suffix: 1 GND, 2 RESET, 3 VDD.
-    return box("TLV803EA30DBZ", "U", "TLV803EA30DBZR", [("3", "VDD", PWR)], [("2", "~{RESET}", OC)],
+    return box("TLV803EA29DBZ", "U", "TLV803EA29DBZR", [("3", "VDD", PWR)], [("2", "~{RESET}", OC)],
                bottom=[("1", "GND", PWR)], min_width=20.32, footprint="Package_TO_SOT_SMD:SOT-23",
                datasheet="https://www.ti.com/lit/ds/symlink/tlv803e.pdf",
-               description="3.0 V supply supervisor, open-drain active-low reset, 200 ms delay")
+               description="2.93 V supply supervisor, open-drain active-low reset, 200 ms delay")
 
 
 def tps3701():

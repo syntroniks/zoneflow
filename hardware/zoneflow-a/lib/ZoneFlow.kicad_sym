@@ -4227,7 +4227,7 @@
 		(symbol "TFT_Panel_FPC12_1_1")
 		(embedded_fonts no)
 	)
-	(symbol "TLV803EA30DBZ"
+	(symbol "TLV803EA29DBZ"
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
@@ -4244,7 +4244,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "TLV803EA30DBZR"
+		(property "Value" "TLV803EA29DBZR"
 			(at -10.16 3.81 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4277,7 +4277,7 @@
 				)
 			)
 		)
-		(property "Description" "3.0 V supply supervisor, open-drain active-low reset, 200 ms delay"
+		(property "Description" "2.93 V supply supervisor, open-drain active-low reset, 200 ms delay"
 			(at 0 0 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4288,7 +4288,7 @@
 				)
 			)
 		)
-		(symbol "TLV803EA30DBZ_0_1"
+		(symbol "TLV803EA29DBZ_0_1"
 			(rectangle
 				(start -10.16 2.54)
 				(end 10.16 -7.62)
@@ -4301,7 +4301,7 @@
 				)
 			)
 		)
-		(symbol "TLV803EA30DBZ_1_1"
+		(symbol "TLV803EA29DBZ_1_1"
 			(pin power_in line
 				(at -12.7 0 0)
 				(length 2.54)

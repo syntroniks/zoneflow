@@ -148,8 +148,8 @@ def channel(s):
            "\n"
            "Q1  T810-600B-TR, 8 A, three-quadrant, DPAK. Pin 1 A1 (T1) to ISNS, pin 2 and tab A2 (T2), pin 3 gate.\n"
            "    The tab is net T2: give it its own copper island of 2 cm2 or more (section 6.7).\n"
-           "U1  MOC3023, random phase. LED current 7.1 mA worst case, 12 mA typical; it needs 5.6 mA at -20 C.\n"
-           "R1  150R sets the opto LED current. R2 680R gives the indicator LED 1.6 mA.\n"
+           "U1  MOC3023, random phase. LED current 7.0 mA worst case, 12 mA typical; it needs 5.6 mA at -20 C.\n"
+           "R1  150R sets the opto LED current. R2 680R gives the indicator LED 1.7 mA.\n"
            "R3  100R limits the opto-triac to 0.45 A at the 45 V peak. R4 1k holds the gate at T1.\n"
            "R5 + C1  47R and 10 nF snubber. F1 PTC 1.1 A hold, 40 A maximum. D1 SMBJ48CA clamps at 77 V.\n"
            "D2  lights when the expander pin is low AND V_DRV is on: the real drive state.\n"
@@ -643,7 +643,7 @@ def mcu(s):
         s.wire(p, (p.pos[0], P(0, 136)[1]))
     s.wire(P(158, 136), P(162, 136), net="GND")
     s.label(P(160, 136), DOWN)
-    # Reset: U12 holds EN low below 3.0 V and for 200 ms after; R18 and C16 are the module's reference circuit.
+    # Reset: U12 holds EN low below 2.93 V and for 200 ms after; R18 and C16 are the module's reference circuit.
     u12 = s.place("U12", P(50, 50))
     lead(s, u12["VDD"], P(34, 46), UP, route="hv")
     s.place("C54", P(24, 56))
@@ -698,7 +698,7 @@ def mcu(s):
            "firmware. GPIO40 reads the over-current latch through 10k.\n"
            "USB: GPIO19 D-, GPIO20 D+, through the series footprints on the USB sheet.\n"
            "\n"
-           "U12 TLV803EA30: open drain, pulls EN low while 3V3 is under 3.0 V (2.94 to 3.06 V) and for\n"
+           "U12 TLV803EA29: open drain, pulls EN low while 3V3 is under 2.93 V (2.87 to 2.99 V) and for\n"
            "130 to 270 ms after. R18 10k and C16 1 uF delay EN by about 10 ms. SW1 is reset.\n"
            "\n"
            "LAYOUT: the 18 x 6 mm antenna end of the module is beyond the top board edge. No copper on any\n"
